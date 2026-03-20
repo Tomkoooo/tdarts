@@ -7,74 +7,49 @@ import { BadRequestError } from '@/middleware/errorHandle';
 import { withTelemetry } from '@/shared/lib/withTelemetry';
 import { authorizeUserResult } from '@/shared/lib/guards';
 import { serializeForClient } from '@/shared/lib/serializeForClient';
-import { perfFlags } from '@/features/performance/lib/perfFlags';
 
 export type GetTournamentPageDataInput = {
   code: string;
   includeViewer?: boolean;
-  detailLevel?: 'overview' | 'full';
-  section?: 'overview' | 'players' | 'boards' | 'groups' | 'bracket';
+  view?: 'overview' | 'players' | 'boards' | 'groups' | 'bracket' | 'full';
   bypassCache?: boolean;
+  freshness?: 'default' | 'volatile' | 'force-fresh';
 };
 
 export type GetTournamentPageLiteInput = {
   code: string;
   bypassCache?: boolean;
+  freshness?: 'default' | 'volatile' | 'force-fresh';
 };
+
+const legacyTournamentTag = (code: string) => `tournament:${code}`;
+const stableTournamentTag = (code: string) => `tournament:stable:${code}`;
+const volatileTournamentTag = (code: string) => `tournament:volatile:${code}`;
+const fullTournamentTag = (code: string) => `tournament:full:${code}`;
 
 const getCachedTournamentSummary = (code: string) =>
   unstable_cache(
     () => TournamentService.getTournamentSummaryForPublicPage(code),
     [`tournament-summary`, code],
-    { tags: [`tournament:${code}`], revalidate: 30 },
-  )();
-
-const getCachedTournamentOverview = (code: string) =>
-  unstable_cache(
-    () => TournamentService.getTournamentSummaryOverviewForPublicPage(code),
-    [`tournament-overview`, code],
-    { tags: [`tournament:${code}`], revalidate: 10 },
+    { tags: [legacyTournamentTag(code), fullTournamentTag(code)], revalidate: 15 },
   )();
 
 const getCachedTournamentLite = (code: string) =>
   unstable_cache(
     () => TournamentService.getTournamentLite(code),
     [`tournament-lite`, code],
-    { tags: [`tournament:${code}`], revalidate: 10 },
+    { tags: [legacyTournamentTag(code), volatileTournamentTag(code)], revalidate: 2 },
   )();
 
-function resolveViewerStatusFromFullTournament(tournament: any, userId: string): string {
-  const matchesUser = (playerRef: any) => {
-    if (!playerRef) return false;
-    if (playerRef?.userRef === userId) return true;
-    if (playerRef?.userRef?._id?.toString?.() === userId) return true;
-    if (Array.isArray(playerRef?.members)) {
-      return playerRef.members.some((member: any) => {
-        if (!member) return false;
-        if (member?.userRef === userId) return true;
-        if (member?.userRef?._id?.toString?.() === userId) return true;
-        if (member?._id?.toString?.() === userId) return true;
-        return false;
-      });
-    }
-    return false;
-  };
+function shouldBypassCache(params: { bypassCache: boolean; freshness: NonNullable<GetTournamentPageDataInput['freshness']> }) {
+  return params.bypassCache || params.freshness === 'force-fresh';
+}
 
-  const tournamentPlayer = (tournament?.tournamentPlayers || []).find((entry: any) =>
-    matchesUser(entry?.playerReference),
-  );
-  if (tournamentPlayer?.status) {
-    return String(tournamentPlayer.status);
+function resolveSection(view: NonNullable<GetTournamentPageDataInput['view']>) {
+  if (view === 'players' || view === 'boards' || view === 'groups' || view === 'bracket') {
+    return view;
   }
-
-  const waitingPlayer = (tournament?.waitingList || []).find((entry: any) =>
-    matchesUser(entry?.playerReference),
-  );
-  if (waitingPlayer) {
-    return 'applied';
-  }
-
-  return 'none';
+  return 'overview';
 }
 
 export async function getTournamentPageDataAction(input: GetTournamentPageDataInput) {
@@ -84,32 +59,35 @@ export async function getTournamentPageDataAction(input: GetTournamentPageDataIn
       const {
         code,
         includeViewer = false,
-        detailLevel = 'overview',
-        section = detailLevel === 'full' ? 'groups' : 'overview',
+        view = 'overview',
         bypassCache = false,
+        freshness = 'default',
       } = params;
       if (!code) {
         throw new BadRequestError('code is required');
       }
 
-      let tournament: any;
-      if (detailLevel === 'full' && perfFlags.tournamentReadModelV2) {
-        tournament = bypassCache
-          ? await TournamentService.getTournamentReadModelForSection(code, section)
+      const section = resolveSection(view);
+      const noCache = shouldBypassCache({ bypassCache, freshness });
+      const sectionRevalidate = freshness === 'volatile' ? 3 : 10;
+      const tournament = noCache
+        ? view === 'full'
+          ? await TournamentService.getTournamentSummaryForPublicPage(code)
+          : await TournamentService.getTournamentReadModelForSection(code, section)
+        : view === 'full'
+          ? await getCachedTournamentSummary(code)
           : await unstable_cache(
               () => TournamentService.getTournamentReadModelForSection(code, section),
-              [`tournament-section`, code, section],
-              { tags: [`tournament:${code}`, `tournament:${code}:${section}`], revalidate: 10 },
+              [`tournament-section`, code, section, freshness],
+              {
+                tags: [
+                  legacyTournamentTag(code),
+                  freshness === 'volatile' ? volatileTournamentTag(code) : stableTournamentTag(code),
+                  `tournament:${code}:${section}`,
+                ],
+                revalidate: sectionRevalidate,
+              },
             )();
-      } else {
-        tournament = bypassCache
-          ? detailLevel === 'full'
-            ? await TournamentService.getTournamentSummaryForPublicPage(code)
-            : await TournamentService.getTournamentSummaryOverviewForPublicPage(code)
-          : detailLevel === 'full'
-            ? await getCachedTournamentSummary(code)
-            : await getCachedTournamentOverview(code);
-      }
 
       if (!includeViewer) {
         return serializeForClient({ tournament });
@@ -129,10 +107,10 @@ export async function getTournamentPageDataAction(input: GetTournamentPageDataIn
 
       // Security boundary: viewer identity must come from the server session only.
       const userClubRolePromise = ClubService.getUserRoleInClub(authResult.data.userId, clubId);
-      const userPlayerStatusPromise =
-        detailLevel === 'full'
-          ? Promise.resolve(resolveViewerStatusFromFullTournament(tournament, authResult.data.userId))
-          : TournamentService.getPlayerStatusInTournament(code, authResult.data.userId);
+      const userPlayerStatusPromise = TournamentService.getPlayerStatusInTournament(
+        code,
+        authResult.data.userId,
+      );
 
       const [userClubRole, userPlayerStatus] = await Promise.all([
         userClubRolePromise,
@@ -158,11 +136,12 @@ export async function getTournamentPageLiteAction(input: GetTournamentPageLiteIn
     'tournaments.getTournamentPageLite',
     async (params: GetTournamentPageLiteInput) => {
       const { code, bypassCache = false } = params;
+      const freshness = params.freshness ?? 'volatile';
       if (!code) {
         throw new BadRequestError('code is required');
       }
 
-      const lite = bypassCache
+      const lite = shouldBypassCache({ bypassCache, freshness })
         ? await TournamentService.getTournamentLite(code)
         : await getCachedTournamentLite(code);
       return serializeForClient({

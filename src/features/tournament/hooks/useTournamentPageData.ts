@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { SimplifiedUser } from "@/hooks/useUser";
 import {
   getTournamentPageDataAction,
@@ -8,10 +8,67 @@ import {
 } from "@/features/tournaments/actions/getTournamentPageData.action";
 import type { SseDeltaPayload } from "@/lib/events";
 import { extractTournamentPayload } from "@/features/tournament/lib/tournamentPageData";
+import { perfFlags } from "@/features/performance/lib/perfFlags";
 
 type UserClubRole = "admin" | "moderator" | "member" | "none";
 type UserPlayerStatus = "applied" | "checked-in" | "none";
+type TournamentView = "overview" | "players" | "boards" | "groups" | "bracket" | "full";
 const SSE_DEBUG = process.env.NEXT_PUBLIC_SSE_DEBUG === "true";
+
+const toNumericBoardNumber = (value: unknown): number | null => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+};
+
+const mergeIntoMatchReference = (existing: any, incoming: any) => {
+  if (!incoming) return existing;
+  if (existing?.matchReference) {
+    return {
+      ...existing,
+      matchReference: {
+        ...(existing.matchReference || {}),
+        ...incoming,
+      },
+    };
+  }
+  return {
+    ...(existing || {}),
+    ...incoming,
+  };
+};
+
+function mergeTournamentByView(prev: any, next: any, view: TournamentView) {
+  if (!prev || view === "overview" || view === "full") {
+    return next;
+  }
+
+  const merged = {
+    ...prev,
+    ...next,
+    tournamentSettings: {
+      ...(prev.tournamentSettings || {}),
+      ...(next.tournamentSettings || {}),
+    },
+  };
+
+  if (view === "players") {
+    merged.tournamentPlayers = next.tournamentPlayers ?? prev.tournamentPlayers;
+    merged.waitingList = next.waitingList ?? prev.waitingList;
+  }
+  if (view === "boards") {
+    merged.boards = next.boards ?? prev.boards;
+  }
+  if (view === "groups") {
+    merged.groups = next.groups ?? prev.groups;
+    merged.tournamentPlayers = next.tournamentPlayers ?? prev.tournamentPlayers;
+  }
+  if (view === "bracket") {
+    merged.knockout = next.knockout ?? prev.knockout;
+    merged.tournamentPlayers = next.tournamentPlayers ?? prev.tournamentPlayers;
+  }
+
+  return merged;
+}
 
 function findUserInPlayers(
   list: any[],
@@ -103,6 +160,10 @@ export function useTournamentPageData(
   const [userPlayerId, setUserPlayerId] = useState<string | null>(null);
   const [players, setPlayers] = useState<any[]>([]);
   const [hasFullData, setHasFullData] = useState(false);
+  const currentViewRef = useRef<TournamentView>("overview");
+  const [lastLoadedSection, setLastLoadedSection] = useState<
+    "overview" | "players" | "boards" | "groups" | "bracket"
+  >("overview");
 
   const setters = {
     setUserClubRole,
@@ -110,8 +171,18 @@ export function useTournamentPageData(
     setUserPlayerId,
   };
 
-  const fetchAll = useCallback(async (detailLevel: "overview" | "full" = "overview") => {
+  const fetchAll = useCallback(async (
+    view: TournamentView = "overview"
+  ) => {
     if (!code || typeof code !== "string") return;
+    currentViewRef.current = view;
+    const section =
+      view === "players" ||
+      view === "boards" ||
+      view === "groups" ||
+      view === "bracket"
+        ? view
+        : "overview";
     setLoading(true);
     setError("");
 
@@ -119,15 +190,20 @@ export function useTournamentPageData(
       const data = await getTournamentPageDataAction({
         code,
         includeViewer: Boolean(user?._id),
-        detailLevel,
+        view,
       });
       const payload = extractTournamentPayload(data);
       if (!payload) {
         throw new Error("Tournament not found");
       }
-      setTournament(payload.tournament);
-      setPlayers(payload.players);
-      setHasFullData(detailLevel === "full");
+      setTournament((prev: any) => mergeTournamentByView(prev, payload.tournament, view));
+      setPlayers((prev: any[]) =>
+        payload.players.length > 0 || view === "overview" || view === "full"
+          ? payload.players
+          : prev
+      );
+      setHasFullData(view === "full");
+      setLastLoadedSection(section);
 
       applyTournamentData(
         { ...payload.tournament, viewer: payload.viewer },
@@ -143,24 +219,36 @@ export function useTournamentPageData(
     }
   }, [code, user?._id, errorMessage]);
 
-  const ensureFullData = useCallback(async () => {
-    if (!code || typeof code !== "string") return;
-    if (hasFullData) return;
-    await fetchAll("full");
-  }, [code, fetchAll, hasFullData]);
-
-  const silentRefresh = useCallback(async () => {
-    if (!code || typeof code !== "string") return;
+  const resyncLiteData = useCallback(async (options?: { bypassCache?: boolean }) => {
+    if (!code || typeof code !== "string") return false;
 
     try {
-      const data = await getTournamentPageLiteAction({ code, bypassCache: true });
+      const data = await getTournamentPageLiteAction({
+        code,
+        bypassCache: options?.bypassCache ?? false,
+      });
       const tournamentLite = (data as { tournament?: any })?.tournament;
       if (!tournamentLite) {
-        return;
+        return false;
       }
 
       setTournament((prev: any) => {
         if (!prev) return tournamentLite;
+        const previousBoards = Array.isArray(prev.boards) ? prev.boards : [];
+        const liteBoards = Array.isArray(tournamentLite.boards) ? tournamentLite.boards : [];
+        const mergedBoards = previousBoards.map((board: any) => {
+          const liteBoard = liteBoards.find(
+            (candidate: any) => Number(candidate?.boardNumber) === Number(board?.boardNumber),
+          );
+          if (!liteBoard) return board;
+          // Keep match references from full/tab payloads while accepting fresh status from lite payload.
+          return {
+            ...board,
+            ...liteBoard,
+            currentMatch: board?.currentMatch,
+            nextMatch: board?.nextMatch,
+          };
+        });
         return {
           ...prev,
           ...tournamentLite,
@@ -168,47 +256,61 @@ export function useTournamentPageData(
             ...(prev.tournamentSettings || {}),
             ...(tournamentLite.tournamentSettings || {}),
           },
-          boards: Array.isArray(tournamentLite.boards) ? tournamentLite.boards : prev.boards,
+          boards: mergedBoards.length > 0 ? mergedBoards : previousBoards,
         };
       });
+      return true;
     } catch (err) {
       console.error("Silent refresh failed", err);
+      return false;
     }
   }, [code]);
 
-  const resyncFullData = useCallback(async () => {
+  const resyncFullData = useCallback(async (options?: { bypassCache?: boolean }) => {
     if (!code || typeof code !== "string") return;
     try {
       if (SSE_DEBUG) {
         console.log("[SSE][TournamentPageData] resyncFullData:start", { code });
       }
+      const view = currentViewRef.current;
+      const section =
+        view === "players" ||
+        view === "boards" ||
+        view === "groups" ||
+        view === "bracket"
+          ? view
+          : lastLoadedSection;
+      if (perfFlags.realtimeLiteFirst) {
+        await resyncLiteData({ bypassCache: true });
+      }
       const data = await getTournamentPageDataAction({
         code,
         includeViewer: Boolean(user?._id),
-        detailLevel: "full",
-        bypassCache: true,
+        view,
+        bypassCache: options?.bypassCache ?? true,
       });
-      const tournamentData = (data as { tournament?: any })?.tournament;
-      if (!tournamentData) return;
-      setTournament(tournamentData);
-      setPlayers(
-        Array.isArray(tournamentData.tournamentPlayers)
-          ? tournamentData.tournamentPlayers
-          : []
-      );
+      const payload = extractTournamentPayload(data);
+      if (!payload) return;
+      setTournament(payload.tournament);
+      setPlayers(payload.players);
       setHasFullData(true);
+      setLastLoadedSection(section);
       if (SSE_DEBUG) {
         console.log("[SSE][TournamentPageData] resyncFullData:done", {
           code,
-          hasKnockout: Array.isArray(tournamentData.knockout),
-          groups: Array.isArray(tournamentData.groups) ? tournamentData.groups.length : 0,
-          boards: Array.isArray(tournamentData.boards) ? tournamentData.boards.length : 0,
+          hasKnockout: Array.isArray(payload.tournament.knockout),
+          groups: Array.isArray(payload.tournament.groups) ? payload.tournament.groups.length : 0,
+          boards: Array.isArray(payload.tournament.boards) ? payload.tournament.boards.length : 0,
         });
       }
     } catch (err) {
       console.error("Full resync failed", err);
     }
-  }, [code, user?._id]);
+  }, [code, user?._id, lastLoadedSection, resyncLiteData]);
+
+  const silentRefresh = useCallback(async () => {
+    await resyncLiteData();
+  }, [resyncLiteData]);
 
   const applySseDelta = useCallback((delta: SseDeltaPayload<any>) => {
     if (!delta || delta.kind !== "delta" || delta.schemaVersion !== 1) {
@@ -217,7 +319,8 @@ export function useTournamentPageData(
 
     const canApply =
       (delta.scope === "board" && Boolean(delta.data?.board)) ||
-      (delta.scope === "match" && Boolean(delta.data?.match?._id)) ||
+      (delta.scope === "match" &&
+        (Boolean(delta.data?.match?._id) || Boolean(delta.data?.matchId))) ||
       (delta.scope === "tournament" &&
         delta.action === "updated" &&
         Boolean(delta.data?.tournamentPatch));
@@ -248,8 +351,9 @@ export function useTournamentPageData(
 
       if (delta.scope === "match") {
         const incomingMatch = delta.data?.match;
-        if (!incomingMatch?._id) return next;
-        const incomingId = String(incomingMatch._id);
+        const incomingIdRaw = incomingMatch?._id ?? delta.data?.matchId;
+        if (!incomingIdRaw) return next;
+        const incomingId = String(incomingIdRaw);
         let matchFound = false;
         let boardFound = false;
 
@@ -268,10 +372,10 @@ export function useTournamentPageData(
           next.groups = next.groups.map((group: any) => {
             if (!Array.isArray(group?.matches)) return group;
             const matches = group.matches.map((match: any) =>
-              String(match?._id) === incomingId
+              String(match?._id ?? match?.matchReference?._id) === incomingId
                 ? (() => {
                     matchFound = true;
-                    return { ...match, ...incomingMatch };
+                    return mergeIntoMatchReference(match, incomingMatch);
                   })()
                 : match
             );
@@ -280,13 +384,11 @@ export function useTournamentPageData(
         }
 
         if (Array.isArray(next.boards)) {
-          const boardNumber = delta.data?.boardNumber;
-          if (typeof boardNumber === "number") {
-            const incomingMatchId = incomingMatch?._id
-              ? String(incomingMatch._id)
-              : undefined;
+          const boardNumber = toNumericBoardNumber(delta.data?.boardNumber ?? incomingMatch?.boardReference);
+          if (boardNumber !== null) {
+            const incomingMatchId = incomingId;
             next.boards = next.boards.map((board: any) => {
-              if (board?.boardNumber !== boardNumber) return board;
+              if (toNumericBoardNumber(board?.boardNumber) !== boardNumber) return board;
               boardFound = true;
               return {
                 ...board,
@@ -298,21 +400,22 @@ export function useTournamentPageData(
                       : board.status,
                 currentMatch:
                   delta.action === "started"
-                    ? incomingMatchId || board.currentMatch
+                    ? (incomingMatch || board.currentMatch || incomingMatchId)
                     : delta.action === "finished"
                       ? undefined
                       : board.currentMatch,
                 nextMatch:
-                  delta.action === "finished" && delta.data?.nextMatch
-                    ? delta.data.nextMatch
+                  delta.action === "finished"
+                    ? (delta.data?.nextMatch ?? board.nextMatch)
+                    : delta.action === "started"
+                      ? (delta.data?.nextMatch ?? board.nextMatch)
                     : board.nextMatch,
               };
             });
           }
         }
         applied = matchFound || boardFound;
-        if (delta.action === "finished") {
-          // Board nextMatch/queue transitions require canonical backend snapshot.
+        if (delta.action === "finished" && !applied) {
           forceResync = true;
         }
       }
@@ -348,7 +451,6 @@ export function useTournamentPageData(
     if (payload) {
       setTournament(payload.tournament);
       setPlayers(payload.players);
-      setHasFullData(false);
       applyTournamentData(
         { ...payload.tournament, viewer: payload.viewer },
         user?._id,
@@ -370,8 +472,9 @@ export function useTournamentPageData(
     userPlayerId,
     hasFullData,
     fetchAll,
-    ensureFullData,
+    lastLoadedSection,
     silentRefresh,
+    resyncLiteData,
     applySseDelta,
     resyncFullData,
   };

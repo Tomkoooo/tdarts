@@ -36,6 +36,7 @@ import {
   SlideMilestoneFlash,
   SlideRankingsCombined,
 } from "@/components/tournament/tv/slides";
+import { perfFlags } from "@/features/performance/lib/perfFlags";
 
 const LIVE_TOURNAMENT_STATUSES = new Set(['group-stage', 'knockout', 'ongoing', 'in_progress']);
 
@@ -47,6 +48,7 @@ export default function TVModePage() {
   const [tournament, setTournament] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const sseRefreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const resyncInFlightRef = useRef(false)
   const [qrExpanded, setQrExpanded] = useState(true)
   const [qrPosition, setQrPosition] = useState<{ x: number; y: number } | null>(null)
   const [qrSize, setQrSize] = useState(160)
@@ -96,7 +98,7 @@ export default function TVModePage() {
       const res = await getTournamentPageDataAction({
         code: String(code),
         includeViewer: false,
-        detailLevel: "full",
+        view: "full",
       })
       const nextTournament =
         res && typeof res === "object" && "tournament" in res
@@ -121,11 +123,13 @@ export default function TVModePage() {
   // Silent refresh for live updates
   const silentRefresh = useCallback(async () => {
     if (!code) return
+    if (resyncInFlightRef.current) return
+    resyncInFlightRef.current = true
     try {
       const res = await getTournamentPageDataAction({
         code: String(code),
         includeViewer: false,
-        detailLevel: "full",
+        view: perfFlags.realtimeLiteFirst ? "boards" : "full",
         bypassCache: true,
       })
       const nextTournament =
@@ -147,6 +151,8 @@ export default function TVModePage() {
       tournamentRef.current = nextTournament;
     } catch (error) {
       console.error('Silent refresh error:', error)
+    } finally {
+      resyncInFlightRef.current = false
     }
   }, [code, urgentQueue, scheduler])
 
@@ -244,7 +250,7 @@ export default function TVModePage() {
     }
     sseRefreshTimerRef.current = setTimeout(() => {
       void silentRefreshRef.current()
-    }, 400)
+    }, 400 + (perfFlags.realtimeLiteFirst ? Math.floor(Math.random() * 400) : 0))
   }, [lastEvent, tournamentCode, applyTvDelta])
 
   useEffect(() => {

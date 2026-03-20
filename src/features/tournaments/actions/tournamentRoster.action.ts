@@ -45,6 +45,12 @@ const registerTeamSchema = z.object({
   isModeratorMode: z.boolean().optional(),
 });
 
+function revalidateTournamentRosterTags(code: string) {
+  revalidateTag(`tournament:${code}`, 'max');
+  revalidateTag(`tournament:stable:${code}`, 'max');
+  revalidateTag(`tournament:volatile:${code}`, 'max');
+}
+
 export async function addTournamentPlayerClientAction(
   input: z.infer<typeof playerPayloadSchema>
 ) {
@@ -79,7 +85,7 @@ export async function addTournamentPlayerClientAction(
         throw new Error('Player resolution failed');
       }
       await TournamentService.addTournamentPlayer(parsed.code, targetPlayerId);
-      revalidateTag(`tournament:${parsed.code}`, 'max');
+      revalidateTournamentRosterTags(parsed.code);
       revalidateTag('home:tournaments', 'max');
       return serializeForClient({ success: true, playerId: targetPlayerId });
     },
@@ -276,6 +282,7 @@ export async function registerTeamForTournamentClientAction(input: {
       }
 
       await TournamentService.addTournamentPlayer(parsed.code, teamPlayer._id.toString());
+      revalidateTournamentRosterTags(parsed.code);
       return {
         success: true,
         playerId: teamPlayer._id.toString(),
@@ -303,6 +310,7 @@ export async function removeTournamentPlayerClientAction(input: {
         .object({ code: z.string().min(1), playerId: z.string().min(1) })
         .parse(payload);
       await TournamentService.removeTournamentPlayer(parsed.code, parsed.playerId);
+      revalidateTournamentRosterTags(parsed.code);
       return { success: true };
     },
     {
@@ -339,6 +347,7 @@ export async function updateTournamentPlayerStatusClientAction(input: {
         parsed.playerId,
         parsed.status
       );
+      revalidateTournamentRosterTags(parsed.code);
       return { success: true };
     },
     {
@@ -379,6 +388,7 @@ export async function addToWaitingListClientAction(input: {
           name: parsed.name,
         }
       );
+      revalidateTournamentRosterTags(parsed.code);
       return serializeForClient({ success: true, ...result });
     },
     {
@@ -407,6 +417,7 @@ export async function removeFromWaitingListClientAction(input: {
         authResult.data.userId,
         parsed.playerId
       );
+      revalidateTournamentRosterTags(parsed.code);
       return { success: true };
     },
     {
@@ -432,6 +443,7 @@ export async function promoteFromWaitingListClientAction(input: {
         .object({ code: z.string().min(1), playerId: z.string().min(1) })
         .parse(payload);
       await TournamentService.promoteFromWaitingList(parsed.code, parsed.playerId);
+      revalidateTournamentRosterTags(parsed.code);
       return { success: true };
     },
     {

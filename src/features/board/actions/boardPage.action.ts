@@ -214,6 +214,8 @@ export async function startBoardMatchAction(input: {
       const canonicalTournamentId = String((match as any)?.tournamentCode || parsed.tournamentId);
       revalidateTag(`tournament:${parsed.tournamentId}`, 'max');
       revalidateTag(`tournament:${canonicalTournamentId}`, 'max');
+      revalidateTag(`tournament:volatile:${parsed.tournamentId}`, 'max');
+      revalidateTag(`tournament:volatile:${canonicalTournamentId}`, 'max');
       revalidateTag('home:tournaments', 'max');
       return serializeForClient({ success: true, match });
     },

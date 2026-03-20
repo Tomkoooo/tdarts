@@ -6,6 +6,7 @@ import type { SearchFilters } from '@/database/services/search.service';
 import { withTelemetry } from '@/shared/lib/withTelemetry';
 import { getUserTimeZone } from '@/lib/date-time';
 import { serializeForClient } from '@/shared/lib/serializeForClient';
+import { perfFlags } from '@/features/performance/lib/perfFlags';
 
 export type SearchActionInput = {
   query: string;
@@ -42,7 +43,7 @@ async function executeSearch(params: SearchActionInput) {
   let groupedResults: SearchActionResult['groupedResults'];
 
   const countsPromise =
-    isFirstPage && includeCounts
+    isFirstPage && includeCounts && !(tab === 'global' && perfFlags.searchFanoutV2)
       ? SearchService.getTabCounts(query, searchFilters)
       : Promise.resolve(undefined);
   const metadataPromise =
@@ -60,6 +61,9 @@ async function executeSearch(params: SearchActionInput) {
     ];
     total = globalRes.total;
     groupedResults = globalRes.results;
+    if (includeCounts && perfFlags.searchFanoutV2) {
+      counts = globalRes.countsByType;
+    }
   } else if (tab === 'tournaments') {
     const tRes = await SearchService.searchTournaments(query, searchFilters);
     results = tRes.results.map((r: any) => ({ ...r, _resultType: 'tournament' }));
@@ -86,7 +90,7 @@ async function executeSearch(params: SearchActionInput) {
     countsPromise,
     metadataPromise,
   ]);
-  counts = resolvedCounts;
+  counts = counts || resolvedCounts;
   metadata = resolvedMetadata;
 
   const page = searchFilters.page || 1;

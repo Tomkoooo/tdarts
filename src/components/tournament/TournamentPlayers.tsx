@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useMemo, useState } from "react"
+import dynamic from "next/dynamic"
 import Link from "next/link"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { useTranslations } from "next-intl"
@@ -20,11 +21,6 @@ import {
 import { toast } from "react-hot-toast"
 
 import PlayerSearch from "@/components/club/PlayerSearch"
-import PlayerNotificationModal from "@/components/tournament/PlayerNotificationModal"
-import PlayerMatchesModal from "@/components/tournament/PlayerMatchesModal"
-import LegsViewModal from "@/components/tournament/LegsViewModal"
-import TeamRegistrationModal from "@/components/tournament/TeamRegistrationModal"
-import HeadToHeadModal from "@/components/tournament/HeadToHeadModal"
 import { useUserContext } from "@/hooks/useUser"
 import {
   Card,
@@ -54,6 +50,22 @@ import {
   unsubscribeFromTournamentNotificationsClientAction,
   updateTournamentPlayerStatusClientAction,
 } from "@/features/tournaments/actions/tournamentRoster.action"
+
+const PlayerNotificationModal = dynamic(
+  () => import("@/components/tournament/PlayerNotificationModal")
+)
+const PlayerMatchesModal = dynamic(
+  () => import("@/components/tournament/PlayerMatchesModal")
+)
+const LegsViewModal = dynamic(
+  () => import("@/components/tournament/LegsViewModal")
+)
+const TeamRegistrationModal = dynamic(
+  () => import("@/components/tournament/TeamRegistrationModal")
+)
+const HeadToHeadModal = dynamic(
+  () => import("@/components/tournament/HeadToHeadModal")
+)
 
 interface TournamentPlayersProps {
   tournament: any
@@ -619,6 +631,18 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
   }
 
   const canManagePlayers = userClubRole === 'admin' || userClubRole === 'moderator'
+  const displayedPlayers = useMemo(() => {
+    return localPlayers
+      .map((player, index) => ({ player, index }))
+      .sort((a, b) => {
+        const aId = a.player.playerReference?._id?.toString() || a.player._id?.toString()
+        const bId = b.player.playerReference?._id?.toString() || b.player._id?.toString()
+        const currentUserId = localUserPlayerId?.toString()
+        if (aId === currentUserId) return -1
+        if (bId === currentUserId) return 1
+        return a.index - b.index
+      })
+  }, [localPlayers, localUserPlayerId])
 
   const renderPlayerActions = (player: any) => {
     const playerId = player.playerReference?._id
@@ -876,16 +900,7 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/20">
-                  {localPlayers
-                    .map((player, index) => ({ player, index }))
-                    .sort((a, b) => {
-                      const aId = a.player.playerReference?._id?.toString() || a.player._id?.toString()
-                      const bId = b.player.playerReference?._id?.toString() || b.player._id?.toString()
-                      const currentUserId = localUserPlayerId?.toString()
-                      if (aId === currentUserId) return -1
-                      if (bId === currentUserId) return 1
-                      return a.index - b.index
-                    })
+                  {displayedPlayers
                     .map(({ player }, i) => {
                       const name = player.playerReference?.name || player.name || player._id
                       const playerId = player.playerReference?._id?.toString() || player.playerReference?.toString() || player._id?.toString()
@@ -894,10 +909,11 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
                       const isCurrentUser = localUserPlayerId && (player.playerReference?._id?.toString() === localUserPlayerId.toString() || player._id?.toString() === localUserPlayerId.toString())
                       const rowNumber = i + 1;
                       const honorsList = ((player.playerReference?.honors || player.honors || []) as any[])
+                      const rowKey = playerId ? `player-${playerId}` : `fallback-${name}-${i}`;
 
                       return (
                         <tr
-                          key={player._id}
+                          key={rowKey}
                           className={cn(
                             "hover:bg-muted/10 transition-colors group",
                             isCurrentUser && "bg-primary/5"
@@ -1193,12 +1209,14 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
         </Alert>
       )}
 
-      <PlayerNotificationModal
-        isOpen={notificationModal.isOpen}
-        onClose={() => setNotificationModal({ isOpen: false, player: null })}
-        player={notificationModal.player}
-        tournamentName={tournament?.tournamentSettings?.name || tournament?.name || "Torna"}
-      />
+      {notificationModal.isOpen ? (
+        <PlayerNotificationModal
+          isOpen={notificationModal.isOpen}
+          onClose={() => setNotificationModal({ isOpen: false, player: null })}
+          player={notificationModal.player}
+          tournamentName={tournament?.tournamentSettings?.name || tournament?.name || "Torna"}
+        />
+      ) : null}
 
       {selectedPlayerForMatches && (
         <PlayerMatchesModal
@@ -1241,12 +1259,14 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
         />
       )}
 
-      <LegsViewModal
-        isOpen={legsModal.isOpen}
-        onClose={() => setLegsModal({ isOpen: false, match: null })}
-        match={legsModal.match}
-        onBackToMatches={() => setLegsModal({ isOpen: false, match: null })}
-      />
+      {legsModal.isOpen ? (
+        <LegsViewModal
+          isOpen={legsModal.isOpen}
+          onClose={() => setLegsModal({ isOpen: false, match: null })}
+          match={legsModal.match}
+          onBackToMatches={() => setLegsModal({ isOpen: false, match: null })}
+        />
+      ) : null}
 
       <Dialog
         open={removeConfirm.isOpen}
@@ -1280,18 +1300,20 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
         </DialogContent>
       </Dialog>
 
-      <TeamRegistrationModal
-        isOpen={showTeamRegistrationModal}
-        onClose={() => setShowTeamRegistrationModal(false)}
-        tournamentCode={code}
-        tournamentName={tournament?.tournamentSettings?.name || tournament?.name || "Torna"}
-        clubId={tournament?.clubId?._id || tournament?.clubId}
-        onSuccess={() => {
-          setShowTeamRegistrationModal(false)
-          if (onRefresh) onRefresh()
-        }}
-        isModeratorMode={isModeratorRegistration}
-      />
+      {showTeamRegistrationModal ? (
+        <TeamRegistrationModal
+          isOpen={showTeamRegistrationModal}
+          onClose={() => setShowTeamRegistrationModal(false)}
+          tournamentCode={code}
+          tournamentName={tournament?.tournamentSettings?.name || tournament?.name || "Torna"}
+          clubId={tournament?.clubId?._id || tournament?.clubId}
+          onSuccess={() => {
+            setShowTeamRegistrationModal(false)
+            if (onRefresh) onRefresh()
+          }}
+          isModeratorMode={isModeratorRegistration}
+        />
+      ) : null}
     </div>
   )
 }

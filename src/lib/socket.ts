@@ -1,7 +1,7 @@
 "use client";
 
 import { io } from "socket.io-client";
-import axios from "axios";
+import { getSocketAuthToken, invalidateSocketAuthToken } from "@/lib/socketAuthToken";
 
 // Socket inicializálása a különálló socket serverhez
 const socketServerUrl = process.env.NEXT_PUBLIC_SOCKET_SERVER_URL || 'https://socket.tdarts.hu';
@@ -14,30 +14,6 @@ if (!socketServerUrl) {
 let socketToken: string | null = null;
 let authFailed = false; // Flag to prevent retry on auth failures
 
-// Function to get authentication token
-const getAuthToken = async (): Promise<string> => {
-  try {
-    const response = await axios.post('/api/socket/auth');
-    
-    if (response.status === 503) {
-      console.warn('Socket authentication not configured. Socket features will be disabled.');
-      authFailed = true;
-      throw new Error('Socket authentication not configured');
-    }
-    
-    return response.data.token;
-  } catch (error: any) {
-    if (error.response?.status === 500 || error.response?.status === 401) {
-      console.warn('User not authenticated. Socket features will be disabled.');
-      authFailed = true;
-      throw new Error('User not authenticated');
-    }
-    console.error('Failed to get socket auth token:', error);
-    authFailed = true;
-    throw new Error('Authentication failed');
-  }
-};
-
 // Initialize socket with authentication
 export const initializeSocket = async () => {
   // Don't try to initialize if auth has already failed
@@ -47,7 +23,7 @@ export const initializeSocket = async () => {
   }
   
   try {
-    const token = await getAuthToken();
+    const token = await getSocketAuthToken();
     socketToken = token;
     
     // Configure socket with auth
@@ -122,9 +98,17 @@ socket.on('connect_error', (error) => {
       errorMessage.includes('Unauthorized') ||
       errorMessage.includes('origin') ||
       errorMessage.includes('Authentication')) {
-    console.error('🔌 CORS/Auth error detected, disabling socket permanently');
-    authFailed = true;
-    socket.disconnect();
+    invalidateSocketAuthToken();
+    void getSocketAuthToken({ forceRefresh: true })
+      .then((token) => {
+        socketToken = token;
+        socket.auth = { token };
+      })
+      .catch(() => {
+        console.error('🔌 CORS/Auth error detected, disabling socket permanently');
+        authFailed = true;
+        socket.disconnect();
+      });
     return;
   }
   
@@ -136,12 +120,16 @@ socket.on('connect_error', (error) => {
   }
 });
 
-socket.io.on("reconnect_attempt", (attempt) => {
+socket.io.on("reconnect_attempt", async (attempt) => {
   console.log(`🔌 Socket reconnection attempt ${attempt}`);
-  // Refresh token on reconnection attempt if needed
-  // Note: socket.auth is used in handshake, so updating it here might help next attempt
-  if (socketToken) {
+  try {
+    const token = await getSocketAuthToken();
+    socketToken = token;
     socket.auth = { token: socketToken };
+  } catch {
+    if (socketToken) {
+      socket.auth = { token: socketToken };
+    }
   }
 });
 

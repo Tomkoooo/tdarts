@@ -6,7 +6,7 @@ import { TournamentModel } from "../models/tournament.model";
 import { PlayerModel } from "../models/player.model";
 import { AuthorizationService } from "./authorization.service";
 import { connectMongo } from "@/lib/mongoose";
-import { eventEmitter, EVENTS, createSseDeltaPayload } from "@/lib/events";
+import { eventsBus, EVENTS, createSseDeltaPayload } from "@/lib/events";
 
 export class MatchService {
     private static calculateFirstNineForLeg(throws: any[] | undefined) {
@@ -144,6 +144,8 @@ export class MatchService {
         match.status = 'ongoing';
         await match.save();
         
+        let nextMatchForSse: any = null;
+
         // Tábla állapot frissítése
         if (match.type === 'knockout') {
             // Use the new knockout board status update method
@@ -159,12 +161,17 @@ export class MatchService {
                 tournamentRef: match.tournamentRef,
                 status: 'pending',
                 _id: { $ne: matchId } // Ne a jelenlegi meccset adja vissza
-            });
+            })
+                .populate('player1.playerId', 'name profilePicture')
+                .populate('player2.playerId', 'name profilePicture')
+                .populate('scorer', 'name profilePicture')
+                .lean();
 
             // Frissítjük a board mezőit
             tournament.boards[boardIndex].status = 'playing';
             tournament.boards[boardIndex].currentMatch = matchId as any;
             tournament.boards[boardIndex].nextMatch = nextMatch?._id as any || undefined;
+            nextMatchForSse = nextMatch || null;
 
             // Mentsük el a tournament dokumentumot
             await tournament.save();
@@ -189,7 +196,7 @@ export class MatchService {
         };
 
         // Emit match update event
-        eventEmitter.emit(
+        eventsBus.publish(
             EVENTS.MATCH_UPDATE,
             createSseDeltaPayload({
                 tournamentId: canonicalTournamentId,
@@ -200,6 +207,7 @@ export class MatchService {
                     matchId,
                     boardNumber: result.boardReference,
                     match: result,
+                    nextMatch: nextMatchForSse,
                 },
             })
         );
@@ -420,7 +428,7 @@ export class MatchService {
         // Emit match update event
         const tournament = await TournamentModel.findById(updatedMatch.tournamentRef);
         if (tournament) {
-            eventEmitter.emit(
+            eventsBus.publish(
                 EVENTS.MATCH_UPDATE,
                 createSseDeltaPayload({
                     tournamentId: tournament.tournamentId,
@@ -757,6 +765,8 @@ export class MatchService {
             }
         );
 
+        let nextMatchForSse: any = null;
+
         // Update board status for all matches
         if (match.type === 'knockout') {
             // Use the new knockout board status update method
@@ -774,16 +784,22 @@ export class MatchService {
                     tournamentRef: match.tournamentRef,
                     status: 'pending',
                     _id: { $ne: matchId }
-                });
+                })
+                    .populate('player1.playerId', 'name profilePicture')
+                    .populate('player2.playerId', 'name profilePicture')
+                    .populate('scorer', 'name profilePicture')
+                    .lean();
 
                 if (nextMatch) {
                     tournament.boards[boardIndex].status = 'waiting';
                     tournament.boards[boardIndex].currentMatch = undefined;
                     tournament.boards[boardIndex].nextMatch = nextMatch._id as any;
+                    nextMatchForSse = nextMatch;
                 } else {
                     tournament.boards[boardIndex].status = 'idle';
                     tournament.boards[boardIndex].currentMatch = undefined;
                     tournament.boards[boardIndex].nextMatch = undefined;
+                    nextMatchForSse = null;
                 }
 
                 await tournament.save();
@@ -797,7 +813,7 @@ export class MatchService {
                 await TournamentService.updateGroupStanding(tournament.tournamentId);
                 
                 // Emit group update event
-                eventEmitter.emit(
+                eventsBus.publish(
                     EVENTS.GROUP_UPDATE,
                     createSseDeltaPayload({
                         tournamentId: tournament.tournamentId,
@@ -815,7 +831,7 @@ export class MatchService {
         // Emit match update event
         const tournament = await TournamentModel.findById(match.tournamentRef);
         if (tournament) {
-            eventEmitter.emit(
+            eventsBus.publish(
                 EVENTS.MATCH_UPDATE,
                 createSseDeltaPayload({
                     tournamentId: tournament.tournamentId,
@@ -827,6 +843,7 @@ export class MatchService {
                         boardNumber: match.boardReference,
                         winnerId: match.winnerId ? String(match.winnerId) : null,
                         match: match.toObject(),
+                        nextMatch: nextMatchForSse,
                     },
                 })
             );

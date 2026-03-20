@@ -28,6 +28,63 @@ const LEGACY_DEFAULT_BOARD_NAME_KEYS = new Set([
   "boards.default_board_name",
 ]);
 
+const unwrapMatch = (matchRef: any) => {
+  if (!matchRef) return null;
+  if (matchRef?.matchReference) return matchRef.matchReference;
+  return matchRef;
+};
+
+const matchBelongsToBoard = (matchRef: any, boardNumber: number) =>
+  Number(matchRef?.boardReference) === Number(boardNumber);
+
+const getBoardFallbackCurrentMatch = (tournament: any, boardNumber: number) => {
+  const groups = Array.isArray(tournament?.groups) ? tournament.groups : [];
+  for (const group of groups) {
+    const matches = Array.isArray(group?.matches) ? group.matches : [];
+    const ongoing = matches
+      .map(unwrapMatch)
+      .find((match: any) => match?.status === "ongoing" && matchBelongsToBoard(match, boardNumber));
+    if (ongoing) return ongoing;
+  }
+
+  const knockoutRounds = Array.isArray(tournament?.knockout) ? tournament.knockout : [];
+  for (const round of knockoutRounds) {
+    const matches = Array.isArray(round?.matches) ? round.matches : [];
+    const ongoing = matches
+      .map(unwrapMatch)
+      .find((match: any) => match?.status === "ongoing" && matchBelongsToBoard(match, boardNumber));
+    if (ongoing) return ongoing;
+  }
+
+  return null;
+};
+
+const getBoardFallbackNextMatch = (tournament: any, boardNumber: number) => {
+  const groups = Array.isArray(tournament?.groups) ? tournament.groups : [];
+  for (const group of groups) {
+    const matches = Array.isArray(group?.matches) ? group.matches : [];
+    const pending = matches
+      .map(unwrapMatch)
+      .find((match: any) => match?.status === "pending" && matchBelongsToBoard(match, boardNumber));
+    if (pending) return pending;
+    const ongoing = matches
+      .map(unwrapMatch)
+      .find((match: any) => match?.status === "ongoing" && matchBelongsToBoard(match, boardNumber));
+    if (ongoing) return ongoing;
+  }
+
+  const knockoutRounds = Array.isArray(tournament?.knockout) ? tournament.knockout : [];
+  for (const round of knockoutRounds) {
+    const matches = Array.isArray(round?.matches) ? round.matches : [];
+    const pending = matches
+      .map(unwrapMatch)
+      .find((match: any) => match?.status === "pending" && matchBelongsToBoard(match, boardNumber));
+    if (pending) return pending;
+  }
+
+  return null;
+};
+
 export function TournamentBoardsView({ tournament: initialTournament, userClubRole }: TournamentBoardsViewProps) {
   const tTour = useTranslations("Tournament");
   const boards = initialTournament?.boards || []
@@ -130,8 +187,8 @@ export function TournamentBoardsView({ tournament: initialTournament, userClubRo
         const statusKey = board.status || "idle"
         const statusInfo = statusMap[statusKey] || statusMap.idle
 
-        const currentMatch = board.currentMatch
-        const nextMatch = board.nextMatch
+        const currentMatch = board.currentMatch || getBoardFallbackCurrentMatch(initialTournament, board.boardNumber)
+        const nextMatch = board.nextMatch || getBoardFallbackNextMatch(initialTournament, board.boardNumber)
 
         return (
           <Card

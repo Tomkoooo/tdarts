@@ -39,6 +39,12 @@ function getTournamentClubId(tournament: any): string {
   return String(club);
 }
 
+function revalidateTournamentTags(code: string) {
+  revalidateTag(`tournament:${code}`, 'max');
+  revalidateTag(`tournament:stable:${code}`, 'max');
+  revalidateTag(`tournament:volatile:${code}`, 'max');
+}
+
 async function assertTournamentModerator(code: string, userId: string) {
   const tournament = await TournamentService.getTournament(code);
   if (!tournament) {
@@ -132,7 +138,7 @@ export async function generateGroupsAction(input: { code: string }) {
       const authResult = await authorizeUserResult();
       if (!authResult.ok) return authResult;
       await TournamentService.generateGroups(code, authResult.data.userId);
-      revalidateTag(`tournament:${code}`, 'max');
+      revalidateTournamentTags(code);
       revalidateTag('search', 'max');
       revalidateTag('home:tournaments', 'max');
       return { success: true };
@@ -166,7 +172,7 @@ export async function generateKnockoutAction(input: z.infer<typeof knockoutSchem
           parsed.code,
           authResult.data.userId
         );
-        revalidateTag(`tournament:${parsed.code}`, 'max');
+        revalidateTournamentTags(parsed.code);
         revalidateTag('search', 'max');
         revalidateTag('home:tournaments', 'max');
         revalidateTag('home:leagues', 'max');
@@ -178,7 +184,7 @@ export async function generateKnockoutAction(input: z.infer<typeof knockoutSchem
         playersCount: isKnockoutOnly ? undefined : parsed.selectedPlayers,
         qualifiersPerGroup: isKnockoutOnly ? undefined : parsed.selectedPlayers,
       });
-      revalidateTag(`tournament:${parsed.code}`, 'max');
+      revalidateTournamentTags(parsed.code);
       revalidateTag('search', 'max');
       revalidateTag('home:tournaments', 'max');
       revalidateTag('home:leagues', 'max');
@@ -208,7 +214,7 @@ export async function finishTournamentAction(input: {
         authResult.data.userId,
         payload.thirdPlacePlayerId || undefined
       );
-      revalidateTag(`tournament:${code}`, 'max');
+      revalidateTournamentTags(code);
       revalidateTag('search', 'max');
       revalidateTag('home:tournaments', 'max');
       revalidateTag('home:stats', 'max');
@@ -272,7 +278,7 @@ export async function updateTournamentSettingsAction(input: {
         } as any
       );
 
-      revalidateTag(`tournament:${parsed.code}`, 'max');
+      revalidateTournamentTags(parsed.code);
       revalidateTag('search', 'max');
       revalidateTag('home:tournaments', 'max');
       return serializeForClient({ success: true, tournament: updated });

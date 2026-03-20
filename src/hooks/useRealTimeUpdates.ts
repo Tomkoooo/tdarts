@@ -29,6 +29,7 @@ export const useRealTimeUpdates = (options?: UseRealTimeUpdatesOptions) => {
   const sessionStartedAtRef = useRef<number>(Date.now());
   const maxReconnectDelay = 30000; // Max 30 seconds
   const baseDelay = 1000; // Start with 1 second
+  const reconnectJitterMs = 400;
 
   const clearReconnectTimer = () => {
     if (reconnectTimeoutRef.current) {
@@ -218,9 +219,11 @@ export const useRealTimeUpdates = (options?: UseRealTimeUpdatesOptions) => {
         baseDelay * Math.pow(2, reconnectAttemptsRef.current - 1),
         maxReconnectDelay
       );
+      const jitter = Math.floor(Math.random() * reconnectJitterMs);
+      const reconnectDelay = Math.min(delay + jitter, maxReconnectDelay);
       
       if (SSE_DEBUG) {
-        console.log(`SSE: Reconnecting in ${delay}ms (attempt ${reconnectAttemptsRef.current})...`);
+        console.log(`SSE: Reconnecting in ${reconnectDelay}ms (attempt ${reconnectAttemptsRef.current})...`);
       }
       
       reconnectTimeoutRef.current = setTimeout(() => {
@@ -230,7 +233,7 @@ export const useRealTimeUpdates = (options?: UseRealTimeUpdatesOptions) => {
           return;
         }
         connect();
-      }, delay);
+      }, reconnectDelay);
     };
   };
 

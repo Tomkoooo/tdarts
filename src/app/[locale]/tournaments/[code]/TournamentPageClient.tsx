@@ -1,25 +1,16 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
-import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useParams, useSearchParams } from "next/navigation";
-import {
-  IconDeviceDesktop,
-  IconDeviceTv,
-  IconEdit,
-  IconRefresh,
-  IconScreenShare,
-  IconShare2,
-} from "@tabler/icons-react";
+import { IconEdit, IconRefresh, IconShare2 } from "@tabler/icons-react";
 import { useUserContext } from "@/hooks/useUser";
 import { reopenTournamentAction } from "@/features/tournaments/actions/reopenTournament.action";
 import { useTournamentPageData } from "@/features/tournament/hooks/useTournamentPageData";
 import { useTournamentRealtimeRefresh } from "@/features/tournament/hooks/useTournamentRealtimeRefresh";
 import { TournamentTabsNavigation } from "@/features/tournament/components/TournamentTabsNavigation";
 import TournamentOverview from "@/components/tournament/TournamentOverview";
-import TournamentGroupsGenerator from "@/components/tournament/TournamentStatusChanger";
 import TournamentShareModal from "@/components/tournament/TournamentShareModal";
 import EditTournamentModal from "@/components/tournament/EditTournamentModal";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
@@ -96,7 +87,6 @@ const TournamentPageClient: React.FC<TournamentPageClientProps> = ({
   const searchParams = useSearchParams();
   const { user } = useUserContext();
   const t = useTranslations("Tournament.page");
-  const tTour = useTranslations("Tournament");
 
   const statusMeta = useMemo(
     () =>
@@ -116,9 +106,8 @@ const TournamentPageClient: React.FC<TournamentPageClientProps> = ({
     userClubRole,
     userPlayerStatus,
     userPlayerId,
-    hasFullData,
     fetchAll,
-    ensureFullData,
+    resyncLiteData,
     applySseDelta,
     resyncFullData,
   } = useTournamentPageData(code, user, t("error.retry"), initialData);
@@ -127,6 +116,7 @@ const TournamentPageClient: React.FC<TournamentPageClientProps> = ({
     tournament,
     typeof code === "string" ? code : undefined,
     applySseDelta,
+    resyncLiteData,
     resyncFullData
   );
 
@@ -134,6 +124,17 @@ const TournamentPageClient: React.FC<TournamentPageClientProps> = ({
   const [isReopening, setIsReopening] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("overview");
+  const loadedViewsRef = useRef<Set<string>>(new Set(["overview"]));
+  const getViewForTab = useCallback(
+    (tab: string): "overview" | "players" | "boards" | "groups" | "bracket" =>
+      tab === "players" ||
+      tab === "boards" ||
+      tab === "groups" ||
+      tab === "bracket"
+        ? tab
+        : "overview",
+    []
+  );
 
   useEffect(() => {
     const tabParam = searchParams.get("tab");
@@ -143,20 +144,34 @@ const TournamentPageClient: React.FC<TournamentPageClientProps> = ({
   }, [searchParams, tabs]);
 
   useEffect(() => {
+    loadedViewsRef.current = new Set(["overview"]);
+  }, [code]);
+
+  useEffect(() => {
     if (activeTab === "overview") return;
-    void ensureFullData();
-  }, [activeTab, ensureFullData]);
+    if (loadedViewsRef.current.has(activeTab)) return;
+    const view = getViewForTab(activeTab);
+    void (async () => {
+      try {
+        await fetchAll(view);
+        loadedViewsRef.current.add(activeTab);
+      } catch (error) {
+        console.error("Tab hydration failed:", error);
+      }
+    })();
+  }, [activeTab, fetchAll, getViewForTab]);
 
   const handleRefetch = useCallback(() => {
-    void fetchAll(activeTab === "overview" && !hasFullData ? "overview" : "full");
-  }, [activeTab, fetchAll, hasFullData]);
+    const view = getViewForTab(activeTab);
+    void (async () => {
+      await fetchAll(view);
+      loadedViewsRef.current.add(activeTab);
+    })();
+  }, [activeTab, fetchAll, getViewForTab]);
 
-  const handleTournamentRefresh = useCallback(
-    async (mode: "lite" | "full" = "full") => {
-      await fetchAll(mode === "lite" ? "overview" : "full");
-    },
-    [fetchAll]
-  );
+  const handleTournamentRefresh = useCallback(async () => {
+    await fetchAll(getViewForTab(activeTab));
+  }, [activeTab, fetchAll, getViewForTab]);
 
   const handleReopenTournament = useCallback(async () => {
     if (!user || !user._id || user.isAdmin !== true) {
@@ -203,7 +218,7 @@ const TournamentPageClient: React.FC<TournamentPageClientProps> = ({
   );
   const canManageTournament = userClubRole === "admin" || userClubRole === "moderator";
 
-  if (loading) {
+  if (loading && !tournament) {
     return (
       <div className="min-h-screen bg-background">
         <div className="container mx-auto space-y-6 px-4 py-6 md:py-8">
@@ -291,7 +306,7 @@ const TournamentPageClient: React.FC<TournamentPageClientProps> = ({
               {canManageTournament && tournament?.tournamentSettings?.status !== "finished" ? (
                 <Button variant="outline" size="sm" onClick={() => setEditModalOpen(true)} className="gap-2">
                   <IconEdit className="h-4 w-4" />
-                  {tTour("overview.btn_edit")}
+                  {t("tabs.overview")}
                 </Button>
               ) : null}
               <Button variant="secondary" size="sm" onClick={handleRefetch} className="gap-2">
@@ -302,41 +317,6 @@ const TournamentPageClient: React.FC<TournamentPageClientProps> = ({
                 <IconShare2 className="h-4 w-4" />
                 {t("header.share")}
               </Button>
-              {tournamentIdentifier ? (
-                showLive ? (
-                  <Button
-                    asChild
-                    size="sm"
-                    className="gap-2 bg-emerald-600 text-white hover:bg-emerald-600/90"
-                  >
-                    <Link href={`/tournaments/${tournamentIdentifier}/live`} target="_blank" rel="noopener noreferrer">
-                      <IconScreenShare className="h-4 w-4" />
-                      {tTour("overview.btn_live")}
-                    </Link>
-                  </Button>
-                ) : (
-                  <Button
-                    size="sm"
-                    disabled
-                    className="gap-2 bg-emerald-600/65 text-white opacity-70"
-                  >
-                    <IconScreenShare className="h-4 w-4" />
-                    {tTour("overview.btn_live")}
-                  </Button>
-                )
-              ) : null}
-              {tournamentIdentifier ? (
-                <Button
-                  asChild
-                  size="sm"
-                  className="gap-2 bg-sky-600 text-white hover:bg-sky-600/90"
-                >
-                  <Link href={`/tournaments/${tournamentIdentifier}/tv`} target="_blank" rel="noopener noreferrer">
-                    <IconDeviceTv className="h-4 w-4" />
-                    {t("header.tv_view")}
-                  </Link>
-                </Button>
-              ) : null}
             </div>
           </div>
           <div className="mt-4 grid grid-cols-1 gap-2.5 sm:grid-cols-3">
@@ -363,14 +343,6 @@ const TournamentPageClient: React.FC<TournamentPageClientProps> = ({
               liveEnabled={showLive}
             />
 
-            {activeTab !== "overview" ? (
-              <div className="flex items-center">
-                <Button variant="ghost" size="sm" onClick={() => setActiveTab("overview")} className="px-2">
-                  ← {t("tabs.overview")}
-                </Button>
-              </div>
-            ) : null}
-
             <TabsContent value="overview" className="mt-0 space-y-4">
               <TournamentOverview
                 tournament={tournament}
@@ -393,146 +365,40 @@ const TournamentPageClient: React.FC<TournamentPageClientProps> = ({
             </TabsContent>
 
             <TabsContent value="boards" className="mt-0 space-y-4 rounded-2xl border border-border/60 bg-card/55 p-3 backdrop-blur-lg md:p-4">
-              <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border/60 bg-card/70 p-2.5">
-                <Button variant="secondary" size="sm" onClick={handleRefetch} className="gap-2">
-                  <IconRefresh className="h-4 w-4" />
-                  {t("header.refresh")}
-                </Button>
-                {tournamentIdentifier ? (
-                  <Button asChild size="sm" className="gap-2">
-                    <Link href={`/board/${tournamentIdentifier}`} target="_blank" rel="noopener noreferrer">
-                      <IconDeviceDesktop className="h-4 w-4" />
-                      {t("header.boards_writer")}
-                    </Link>
-                  </Button>
-                ) : null}
-                {showLive && tournamentIdentifier ? (
-                  <Button asChild variant="outline" size="sm" className="gap-2">
-                    <Link href={`/tournaments/${tournamentIdentifier}/live`} target="_blank" rel="noopener noreferrer">
-                      <IconScreenShare className="h-4 w-4" />
-                      {tTour("overview.btn_live")}
-                    </Link>
-                  </Button>
-                ) : null}
-                {tournamentIdentifier ? (
-                  <Button asChild variant="outline" size="sm" className="gap-2">
-                    <Link href={`/tournaments/${tournamentIdentifier}/tv`} target="_blank" rel="noopener noreferrer">
-                      <IconDeviceTv className="h-4 w-4" />
-                      {t("header.tv_view")}
-                    </Link>
-                  </Button>
-                ) : null}
-              </div>
-              <TournamentBoardsView
-                tournament={tournament}
-                userClubRole={userClubRole}
-              />
+              <TournamentBoardsView tournament={tournament} userClubRole={userClubRole} />
             </TabsContent>
 
             {tournament?.tournamentSettings?.format !== "knockout" && (
               <TabsContent value="groups" className="mt-0 space-y-4 rounded-2xl border border-border/60 bg-card/55 p-3 backdrop-blur-lg md:p-4">
-                {canManageTournament ? (
-                  <Card className="bg-card/90 shadow-lg shadow-black/30">
-                    <CardContent className="p-4">
-                      <TournamentGroupsGenerator
-                        tournament={tournament}
-                        userClubRole={userClubRole}
-                        onRefetch={handleRefetch}
-                        section="groups"
-                      />
-                    </CardContent>
-                  </Card>
-                ) : null}
                 <TournamentGroupsView
                   tournament={tournament}
                   userClubRole={userClubRole}
-                  onTournamentRefresh={handleTournamentRefresh}
+                  onDataChanged={handleTournamentRefresh}
                 />
               </TabsContent>
             )}
 
             {tournament?.tournamentSettings?.format !== "group" && (
               <TabsContent value="bracket" className="mt-0 space-y-4 rounded-2xl border border-border/60 bg-card/55 p-3 backdrop-blur-lg md:p-4">
-                {canManageTournament ? (
-                  <Card className="bg-card/90 shadow-lg shadow-black/30">
-                    <CardContent className="p-4">
-                      <TournamentGroupsGenerator
-                        tournament={tournament}
-                        userClubRole={userClubRole}
-                        onRefetch={handleRefetch}
-                        section="knockout"
-                      />
-                    </CardContent>
-                  </Card>
-                ) : null}
                 <TournamentKnockoutBracket
                   tournamentCode={tournament.tournamentId}
                   tournament={tournament}
                   userClubRole={userClubRole}
                   tournamentPlayers={players}
-                  knockoutMethod={
-                    tournament.tournamentSettings?.knockoutMethod
-                  }
+                  knockoutMethod={tournament.tournamentSettings?.knockoutMethod}
                   clubId={tournament.clubId?.toString()}
                 />
               </TabsContent>
             )}
-
-            <TabsContent value="admin" className="mt-0 space-y-6">
-              {userClubRole === "admin" || userClubRole === "moderator" ? (
-                <Card className="bg-card/90 shadow-lg shadow-black/30">
-                  <CardContent className="p-4">
-                    <TournamentGroupsGenerator
-                      tournament={tournament}
-                      userClubRole={userClubRole}
-                      onRefetch={handleRefetch}
-                    />
-                  </CardContent>
-                </Card>
-              ) : (
-                <Card className="bg-card/90 shadow-lg shadow-black/30">
-                  <CardContent className="p-6 text-center text-muted-foreground">
-                    {t("admin.no_permission")}
-                  </CardContent>
-                </Card>
-              )}
-              {user?.isAdmin === true &&
-                tournament?.tournamentSettings?.status === "finished" && (
-                  <Card className="bg-destructive/15 shadow-lg shadow-black/25">
-                    <CardContent className="space-y-4">
-                      <Alert variant="destructive">
-                        <AlertTitle>{t("admin.reopen.title")}</AlertTitle>
-                        <AlertDescription>
-                          {t("admin.reopen.description")}
-                        </AlertDescription>
-                      </Alert>
-                      <Button
-                        variant="destructive"
-                        onClick={handleReopenTournament}
-                        disabled={isReopening}
-                        className="gap-2"
-                      >
-                        {isReopening
-                          ? t("admin.reopen.btn_loading")
-                          : t("admin.reopen.btn")}
-                      </Button>
-                    </CardContent>
-                  </Card>
-                )}
-            </TabsContent>
           </div>
         </Tabs>
       </div>
-
       <TournamentShareModal
         isOpen={tournamentShareModal}
         onClose={() => setTournamentShareModal(false)}
         tournamentCode={tournament.tournamentId}
-        tournamentName={
-          tournament.tournamentSettings?.name || t("tabs.overview")
-        }
+        tournamentName={tournament.tournamentSettings?.name || t("tabs.overview")}
       />
-
       {editModalOpen && user?._id && (
         <EditTournamentModal
           isOpen={editModalOpen}

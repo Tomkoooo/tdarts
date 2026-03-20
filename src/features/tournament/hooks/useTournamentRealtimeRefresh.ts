@@ -12,12 +12,16 @@ const LIVE_TOURNAMENT_STATUSES = new Set([
 ]);
 
 const COALESCE_MS = 400;
+const RESYNC_JITTER_MIN_MS = 100;
+const RESYNC_JITTER_RANGE_MS = 400;
+const FULL_ESCALATION_FAILURE_THRESHOLD = 2;
 const SSE_DEBUG = process.env.NEXT_PUBLIC_SSE_DEBUG === "true";
 
 export function useTournamentRealtimeRefresh(
   tournament: any,
   tournamentId: string | undefined,
   applyDelta: (delta: SseDeltaPayload<any>) => boolean,
+  refreshLite: () => Promise<boolean>,
   resyncFullData: () => Promise<void>
 ) {
   const isRealtimeEnabled = LIVE_TOURNAMENT_STATUSES.has(
@@ -25,9 +29,16 @@ export function useTournamentRealtimeRefresh(
   );
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isVisibleRef = useRef(true);
+  const lastResyncAtRef = useRef(0);
   const resyncInFlightRef = useRef(false);
+  const liteFailureCountRef = useRef(0);
 
-  const scheduleResync = useCallback(() => {
+  const jitteredDelay = useCallback((baseMs: number) => {
+    const jitter = RESYNC_JITTER_MIN_MS + Math.floor(Math.random() * RESYNC_JITTER_RANGE_MS);
+    return baseMs + jitter;
+  }, []);
+
+  const scheduleResync = useCallback((mode: "lite" | "full") => {
     if (!isVisibleRef.current) return;
     if (timerRef.current) {
       clearTimeout(timerRef.current);
@@ -35,31 +46,53 @@ export function useTournamentRealtimeRefresh(
     timerRef.current = setTimeout(() => {
       if (resyncInFlightRef.current) return;
       resyncInFlightRef.current = true;
+      lastResyncAtRef.current = Date.now();
       if (SSE_DEBUG) {
         console.log("[SSE][TournamentRealtime] fallback-resync:start", {
+          mode,
           tournamentId,
         });
       }
-      void resyncFullData().finally(() => {
+      const resyncJob = async () => {
+        if (mode === "lite") {
+          const liteOk = await refreshLite();
+          if (liteOk) {
+            liteFailureCountRef.current = 0;
+            return;
+          }
+          liteFailureCountRef.current += 1;
+          if (liteFailureCountRef.current >= FULL_ESCALATION_FAILURE_THRESHOLD) {
+            scheduleResync("full");
+          }
+          return;
+        }
+        liteFailureCountRef.current = 0;
+        await resyncFullData();
+      };
+      void resyncJob().finally(() => {
         resyncInFlightRef.current = false;
         if (SSE_DEBUG) {
           console.log("[SSE][TournamentRealtime] fallback-resync:done", {
+            mode,
             tournamentId,
           });
         }
       });
-    }, COALESCE_MS);
-  }, [resyncFullData, tournamentId]);
+    }, mode === "full" ? jitteredDelay(COALESCE_MS * 2) : jitteredDelay(COALESCE_MS));
+  }, [jitteredDelay, refreshLite, resyncFullData, tournamentId]);
 
   useEffect(() => {
-    if (typeof document === 'undefined') return;
+    if (typeof document === "undefined") return;
     const handleVisibility = () => {
       isVisibleRef.current = !document.hidden;
+      if (isVisibleRef.current && Date.now() - lastResyncAtRef.current > 10_000) {
+        scheduleResync("lite");
+      }
     };
     handleVisibility();
-    document.addEventListener('visibilitychange', handleVisibility);
-    return () => document.removeEventListener('visibilitychange', handleVisibility);
-  }, []);
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => document.removeEventListener("visibilitychange", handleVisibility);
+  }, [scheduleResync]);
 
   const { lastEvent } = useRealTimeUpdates({
     tournamentId,
@@ -92,7 +125,11 @@ export function useTournamentRealtimeRefresh(
       });
     }
     if (delta.requiresResync || !applied) {
-      scheduleResync();
+      const fallbackMode: "lite" | "full" =
+        delta.requiresResync || delta.scope === "match" || delta.scope === "group"
+          ? "full"
+          : "lite";
+      scheduleResync(fallbackMode);
     }
   }, [lastEvent, scheduleResync, applyDelta, tournamentId, tournament?._id]);
 

@@ -3,7 +3,7 @@ import { AuthService } from '@/database/services/auth.service';
 import { assertEligibilityResult } from '@/shared/lib/guards';
 
 type SocketAuthResult =
-  | { ok: true; token: string }
+  | { ok: true; token: string; expiresAt: number; issuedAt: number; ttlSeconds: number }
   | { ok: false; status: number; error: string };
 
 export async function issueSocketAuthToken(input: { token?: string; clubId?: string }): Promise<SocketAuthResult> {
@@ -44,15 +44,18 @@ export async function issueSocketAuthToken(input: { token?: string; clubId?: str
     }
   }
 
+  const issuedAt = Math.floor(Date.now() / 1000);
+  const ttlSeconds = 60 * 60 * 24;
+  const expiresAt = issuedAt + ttlSeconds;
   const socketToken = jwt.sign(
     {
       userId: userId || 'guest',
       userRole,
-      iat: Math.floor(Date.now() / 1000),
-      exp: Math.floor(Date.now() / 1000) + (60 * 60 * 24),
+      iat: issuedAt,
+      exp: expiresAt,
     },
     jwtSecret
   );
 
-  return { ok: true, token: socketToken };
+  return { ok: true, token: socketToken, expiresAt, issuedAt, ttlSeconds };
 }

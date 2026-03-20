@@ -17,7 +17,7 @@ import { TournamentStatsService } from './tournament-stats.service';
 import { TournamentPlayerService } from './tournament-player.service';
 import { GeocodingService } from './geocoding.service';
 import { ErrorService } from './error.service';
-import { eventEmitter, EVENTS, createSseDeltaPayload } from '@/lib/events';
+import { eventsBus, EVENTS, createSseDeltaPayload } from '@/lib/events';
 
 export class TournamentService {
     private static toThreeDartAverage(score: number, darts: number): number {
@@ -40,47 +40,67 @@ export class TournamentService {
     }
 
     private static async recalculateCurrentSeasonAverages(playerId: string): Promise<{ avg: number; firstNineAvg: number }> {
+        const results = await this.recalculateCurrentSeasonAveragesBulk([playerId]);
+        return results.get(playerId) || { avg: 0, firstNineAvg: 0 };
+    }
+
+    private static async recalculateCurrentSeasonAveragesBulk(
+        playerIds: string[]
+    ): Promise<Map<string, { avg: number; firstNineAvg: number }>> {
+        const result = new Map<string, { avg: number; firstNineAvg: number }>();
+        if (playerIds.length === 0) return result;
+
         const currentYear = new Date().getFullYear();
         const seasonStart = new Date(currentYear, 0, 1);
         const seasonEnd = new Date(currentYear + 1, 0, 1);
+        const playerSet = new Set(playerIds.map((id) => String(id)));
+        const aggregateStats = new Map<string, { totalScore: number; totalDarts: number; firstNineScore: number; firstNineDarts: number }>();
+
+        for (const playerId of playerSet) {
+            aggregateStats.set(playerId, { totalScore: 0, totalDarts: 0, firstNineScore: 0, firstNineDarts: 0 });
+        }
 
         const matches = await MatchModel.find({
             status: 'finished',
             createdAt: { $gte: seasonStart, $lt: seasonEnd },
-            $or: [{ 'player1.playerId': playerId }, { 'player2.playerId': playerId }],
+            $or: [
+                { 'player1.playerId': { $in: Array.from(playerSet) } },
+                { 'player2.playerId': { $in: Array.from(playerSet) } },
+            ],
         }).select('player1 player2 legs');
 
-        let totalScore = 0;
-        let totalDarts = 0;
-        let firstNineScore = 0;
-        let firstNineDarts = 0;
-
         for (const match of matches) {
-            const isP1 = match.player1?.playerId?.toString() === playerId;
-            const isP2 = match.player2?.playerId?.toString() === playerId;
-            if (!isP1 && !isP2) continue;
+            const p1Id = match.player1?.playerId?.toString();
+            const p2Id = match.player2?.playerId?.toString();
 
             for (const leg of match.legs || []) {
-                if (isP1) {
-                    totalScore += Number(leg.player1Score || 0);
-                    totalDarts += this.getLegDarts(leg.player1Throws as any[], (leg as any).player1TotalDarts);
+                if (p1Id && playerSet.has(p1Id)) {
+                    const p1 = aggregateStats.get(p1Id)!;
+                    p1.totalScore += Number(leg.player1Score || 0);
+                    p1.totalDarts += this.getLegDarts(leg.player1Throws as any[], (leg as any).player1TotalDarts);
                     const f9 = this.getFirstNineScoreAndDarts(leg.player1Throws as any[]);
-                    firstNineScore += f9.score;
-                    firstNineDarts += f9.darts;
-                } else if (isP2) {
-                    totalScore += Number(leg.player2Score || 0);
-                    totalDarts += this.getLegDarts(leg.player2Throws as any[], (leg as any).player2TotalDarts);
+                    p1.firstNineScore += f9.score;
+                    p1.firstNineDarts += f9.darts;
+                }
+                if (p2Id && playerSet.has(p2Id)) {
+                    const p2 = aggregateStats.get(p2Id)!;
+                    p2.totalScore += Number(leg.player2Score || 0);
+                    p2.totalDarts += this.getLegDarts(leg.player2Throws as any[], (leg as any).player2TotalDarts);
                     const f9 = this.getFirstNineScoreAndDarts(leg.player2Throws as any[]);
-                    firstNineScore += f9.score;
-                    firstNineDarts += f9.darts;
+                    p2.firstNineScore += f9.score;
+                    p2.firstNineDarts += f9.darts;
                 }
             }
         }
 
-        return {
-            avg: this.toThreeDartAverage(totalScore, totalDarts),
-            firstNineAvg: this.toThreeDartAverage(firstNineScore, firstNineDarts),
-        };
+        for (const [playerId, value] of aggregateStats) {
+            result.set(playerId, {
+                avg: this.toThreeDartAverage(value.totalScore, value.totalDarts),
+                firstNineAvg: this.toThreeDartAverage(value.firstNineScore, value.firstNineDarts),
+            });
+        }
+
+        return result;
     }
     // Initialize indexes when the service is first used
     private static indexesInitialized = false;
@@ -542,9 +562,27 @@ export class TournamentService {
         const filter = this.buildCodeOrIdFilter(tournamentId);
         const tournament = await TournamentModel.findOne(filter)
             .select(
-                'tournamentId clubId boards tournamentSettings.status tournamentSettings.format tournamentSettings.name groups._id groups.board verified paymentStatus isSandbox'
+                'tournamentId clubId boards tournamentSettings.status tournamentSettings.format tournamentSettings.name groups._id groups.board groups.matches knockout.matches.matchReference verified paymentStatus isSandbox'
             )
             .populate('clubId', 'name location contact')
+            .populate({
+                path: 'groups.matches',
+                select: 'boardReference type round player1 player2 scorer legsToWin startingPlayer status winnerId tournamentRef createdAt updatedAt',
+                populate: [
+                    { path: 'player1.playerId', model: 'Player', select: 'name profilePicture' },
+                    { path: 'player2.playerId', model: 'Player', select: 'name profilePicture' },
+                    { path: 'scorer', model: 'Player', select: 'name profilePicture' },
+                ],
+            })
+            .populate({
+                path: 'knockout.matches.matchReference',
+                select: 'boardReference type round player1 player2 scorer legsToWin startingPlayer status winnerId tournamentRef createdAt updatedAt',
+                populate: [
+                    { path: 'player1.playerId', model: 'Player', select: 'name profilePicture' },
+                    { path: 'player2.playerId', model: 'Player', select: 'name profilePicture' },
+                    { path: 'scorer', model: 'Player', select: 'name profilePicture' },
+                ],
+            })
             .populate({
                 path: 'boards.currentMatch',
                 select: 'boardReference type round player1 player2 scorer legsToWin startingPlayer status winnerId tournamentRef createdAt updatedAt',
@@ -1051,7 +1089,7 @@ export class TournamentService {
             await tournament.save();
             
             // Emit SSE event to notify frontend of knockout bracket update
-            eventEmitter.emit(
+            eventsBus.publish(
                 EVENTS.TOURNAMENT_UPDATE,
                 createSseDeltaPayload({
                     tournamentId: tournament.tournamentId,
@@ -5403,8 +5441,16 @@ export class TournamentService {
 
             // Step 9: Update Player collection statistics with MMR (ONLY for non-sandbox)
             if (!tournament.isSandbox) {
+                const playerIds = Array.from(playerStats.keys());
+                const playerDocs = await PlayerModel.find({ _id: { $in: playerIds } });
+                const playersById = new Map<string, any>(
+                    playerDocs.map((playerDoc) => [playerDoc._id.toString(), playerDoc]),
+                );
+                const seasonalAveragesByPlayer = await this.recalculateCurrentSeasonAveragesBulk(playerIds);
+                const mutatedPlayers = new Set<string>();
+
                 for (const [playerId, stats] of playerStats) {
-                    const player = await PlayerModel.findById(playerId);
+                    const player = playersById.get(playerId);
                     if (player) {
                         // 1. Check for existing entry
                         if (!player.tournamentHistory) player.tournamentHistory = [];
@@ -5526,12 +5572,32 @@ export class TournamentService {
                             player.tournamentHistory[existingHistoryIndex] = tournamentHistoryEntry;
                         }
 
-                        const seasonAverages = await this.recalculateCurrentSeasonAverages(playerId);
+                        const seasonAverages = seasonalAveragesByPlayer?.get(playerId)
+                            || { avg: 0, firstNineAvg: 0 };
                         player.stats.avg = seasonAverages.avg;
                         player.stats.firstNineAvg = seasonAverages.firstNineAvg;
-
-                        await player.save();
+                        mutatedPlayers.add(playerId);
                     }
+                }
+
+                if (mutatedPlayers.size > 0) {
+                    await PlayerModel.bulkWrite(
+                        Array.from(mutatedPlayers).map((playerId) => {
+                            const player = playersById.get(playerId);
+                            return {
+                                updateOne: {
+                                    filter: { _id: player._id },
+                                    update: {
+                                        $set: {
+                                            stats: player.stats,
+                                            tournamentHistory: player.tournamentHistory,
+                                        },
+                                    },
+                                },
+                            };
+                        }),
+                        { ordered: false }
+                    );
                 }
             } else {
                 console.log('🛡️ Sandbox tournament: Skipping global Player stats and MMR updates');
@@ -6645,6 +6711,7 @@ export class TournamentService {
 
             // Reset all tournament players' statistics and subtract from Player collection
             if (tournament.tournamentPlayers && tournament.tournamentPlayers.length > 0) {
+                const mutatedPlayers = new Map<string, any>();
                 for (const tournamentPlayer of tournament.tournamentPlayers) {
                     // Reset tournament player statistics
                     tournamentPlayer.matchesWon = 0;
@@ -6731,13 +6798,8 @@ export class TournamentService {
                                         player.stats.highestCheckout = 0;
                                     }
                                     
-                                    // Recalculate current season averages from finished matches (dart-weighted)
-                                    const seasonAverages = await this.recalculateCurrentSeasonAverages(playerId.toString());
-                                    player.stats.avg = seasonAverages.avg;
-                                    player.stats.firstNineAvg = seasonAverages.firstNineAvg;
                                 }
-                                
-                                await player.save();
+                                mutatedPlayers.set(playerId.toString(), player);
                                 console.log(`Subtracted tournament statistics from player ${playerId}, removed from history, adjusted MMR by ${mmrChange}`);
                             }
                         }
@@ -6745,6 +6807,33 @@ export class TournamentService {
                         console.error(`Error updating player ${tournamentPlayer.playerReference?._id || tournamentPlayer.playerReference} statistics:`, playerError);
                         // Continue with other players even if one fails
                     }
+                }
+
+                if (mutatedPlayers.size > 0) {
+                    const seasonalAveragesByPlayer = await this.recalculateCurrentSeasonAveragesBulk(
+                        Array.from(mutatedPlayers.keys()),
+                    );
+
+                    for (const [playerId, player] of mutatedPlayers.entries()) {
+                        const seasonAverages = seasonalAveragesByPlayer.get(playerId) || { avg: 0, firstNineAvg: 0 };
+                        player.stats.avg = seasonAverages.avg;
+                        player.stats.firstNineAvg = seasonAverages.firstNineAvg;
+                    }
+
+                    await PlayerModel.bulkWrite(
+                        Array.from(mutatedPlayers.values()).map((player) => ({
+                            updateOne: {
+                                filter: { _id: player._id },
+                                update: {
+                                    $set: {
+                                        stats: player.stats,
+                                        tournamentHistory: player.tournamentHistory,
+                                    },
+                                },
+                            },
+                        })),
+                        { ordered: false },
+                    );
                 }
             }
 

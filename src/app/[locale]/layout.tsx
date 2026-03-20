@@ -14,24 +14,7 @@ import { routing } from "@/i18n/routing";
 import { Metadata } from "next";
 import { buildLocaleAlternates, getBaseUrl } from "@/lib/seo";
 import { getUserTimeZone } from "@/lib/date-time";
-import path from "node:path";
-import { readFile } from "node:fs/promises";
-
-async function loadLocaleMessages(locale: string) {
-  const fallbackLocale = routing.defaultLocale;
-  const resolvedLocale = routing.locales.includes(locale as any) ? locale : fallbackLocale;
-  if ((globalThis as any).__tdartsLocaleMessages?.[resolvedLocale]) {
-    return (globalThis as any).__tdartsLocaleMessages[resolvedLocale] as Record<string, unknown>;
-  }
-  const filePath = path.join(process.cwd(), "messages", `${resolvedLocale}.json`);
-  const raw = await readFile(filePath, "utf8");
-  const parsed = JSON.parse(raw) as Record<string, unknown>;
-  if (!(globalThis as any).__tdartsLocaleMessages) {
-    (globalThis as any).__tdartsLocaleMessages = {};
-  }
-  (globalThis as any).__tdartsLocaleMessages[resolvedLocale] = parsed;
-  return parsed;
-}
+import { loadLocaleMessages } from "@/i18n/messages";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params;
@@ -146,7 +129,10 @@ export default async function RootLayout({
   }
 
   // Providing all messages to the client
-  const messages = await loadLocaleMessages(locale);
+  const messages = await loadLocaleMessages(locale, {
+    locales: [...routing.locales],
+    defaultLocale: routing.defaultLocale,
+  });
   const userTimeZone = getUserTimeZone();
 
   return (

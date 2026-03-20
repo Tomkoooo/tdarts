@@ -6,6 +6,7 @@ jest.mock('@/database/services/tournament.service', () => ({
   TournamentService: {
     getTournamentSummaryForPublicPage: jest.fn(),
     getTournamentSummaryOverviewForPublicPage: jest.fn(),
+    getTournamentReadModelForSection: jest.fn(),
     getPlayerStatusInTournament: jest.fn(),
     getTournamentLite: jest.fn(),
   },
@@ -49,6 +50,11 @@ describe('getTournamentPageDataAction auth boundary', () => {
       code: 'ABC',
       clubId: 'club-123',
     });
+    (TournamentService.getTournamentReadModelForSection as jest.Mock).mockResolvedValue({
+      _id: 't1',
+      code: 'ABC',
+      clubId: 'club-123',
+    });
   });
 
   it('uses session user id from authorizeUserResult for viewer role lookups', async () => {
@@ -63,6 +69,7 @@ describe('getTournamentPageDataAction auth boundary', () => {
       code: 'ABC',
       includeViewer: true,
       userId: 'attacker-user',
+      view: 'overview',
     } as any);
 
     expect(ClubService.getUserRoleInClub).toHaveBeenCalledWith('session-user', 'club-123');

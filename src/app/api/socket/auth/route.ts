@@ -15,7 +15,13 @@ async function __POST(request: NextRequest) {
       return NextResponse.json({ error: result.error }, { status: result.status });
     }
 
-    return NextResponse.json({ success: true, token: result.token });
+    return NextResponse.json({
+      success: true,
+      token: result.token,
+      expiresAt: result.expiresAt,
+      issuedAt: result.issuedAt,
+      ttlSeconds: result.ttlSeconds,
+    });
 
   } catch (error: any) {
     console.error('Socket auth error:', error);

@@ -133,7 +133,10 @@ matchSchema.index({ tournamentRef: 1, status: 1, 'player1.playerId': 1, createdA
 matchSchema.index({ tournamentRef: 1, status: 1, 'player2.playerId': 1, createdAt: -1 });
 matchSchema.index({ tournamentRef: 1, 'player1.playerId': 1, createdAt: -1 });
 matchSchema.index({ tournamentRef: 1, 'player2.playerId': 1, createdAt: -1 });
+matchSchema.index({ status: 1, 'player1.playerId': 1, createdAt: -1 });
+matchSchema.index({ status: 1, 'player2.playerId': 1, createdAt: -1 });
 matchSchema.index({ 'player1.playerId': 1, 'player2.playerId': 1, status: 1, createdAt: -1 });
 matchSchema.index({ 'player2.playerId': 1, 'player1.playerId': 1, status: 1, createdAt: -1 });
+matchSchema.index({ manualOverride: 1, overrideTimestamp: -1 });
 
 export const MatchModel = mongoose.models.Match || mongoose.model<MatchDocument>('Match', matchSchema);

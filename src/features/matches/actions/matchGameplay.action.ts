@@ -5,7 +5,7 @@ import { MatchService } from '@/database/services/match.service';
 import { MatchModel } from '@/database/models/match.model';
 import { TournamentModel } from '@/database/models/tournament.model';
 import { connectMongo } from '@/lib/mongoose';
-import { eventEmitter, EVENTS, createSseDeltaPayload } from '@/lib/events';
+import { eventsBus, EVENTS, createSseDeltaPayload } from '@/lib/events';
 import { BadRequestError } from '@/middleware/errorHandle';
 import { withTelemetry } from '@/shared/lib/withTelemetry';
 import { resolveGuardAwareStatus } from '@/shared/lib/guards/result';
@@ -141,7 +141,7 @@ export async function updateMatchGameplaySettingsAction(input: z.infer<typeof up
         .select('tournamentId')
         .lean()) as { tournamentId?: string } | null;
       if (tournament?.tournamentId) {
-        eventEmitter.emit(
+        eventsBus.publish(
           EVENTS.MATCH_UPDATE,
           createSseDeltaPayload({
             tournamentId: tournament.tournamentId,

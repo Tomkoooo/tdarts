@@ -227,24 +227,59 @@ const MatchStatisticsCharts: React.FC<MatchStatisticsChartsProps> = ({ legs, pla
   }
 
   // Derived Stats for Comparison Table
-  const p1Avg = p1C[p1C.length - 1] ?? 0
-  const p2Avg = p2C[p2C.length - 1] ?? 0
-  const p1BestLeg = legAverages.length ? Math.max(...legAverages.map((leg) => leg.player1Average)) : 0
-  const p2BestLeg = legAverages.length ? Math.max(...legAverages.map((leg) => leg.player2Average)) : 0
-  const p1F9 = legs.length > 0 ? Math.round((legs.reduce((sum, leg) => sum + calculateFirstNineAverage(leg.player1Throws), 0) / legs.length) * 100) / 100 : 0
-  const p2F9 = legs.length > 0 ? Math.round((legs.reduce((sum, leg) => sum + calculateFirstNineAverage(leg.player2Throws), 0) / legs.length) * 100) / 100 : 0
-  const p1_180s = legs.reduce((count, leg) => count + leg.player1Throws.filter(t => t.score === 180).length, 0)
-  const p2_180s = legs.reduce((count, leg) => count + leg.player2Throws.filter(t => t.score === 180).length, 0)
-  const p1_140s = legs.reduce((count, leg) => count + leg.player1Throws.filter(t => t.score >= 140 && t.score < 180).length, 0)
-  const p2_140s = legs.reduce((count, leg) => count + leg.player2Throws.filter(t => t.score >= 140 && t.score < 180).length, 0)
-  const p1_100s = legs.reduce((count, leg) => count + leg.player1Throws.filter(t => t.score >= 100 && t.score < 140).length, 0)
-  const p2_100s = legs.reduce((count, leg) => count + leg.player2Throws.filter(t => t.score >= 100 && t.score < 140).length, 0)
-  
-  let p1HighestOut = 0, p2HighestOut = 0
-  legs.forEach(leg => {
-    if (leg.winnerId?.name === player1Name && leg.checkoutScore && leg.checkoutScore > p1HighestOut) p1HighestOut = leg.checkoutScore
-    if (leg.winnerId?.name === player2Name && leg.checkoutScore && leg.checkoutScore > p2HighestOut) p2HighestOut = leg.checkoutScore
-  });
+  const {
+    p1Avg,
+    p2Avg,
+    p1BestLeg,
+    p2BestLeg,
+    p1F9,
+    p2F9,
+    p1_180s,
+    p2_180s,
+    p1_140s,
+    p2_140s,
+    p1_100s,
+    p2_100s,
+    p1HighestOut,
+    p2HighestOut,
+  } = useMemo(() => {
+    const nextP1Avg = p1C[p1C.length - 1] ?? 0
+    const nextP2Avg = p2C[p2C.length - 1] ?? 0
+    const nextP1BestLeg = legAverages.length ? Math.max(...legAverages.map((leg) => leg.player1Average)) : 0
+    const nextP2BestLeg = legAverages.length ? Math.max(...legAverages.map((leg) => leg.player2Average)) : 0
+    const nextP1F9 = legs.length > 0 ? Math.round((legs.reduce((sum, leg) => sum + calculateFirstNineAverage(leg.player1Throws), 0) / legs.length) * 100) / 100 : 0
+    const nextP2F9 = legs.length > 0 ? Math.round((legs.reduce((sum, leg) => sum + calculateFirstNineAverage(leg.player2Throws), 0) / legs.length) * 100) / 100 : 0
+    const nextP1_180s = legs.reduce((count, leg) => count + leg.player1Throws.filter((t) => t.score === 180).length, 0)
+    const nextP2_180s = legs.reduce((count, leg) => count + leg.player2Throws.filter((t) => t.score === 180).length, 0)
+    const nextP1_140s = legs.reduce((count, leg) => count + leg.player1Throws.filter((t) => t.score >= 140 && t.score < 180).length, 0)
+    const nextP2_140s = legs.reduce((count, leg) => count + leg.player2Throws.filter((t) => t.score >= 140 && t.score < 180).length, 0)
+    const nextP1_100s = legs.reduce((count, leg) => count + leg.player1Throws.filter((t) => t.score >= 100 && t.score < 140).length, 0)
+    const nextP2_100s = legs.reduce((count, leg) => count + leg.player2Throws.filter((t) => t.score >= 100 && t.score < 140).length, 0)
+
+    let nextP1HighestOut = 0
+    let nextP2HighestOut = 0
+    legs.forEach((leg) => {
+      if (leg.winnerId?.name === player1Name && leg.checkoutScore && leg.checkoutScore > nextP1HighestOut) nextP1HighestOut = leg.checkoutScore
+      if (leg.winnerId?.name === player2Name && leg.checkoutScore && leg.checkoutScore > nextP2HighestOut) nextP2HighestOut = leg.checkoutScore
+    })
+
+    return {
+      p1Avg: nextP1Avg,
+      p2Avg: nextP2Avg,
+      p1BestLeg: nextP1BestLeg,
+      p2BestLeg: nextP2BestLeg,
+      p1F9: nextP1F9,
+      p2F9: nextP2F9,
+      p1_180s: nextP1_180s,
+      p2_180s: nextP2_180s,
+      p1_140s: nextP1_140s,
+      p2_140s: nextP2_140s,
+      p1_100s: nextP1_100s,
+      p2_100s: nextP2_100s,
+      p1HighestOut: nextP1HighestOut,
+      p2HighestOut: nextP2HighestOut,
+    }
+  }, [calculateFirstNineAverage, legAverages, legs, p1C, p2C, player1Name, player2Name])
 
   const ComparisonRow = ({ label, left, right, highlight, bg }: any) => (
     <div className={cn("grid grid-cols-3 items-center py-4 px-4 rounded-lg transition-colors hover:bg-muted/50", bg && "bg-muted/20")}>
