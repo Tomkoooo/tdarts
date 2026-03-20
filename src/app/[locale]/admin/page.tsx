@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import axios from "axios"
 import Link from "next/link"
 import {
   IconUsers,
@@ -28,6 +27,7 @@ import toast from "react-hot-toast"
 import { useUserContext } from "@/hooks/useUser"
 import { IconPlus, IconCommand } from "@tabler/icons-react"
 import { useTranslations, useFormatter } from "next-intl"
+import { getAdminDashboardDataAction } from "@/features/admin/actions/getDashboardData.action"
 
 // --- Interfaces ---
 interface DashboardStats {
@@ -104,36 +104,31 @@ export default function AdminDashboardPage() {
   const fetchDashboardData = async () => {
     try {
       setIsRefreshing(true)
-      const [
-        statsResponse, 
-        userChartResponse, 
-        tournamentChartResponse,
-        activitiesResponse,
-        alertsResponse
-      ] = await Promise.all([
-        axios.get("/api/admin/stats"),
-        axios.get("/api/admin/charts/users"),
-        axios.get("/api/admin/charts/tournaments"),
-        axios.get("/api/admin/activities"),
-        axios.get("/api/admin/alerts")
-      ])
-
-      setStats(statsResponse.data)
-      setActivities(activitiesResponse.data.data)
-      setAlerts(alertsResponse.data.data)
-
-      const extractChartData = (response: any): ChartData | null => {
-        if (response.data && response.data.success && response.data.data) return response.data.data
-        if (response.data && response.data.labels && response.data.datasets) return response.data
-        return null
+      const data = await getAdminDashboardDataAction()
+      if (data && typeof data === 'object' && 'ok' in data && data.ok === false) {
+        throw new Error(data.message || t("error_loading"))
       }
-
-      setUserChartData(extractChartData(userChartResponse))
-      setTournamentChartData(extractChartData(tournamentChartResponse))
+      const payload = data as {
+        stats?: DashboardStats
+        userChartData?: ChartData
+        tournamentChartData?: ChartData
+        activities?: ActivityItem[]
+        alerts?: {
+          errors24h: number
+          pendingFeedback: number
+          anomalyCount?: number
+          anomalies?: ApiRouteAnomaly[]
+        }
+      }
+      setStats(payload.stats || null)
+      setActivities(payload.activities || [])
+      setAlerts(payload.alerts || null)
+      setUserChartData(payload.userChartData || null)
+      setTournamentChartData(payload.tournamentChartData || null)
       setLastUpdate(new Date())
     } catch (error: any) {
       console.error("Error fetching dashboard data:", error)
-      toast.error(error.response?.data?.error || t("error_loading"))
+      toast.error(error?.message || t("error_loading"))
     } finally {
       setLoading(false)
       setIsRefreshing(false)
@@ -350,7 +345,7 @@ export default function AdminDashboardPage() {
       {/* Header */}
       <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4 sticky top-0 z-10 bg-background/80 backdrop-blur-xl py-4 -mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 border-b border-border/40 mb-6">
         <div className="space-y-1">
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/60 bg-clip-text text-transparent">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight bg-linear-to-r from-foreground to-foreground/60 bg-clip-text text-transparent">
             {t("title", { name: user?.name?.split(" ")[0] || user?.username || "Admin" })}
           </h1>
           <p className="text-sm text-muted-foreground flex items-center gap-2">

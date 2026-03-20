@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/Button"
 import { Card, CardContent } from "@/components/ui/Card"
-import { IconMapPin, IconShieldCheck, IconUsers } from "@tabler/icons-react"
+import { IconMapPin, IconUsers } from "@tabler/icons-react"
 import Link from "next/link"
 import { useTranslations } from "next-intl"
 
@@ -24,9 +24,6 @@ export function ClubList({ clubs }: ClubListProps) {
                             <div className="space-y-2">
                                 <div className="flex items-center gap-2">
                                     <h3 className="font-bold text-lg">{club.name}</h3>
-                                    {club.verified && (
-                                        <IconShieldCheck className="w-5 h-5 text-blue-500" />
-                                    )}
                                 </div>
                                 
                                 <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">

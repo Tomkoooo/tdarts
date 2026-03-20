@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { useSearchParams, useRouter, usePathname } from "next/navigation"
 import { useDebounce } from "use-debounce"
 import { SearchTabs } from "@/components/search/SearchTabs"
@@ -19,6 +19,8 @@ import { IconArrowLeft } from "@tabler/icons-react"
 import MapExplorer from "@/components/map/MapExplorer"
 import { useTranslations } from "next-intl"
 import { getUserTimeZone } from "@/lib/date-time"
+import { searchAction } from "@/features/search/actions/search.action"
+import { Skeleton } from "@/components/ui/skeleton"
 
 interface TabCounts {
     global: number;
@@ -43,30 +45,14 @@ export default function SearchPage() {
     const t = useTranslations('Search')
     const userTimeZone = getUserTimeZone()
 
-    const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "tournaments")
+    const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "global")
     const [query, setQuery] = useState(searchParams.get("q") || "")
     const [debouncedQuery] = useDebounce(query, 500)
     const [isScrolled, setIsScrolled] = useState(false)
+    const [headerHeight, setHeaderHeight] = useState(112)
+    const headerRef = useRef<HTMLDivElement | null>(null)
     
-    useEffect(() => {
-        const params = new URLSearchParams(searchParams.toString())
-        if (debouncedQuery) {
-            params.set('q', debouncedQuery)
-        } else {
-            params.delete('q')
-        }
-        router.replace(`${pathname}?${params.toString()}`, { scroll: false })
-    }, [debouncedQuery, pathname, router])
-    
-    useEffect(() => {
-        const handleScroll = () => {
-            setIsScrolled(window.scrollY > 200)
-        }
-        window.addEventListener('scroll', handleScroll)
-        return () => window.removeEventListener('scroll', handleScroll)
-    }, [])
-    
-    const [filters, setFilters] = useState<SearchFilters>({
+    const parseFiltersFromUrl = useCallback((): SearchFilters => ({
         status: searchParams.get("status") || undefined,
         type: (searchParams.get("type") as any) || undefined,
         tournamentType: (searchParams.get("tournamentType") as any) || undefined,
@@ -78,6 +64,54 @@ export default function SearchPage() {
         playerMode: (searchParams.get("playerMode") as "all" | "individual" | "pair") || undefined,
         country: searchParams.get("country") || undefined,
         page: Number(searchParams.get("page")) || 1,
+    }), [searchParams])
+
+    useEffect(() => {
+        const urlTab = searchParams.get("tab") || "global"
+        const urlQuery = searchParams.get("q") || ""
+        setActiveTab(prev => (prev === urlTab ? prev : urlTab))
+        setQuery(prev => (prev === urlQuery ? prev : urlQuery))
+        const nextFromUrl = parseFiltersFromUrl()
+        setFilters(prev => {
+            const next = { ...prev, ...nextFromUrl }
+            return JSON.stringify(prev) === JSON.stringify(next) ? prev : next
+        })
+    }, [searchParams, parseFiltersFromUrl])
+
+    useEffect(() => {
+        const params = new URLSearchParams(searchParams.toString())
+        if (debouncedQuery) {
+            params.set('q', debouncedQuery)
+        } else {
+            params.delete('q')
+        }
+        const nextUrl = `${pathname}?${params.toString()}`
+        const currentUrl = `${pathname}?${searchParams.toString()}`
+        if (nextUrl !== currentUrl) {
+            router.replace(nextUrl, { scroll: false })
+        }
+    }, [debouncedQuery, pathname, router, searchParams])
+    
+    useEffect(() => {
+        const handleScroll = () => {
+            setIsScrolled(window.scrollY > 200)
+        }
+        window.addEventListener('scroll', handleScroll)
+        return () => window.removeEventListener('scroll', handleScroll)
+    }, [])
+
+    useEffect(() => {
+        if (!headerRef.current) return
+        const element = headerRef.current
+        const updateHeight = () => setHeaderHeight(Math.ceil(element.getBoundingClientRect().height) + 8)
+        updateHeight()
+        const observer = new ResizeObserver(updateHeight)
+        observer.observe(element)
+        return () => observer.disconnect()
+    }, [])
+    
+    const [filters, setFilters] = useState<SearchFilters>({
+        ...parseFiltersFromUrl(),
         limit: 10
     })
 
@@ -87,6 +121,8 @@ export default function SearchPage() {
     const [metadata, setMetadata] = useState<{ cities: {city: string, count: number}[] }>({ cities: [] })
     const [isLoading, setIsLoading] = useState(false)
     const [pagination, setPagination] = useState({ total: 0, page: 1, limit: 10 })
+    const latestRequestIdRef = useRef(0)
+    const lastFetchKeyRef = useRef<string>("")
 
     const updateUrl = useCallback((newParams: any) => {
         const params = new URLSearchParams(searchParams.toString())
@@ -102,47 +138,38 @@ export default function SearchPage() {
 
     useEffect(() => {
         const fetchData = async () => {
+            const requestTab = activeTab
+            const requestPage = Number(filters.page || 1)
+            const requestKey = JSON.stringify({
+                requestTab,
+                debouncedQuery,
+                filters,
+                userTimeZone,
+            })
+            if (requestKey === lastFetchKeyRef.current) return
+            lastFetchKeyRef.current = requestKey
+            const requestId = ++latestRequestIdRef.current
             setIsLoading(true)
             try {
-                if (activeTab === 'map') {
-                    const mapRes = await fetch('/api/map', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ query: debouncedQuery }),
-                    })
-                    if (!mapRes.ok) throw new Error('Map search failed')
-                    const mapData = await mapRes.json()
-                    setResults(mapData.items || [])
-                    setCounts((prev) => ({
-                        ...prev,
-                        map: mapData?.counts?.total || 0,
-                    }))
-                    setPagination({ total: mapData?.counts?.total || 0, page: 1, limit: 100 })
+                if (requestTab === 'map') {
+                    // Map tab has its own canonical data source inside MapExplorer.
+                    if (requestId === latestRequestIdRef.current) {
+                        setResults([])
+                        setPagination({ total: 0, page: 1, limit: 100 })
+                    }
                     return
                 }
 
-                const payload = {
+                const data = await searchAction({
                     query: debouncedQuery,
-                    tab: activeTab,
+                    tab: requestTab,
                     filters: { ...filters, page: filters.page, timeZone: userTimeZone },
-                    includeCounts: (filters.page || 1) === 1,
-                    includeMetadata: (filters.page || 1) === 1,
-                }
-
-                const res = await fetch('/api/search', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'x-timezone': userTimeZone
-                    },
-                    body: JSON.stringify(payload)
+                    includeCounts: requestPage === 1,
+                    includeMetadata: requestPage === 1,
                 })
-
-                if (!res.ok) throw new Error('Search failed')
-
-                const data = await res.json()
+                if (requestId !== latestRequestIdRef.current) return
                 
-                if (filters.page && filters.page > 1) {
+                if (requestPage > 1 && requestTab === activeTab) {
                     setResults(prev => [...prev, ...data.results])
                 } else {
                     setResults(data.results)
@@ -155,28 +182,26 @@ export default function SearchPage() {
                     }))
                 }
                 setGroupedResults(data.groupedResults || { tournaments: [], players: [], clubs: [], leagues: [] })
-                if (data.metadata) setMetadata(data.metadata)
                 if (data.pagination) setPagination(data.pagination)
-
-                if (debouncedQuery && data.counts) {
-                    const currentCount = data.counts[activeTab as keyof TabCounts] || 0;
-                    const resultEntries = Object.entries(data.counts) as [string, number][];
-                    const tabsWithResults = resultEntries.filter(([, v]) => v > 0);
-                    if (currentCount === 0 && tabsWithResults.length === 1) {
-                        const targetTab = tabsWithResults[0][0];
-                        if (targetTab !== activeTab) {
-                            setActiveTab(targetTab);
-                            const params = new URLSearchParams(searchParams.toString());
-                            params.set('tab', targetTab);
-                            router.replace(`${pathname}?${params.toString()}`, { scroll: false });
-                        }
-                    }
+                if (requestPage === 1 && data.metadata) {
+                    setMetadata(data.metadata)
                 }
 
             } catch (error) {
                 console.error("Search error:", error)
+                if (requestId === latestRequestIdRef.current) {
+                    // Prevent stale cross-tab UI when the active request fails.
+                    if (requestTab === 'global') {
+                        setGroupedResults({ tournaments: [], players: [], clubs: [], leagues: [] })
+                    } else {
+                        setResults([])
+                    }
+                    setPagination(prev => ({ ...prev, total: 0, page: 1 }))
+                }
             } finally {
-                setIsLoading(false)
+                if (requestId === latestRequestIdRef.current) {
+                    setIsLoading(false)
+                }
             }
         }
 
@@ -186,6 +211,7 @@ export default function SearchPage() {
     const handleTabChange = (tab: string) => {
         setActiveTab(tab)
         setResults([])
+        setGroupedResults({ tournaments: [], players: [], clubs: [], leagues: [] })
         setPagination(prev => ({ ...prev, page: 1 }))
         
         if (!query) {
@@ -234,6 +260,11 @@ export default function SearchPage() {
         setFilters(prev => ({ ...prev, page: 1 }))
     }
 
+    const clearQuery = useCallback(() => {
+        setQuery("")
+        updateUrl({ q: undefined, page: 1 })
+    }, [updateUrl])
+
     const loadMore = () => {
         const newPage = pagination.page + 1
         setFilters(prev => ({ ...prev, page: newPage }))
@@ -250,18 +281,23 @@ export default function SearchPage() {
                 onTabChange={handleTabChange}
                 counts={counts}
                 isLoading={isLoading}
+                filters={filters}
+                onFilterChange={handleFilterChange}
+                cities={metadata.cities || []}
+                hasActiveQuery={!!debouncedQuery}
+                onClearQuery={clearQuery}
             />
 
-            <div className="z-40 backdrop-blur-md border-b border-border">
+            <div ref={headerRef} className="z-40 sticky top-0 border-b border-border/70 bg-card/75 backdrop-blur-xl">
                 <div className="container mx-auto px-4 py-4 space-y-4">
                     <div className="flex gap-3 w-full justify-center">
-                        <div className="relative w-[80%] items-center flex">
+                        <div className="relative w-full max-w-3xl items-center flex">
                             <IconSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground w-5 h-5" />
                             <Input
                                 value={query}
                                 onChange={handleSearch}
                                 placeholder={t('placeholder')}
-                                className="px-12 h-12 text-lg rounded-2xl border-border bg-background shadow-sm focus:ring-2 ring-primary/20 transition-all"
+                                className="px-12 h-12 text-lg rounded-2xl border-border bg-background/95 shadow-sm focus:ring-2 ring-primary/20 transition-all"
                             />
                             {isLoading && (
                                 <div className="absolute right-4 top-1/2 -translate-y-1/2">
@@ -270,7 +306,7 @@ export default function SearchPage() {
                             )}
                         </div>
                         <div className="flex justify-center items-center gap-2">
-                            <label className="flex items-center gap-2 cursor-pointer bg-card px-4 py-2 rounded-full border border-border shadow-sm hover:bg-muted/50 transition-colors">
+                            <label className="flex items-center gap-2 cursor-pointer bg-card/80 px-4 py-2 rounded-full border border-border shadow-sm hover:bg-muted/50 transition-colors">
                                 <input
                                     type="checkbox"
                                     checked={!!filters.isOac}
@@ -282,7 +318,7 @@ export default function SearchPage() {
                         </div>
                     </div>
 
-                    <div className="max-w-4xl mx-auto overflow-x-scroll">
+                    <div className="max-w-4xl mx-auto overflow-x-scroll [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                         <SearchTabs 
                             activeTab={activeTab} 
                             onTabChange={handleTabChange} 
@@ -302,6 +338,13 @@ export default function SearchPage() {
                 />
 
                 <div className="min-h-[400px]">
+                    {isLoading && (
+                        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3 mb-6">
+                            <Skeleton className="h-40 rounded-xl" />
+                            <Skeleton className="h-40 rounded-xl" />
+                            <Skeleton className="h-40 rounded-xl" />
+                        </div>
+                    )}
                     {activeTab === 'tournaments' && (
                         <div className="mb-6">
                             <h2 className="text-2xl font-bold text-primary-foreground inline-block">
@@ -324,12 +367,12 @@ export default function SearchPage() {
                         </div>
                     )}
 
-                    {activeTab === 'tournaments' && <TournamentList tournaments={results} />}
+                    {activeTab === 'tournaments' && <TournamentList tournaments={results} stickyOffset={headerHeight} />}
                     {activeTab === 'global' && (
                         <div className="space-y-10">
                             <section className="space-y-4">
                                 <h3 className="text-xl font-bold">{t('tabs.tournaments')}</h3>
-                                <TournamentList tournaments={groupedResults.tournaments} />
+                                <TournamentList tournaments={groupedResults.tournaments} stickyOffset={headerHeight} />
                             </section>
                             <section className="space-y-4">
                                 <h3 className="text-xl font-bold">{t('tabs.players')}</h3>

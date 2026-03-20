@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSocket } from "@/hooks/useSocket";
+import { getTournamentLiveMatchesClientAction } from "@/features/tournaments/actions/tournamentRoster.action";
 
 export interface LiveFeedMatch {
   _id: string;
@@ -58,11 +59,11 @@ export function useLiveMatchesFeed(tournamentCode: string) {
   const [matches, setMatches] = useState<LiveFeedMatch[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { socket, isConnected } = useSocket({ tournamentId: tournamentCode });
+  const [isPageVisible, setIsPageVisible] = useState(true);
 
   const refresh = useCallback(async () => {
     try {
-      const response = await fetch(`/api/tournaments/${tournamentCode}/live-matches`, { cache: "no-store" });
-      const data = await response.json();
+      const data = await getTournamentLiveMatchesClientAction({ code: tournamentCode }) as any;
       if (!data?.success) return;
       const normalized = (data.matches || []).map(normalizeMatch);
       setMatches(normalized);
@@ -76,11 +77,21 @@ export function useLiveMatchesFeed(tournamentCode: string) {
   }, [refresh]);
 
   useEffect(() => {
+    if (typeof document === "undefined") return;
+    const handleVisibility = () => setIsPageVisible(!document.hidden);
+    handleVisibility();
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => document.removeEventListener("visibilitychange", handleVisibility);
+  }, []);
+
+  useEffect(() => {
+    // Socket-connected pages should not also poll continuously.
+    if (isConnected || !isPageVisible) return;
     const polling = setInterval(() => {
       void refresh();
-    }, 7000);
+    }, 10000);
     return () => clearInterval(polling);
-  }, [refresh]);
+  }, [isConnected, isPageVisible, refresh]);
 
   useEffect(() => {
     const onMatchStarted = (data: { matchId: string; matchData?: any }) => {
@@ -114,7 +125,18 @@ export function useLiveMatchesFeed(tournamentCode: string) {
       );
     };
 
-    const onLegComplete = () => void refresh();
+    let refreshTimer: ReturnType<typeof setTimeout> | null = null;
+    const scheduleRefresh = () => {
+      if (refreshTimer) clearTimeout(refreshTimer);
+      refreshTimer = setTimeout(() => {
+        void refresh();
+      }, 350);
+    };
+
+    const onLegComplete = () => {
+      // Event payloads already update local state; fetch once to reconcile scoreboard snapshots.
+      scheduleRefresh();
+    };
 
     socket.on("match-started", onMatchStarted);
     socket.on("match-finished", onMatchFinished);
@@ -123,6 +145,7 @@ export function useLiveMatchesFeed(tournamentCode: string) {
     socket.on("fetch-match-data", onLegComplete);
 
     return () => {
+      if (refreshTimer) clearTimeout(refreshTimer);
       socket.off("match-started", onMatchStarted);
       socket.off("match-finished", onMatchFinished);
       socket.off("match-update", onMatchUpdate);

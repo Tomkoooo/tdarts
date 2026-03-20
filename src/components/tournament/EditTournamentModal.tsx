@@ -9,6 +9,7 @@ import { showLocationReviewToast } from '@/lib/toastUtils';
 import { getMapSettingsTranslations } from '@/data/translations/map-settings';
 import { shouldPromptLocationReview } from '@/interface/location.interface';
 import { formatDateTimeLocalInput, parseDateTimeLocalInput } from '@/lib/date-time';
+import { updateTournamentSettingsAction } from '@/features/tournaments/actions/manageTournament.action';
 
 interface EditTournamentModalProps {
   isOpen: boolean;
@@ -119,38 +120,25 @@ export default function EditTournamentModal({
         entryFee: typeof settings.entryFee === 'string' && settings.entryFee === '' ? 0 : settings.entryFee,
       };
 
-      const response = await fetch(`/api/tournaments/${tournament.tournamentId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          userId,
-          settings: cleanedSettings,
-          boards: boards.map((b, idx) => ({
-            boardNumber: idx + 1,
-            name: b.name,
-            isActive: b.isActive,
-            status: b.status || 'idle',
-            currentMatch: b.currentMatch,
-            nextMatch: b.nextMatch
-          }))
-        }),
+      const response = await updateTournamentSettingsAction({
+        code: tournament.tournamentId,
+        settings: cleanedSettings as unknown as Record<string, unknown>,
+        boards: boards.map((b, idx) => ({
+          boardNumber: idx + 1,
+          name: b.name,
+          isActive: b.isActive,
+          status: b.status || 'idle',
+          currentMatch: b.currentMatch,
+          nextMatch: b.nextMatch,
+        })),
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        if (errorData.subscriptionError) {
-          setSubscriptionError({
-            currentCount: errorData.currentCount,
-            maxAllowed: errorData.maxAllowed,
-            planName: errorData.planName
-          });
-          setError(errorData.error);
-        } else {
-          throw new Error(errorData.error || 'Hiba történt a torna frissítése során');
-        }
-        return;
+      if (!response || typeof response !== 'object' || !('success' in (response as any)) || !(response as any).success) {
+        const msg =
+          (response as any)?.message ||
+          (response as any)?.error ||
+          'Hiba történt a torna frissítése során';
+        throw new Error(msg);
       }
 
       onTournamentUpdated();

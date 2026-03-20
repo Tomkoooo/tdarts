@@ -6,6 +6,7 @@ import toast from "react-hot-toast";
 
 import { useUserContext } from "@/hooks/useUser";
 import { getPlayerTranslations } from "@/data/translations/player";
+import { getPendingInvitationsAction } from "@/features/profile/actions";
 
 const DISMISS_KEY = "pendingInvitesToastDismissedUntil";
 const DISMISS_MS = 1000 * 60 * 60 * 2; // 2 hours
@@ -35,10 +36,9 @@ export const usePendingInvitesToast = () => {
       if (shouldSkipToast()) return;
 
       try {
-        const response = await fetch("/api/profile/pending-invitations");
-        const data = await response.json();
-        if (!response.ok || !data?.success) return;
-        const count = data?.data?.count || 0;
+        const result = await getPendingInvitationsAction();
+        if (typeof result !== "object" || !("success" in result) || !result.success) return;
+        const count = result.data?.count || 0;
         if (count <= 0) return;
 
         toast(

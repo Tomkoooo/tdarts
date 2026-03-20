@@ -14,6 +14,7 @@ export interface BillingInfo {
 
 export interface Club {
   _id: string;
+  __v?: number;
   name: string;
   description: string;
   location: string;
@@ -27,6 +28,7 @@ export interface Club {
   };
   // Player collection references (members can be guests or registered)
   members: { _id: string; name: string; username: string; userRef?: string }[];
+  membersCount?: number;
   // User collection references (only registered users)
   admin: { _id: string; name: string; username: string }[];
   moderators: { _id: string; name: string; username: string }[];
@@ -90,11 +92,10 @@ export interface Club {
   leagues?: { _id: string; name: string; isActive: boolean; totalPlayers: number; totalTournaments: number; createdAt: Date }[];
 }
 
-export interface ClubDocument extends Document, Omit<Club, '_id' | 'members' | 'admin' | 'moderators' | 'tournaments' | 'leagues'> {
+export interface ClubDocument extends Omit<Document, 'toJSON'>, Omit<Club, '_id' | 'members' | 'admin' | 'moderators' | 'tournaments' | 'leagues'> {
   _id: Types.ObjectId;
   members: Types.ObjectId[]; // Player ref
   admin: Types.ObjectId[]; // User ref
   moderators: Types.ObjectId[]; // User ref
   tournamentPlayers: Array<{ name: string }>;
-  toJSON: () => Club;
 }

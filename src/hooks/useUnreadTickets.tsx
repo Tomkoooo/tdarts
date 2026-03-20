@@ -1,10 +1,10 @@
 "use client"
 
 import React from 'react';
-import axios from 'axios';
 import { Ticket } from 'lucide-react';
+import { getTicketsAction, getUnreadTicketCountAction } from '@/features/profile/actions';
 
-export function useUnreadTickets({ enabled = true }: { enabled?: boolean } = {}) {
+export function useUnreadTickets({ enabled = true, deferMs = 0 }: { enabled?: boolean; deferMs?: number } = {}) {
   const [unreadCount, setUnreadCount] = React.useState(0);
   const [loading, setLoading] = React.useState(true);
 
@@ -16,10 +16,21 @@ export function useUnreadTickets({ enabled = true }: { enabled?: boolean } = {})
     }
 
     try {
-      const response = await axios.get('/api/profile/tickets');
-      if (response.data.success) {
-        const unread = response.data.data.filter((ticket: any) => !ticket.isReadByUser).length;
-        setUnreadCount(unread);
+      const countResult = await getUnreadTicketCountAction();
+      if (
+        typeof countResult === "object" &&
+        "success" in countResult &&
+        countResult.success &&
+        countResult.data
+      ) {
+        setUnreadCount(Number((countResult as any).data.count || 0));
+      } else {
+        // Fallback for compatibility while rolling out count-only action.
+        const result = await getTicketsAction();
+        if (typeof result === "object" && "success" in result && result.success && result.data) {
+          const unread = result.data.filter((ticket: any) => !ticket.isReadByUser).length;
+          setUnreadCount(unread);
+        }
       }
     } catch {
       // User not logged in or error - silently ignore
@@ -36,11 +47,16 @@ export function useUnreadTickets({ enabled = true }: { enabled?: boolean } = {})
       return;
     }
 
-    checkUnreadTickets();
+    const timer = window.setTimeout(() => {
+      void checkUnreadTickets();
+    }, deferMs);
     // Re-check every 5 minutes
     const interval = setInterval(checkUnreadTickets, 5 * 60 * 1000);
-    return () => clearInterval(interval);
-  }, [checkUnreadTickets, enabled]);
+    return () => {
+      window.clearTimeout(timer);
+      clearInterval(interval);
+    };
+  }, [checkUnreadTickets, enabled, deferMs]);
 
   return { unreadCount, loading, refresh: checkUnreadTickets };
 }

@@ -1,22 +1,20 @@
 import "../globals.css";
-import { cookies, headers } from "next/headers";
-import { AuthService } from "@/database/services/auth.service";
 import { UserProvider } from "@/hooks/useUser";
 import { NavbarProvider } from "@/components/providers/NavbarProvider";
 import SessionProvider from "@/components/providers/SessionProvider";
 import AuthSync from "@/components/providers/AuthSync";
 import PWAProvider from "@/components/providers/PWAProvider";
 import TimezoneSync from "@/components/providers/TimezoneSync";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import PageVitalsReporter from "@/components/telemetry/PageVitalsReporter";
 import { Toaster } from "react-hot-toast";
 import { NextIntlClientProvider } from "next-intl";
-import { getMessages, getTranslations } from "next-intl/server";
+import { getTranslations } from "next-intl/server";
 import { notFound } from "next/navigation";
 import { routing } from "@/i18n/routing";
 import { Metadata } from "next";
 import { buildLocaleAlternates, getBaseUrl } from "@/lib/seo";
 import { getUserTimeZone } from "@/lib/date-time";
+import { loadLocaleMessages } from "@/i18n/messages";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params;
@@ -131,95 +129,11 @@ export default async function RootLayout({
   }
 
   // Providing all messages to the client
-  // side is the easiest way to get started
-  const messages = await getMessages();
-  const fallbackTimeZone = getUserTimeZone();
-
-  // Get pathname from headers for initial body padding (server-side)
-  const headersList = await headers();
-  const pathname = headersList.get('x-pathname') || '';
-  
-  // Define paths where you don't want to render certain elements
-  const hideNavbarPaths = ['/board', '/test', '/tv'];
-  const shouldHideNavbar = hideNavbarPaths.some(path => pathname.includes(path));
-
-  
-  const cookieStore = await cookies();
-  const token = cookieStore.get("token")?.value;
-  const userTimeZone = cookieStore.get("user-timezone")?.value || fallbackTimeZone;
-  let initialUser = undefined;
-
-  // Először próbáljuk meg a JWT token-t
-  if (token) {
-    try {
-      const user = await AuthService.verifyToken(token);
-      initialUser = {
-        _id: user._id.toString(),
-        username: user.username,
-        name: user.name,
-        email: user.email,
-        isVerified: user.isVerified,
-        isAdmin: user.isAdmin,
-        profilePicture: user.profilePicture,
-      };
-      console.log("Layout - JWT user found:", initialUser._id);
-    } catch (error) {
-      console.error("JWT verification error:", error);
-      // Ha a JWT token érvénytelen, töröljük a cookie-t
-      try {
-        const { cookies } = await import('next/headers');
-        const cookieStore = await cookies();
-        cookieStore.delete('token');
-        console.log("Layout - Invalid JWT token deleted");
-      } catch (deleteError) {
-        console.error("Error deleting invalid JWT token:", deleteError);
-      }
-    }
-  }
-
-  // Csak akkor ellenőrizzük a NextAuth session-t, ha nincs érvényes JWT token
-  if (!initialUser) {
-    try {
-      const session = await getServerSession(authOptions);
-      if (session?.user) {
-        console.log("Layout - NextAuth session found:", session.user);
-        // Ha van NextAuth session, de nincs JWT token, akkor generáljunk egyet
-        try {
-          const { connectMongo } = await import('@/lib/mongoose');
-          const { UserModel } = await import('@/database/models/user.model');
-          await connectMongo();
-          
-          const user = await UserModel.findOne({ 
-            email: session.user.email
-          });
-          
-          if (user) {
-            // Csak akkor generáljunk JWT token-t, ha nincs már érvényes
-            const existingToken = (await cookies()).get('token')?.value;
-            if (!existingToken) {
-              console.log("Layout - NextAuth user found but no JWT token, will be handled by AuthSync component");
-            } else {
-              console.log("Layout - JWT token already exists, skipping generation");
-            }
-            
-            initialUser = {
-              _id: user._id.toString(),
-              username: user.username,
-              name: user.name,
-              email: user.email,
-              isVerified: user.isVerified,
-              isAdmin: user.isAdmin,
-              profilePicture: user.profilePicture,
-            };
-          }
-        } catch (error) {
-          console.error("Error generating JWT for NextAuth user:", error);
-        }
-      }
-    } catch (error) {
-      console.error("NextAuth session error:", error);
-    }
-  }
+  const messages = await loadLocaleMessages(locale, {
+    locales: [...routing.locales],
+    defaultLocale: routing.defaultLocale,
+  });
+  const userTimeZone = getUserTimeZone();
 
   return (
     <html lang={locale} className="dark">
@@ -230,14 +144,15 @@ export default async function RootLayout({
         <meta name="google-site-verification" content="0fadL9zSu0Oc0kyt3hnRa_S1jEOTUVQp4PaHLJm7JF4" />
 
       </head>
-      <body className="flex flex-col">
+      <body className="flex min-h-screen flex-col">
         <NextIntlClientProvider messages={messages} timeZone={userTimeZone}>
           <SessionProvider>
-            <UserProvider initialUser={initialUser}>
+            <UserProvider initialUser={undefined}>
               <AuthSync />
               <TimezoneSync />
+              <PageVitalsReporter />
               <PWAProvider />
-              <NavbarProvider initialShouldHide={shouldHideNavbar}>
+              <NavbarProvider>
               
                 <Toaster position="top-left" />
                 {children}

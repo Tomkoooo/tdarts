@@ -2,7 +2,6 @@
 import { useTranslations } from "next-intl";
 
 import React, { useEffect, useState } from 'react'
-import axios from 'axios'
 import { IconTrendingUp, IconTrendingDown, IconRefresh } from '@tabler/icons-react'
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
@@ -12,7 +11,8 @@ import { cn } from '@/lib/utils'
 
 interface DailyChartProps {
   title: string
-  apiEndpoint: string
+  loadData: () => Promise<{ data?: any } | any>
+  loadKey?: string
   color?: string
   icon?: React.ReactNode
 }
@@ -27,7 +27,7 @@ interface ChartData {
   }[]
 }
 
-export default function DailyChart({ title, apiEndpoint, color = 'primary', icon }: DailyChartProps) {
+export default function DailyChart({ title, loadData, loadKey, color = 'primary', icon }: DailyChartProps) {
     const t = useTranslations("Admin.components");
   const [data, setData] = useState<ChartData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -37,13 +37,14 @@ export default function DailyChart({ title, apiEndpoint, color = 'primary', icon
     try {
       setLoading(true)
       setError(null)
-      const response = await axios.get(apiEndpoint)
+      const response = await loadData()
+      const payload = response.data
       
       // Handle different API response formats
-      if (response.data && response.data.labels && response.data.datasets) {
-        setData(response.data)
-      } else if (response.data && response.data.success && Array.isArray(response.data.data)) {
-        const apiData = response.data.data
+      if (payload && payload.labels && payload.datasets) {
+        setData(payload)
+      } else if (payload && payload.success && Array.isArray(payload.data)) {
+        const apiData = payload.data
         const labels = apiData.map((item: any) => item.date || item.formattedDate || formatDate(item.date))
         const data = apiData.map((item: any) => item.count || 0)
         
@@ -56,9 +57,9 @@ export default function DailyChart({ title, apiEndpoint, color = 'primary', icon
             borderColor: 'rgb(59, 130, 246)'
           }]
         })
-      } else if (Array.isArray(response.data)) {
-        const labels = response.data.map((item: any) => item.date || item.formattedDate || formatDate(item.date))
-        const data = response.data.map((item: any) => item.count || 0)
+      } else if (Array.isArray(payload)) {
+        const labels = payload.map((item: any) => item.date || item.formattedDate || formatDate(item.date))
+        const data = payload.map((item: any) => item.count || 0)
         
         setData({
           labels: labels,
@@ -82,7 +83,7 @@ export default function DailyChart({ title, apiEndpoint, color = 'primary', icon
 
   useEffect(() => {
     fetchData()
-  }, [apiEndpoint])
+  }, [loadKey])
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)

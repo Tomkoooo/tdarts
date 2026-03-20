@@ -2,7 +2,7 @@
 import { useTranslations } from "next-intl";
 
 import * as React from "react"
-import axios from "axios"
+import { getClubGalleriesAction } from "@/features/clubs/actions/getClubGalleries.action"
 import { ImageWithSkeleton } from "@/components/ui/image-with-skeleton"
 import { Dialog, DialogContent } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/Button"
@@ -10,6 +10,7 @@ import { ChevronLeft, ChevronRight, Share2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useSearchParams, useRouter } from "next/navigation"
 import toast from "react-hot-toast"
+import { Skeleton } from "@/components/ui/skeleton"
 
 interface Gallery {
   _id: string;
@@ -19,22 +20,56 @@ interface Gallery {
 
 interface ClubGallerySectionProps {
   clubId: string;
+  deferUntilVisible?: boolean;
 }
 
-export default function ClubGallerySection({ clubId }: ClubGallerySectionProps) {
+export default function ClubGallerySection({ clubId, deferUntilVisible = false }: ClubGallerySectionProps) {
     const t = useTranslations("Club.components");
   const [galleries, setGalleries] = React.useState<Gallery[]>([])
-  const [loading, setLoading] = React.useState(true)
+  const [loading, setLoading] = React.useState(!deferUntilVisible)
+  const [shouldLoad, setShouldLoad] = React.useState(!deferUntilVisible)
   const [selectedGallery, setSelectedGallery] = React.useState<Gallery | null>(null)
   const [currentImageIndex, setCurrentImageIndex] = React.useState(0)
+  const sectionRef = React.useRef<HTMLDivElement | null>(null)
   const searchParams = useSearchParams()
   const router = useRouter()
 
   React.useEffect(() => {
+    if (!deferUntilVisible || shouldLoad) return
+    const target = sectionRef.current
+    if (!target) return
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0]
+        if (entry?.isIntersecting) {
+          setShouldLoad(true)
+          setLoading(true)
+          observer.disconnect()
+        }
+      },
+      { rootMargin: "240px 0px" }
+    )
+
+    observer.observe(target)
+    return () => observer.disconnect()
+  }, [deferUntilVisible, shouldLoad])
+
+  React.useEffect(() => {
+    if (!shouldLoad) return
     const fetchGalleries = async () => {
       try {
-        const res = await axios.get(`/api/clubs/${clubId}/galleries`)
-        setGalleries(res.data.galleries)
+        const res = await getClubGalleriesAction({ clubId })
+        if (res && typeof res === 'object' && 'galleries' in res && Array.isArray((res as { galleries?: unknown[] }).galleries)) {
+          const galleriesRaw = (res as any).galleries as any[]
+          const next = galleriesRaw
+            .map((g) => ({
+              _id: String(g._id),
+              name: g.name,
+              images: Array.isArray(g.images) ? g.images : [],
+            }));
+          setGalleries(next)
+        }
       } catch (err) {
         console.error("Failed to fetch galleries", err)
       } finally {
@@ -42,7 +77,7 @@ export default function ClubGallerySection({ clubId }: ClubGallerySectionProps) 
       }
     }
     fetchGalleries()
-  }, [clubId])
+  }, [clubId, shouldLoad])
 
   // Handle galleryId URL parameter
   React.useEffect(() => {
@@ -98,11 +133,37 @@ export default function ClubGallerySection({ clubId }: ClubGallerySectionProps) 
     setCurrentImageIndex((prev) => (prev - 1 + selectedGallery.images.length) % selectedGallery.images.length)
   }
 
-  if (loading) return <div className="text-center py-10">{t("betöltés")}</div>
+  if (!shouldLoad) {
+    return (
+      <div ref={sectionRef} className="space-y-6">
+        <h2 className="text-2xl font-bold">{t("képgaléria")}</h2>
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+          <Skeleton className="aspect-4/3 rounded-xl" />
+          <Skeleton className="aspect-4/3 rounded-xl" />
+          <Skeleton className="aspect-4/3 rounded-xl" />
+          <Skeleton className="aspect-4/3 rounded-xl" />
+        </div>
+      </div>
+    )
+  }
+
+  if (loading) {
+    return (
+      <div ref={sectionRef} className="space-y-6">
+        <Skeleton className="h-8 w-56 rounded-lg" />
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+          <Skeleton className="aspect-4/3 rounded-xl" />
+          <Skeleton className="aspect-4/3 rounded-xl" />
+          <Skeleton className="aspect-4/3 rounded-xl" />
+          <Skeleton className="aspect-4/3 rounded-xl" />
+        </div>
+      </div>
+    )
+  }
   if (galleries.length === 0) return null
 
   return (
-    <div className="space-y-6">
+    <div ref={sectionRef} className="space-y-6">
       <h2 className="text-2xl font-bold">{t("képgaléria")}</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
         {galleries.map((gallery) => (
@@ -111,7 +172,7 @@ export default function ClubGallerySection({ clubId }: ClubGallerySectionProps) 
             className="group cursor-pointer border rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all bg-card"
             onClick={() => openGallery(gallery)}
           >
-            <div className="aspect-[4/3] bg-muted relative overflow-hidden">
+            <div className="aspect-4/3 bg-muted relative overflow-hidden">
                {gallery.images.length > 0 ? (
                  <ImageWithSkeleton 
                     src={gallery.images[0]} 
@@ -121,7 +182,7 @@ export default function ClubGallerySection({ clubId }: ClubGallerySectionProps) 
                ) : (
                  <div className="w-full h-full flex items-center justify-center text-muted-foreground">{t("empty")}</div>
                )}
-               <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4 pt-10 flex justify-between items-end">
+               <div className="absolute bottom-0 left-0 right-0 bg-linear-to-t from-black/80 to-transparent p-4 pt-10 flex justify-between items-end">
                   <div className="flex-1 min-w-0">
                     <div className="text-white font-semibold truncate">{gallery.name}</div>
                     <div className="text-white/80 text-xs">{gallery.images.length} {t("kép")}</div>
@@ -173,7 +234,7 @@ export default function ClubGallerySection({ clubId }: ClubGallerySectionProps) 
                     </Button>
                  </div>
 
-                 <div className="bg-neutral-900 w-full md:w-64 flex-shrink-0 p-4 overflow-y-auto hidden md:block border-l border-white/10">
+                 <div className="bg-neutral-900 w-full md:w-64 shrink-0 p-4 overflow-y-auto hidden md:block border-l border-white/10">
                     <div className="font-semibold text-lg mb-4">{selectedGallery.name}</div>
                     <div className="grid grid-cols-2 gap-2">
                         {selectedGallery.images.map((img, idx) => (

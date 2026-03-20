@@ -17,6 +17,7 @@ import { TournamentStatsService } from './tournament-stats.service';
 import { TournamentPlayerService } from './tournament-player.service';
 import { GeocodingService } from './geocoding.service';
 import { ErrorService } from './error.service';
+import { eventsBus, EVENTS, createSseDeltaPayload } from '@/lib/events';
 
 export class TournamentService {
     private static toThreeDartAverage(score: number, darts: number): number {
@@ -39,47 +40,67 @@ export class TournamentService {
     }
 
     private static async recalculateCurrentSeasonAverages(playerId: string): Promise<{ avg: number; firstNineAvg: number }> {
+        const results = await this.recalculateCurrentSeasonAveragesBulk([playerId]);
+        return results.get(playerId) || { avg: 0, firstNineAvg: 0 };
+    }
+
+    private static async recalculateCurrentSeasonAveragesBulk(
+        playerIds: string[]
+    ): Promise<Map<string, { avg: number; firstNineAvg: number }>> {
+        const result = new Map<string, { avg: number; firstNineAvg: number }>();
+        if (playerIds.length === 0) return result;
+
         const currentYear = new Date().getFullYear();
         const seasonStart = new Date(currentYear, 0, 1);
         const seasonEnd = new Date(currentYear + 1, 0, 1);
+        const playerSet = new Set(playerIds.map((id) => String(id)));
+        const aggregateStats = new Map<string, { totalScore: number; totalDarts: number; firstNineScore: number; firstNineDarts: number }>();
+
+        for (const playerId of playerSet) {
+            aggregateStats.set(playerId, { totalScore: 0, totalDarts: 0, firstNineScore: 0, firstNineDarts: 0 });
+        }
 
         const matches = await MatchModel.find({
             status: 'finished',
             createdAt: { $gte: seasonStart, $lt: seasonEnd },
-            $or: [{ 'player1.playerId': playerId }, { 'player2.playerId': playerId }],
+            $or: [
+                { 'player1.playerId': { $in: Array.from(playerSet) } },
+                { 'player2.playerId': { $in: Array.from(playerSet) } },
+            ],
         }).select('player1 player2 legs');
 
-        let totalScore = 0;
-        let totalDarts = 0;
-        let firstNineScore = 0;
-        let firstNineDarts = 0;
-
         for (const match of matches) {
-            const isP1 = match.player1?.playerId?.toString() === playerId;
-            const isP2 = match.player2?.playerId?.toString() === playerId;
-            if (!isP1 && !isP2) continue;
+            const p1Id = match.player1?.playerId?.toString();
+            const p2Id = match.player2?.playerId?.toString();
 
             for (const leg of match.legs || []) {
-                if (isP1) {
-                    totalScore += Number(leg.player1Score || 0);
-                    totalDarts += this.getLegDarts(leg.player1Throws as any[], (leg as any).player1TotalDarts);
+                if (p1Id && playerSet.has(p1Id)) {
+                    const p1 = aggregateStats.get(p1Id)!;
+                    p1.totalScore += Number(leg.player1Score || 0);
+                    p1.totalDarts += this.getLegDarts(leg.player1Throws as any[], (leg as any).player1TotalDarts);
                     const f9 = this.getFirstNineScoreAndDarts(leg.player1Throws as any[]);
-                    firstNineScore += f9.score;
-                    firstNineDarts += f9.darts;
-                } else if (isP2) {
-                    totalScore += Number(leg.player2Score || 0);
-                    totalDarts += this.getLegDarts(leg.player2Throws as any[], (leg as any).player2TotalDarts);
+                    p1.firstNineScore += f9.score;
+                    p1.firstNineDarts += f9.darts;
+                }
+                if (p2Id && playerSet.has(p2Id)) {
+                    const p2 = aggregateStats.get(p2Id)!;
+                    p2.totalScore += Number(leg.player2Score || 0);
+                    p2.totalDarts += this.getLegDarts(leg.player2Throws as any[], (leg as any).player2TotalDarts);
                     const f9 = this.getFirstNineScoreAndDarts(leg.player2Throws as any[]);
-                    firstNineScore += f9.score;
-                    firstNineDarts += f9.darts;
+                    p2.firstNineScore += f9.score;
+                    p2.firstNineDarts += f9.darts;
                 }
             }
         }
 
-        return {
-            avg: this.toThreeDartAverage(totalScore, totalDarts),
-            firstNineAvg: this.toThreeDartAverage(firstNineScore, firstNineDarts),
-        };
+        for (const [playerId, value] of aggregateStats) {
+            result.set(playerId, {
+                avg: this.toThreeDartAverage(value.totalScore, value.totalDarts),
+                firstNineAvg: this.toThreeDartAverage(value.firstNineScore, value.firstNineDarts),
+            });
+        }
+
+        return result;
     }
     // Initialize indexes when the service is first used
     private static indexesInitialized = false;
@@ -105,8 +126,11 @@ export class TournamentService {
             try {
                 await TournamentModel.collection.dropIndex('code_1');
             } catch (error) {
-                // Index doesn't exist, which is fine
-                console.log(error)
+                // Ignore "index not found"; surface any other index issue.
+                const code = (error as { code?: number } | null)?.code;
+                if (code !== 27) {
+                    console.error('Failed to drop legacy index code_1', error);
+                }
             }
             
             this.indexesInitialized = true;
@@ -165,18 +189,10 @@ export class TournamentService {
         delete (tournamentData as any).code;
 
         const locationInput = tournamentData.tournamentSettings?.location;
-        if (typeof locationInput === 'string' && locationInput.trim()) {
-            const geocodeResult = await GeocodingService.geocodeAddress(locationInput, 'user');
-            if (tournamentData.tournamentSettings) {
-                tournamentData.tournamentSettings = {
-                    ...tournamentData.tournamentSettings,
-                    locationData: geocodeResult.location,
-                } as TournamentSettings;
-            }
-        }
+        const needsAsyncGeocoding = typeof locationInput === 'string' && locationInput.trim().length > 0;
 
         // Sandbox check: Limit to 5 per month per club
-        if (tournamentData.clubId && tournamentData.isSandbox) {
+        if (tournamentData.clubId && tournamentData.isSandbox && process.env.LOAD_TEST_MODE !== 'true') {
             const startOfMonth = new Date();
             startOfMonth.setDate(1);
             startOfMonth.setHours(0, 0, 0, 0);
@@ -199,6 +215,19 @@ export class TournamentService {
         
         const newTournament = new TournamentModel(tournamentData);
         const savedTournament = await newTournament.save();
+
+        if (needsAsyncGeocoding && typeof locationInput === 'string') {
+            void GeocodingService.geocodeAddress(locationInput, 'user')
+                .then(async (geocodeResult) => {
+                    await TournamentModel.updateOne(
+                        { _id: savedTournament._id },
+                        { $set: { 'tournamentSettings.locationData': geocodeResult.location } }
+                    );
+                })
+                .catch((error) => {
+                    console.error('Async geocoding failed for tournament', savedTournament._id.toString(), error);
+                });
+        }
         
         console.log('Saved tournament boards:', JSON.stringify(savedTournament.boards, null, 2));
         console.log('Saved tournament boardCount:', savedTournament.tournamentSettings?.boardCount);
@@ -235,12 +264,9 @@ export class TournamentService {
 
     static async getTournament(tournamentId: string): Promise<TournamentDocument> {
         await connectMongo();
-        let tournament = await TournamentModel.findOne({ 
-            tournamentId: tournamentId,
-            isDeleted: { $ne: true },
-            isArchived: { $ne: true }
-        })
-            .populate('clubId')
+        const filter = this.buildCodeOrIdFilter(tournamentId);
+
+        const tournament = await TournamentModel.findOne(filter)
             .populate('clubId')
             .populate({
                 path: 'tournamentPlayers.playerReference',
@@ -252,26 +278,35 @@ export class TournamentService {
             })
             .populate('waitingList.addedBy', 'name username')
             .populate('notificationSubscribers.userRef', 'name username email')
-            .populate('groups.matches')
+            .populate({
+                path: 'groups.matches',
+                select:
+                    'boardReference type round player1 player2 scorer legsToWin startingPlayer status winnerId tournamentRef createdAt updatedAt',
+                populate: [
+                    { path: 'player1.playerId', model: 'Player', select: 'name profilePicture' },
+                    { path: 'player2.playerId', model: 'Player', select: 'name profilePicture' },
+                    { path: 'scorer', model: 'Player', select: 'name profilePicture' },
+                ],
+            })
             .populate('knockout.matches.player1')
             .populate('knockout.matches.player2')
             .populate({
                 path: 'knockout.matches.matchReference',
-                            model: 'Match',
-                            populate: [
-                                { path: 'player1.playerId', model: 'Player' },
-                                { path: 'player2.playerId', model: 'Player' },
-                                { path: 'scorer', model: 'Player' }
-                            ]
+                model: 'Match',
+                populate: [
+                    { path: 'player1.playerId', model: 'Player' },
+                    { path: 'player2.playerId', model: 'Player' },
+                    { path: 'scorer', model: 'Player' }
+                ]
             })
             .populate({
                 path: 'boards.currentMatch',
-                            model: 'Match',
-                            populate: [
-                                { path: 'player1.playerId', model: 'Player' },
-                                { path: 'player2.playerId', model: 'Player' },
-                                { path: 'scorer', model: 'Player' }
-                            ]
+                model: 'Match',
+                populate: [
+                    { path: 'player1.playerId', model: 'Player' },
+                    { path: 'player2.playerId', model: 'Player' },
+                    { path: 'scorer', model: 'Player' }
+                ]
             })
             .populate({
                 path: 'boards.nextMatch',
@@ -282,102 +317,381 @@ export class TournamentService {
                     { path: 'scorer', model: 'Player' }
                 ]
             });
+
         if (!tournament) {
-            tournament = await TournamentModel.findOne({ 
-                _id: tournamentId,
-                isDeleted: { $ne: true },
-                isArchived: { $ne: true }
-            })
-              .populate('clubId')
-              .populate('clubId')
-            .populate({
-                path: 'tournamentPlayers.playerReference',
-                populate: { path: 'members', model: 'Player' }
-            })
-            .populate({
-                path: 'waitingList.playerReference',
-                populate: { path: 'members', model: 'Player' }
-            })
-            .populate('waitingList.addedBy', 'name username')
-            .populate('notificationSubscribers.userRef', 'name username email')
-            .populate('groups.matches')
-            .populate('knockout.matches.player1')
-            .populate('knockout.matches.player2')
-            .populate({
-                path: 'knockout.matches.matchReference',
-                            model: 'Match',
-                            populate: [
-                                { path: 'player1.playerId', model: 'Player' },
-                                { path: 'player2.playerId', model: 'Player' },
-                                { path: 'scorer', model: 'Player' }
-                            ]
-            })
-            .populate({
-                path: 'boards.currentMatch',
-                            model: 'Match',
-                            populate: [
-                                { path: 'player1.playerId', model: 'Player' },
-                                { path: 'player2.playerId', model: 'Player' },
-                                { path: 'scorer', model: 'Player' }
-                            ]
-            })
-            .populate({
-                path: 'boards.nextMatch',
-                model: 'Match',
-                populate: [
-                    { path: 'player1.playerId', model: 'Player' },
-                    { path: 'player2.playerId', model: 'Player' },
-                    { path: 'scorer', model: 'Player' }
-                ]
+            throw new BadRequestError('Tournament not found', 'tournament', {
+                tournamentId,
+                errorCode: 'TOURNAMENT_NOT_FOUND',
+                expected: true,
+                operation: 'tournament.getTournament',
+                entityType: 'tournament',
+                entityId: tournamentId,
             });
-            if (!tournament) {
-                throw new BadRequestError('Tournament not found', 'tournament', {
-                    tournamentId,
-                    errorCode: 'TOURNAMENT_NOT_FOUND',
-                    expected: true,
-                    operation: 'tournament.getTournament',
-                    entityType: 'tournament',
-                    entityId: tournamentId,
-                });
-            }
-        }
-        // Deep populate matches' player fields
-        for (const group of tournament.groups) {
-            if (group.matches && Array.isArray(group.matches)) {
-                for (let i = 0; i < group.matches.length; i++) {
-                    const match = group.matches[i];
-                    if (match && match.populate) {
-                        await match.populate('player1.playerId');
-                        await match.populate('player2.playerId');
-                        await match.populate('scorer');
-                    }
-                }
-            }
         }
 
-        if (!tournament.tournamentSettings?.locationData?.rawInput && tournament.tournamentSettings?.location) {
-            try {
-                const geocodeResult = await GeocodingService.geocodeAddress(tournament.tournamentSettings.location, 'legacy');
-                tournament.tournamentSettings.locationData = geocodeResult.location as any;
-                await tournament.save();
-            } catch (error) {
-                await ErrorService.logWarning(
-                    'Tournament lazy geocode failed',
-                    'tournament',
-                    {
-                        tournamentId: tournament.tournamentId,
-                        errorCode: 'TOURNAMENT_LAZY_GEOCODE_FAILED',
-                        expected: true,
-                        operation: 'tournament.getTournament',
-                        entityType: 'tournament',
-                        entityId: tournament.tournamentId,
-                        metadata: {
-                            reason: error instanceof Error ? error.message : String(error),
-                        },
-                    }
-                );
+        return tournament;
+    }
+
+    private static buildCodeOrIdFilter(tournamentId: string) {
+        const filter: any = {
+            isDeleted: { $ne: true },
+            isArchived: { $ne: true },
+            $or: [{ tournamentId }],
+        };
+        if (mongoose.isValidObjectId(tournamentId)) {
+            filter.$or.push({ _id: tournamentId });
+        }
+        return filter;
+    }
+
+    static async getTournamentLite(tournamentId: string): Promise<{
+        _id: string;
+        tournamentId: string;
+        clubId: string;
+        status: string;
+        format: string;
+        startingScore: number;
+        isSandbox: boolean;
+        boards: Array<{ boardNumber: number; isActive: boolean; status: string }>;
+    }> {
+        await connectMongo();
+        const filter = this.buildCodeOrIdFilter(tournamentId);
+        const doc: any = await TournamentModel.findOne(filter)
+            .select('_id tournamentId clubId isSandbox tournamentSettings.status tournamentSettings.format tournamentSettings.startingScore boards.boardNumber boards.isActive boards.status')
+            .lean();
+        if (!doc) {
+            throw new BadRequestError('Tournament not found', 'tournament', {
+                tournamentId,
+                errorCode: 'TOURNAMENT_NOT_FOUND',
+                expected: true,
+                operation: 'tournament.getTournamentLite',
+                entityType: 'tournament',
+                entityId: tournamentId,
+            });
+        }
+        return {
+            _id: doc._id.toString(),
+            tournamentId: doc.tournamentId,
+            clubId: typeof doc.clubId === 'object' ? doc.clubId.toString() : String(doc.clubId),
+            status: doc.tournamentSettings?.status || 'pending',
+            format: doc.tournamentSettings?.format || 'group_knockout',
+            startingScore: Number(doc.tournamentSettings?.startingScore || 501),
+            isSandbox: Boolean(doc.isSandbox),
+            boards: (doc.boards || []).map((b: any) => ({
+                boardNumber: b.boardNumber,
+                isActive: b.isActive,
+                status: b.status || 'waiting',
+            })),
+        };
+    }
+
+    static async getKnockoutViewDataLite(tournamentId: string): Promise<{
+        knockout: any[];
+        tournamentPlayers: any[];
+        availableBoards: Array<{ boardNumber: number; name?: string; isUsed: boolean }>;
+        tournamentStatus: string | null;
+        knockoutMethod: 'automatic' | 'manual';
+    }> {
+        await connectMongo();
+        const filter = this.buildCodeOrIdFilter(tournamentId);
+        const tournament: any = await TournamentModel.findOne(filter)
+            .select(
+                'knockout tournamentPlayers.playerReference boards.boardNumber boards.name boards.isActive tournamentSettings.status tournamentSettings.knockoutMethod'
+            )
+            .populate('tournamentPlayers.playerReference', 'name')
+            .populate('knockout.matches.player1', 'name')
+            .populate('knockout.matches.player2', 'name')
+            .populate({
+                path: 'knockout.matches.matchReference',
+                model: 'Match',
+                select: 'status winnerId boardReference player1 player2 scorer',
+                populate: [
+                    { path: 'player1.playerId', model: 'Player', select: 'name' },
+                    { path: 'player2.playerId', model: 'Player', select: 'name' },
+                    { path: 'scorer', model: 'Player', select: 'name' },
+                ],
+            })
+            .lean();
+
+        if (!tournament) {
+            throw new BadRequestError('Tournament not found', 'tournament', {
+                tournamentId,
+                errorCode: 'TOURNAMENT_NOT_FOUND',
+                expected: true,
+                operation: 'tournament.getKnockoutViewDataLite',
+                entityType: 'tournament',
+                entityId: tournamentId,
+            });
+        }
+
+        const knockout = Array.isArray(tournament.knockout) ? tournament.knockout : [];
+        const tournamentPlayers = Array.isArray(tournament.tournamentPlayers) ? tournament.tournamentPlayers : [];
+        const boards = Array.isArray(tournament.boards) ? tournament.boards : [];
+        const status = tournament?.tournamentSettings?.status || null;
+        const knockoutMethod = tournament?.tournamentSettings?.knockoutMethod || 'automatic';
+
+        const usedBoards = new Set<number>();
+        knockout.forEach((round: any) =>
+            (round?.matches || []).forEach((match: any) => {
+                const boardRef = Number(match?.matchReference?.boardReference || 0);
+                if (boardRef > 0) usedBoards.add(boardRef);
+            })
+        );
+
+        const availableBoards = boards
+            .filter((board: any) => board?.isActive !== false)
+            .map((board: any) => ({
+                boardNumber: Number(board.boardNumber),
+                name: board.name,
+                isUsed: usedBoards.has(Number(board.boardNumber)),
+            }));
+
+        return {
+            knockout,
+            tournamentPlayers,
+            availableBoards,
+            tournamentStatus: status,
+            knockoutMethod,
+        };
+    }
+
+    static async getTournamentIdOnly(tournamentCode: string): Promise<{ _id: string; tournamentId: string }> {
+        await connectMongo();
+        const filter = this.buildCodeOrIdFilter(tournamentCode);
+        const doc: any = await TournamentModel.findOne(filter)
+            .select('_id tournamentId')
+            .lean();
+        if (!doc) {
+            throw new BadRequestError('Tournament not found', 'tournament', {
+                tournamentCode,
+                errorCode: 'TOURNAMENT_NOT_FOUND',
+                expected: true,
+                operation: 'tournament.getTournamentIdOnly',
+                entityType: 'tournament',
+                entityId: tournamentCode,
+            });
+        }
+        return { _id: doc._id.toString(), tournamentId: doc.tournamentId };
+    }
+
+    static async getTournamentPlayerIds(tournamentCode: string): Promise<string[]> {
+        await connectMongo();
+        const filter = this.buildCodeOrIdFilter(tournamentCode);
+        const doc: any = await TournamentModel.findOne(filter)
+            .select('tournamentPlayers.playerReference')
+            .lean();
+        if (!doc) {
+            throw new BadRequestError('Tournament not found', 'tournament', {
+                tournamentCode,
+                errorCode: 'TOURNAMENT_NOT_FOUND',
+                expected: true,
+                operation: 'tournament.getTournamentPlayerIds',
+                entityType: 'tournament',
+                entityId: tournamentCode,
+            });
+        }
+
+        return (doc.tournamentPlayers || [])
+            .map((tp: any) => {
+                const ref = tp?.playerReference;
+                if (!ref) return null;
+                return typeof ref === 'object' ? ref.toString?.() : String(ref);
+            })
+            .filter(Boolean) as string[];
+    }
+
+    static async getTournamentReadModelForSection(
+        tournamentId: string,
+        section: 'overview' | 'players' | 'boards' | 'groups' | 'bracket'
+    ): Promise<any> {
+        switch (section) {
+            case 'overview':
+                return this.getTournamentSummaryOverviewForPublicPage(tournamentId);
+            case 'players':
+                return this.getTournamentPlayersReadModel(tournamentId);
+            case 'boards':
+                return this.getTournamentBoardsReadModel(tournamentId);
+            case 'groups':
+                return this.getTournamentGroupsReadModel(tournamentId);
+            case 'bracket':
+                return this.getTournamentBracketReadModel(tournamentId);
+            default: {
+                const exhaustiveCheck: never = section;
+                throw new BadRequestError(`Unsupported tournament read-model section: ${String(exhaustiveCheck)}`);
             }
         }
+    }
+
+    static async getTournamentPlayersReadModel(tournamentId: string): Promise<any> {
+        await connectMongo();
+        const filter = this.buildCodeOrIdFilter(tournamentId);
+        const tournament = await TournamentModel.findOne(filter)
+            .select(
+                'tournamentId clubId tournamentPlayers waitingList tournamentSettings.status tournamentSettings.format tournamentSettings.name verified paymentStatus isSandbox'
+            )
+            .populate('clubId', 'name location contact')
+            .populate({
+                path: 'tournamentPlayers.playerReference',
+                select: 'name userRef members type stats profilePicture country honors',
+                populate: { path: 'members', model: 'Player', select: 'name userRef profilePicture' },
+            })
+            .populate({
+                path: 'waitingList.playerReference',
+                select: 'name userRef members type stats profilePicture country honors',
+                populate: { path: 'members', model: 'Player', select: 'name userRef profilePicture' },
+            })
+            .populate('waitingList.addedBy', 'name username')
+            .lean();
+
+        if (!tournament) {
+            throw new BadRequestError('Tournament not found', 'tournament', {
+                tournamentId,
+                errorCode: 'TOURNAMENT_NOT_FOUND',
+                expected: true,
+                operation: 'tournament.getTournamentPlayersReadModel',
+                entityType: 'tournament',
+                entityId: tournamentId,
+            });
+        }
+
+        return tournament;
+    }
+
+    static async getTournamentBoardsReadModel(tournamentId: string): Promise<any> {
+        await connectMongo();
+        const filter = this.buildCodeOrIdFilter(tournamentId);
+        const tournament = await TournamentModel.findOne(filter)
+            .select(
+                'tournamentId clubId boards tournamentSettings.status tournamentSettings.format tournamentSettings.name groups._id groups.board groups.matches knockout.matches.matchReference verified paymentStatus isSandbox'
+            )
+            .populate('clubId', 'name location contact')
+            .populate({
+                path: 'groups.matches',
+                select: 'boardReference type round player1 player2 scorer legsToWin startingPlayer status winnerId tournamentRef createdAt updatedAt',
+                populate: [
+                    { path: 'player1.playerId', model: 'Player', select: 'name profilePicture' },
+                    { path: 'player2.playerId', model: 'Player', select: 'name profilePicture' },
+                    { path: 'scorer', model: 'Player', select: 'name profilePicture' },
+                ],
+            })
+            .populate({
+                path: 'knockout.matches.matchReference',
+                select: 'boardReference type round player1 player2 scorer legsToWin startingPlayer status winnerId tournamentRef createdAt updatedAt',
+                populate: [
+                    { path: 'player1.playerId', model: 'Player', select: 'name profilePicture' },
+                    { path: 'player2.playerId', model: 'Player', select: 'name profilePicture' },
+                    { path: 'scorer', model: 'Player', select: 'name profilePicture' },
+                ],
+            })
+            .populate({
+                path: 'boards.currentMatch',
+                select: 'boardReference type round player1 player2 scorer legsToWin startingPlayer status winnerId tournamentRef createdAt updatedAt',
+                populate: [
+                    { path: 'player1.playerId', model: 'Player', select: 'name profilePicture' },
+                    { path: 'player2.playerId', model: 'Player', select: 'name profilePicture' },
+                    { path: 'scorer', model: 'Player', select: 'name profilePicture' },
+                ],
+            })
+            .populate({
+                path: 'boards.nextMatch',
+                select: 'boardReference type round player1 player2 scorer legsToWin startingPlayer status winnerId tournamentRef createdAt updatedAt',
+                populate: [
+                    { path: 'player1.playerId', model: 'Player', select: 'name profilePicture' },
+                    { path: 'player2.playerId', model: 'Player', select: 'name profilePicture' },
+                    { path: 'scorer', model: 'Player', select: 'name profilePicture' },
+                ],
+            })
+            .lean();
+
+        if (!tournament) {
+            throw new BadRequestError('Tournament not found', 'tournament', {
+                tournamentId,
+                errorCode: 'TOURNAMENT_NOT_FOUND',
+                expected: true,
+                operation: 'tournament.getTournamentBoardsReadModel',
+                entityType: 'tournament',
+                entityId: tournamentId,
+            });
+        }
+
+        return tournament;
+    }
+
+    static async getTournamentGroupsReadModel(tournamentId: string): Promise<any> {
+        await connectMongo();
+        const filter = this.buildCodeOrIdFilter(tournamentId);
+        const tournament = await TournamentModel.findOne(filter)
+            .select(
+                'tournamentId clubId groups tournamentPlayers tournamentSettings.status tournamentSettings.format tournamentSettings.name verified paymentStatus isSandbox'
+            )
+            .populate('clubId', 'name location contact')
+            .populate({
+                path: 'tournamentPlayers.playerReference',
+                select: 'name userRef members type stats profilePicture country honors',
+                populate: { path: 'members', model: 'Player', select: 'name userRef profilePicture' },
+            })
+            .populate({
+                path: 'groups.matches',
+                select: 'boardReference type round player1 player2 scorer legsToWin startingPlayer status winnerId tournamentRef createdAt updatedAt',
+                populate: [
+                    { path: 'player1.playerId', model: 'Player', select: 'name profilePicture' },
+                    { path: 'player2.playerId', model: 'Player', select: 'name profilePicture' },
+                    { path: 'scorer', model: 'Player', select: 'name profilePicture' },
+                ],
+            })
+            .lean();
+
+        if (!tournament) {
+            throw new BadRequestError('Tournament not found', 'tournament', {
+                tournamentId,
+                errorCode: 'TOURNAMENT_NOT_FOUND',
+                expected: true,
+                operation: 'tournament.getTournamentGroupsReadModel',
+                entityType: 'tournament',
+                entityId: tournamentId,
+            });
+        }
+
+        return tournament;
+    }
+
+    static async getTournamentBracketReadModel(tournamentId: string): Promise<any> {
+        await connectMongo();
+        const filter = this.buildCodeOrIdFilter(tournamentId);
+        const tournament = await TournamentModel.findOne(filter)
+            .select(
+                'tournamentId clubId knockout tournamentPlayers tournamentSettings.status tournamentSettings.format tournamentSettings.name tournamentSettings.knockoutMethod verified paymentStatus isSandbox'
+            )
+            .populate('clubId', 'name location contact')
+            .populate({
+                path: 'tournamentPlayers.playerReference',
+                select: 'name userRef members type stats profilePicture country honors',
+                populate: { path: 'members', model: 'Player', select: 'name userRef profilePicture' },
+            })
+            .populate('knockout.matches.player1', 'name profilePicture')
+            .populate('knockout.matches.player2', 'name profilePicture')
+            .populate({
+                path: 'knockout.matches.matchReference',
+                select: 'boardReference type round player1 player2 scorer legsToWin startingPlayer status winnerId tournamentRef createdAt updatedAt',
+                populate: [
+                    { path: 'player1.playerId', model: 'Player', select: 'name profilePicture' },
+                    { path: 'player2.playerId', model: 'Player', select: 'name profilePicture' },
+                    { path: 'scorer', model: 'Player', select: 'name profilePicture' },
+                ],
+            })
+            .lean();
+
+        if (!tournament) {
+            throw new BadRequestError('Tournament not found', 'tournament', {
+                tournamentId,
+                errorCode: 'TOURNAMENT_NOT_FOUND',
+                expected: true,
+                operation: 'tournament.getTournamentBracketReadModel',
+                entityType: 'tournament',
+                entityId: tournamentId,
+            });
+        }
+
         return tournament;
     }
 
@@ -394,7 +708,7 @@ export class TournamentService {
 
         const tournament: any = await TournamentModel.findOne(filter)
             .select(
-                'tournamentId clubId league tournamentPlayers waitingList notificationSubscribers groups knockout boards tournamentSettings createdAt updatedAt isActive isDeleted isArchived isCancelled isSandbox verified paymentStatus stripeSessionId invoiceId billingInfoSnapshot'
+                'tournamentId clubId league tournamentPlayers waitingList groups knockout boards tournamentSettings createdAt updatedAt isActive isDeleted isArchived isCancelled isSandbox verified paymentStatus'
             )
             .populate('clubId')
             .populate({
@@ -408,7 +722,6 @@ export class TournamentService {
                 populate: { path: 'members', model: 'Player', select: 'name userRef profilePicture' },
             })
             .populate('waitingList.addedBy', 'name username')
-            .populate('notificationSubscribers.userRef', 'name username email')
             .populate({
                 path: 'groups.matches',
                 select:
@@ -467,6 +780,41 @@ export class TournamentService {
         return tournament;
     }
 
+    static async getTournamentSummaryOverviewForPublicPage(tournamentId: string): Promise<any> {
+        await connectMongo();
+        const filter = this.buildCodeOrIdFilter(tournamentId);
+
+        const tournament: any = await TournamentModel.findOne(filter)
+            .select(
+                'tournamentId clubId tournamentPlayers.playerReference waitingList.playerReference boards.boardNumber boards.name boards.status boards.isActive tournamentSettings createdAt updatedAt isActive isDeleted isArchived isCancelled isSandbox verified paymentStatus'
+            )
+            .populate('clubId', 'name location contact')
+            .populate({
+                path: 'tournamentPlayers.playerReference',
+                select: 'name userRef members type stats profilePicture country honors',
+                populate: { path: 'members', model: 'Player', select: 'name userRef profilePicture' },
+            })
+            .populate({
+                path: 'waitingList.playerReference',
+                select: 'name userRef members type stats profilePicture country',
+                populate: { path: 'members', model: 'Player', select: 'name userRef profilePicture' },
+            })
+            .lean();
+
+        if (!tournament) {
+            throw new BadRequestError('Tournament not found', 'tournament', {
+                tournamentId,
+                errorCode: 'TOURNAMENT_NOT_FOUND',
+                expected: true,
+                operation: 'tournament.getTournamentSummaryOverviewForPublicPage',
+                entityType: 'tournament',
+                entityId: tournamentId,
+            });
+        }
+
+        return tournament;
+    }
+
     static async getTournamentKnockoutView(tournamentId: string): Promise<{
         knockout: any[] | null;
         tournamentStatus: string | null;
@@ -509,13 +857,17 @@ export class TournamentService {
 
 
     static async getPlayerStatusInTournament(tournamentId: string, userId: string): Promise<string> {
-        const status = await TournamentPlayerService.getPlayerStatusInTournament(tournamentId, userId);
+        const status = await TournamentPlayerService.getPlayerStatusInTournamentFast(tournamentId, userId);
         return status || '';
     }
 
     //method to add, remove and update tournament players status, the rquest takes the player._id form the player collection
     static async addTournamentPlayer(tournamentId: string, playerId: string): Promise<boolean> {
         return TournamentPlayerService.addTournamentPlayer(tournamentId, playerId);
+    }
+
+    static async addTournamentPlayerCheckedIn(tournamentId: string, playerId: string): Promise<boolean> {
+        return TournamentPlayerService.addTournamentPlayerCheckedIn(tournamentId, playerId);
     }
 
     static async removeTournamentPlayer(tournamentId: string, playerId: string): Promise<boolean> {
@@ -528,6 +880,10 @@ export class TournamentService {
 
     static async updateTournamentPlayerStatus(tournamentId: string, playerId: string, status: string): Promise<boolean> {
         return TournamentPlayerService.updateTournamentPlayerStatus(tournamentId, playerId, status);
+    }
+
+    static async checkInAllTournamentPlayers(tournamentId: string): Promise<{ checkedInCount: number; failedCount: number }> {
+        return TournamentPlayerService.checkInAllTournamentPlayers(tournamentId);
     }
 
     static async generateGroups(tournamentId: string, requesterId: string): Promise<boolean> {
@@ -733,11 +1089,18 @@ export class TournamentService {
             await tournament.save();
             
             // Emit SSE event to notify frontend of knockout bracket update
-            const { eventEmitter, EVENTS } = await import('@/lib/events');
-            eventEmitter.emit(EVENTS.TOURNAMENT_UPDATE, {
-                tournamentId: tournament.tournamentId,
-                type: 'knockout-update'
-            });
+            eventsBus.publish(
+                EVENTS.TOURNAMENT_UPDATE,
+                createSseDeltaPayload({
+                    tournamentId: tournament.tournamentId,
+                    scope: 'tournament',
+                    action: 'knockout-updated',
+                    requiresResync: true,
+                    data: {
+                        legacyType: 'knockout-update',
+                    },
+                })
+            );
         } catch (error) {
             console.error('Auto-advance knockout winner error:', error);
             throw error;
@@ -3617,7 +3980,8 @@ export class TournamentService {
                 ]
             })
             .populate('player1.playerId player2.playerId')
-            .sort({ createdAt: -1 });
+            .sort({ createdAt: -1 })
+            .lean();
 
             // Calculate stats for each match
             return matches.map((match: any) => {
@@ -3625,7 +3989,7 @@ export class TournamentService {
                 const isPlayer2 = match.player2?.playerId?._id?.toString() === playerId;
                 
                 if (!isPlayer1 && !isPlayer2) {
-                    return match.toObject();
+                    return match;
                 }
 
                 // Use stored average from match model
@@ -3633,8 +3997,9 @@ export class TournamentService {
                 const average = playerData?.average || 0;
                 const firstNineAvg = playerData?.firstNineAvg || 0;
 
-                // Calculate highest checkout from legs (using actual darts used)
+                // Calculate highest checkout from legs and fallback to stored match-level value
                 let highestCheckout = 0;
+                let hasCheckoutFromThrows = false;
 
                 if (match.legs && Array.isArray(match.legs)) {
                     for (const leg of match.legs) {
@@ -3645,10 +4010,14 @@ export class TournamentService {
                                 // Track highest checkout
                                 if (throwData.isCheckout && throwData.score > highestCheckout) {
                                     highestCheckout = throwData.score;
+                                    hasCheckoutFromThrows = true;
                                 }
                             }
                         }
                     }
+                }
+                if (!hasCheckoutFromThrows) {
+                    highestCheckout = Number(playerData?.highestCheckout || 0);
                 }
 
                 // Get round/group info
@@ -3687,10 +4056,12 @@ export class TournamentService {
                 }
 
                 return {
-                    ...match.toObject(),
+                    ...match,
                     average: Math.round(average * 100) / 100, // Round to 2 decimal places
                     firstNineAvg: Math.round(firstNineAvg * 100) / 100,
                     checkout: highestCheckout > 0 ? highestCheckout.toString() : undefined,
+                    oneEightiesCount: Number(playerData?.oneEightiesCount || 0),
+                    highestCheckout: Number(playerData?.highestCheckout || 0),
                     round,
                     groupName,
                 };
@@ -3786,55 +4157,96 @@ export class TournamentService {
         }
 
         const aggregateCareerStats = async (playerId: string) => {
-            const finishedMatches = await MatchModel.find({
-                status: "finished",
-                $or: [{ "player1.playerId": playerId }, { "player2.playerId": playerId }],
-            }).select("player1 player2 winnerId legs");
+            const playerObjectId = new mongoose.Types.ObjectId(playerId);
+            const aggregateResult = await MatchModel.aggregate([
+                {
+                    $match: {
+                        status: "finished",
+                        $or: [{ "player1.playerId": playerObjectId }, { "player2.playerId": playerObjectId }],
+                    },
+                },
+                {
+                    $project: {
+                        winnerId: 1,
+                        isP1: { $eq: ["$player1.playerId", playerObjectId] },
+                        player1: 1,
+                        player2: 1,
+                    },
+                },
+                {
+                    $project: {
+                        winnerId: 1,
+                        playerData: { $cond: ["$isP1", "$player1", "$player2"] },
+                        wins: {
+                            $cond: [{ $eq: ["$winnerId", playerObjectId] }, 1, 0],
+                        },
+                        losses: {
+                            $cond: [
+                                {
+                                    $and: [
+                                        { $ne: ["$winnerId", null] },
+                                        { $ne: ["$winnerId", playerObjectId] },
+                                    ],
+                                },
+                                1,
+                                0,
+                            ],
+                        },
+                    },
+                },
+                {
+                    $group: {
+                        _id: null,
+                        matchesPlayed: { $sum: 1 },
+                        wins: { $sum: "$wins" },
+                        losses: { $sum: "$losses" },
+                        avgTotal: {
+                            $sum: {
+                                $cond: [{ $gt: [{ $ifNull: ["$playerData.average", 0] }, 0] }, "$playerData.average", 0],
+                            },
+                        },
+                        avgCount: {
+                            $sum: {
+                                $cond: [{ $gt: [{ $ifNull: ["$playerData.average", 0] }, 0] }, 1, 0],
+                            },
+                        },
+                        firstNineAvgTotal: {
+                            $sum: {
+                                $cond: [
+                                    { $gt: [{ $ifNull: ["$playerData.firstNineAvg", 0] }, 0] },
+                                    "$playerData.firstNineAvg",
+                                    0,
+                                ],
+                            },
+                        },
+                        firstNineAvgCount: {
+                            $sum: {
+                                $cond: [{ $gt: [{ $ifNull: ["$playerData.firstNineAvg", 0] }, 0] }, 1, 0],
+                            },
+                        },
+                        highestCheckout: { $max: { $ifNull: ["$playerData.highestCheckout", 0] } },
+                        oneEightiesCount: { $sum: { $ifNull: ["$playerData.oneEightiesCount", 0] } },
+                    },
+                },
+            ]);
 
-            let wins = 0;
-            let losses = 0;
-            let totalScore = 0;
-            let totalDarts = 0;
-            let firstNineScore = 0;
-            let firstNineDarts = 0;
-            let highestCheckout = 0;
-            let oneEightiesCount = 0;
-
-            for (const match of finishedMatches) {
-                const isP1 = match.player1?.playerId?.toString() === playerId;
-                const isP2 = match.player2?.playerId?.toString() === playerId;
-                if (!isP1 && !isP2) continue;
-
-                if (match.winnerId?.toString() === playerId) {
-                    wins++;
-                } else {
-                    losses++;
-                }
-
-                for (const leg of match.legs || []) {
-                    const playerThrows = isP1 ? (leg.player1Throws as any[]) : (leg.player2Throws as any[]);
-                    const legScore = Number(isP1 ? leg.player1Score || 0 : leg.player2Score || 0);
-                    const legDarts = this.getLegDarts(
-                        playerThrows,
-                        isP1 ? (leg as any).player1TotalDarts : (leg as any).player2TotalDarts
-                    );
-                    totalScore += legScore;
-                    totalDarts += legDarts;
-
-                    const f9 = this.getFirstNineScoreAndDarts(playerThrows);
-                    firstNineScore += f9.score;
-                    firstNineDarts += f9.darts;
-
-                    for (const throwData of playerThrows || []) {
-                        if (Number(throwData?.score || 0) === 180) oneEightiesCount++;
-                        if (throwData?.isCheckout) {
-                            highestCheckout = Math.max(highestCheckout, Number(throwData?.score || 0));
-                        }
-                    }
-                }
+            const stats = aggregateResult[0];
+            if (!stats) {
+                return {
+                    matchesPlayed: 0,
+                    wins: 0,
+                    losses: 0,
+                    winRate: 0,
+                    avg: 0,
+                    firstNineAvg: 0,
+                    highestCheckout: 0,
+                    oneEightiesCount: 0,
+                };
             }
 
-            const matchesPlayed = wins + losses;
+            const matchesPlayed = Number(stats.matchesPlayed || 0);
+            const wins = Number(stats.wins || 0);
+            const losses = Number(stats.losses || 0);
             const winRate = matchesPlayed > 0 ? Number(((wins / matchesPlayed) * 100).toFixed(1)) : 0;
 
             return {
@@ -3842,10 +4254,13 @@ export class TournamentService {
                 wins,
                 losses,
                 winRate,
-                avg: this.toThreeDartAverage(totalScore, totalDarts),
-                firstNineAvg: this.toThreeDartAverage(firstNineScore, firstNineDarts),
-                highestCheckout,
-                oneEightiesCount,
+                avg: stats.avgCount > 0 ? Number((Number(stats.avgTotal) / Number(stats.avgCount)).toFixed(2)) : 0,
+                firstNineAvg:
+                    stats.firstNineAvgCount > 0
+                        ? Number((Number(stats.firstNineAvgTotal) / Number(stats.firstNineAvgCount)).toFixed(2))
+                        : 0,
+                highestCheckout: Number(stats.highestCheckout || 0),
+                oneEightiesCount: Number(stats.oneEightiesCount || 0),
             };
         };
 
@@ -3858,11 +4273,11 @@ export class TournamentService {
         };
 
         if (options?.tournamentCode) {
-            const tournament = await TournamentModel.findOne({ tournamentId: options.tournamentCode }).select("_id");
+            const tournament = await TournamentModel.findOne({ tournamentId: options.tournamentCode }).select("_id").lean();
             if (!tournament) {
                 throw new BadRequestError("Tournament not found");
             }
-            query.tournamentRef = tournament._id;
+            query.tournamentRef = (tournament as any)._id;
         }
 
         if (options?.season) {
@@ -3875,7 +4290,8 @@ export class TournamentService {
             .populate("player1.playerId", "name country")
             .populate("player2.playerId", "name country")
             .populate("tournamentRef", "tournamentId tournamentSettings.name tournamentSettings.startDate")
-            .sort({ createdAt: -1 });
+            .sort({ createdAt: -1 })
+            .lean();
 
         let playerAWins = 0;
         let playerBWins = 0;
@@ -4204,7 +4620,7 @@ export class TournamentService {
 
     static async finishTournament(tournamentCode: string, requesterId: string, thirdPlacePlayerId?: string): Promise<boolean> {
         try {
-            const tournament = await TournamentService.getTournament(tournamentCode);
+            let tournament = await TournamentService.getTournament(tournamentCode);
             if (!tournament) {
                 throw new BadRequestError('Tournament not found');
             }
@@ -4218,6 +4634,13 @@ export class TournamentService {
 
 
             const format = tournament.tournamentSettings?.format || 'group_knockout';
+            if (format !== 'knockout') {
+                await TournamentStatsService.updateGroupStanding(tournamentCode);
+                const refreshedTournament = await TournamentService.getTournament(tournamentCode);
+                if (refreshedTournament) {
+                    tournament = refreshedTournament;
+                }
+            }
             const tournamentPlayers = tournament.tournamentPlayers || [];
             const checkedInPlayers = tournamentPlayers.filter((p: any) => p.status === 'checked-in');
 
@@ -4426,6 +4849,10 @@ export class TournamentService {
             });
 
             // Step 6: Get stats from actual matches
+            const hasUsableThrows = (throws: any[] | undefined): boolean =>
+                Array.isArray(throws) &&
+                throws.some((t: any) => typeof t?.score === 'number' && !Number.isNaN(Number(t.score)));
+
             const playerStats = new Map<string, {
                 average: number;
                 firstNineAvg: number;
@@ -4440,6 +4867,12 @@ export class TournamentService {
                 tournamentMatches: number;
                 firstNineTotal: number;
                 firstNineMatches: number;
+                legsDerivedAverageMatches: number;
+                legsDerivedFirstNineMatches: number;
+                manualOnlyAverageTotal: number;
+                manualOnlyAverageCount: number;
+                manualOnlyFirstNineTotal: number;
+                manualOnlyFirstNineCount: number;
             }>();
 
             // Initialize all players with zero stats
@@ -4460,6 +4893,12 @@ export class TournamentService {
                         tournamentMatches: 0,
                         firstNineTotal: 0,
                         firstNineMatches: 0,
+                        legsDerivedAverageMatches: 0,
+                        legsDerivedFirstNineMatches: 0,
+                        manualOnlyAverageTotal: 0,
+                        manualOnlyAverageCount: 0,
+                        manualOnlyFirstNineTotal: 0,
+                        manualOnlyFirstNineCount: 0,
                     });
                 }
             });
@@ -4514,6 +4953,12 @@ export class TournamentService {
                 tournamentMatches: number;
                 firstNineTotal: number;
                 firstNineMatches: number;
+                legsDerivedAverageMatches: number;
+                legsDerivedFirstNineMatches: number;
+                manualOnlyAverageTotal: number;
+                manualOnlyAverageCount: number;
+                manualOnlyFirstNineTotal: number;
+                manualOnlyFirstNineCount: number;
             }>();
 
             // Initialize group stage stats
@@ -4534,6 +4979,12 @@ export class TournamentService {
                         tournamentMatches: 0,
                         firstNineTotal: 0,
                         firstNineMatches: 0,
+                        legsDerivedAverageMatches: 0,
+                        legsDerivedFirstNineMatches: 0,
+                        manualOnlyAverageTotal: 0,
+                        manualOnlyAverageCount: 0,
+                        manualOnlyFirstNineTotal: 0,
+                        manualOnlyFirstNineCount: 0,
                     });
                 }
             });
@@ -4566,14 +5017,17 @@ export class TournamentService {
                 let player1TotalDarts = 0;
                 let player1FirstNineScore = 0;
                 let player1FirstNineDarts = 0;
+                let player1HasUsableThrows = false;
                 let player2TotalScore = 0;
                 let player2TotalDarts = 0;
                 let player2FirstNineScore = 0;
                 let player2FirstNineDarts = 0;
+                let player2HasUsableThrows = false;
 
                 if (match.legs && Array.isArray(match.legs)) {
                     for (const leg of match.legs) {
-                        if (leg.player1Throws && Array.isArray(leg.player1Throws)) {
+                        if (hasUsableThrows(leg.player1Throws as any[])) {
+                            player1HasUsableThrows = true;
                             const firstNine = this.getFirstNineScoreAndDarts(leg.player1Throws as any[]);
                             player1FirstNineScore += firstNine.score;
                             player1FirstNineDarts += firstNine.darts;
@@ -4587,10 +5041,11 @@ export class TournamentService {
                                 }
                             }
                             player1GroupStats.legsPlayed++;
+                            player1TotalDarts += this.getLegDarts(leg.player1Throws as any[], (leg as any).player1TotalDarts);
                         }
-                        player1TotalDarts += this.getLegDarts(leg.player1Throws as any[], (leg as any).player1TotalDarts);
 
-                        if (leg.player2Throws && Array.isArray(leg.player2Throws)) {
+                        if (hasUsableThrows(leg.player2Throws as any[])) {
+                            player2HasUsableThrows = true;
                             const firstNine = this.getFirstNineScoreAndDarts(leg.player2Throws as any[]);
                             player2FirstNineScore += firstNine.score;
                             player2FirstNineDarts += firstNine.darts;
@@ -4604,8 +5059,8 @@ export class TournamentService {
                                 }
                             }
                             player2GroupStats.legsPlayed++;
+                            player2TotalDarts += this.getLegDarts(leg.player2Throws as any[], (leg as any).player2TotalDarts);
                         }
-                        player2TotalDarts += this.getLegDarts(leg.player2Throws as any[], (leg as any).player2TotalDarts);
 
                         if (leg.winnerId) {
                             const legWinnerId = leg.winnerId.toString();
@@ -4618,29 +5073,89 @@ export class TournamentService {
                     }
                 }
 
-                if (player1TotalDarts > 0) {
+                if (player1HasUsableThrows && player1TotalDarts > 0) {
                     player1GroupStats.tournamentTotal += player1TotalScore;
                     player1GroupStats.tournamentMatches += player1TotalDarts;
+                    player1GroupStats.legsDerivedAverageMatches += 1;
+                } else {
+                    player1GroupStats.oneEighties += Number(match.player1?.oneEightiesCount || 0);
+                    player1GroupStats.highestCheckout = Math.max(
+                        player1GroupStats.highestCheckout,
+                        Number(match.player1?.highestCheckout || 0)
+                    );
+                    const manualAverage = Number(match.player1?.average || 0);
+                    if (manualAverage > 0) {
+                        player1GroupStats.manualOnlyAverageTotal += manualAverage;
+                        player1GroupStats.manualOnlyAverageCount += 1;
+                    }
                 }
-                if (player1FirstNineDarts > 0) {
+                if (player1HasUsableThrows && player1FirstNineDarts > 0) {
                     player1GroupStats.firstNineTotal += player1FirstNineScore;
                     player1GroupStats.firstNineMatches += player1FirstNineDarts;
+                    player1GroupStats.legsDerivedFirstNineMatches += 1;
+                } else {
+                    const manualFirstNine = Number(match.player1?.firstNineAvg || 0);
+                    if (manualFirstNine > 0) {
+                        player1GroupStats.manualOnlyFirstNineTotal += manualFirstNine;
+                        player1GroupStats.manualOnlyFirstNineCount += 1;
+                    }
                 }
 
-                if (player2TotalDarts > 0) {
+                if (player2HasUsableThrows && player2TotalDarts > 0) {
                     player2GroupStats.tournamentTotal += player2TotalScore;
                     player2GroupStats.tournamentMatches += player2TotalDarts;
+                    player2GroupStats.legsDerivedAverageMatches += 1;
+                } else {
+                    player2GroupStats.oneEighties += Number(match.player2?.oneEightiesCount || 0);
+                    player2GroupStats.highestCheckout = Math.max(
+                        player2GroupStats.highestCheckout,
+                        Number(match.player2?.highestCheckout || 0)
+                    );
+                    const manualAverage = Number(match.player2?.average || 0);
+                    if (manualAverage > 0) {
+                        player2GroupStats.manualOnlyAverageTotal += manualAverage;
+                        player2GroupStats.manualOnlyAverageCount += 1;
+                    }
                 }
-                if (player2FirstNineDarts > 0) {
+                if (player2HasUsableThrows && player2FirstNineDarts > 0) {
                     player2GroupStats.firstNineTotal += player2FirstNineScore;
                     player2GroupStats.firstNineMatches += player2FirstNineDarts;
+                    player2GroupStats.legsDerivedFirstNineMatches += 1;
+                } else {
+                    const manualFirstNine = Number(match.player2?.firstNineAvg || 0);
+                    if (manualFirstNine > 0) {
+                        player2GroupStats.manualOnlyFirstNineTotal += manualFirstNine;
+                        player2GroupStats.manualOnlyFirstNineCount += 1;
+                    }
                 }
             }
 
             // Calculate group stage averages
             for (const [, stats] of groupStageStats) {
-                stats.average = this.toThreeDartAverage(stats.tournamentTotal, stats.tournamentMatches);
-                stats.firstNineAvg = this.toThreeDartAverage(stats.firstNineTotal, stats.firstNineMatches);
+                const legsDerivedAverage = this.toThreeDartAverage(stats.tournamentTotal, stats.tournamentMatches);
+                const legsDerivedFirstNineAverage = this.toThreeDartAverage(stats.firstNineTotal, stats.firstNineMatches);
+
+                const averageSources = stats.legsDerivedAverageMatches + stats.manualOnlyAverageCount;
+                stats.average = averageSources > 0
+                    ? Math.round(
+                        (
+                            (legsDerivedAverage * stats.legsDerivedAverageMatches) +
+                            stats.manualOnlyAverageTotal
+                        ) /
+                        averageSources * 100
+                    ) / 100
+                    : 0;
+
+                const firstNineSources = stats.legsDerivedFirstNineMatches + stats.manualOnlyFirstNineCount;
+                stats.firstNineAvg = firstNineSources > 0
+                    ? Math.round(
+                        (
+                            (legsDerivedFirstNineAverage * stats.legsDerivedFirstNineMatches) +
+                            stats.manualOnlyFirstNineTotal
+                        ) /
+                        firstNineSources * 100
+                    ) / 100
+                    : 0;
             }
 
             // Process ALL matches (group + knockout) for overall tournament stats
@@ -4672,16 +5187,19 @@ export class TournamentService {
                 let player1TotalDarts = 0;
                 let player1FirstNineScore = 0;
                 let player1FirstNineDarts = 0;
+                let player1HasUsableThrows = false;
                 let player2TotalScore = 0;
                 let player2TotalDarts = 0;
                 let player2FirstNineScore = 0;
                 let player2FirstNineDarts = 0;
+                let player2HasUsableThrows = false;
 
                 // Process legs
                 if (match.legs && Array.isArray(match.legs)) {
                     for (const leg of match.legs) {
                         // Player 1 leg processing
-                        if (leg.player1Throws && Array.isArray(leg.player1Throws)) {
+                        if (hasUsableThrows(leg.player1Throws as any[])) {
+                            player1HasUsableThrows = true;
                             const firstNine = this.getFirstNineScoreAndDarts(leg.player1Throws as any[]);
                             player1FirstNineScore += firstNine.score;
                             player1FirstNineDarts += firstNine.darts;
@@ -4699,11 +5217,12 @@ export class TournamentService {
                                 }
                             }
                             player1Stats.legsPlayed++;
+                            player1TotalDarts += this.getLegDarts(leg.player1Throws as any[], (leg as any).player1TotalDarts);
                         }
-                        player1TotalDarts += this.getLegDarts(leg.player1Throws as any[], (leg as any).player1TotalDarts);
 
                         // Player 2 leg processing
-                        if (leg.player2Throws && Array.isArray(leg.player2Throws)) {
+                        if (hasUsableThrows(leg.player2Throws as any[])) {
+                            player2HasUsableThrows = true;
                             const firstNine = this.getFirstNineScoreAndDarts(leg.player2Throws as any[]);
                             player2FirstNineScore += firstNine.score;
                             player2FirstNineDarts += firstNine.darts;
@@ -4721,8 +5240,8 @@ export class TournamentService {
                                 }
                             }
                             player2Stats.legsPlayed++;
+                            player2TotalDarts += this.getLegDarts(leg.player2Throws as any[], (leg as any).player2TotalDarts);
                         }
-                        player2TotalDarts += this.getLegDarts(leg.player2Throws as any[], (leg as any).player2TotalDarts);
 
                         // Count legs won
                         if (leg.winnerId) {
@@ -4737,30 +5256,91 @@ export class TournamentService {
                 }
 
                 // Calculate this match's average and add to tournament total
-                if (player1TotalDarts > 0) {
+                if (player1HasUsableThrows && player1TotalDarts > 0) {
                     player1Stats.tournamentTotal += player1TotalScore;
                     player1Stats.tournamentMatches += player1TotalDarts;
+                    player1Stats.legsDerivedAverageMatches += 1;
+                } else {
+                    player1Stats.oneEighties += Number(match.player1?.oneEightiesCount || 0);
+                    player1Stats.highestCheckout = Math.max(
+                        player1Stats.highestCheckout,
+                        Number(match.player1?.highestCheckout || 0)
+                    );
+                    const manualAverage = Number(match.player1?.average || 0);
+                    if (manualAverage > 0) {
+                        player1Stats.manualOnlyAverageTotal += manualAverage;
+                        player1Stats.manualOnlyAverageCount += 1;
+                    }
                 }
-                if (player1FirstNineDarts > 0) {
+                if (player1HasUsableThrows && player1FirstNineDarts > 0) {
                     player1Stats.firstNineTotal += player1FirstNineScore;
                     player1Stats.firstNineMatches += player1FirstNineDarts;
+                    player1Stats.legsDerivedFirstNineMatches += 1;
+                } else {
+                    const manualFirstNine = Number(match.player1?.firstNineAvg || 0);
+                    if (manualFirstNine > 0) {
+                        player1Stats.manualOnlyFirstNineTotal += manualFirstNine;
+                        player1Stats.manualOnlyFirstNineCount += 1;
+                    }
                 }
 
-                if (player2TotalDarts > 0) {
+                if (player2HasUsableThrows && player2TotalDarts > 0) {
                     player2Stats.tournamentTotal += player2TotalScore;
                     player2Stats.tournamentMatches += player2TotalDarts;
+                    player2Stats.legsDerivedAverageMatches += 1;
+                } else {
+                    player2Stats.oneEighties += Number(match.player2?.oneEightiesCount || 0);
+                    player2Stats.highestCheckout = Math.max(
+                        player2Stats.highestCheckout,
+                        Number(match.player2?.highestCheckout || 0)
+                    );
+                    const manualAverage = Number(match.player2?.average || 0);
+                    if (manualAverage > 0) {
+                        player2Stats.manualOnlyAverageTotal += manualAverage;
+                        player2Stats.manualOnlyAverageCount += 1;
+                    }
                 }
-                if (player2FirstNineDarts > 0) {
+                if (player2HasUsableThrows && player2FirstNineDarts > 0) {
                     player2Stats.firstNineTotal += player2FirstNineScore;
                     player2Stats.firstNineMatches += player2FirstNineDarts;
+                    player2Stats.legsDerivedFirstNineMatches += 1;
+                } else {
+                    const manualFirstNine = Number(match.player2?.firstNineAvg || 0);
+                    if (manualFirstNine > 0) {
+                        player2Stats.manualOnlyFirstNineTotal += manualFirstNine;
+                        player2Stats.manualOnlyFirstNineCount += 1;
+                    }
                 }
+
             }
 
             // === 3. CALCULATE FINAL TOURNAMENT AVERAGES ===
             /* eslint-disable @typescript-eslint/no-unused-vars */
             for (const [playerId, stats] of playerStats) {
-                stats.average = this.toThreeDartAverage(stats.tournamentTotal, stats.tournamentMatches);
-                stats.firstNineAvg = this.toThreeDartAverage(stats.firstNineTotal, stats.firstNineMatches);
+                const legsDerivedAverage = this.toThreeDartAverage(stats.tournamentTotal, stats.tournamentMatches);
+                const legsDerivedFirstNineAverage = this.toThreeDartAverage(stats.firstNineTotal, stats.firstNineMatches);
+
+                const averageSources = stats.legsDerivedAverageMatches + stats.manualOnlyAverageCount;
+                stats.average = averageSources > 0
+                    ? Math.round(
+                        (
+                            (legsDerivedAverage * stats.legsDerivedAverageMatches) +
+                            stats.manualOnlyAverageTotal
+                        ) /
+                        averageSources * 100
+                    ) / 100
+                    : 0;
+
+                const firstNineSources = stats.legsDerivedFirstNineMatches + stats.manualOnlyFirstNineCount;
+                stats.firstNineAvg = firstNineSources > 0
+                    ? Math.round(
+                        (
+                            (legsDerivedFirstNineAverage * stats.legsDerivedFirstNineMatches) +
+                            stats.manualOnlyFirstNineTotal
+                        ) /
+                        firstNineSources * 100
+                    ) / 100
+                    : 0;
             }
             /* eslint-enable @typescript-eslint/no-unused-vars */
 
@@ -4773,8 +5353,8 @@ export class TournamentService {
                     const overallStats = playerStats.get(playerId);
                     const groupOnlyStats = groupStageStats.get(playerId);
                     
-                    // Keep group-only stats available, but persist final tournament stats on `stats`
-                    // so finished standings/TV surfaces include knockout contributions too.
+                    // Keep group-only stats in `stats` so group tables stay stable after finishing.
+                    // Overall tournament totals are still available on `finalStats`.
                     const groupStats = groupOnlyStats || {
                         average: 0,
                         firstNineAvg: 0,
@@ -4789,6 +5369,12 @@ export class TournamentService {
                         tournamentMatches: 0,
                         firstNineTotal: 0,
                         firstNineMatches: 0,
+                        legsDerivedAverageMatches: 0,
+                        legsDerivedFirstNineMatches: 0,
+                        manualOnlyAverageTotal: 0,
+                        manualOnlyAverageCount: 0,
+                        manualOnlyFirstNineTotal: 0,
+                        manualOnlyFirstNineCount: 0,
                     };
                     const finalStats = overallStats || {
                         average: 0,
@@ -4804,14 +5390,20 @@ export class TournamentService {
                         tournamentMatches: 0,
                         firstNineTotal: 0,
                         firstNineMatches: 0,
+                        legsDerivedAverageMatches: 0,
+                        legsDerivedFirstNineMatches: 0,
+                        manualOnlyAverageTotal: 0,
+                        manualOnlyAverageCount: 0,
+                        manualOnlyFirstNineTotal: 0,
+                        manualOnlyFirstNineCount: 0,
                     };
-                    
+
                     return {
                         ...player,
                         tournamentStanding: standing,
                         finalPosition: standing,
                         eliminatedIn: this.getEliminationText(standing, format),
-                        // Final tournament stats (group + knockout)
+                        // Keep legacy `stats` in sync with final tournament stats for compatibility.
                         stats: {
                             matchesWon: finalStats?.matchesWon || 0,
                             matchesLost: finalStats?.matchesPlayed ? finalStats.matchesPlayed - finalStats.matchesWon : 0,
@@ -4849,8 +5441,16 @@ export class TournamentService {
 
             // Step 9: Update Player collection statistics with MMR (ONLY for non-sandbox)
             if (!tournament.isSandbox) {
+                const playerIds = Array.from(playerStats.keys());
+                const playerDocs = await PlayerModel.find({ _id: { $in: playerIds } });
+                const playersById = new Map<string, any>(
+                    playerDocs.map((playerDoc) => [playerDoc._id.toString(), playerDoc]),
+                );
+                const seasonalAveragesByPlayer = await this.recalculateCurrentSeasonAveragesBulk(playerIds);
+                const mutatedPlayers = new Set<string>();
+
                 for (const [playerId, stats] of playerStats) {
-                    const player = await PlayerModel.findById(playerId);
+                    const player = playersById.get(playerId);
                     if (player) {
                         // 1. Check for existing entry
                         if (!player.tournamentHistory) player.tournamentHistory = [];
@@ -4883,6 +5483,8 @@ export class TournamentService {
                                 totalParticipants: totalPlayers,
                                 currentAverage: stats.average,
                                 verifiedAverage,
+                                tournamentAverage: tournamentAverageScore,
+                                firstNineAvg: stats.firstNineAvg,
                                 oneEightiesCount: stats.oneEighties,
                                 highestCheckout: stats.highestCheckout,
                                 matchesWon: stats.matchesWon
@@ -4970,12 +5572,32 @@ export class TournamentService {
                             player.tournamentHistory[existingHistoryIndex] = tournamentHistoryEntry;
                         }
 
-                        const seasonAverages = await this.recalculateCurrentSeasonAverages(playerId);
+                        const seasonAverages = seasonalAveragesByPlayer?.get(playerId)
+                            || { avg: 0, firstNineAvg: 0 };
                         player.stats.avg = seasonAverages.avg;
                         player.stats.firstNineAvg = seasonAverages.firstNineAvg;
-
-                        await player.save();
+                        mutatedPlayers.add(playerId);
                     }
+                }
+
+                if (mutatedPlayers.size > 0) {
+                    await PlayerModel.bulkWrite(
+                        Array.from(mutatedPlayers).map((playerId) => {
+                            const player = playersById.get(playerId);
+                            return {
+                                updateOne: {
+                                    filter: { _id: player._id },
+                                    update: {
+                                        $set: {
+                                            stats: player.stats,
+                                            tournamentHistory: player.tournamentHistory,
+                                        },
+                                    },
+                                },
+                            };
+                        }),
+                        { ordered: false }
+                    );
                 }
             } else {
                 console.log('🛡️ Sandbox tournament: Skipping global Player stats and MMR updates');
@@ -5132,7 +5754,7 @@ export class TournamentService {
             clubId: clubId,
             isDeleted: { $ne: true },
             isArchived: { $ne: true }
-        }).sort({ createdAt: -1 });
+        }).sort({ createdAt: -1 }).lean();
         if (!tournament) {
             return null;
         }
@@ -5159,13 +5781,14 @@ export class TournamentService {
             })
             .populate('player1.playerId')
             .populate('player2.playerId')
-            .sort({ updatedAt: -1 });
+            .sort({ updatedAt: -1 })
+            .lean();
 
             return liveMatches.map((match: any) => {
                 const player1LegsWon = Number(match?.player1?.legsWon || 0);
                 const player2LegsWon = Number(match?.player2?.legsWon || 0);
                 return {
-                    ...match.toObject(),
+                    ...match,
                     currentLeg: player1LegsWon + player2LegsWon + 1,
                     player1Remaining: 501,
                     player2Remaining: 501,
@@ -5194,8 +5817,15 @@ export class TournamentService {
                 throw new BadRequestError('Tournament not found');
             }
 
+            const resolvedClubId =
+                (tournament as any)?.clubId?._id?.toString?.() ||
+                (tournament as any)?.clubId?.toString?.();
+            if (!resolvedClubId) {
+                throw new BadRequestError('Tournament is missing a valid club reference');
+            }
+
             // Check authorization using the authorization service
-            const isAuthorized = await AuthorizationService.checkAdminOrModerator(requesterId, tournament.clubId._id.toString());
+            const isAuthorized = await AuthorizationService.checkAdminOrModerator(requesterId, resolvedClubId);
             if (!isAuthorized) {
                 throw new BadRequestError('Only club admins or moderators can edit tournament settings');
             }
@@ -5217,8 +5847,12 @@ export class TournamentService {
                 }
             }
 
+            if (settings.boards !== undefined && !Array.isArray(settings.boards)) {
+                throw new BadRequestError('boards must be an array');
+            }
+
             // Handle board updates if provided
-            if (settings.boards && currentStatus === 'pending') {
+            if (Array.isArray(settings.boards) && currentStatus === 'pending') {
                 // Update boards array
                 tournament.boards = settings.boards.map((board: any, index: number) => ({
                     boardNumber: index + 1,
@@ -5246,7 +5880,7 @@ export class TournamentService {
             // Check subscription limits if start date is being changed
             if (settings.startDate && new Date(settings.startDate).getTime() !== new Date(tournament.tournamentSettings.startDate).getTime()) {
                 const subscriptionCheck = await SubscriptionService.canUpdateTournament(
-                    tournament.clubId._id.toString(),
+                    resolvedClubId,
                     new Date(settings.startDate),
                     tournament.tournamentId
                 );
@@ -5297,7 +5931,8 @@ export class TournamentService {
                 isArchived: { $ne: true }
             })
             .sort({ createdAt: -1 })
-            .populate('tournamentPlayers.playerReference');
+            .populate('tournamentPlayers.playerReference')
+            .lean();
             
             return tournaments;
         } catch (error) {
@@ -6076,6 +6711,7 @@ export class TournamentService {
 
             // Reset all tournament players' statistics and subtract from Player collection
             if (tournament.tournamentPlayers && tournament.tournamentPlayers.length > 0) {
+                const mutatedPlayers = new Map<string, any>();
                 for (const tournamentPlayer of tournament.tournamentPlayers) {
                     // Reset tournament player statistics
                     tournamentPlayer.matchesWon = 0;
@@ -6162,13 +6798,8 @@ export class TournamentService {
                                         player.stats.highestCheckout = 0;
                                     }
                                     
-                                    // Recalculate current season averages from finished matches (dart-weighted)
-                                    const seasonAverages = await this.recalculateCurrentSeasonAverages(playerId.toString());
-                                    player.stats.avg = seasonAverages.avg;
-                                    player.stats.firstNineAvg = seasonAverages.firstNineAvg;
                                 }
-                                
-                                await player.save();
+                                mutatedPlayers.set(playerId.toString(), player);
                                 console.log(`Subtracted tournament statistics from player ${playerId}, removed from history, adjusted MMR by ${mmrChange}`);
                             }
                         }
@@ -6176,6 +6807,33 @@ export class TournamentService {
                         console.error(`Error updating player ${tournamentPlayer.playerReference?._id || tournamentPlayer.playerReference} statistics:`, playerError);
                         // Continue with other players even if one fails
                     }
+                }
+
+                if (mutatedPlayers.size > 0) {
+                    const seasonalAveragesByPlayer = await this.recalculateCurrentSeasonAveragesBulk(
+                        Array.from(mutatedPlayers.keys()),
+                    );
+
+                    for (const [playerId, player] of mutatedPlayers.entries()) {
+                        const seasonAverages = seasonalAveragesByPlayer.get(playerId) || { avg: 0, firstNineAvg: 0 };
+                        player.stats.avg = seasonAverages.avg;
+                        player.stats.firstNineAvg = seasonAverages.firstNineAvg;
+                    }
+
+                    await PlayerModel.bulkWrite(
+                        Array.from(mutatedPlayers.values()).map((player) => ({
+                            updateOne: {
+                                filter: { _id: player._id },
+                                update: {
+                                    $set: {
+                                        stats: player.stats,
+                                        tournamentHistory: player.tournamentHistory,
+                                    },
+                                },
+                            },
+                        })),
+                        { ordered: false },
+                    );
                 }
             }
 

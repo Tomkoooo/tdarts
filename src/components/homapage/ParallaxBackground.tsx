@@ -32,7 +32,10 @@ const ParallaxBackground = () => {
   ];
 
   return (
-    <div className="fixed inset-0 overflow-hidden pointer-events-none bg-background">
+    <div
+      className="fixed inset-y-0 right-0 overflow-hidden pointer-events-none bg-background"
+      style={{ left: "var(--app-shell-left-offset, 0px)" }}
+    >
       {/* Enhanced Animated Background Shapes */}
       <div className="absolute inset-0 opacity-20">
         {backgroundBlobs.map((blob, i) => (

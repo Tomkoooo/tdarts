@@ -25,6 +25,7 @@ import { Player } from "@/interface/player.interface"
 import CountryFlag from "@/components/ui/country-flag"
 import PlayerSearch from "@/components/club/PlayerSearch"
 import { getPlayerTranslations } from "@/data/translations/player"
+import { getHeadToHeadAction, getPendingInvitationsAction } from "@/features/profile/actions"
 import {
   LineChart,
   Line,
@@ -176,6 +177,7 @@ export function PlayerStatisticsSection({
   const [headToHead, setHeadToHead] = React.useState<HeadToHeadData | null>(null)
   const [headToHeadLoading, setHeadToHeadLoading] = React.useState(false)
   const [headToHeadError, setHeadToHeadError] = React.useState("")
+  const [h2hComparisonMode, setH2hComparisonMode] = React.useState<"tournament" | "all-time">("tournament")
   const [topOpponents, setTopOpponents] = React.useState<TopOpponentEntry[]>([])
   const [topOpponentsLoading, setTopOpponentsLoading] = React.useState(false)
   const [pendingInvites, setPendingInvites] = React.useState<PendingInviteEntry[]>([])
@@ -389,12 +391,15 @@ export function PlayerStatisticsSection({
       setHeadToHeadLoading(true)
       setHeadToHeadError("")
       try {
-        const response = await fetch(`/api/profile/head-to-head?opponentId=${encodeURIComponent(opponentId)}`)
-        const data = await response.json()
-        if (!response.ok || !data.success) {
-          throw new Error(data?.error || t.headToHeadFetchError)
+        const result = await getHeadToHeadAction({ opponentId })
+        if (typeof result === "object" && "success" in result && result.success && result.data) {
+          const data = result.data as any
+          if (data.playerA && data.playerB && data.summary) {
+            setHeadToHead(data as HeadToHeadData)
+          }
+        } else if (typeof result === "object" && "ok" in result && !result.ok) {
+          throw new Error((result as any).message || t.headToHeadFetchError)
         }
-        setHeadToHead(data.data)
       } catch (error: any) {
         setHeadToHead(null)
         setHeadToHeadError(error?.message || t.headToHeadFetchError)
@@ -408,19 +413,17 @@ export function PlayerStatisticsSection({
   const fetchTopOpponents = React.useCallback(async () => {
     setTopOpponentsLoading(true)
     try {
-      const response = await fetch("/api/profile/head-to-head?mode=top-opponents")
-      const data = await response.json()
-      if (!response.ok || !data.success) {
-        throw new Error(data?.error || t.headToHeadFetchError)
+      const result = await getHeadToHeadAction({ mode: "top-opponents" })
+      if (typeof result === "object" && "success" in result && result.success && result.data) {
+        setTopOpponents((result.data as any)?.topOpponents || [])
       }
-      setTopOpponents(data?.data?.topOpponents || [])
     } catch (error) {
       console.error("Top opponents fetch error:", error)
       setTopOpponents([])
     } finally {
       setTopOpponentsLoading(false)
     }
-  }, [t.headToHeadFetchError])
+  }, [])
 
   React.useEffect(() => {
     if (!playerStats?.hasPlayer) return
@@ -430,12 +433,10 @@ export function PlayerStatisticsSection({
   const fetchPendingInvites = React.useCallback(async () => {
     setPendingInvitesLoading(true)
     try {
-      const response = await fetch("/api/profile/pending-invitations")
-      const data = await response.json()
-      if (!response.ok || !data.success) {
-        throw new Error(data?.error || "Failed to fetch pending invitations")
+      const result = await getPendingInvitationsAction()
+      if (typeof result === "object" && "success" in result && result.success && result.data) {
+        setPendingInvites(result.data?.invitations || [])
       }
-      setPendingInvites(data?.data?.invitations || [])
     } catch (error) {
       console.error("Pending invites fetch error:", error)
       setPendingInvites([])
@@ -466,7 +467,7 @@ export function PlayerStatisticsSection({
     return [...topOpponents]
       .map((entry) => {
         const total = Math.max(entry.matchesPlayed || 0, 1)
-        const winRate = Number(((entry.wins / total) * 100).toFixed(1))
+        const winRate = Math.round((entry.wins / total) * 100)
         return { ...entry, winRate }
       })
       .sort((a, b) => {
@@ -617,48 +618,28 @@ export function PlayerStatisticsSection({
       </CardHeader>
       
       <CardContent className="space-y-8 px-0">
-        <Card className="bg-card border-muted/20 shadow-sm">
-          <CardHeader className="space-y-3 pb-4">
-            <div className="flex items-center justify-between gap-2">
-              <CardTitle className="flex items-center gap-2 text-sm font-black uppercase tracking-[0.2em] text-muted-foreground">
-                <IconSword size={16} className="text-primary" />
-                {t.headToHeadTitle}
-              </CardTitle>
-              <Button variant="outline" size="sm" onClick={handleClearHeadToHead}>
-                {t.headToHeadClear}
-              </Button>
-            </div>
-            <div className="flex flex-wrap items-center gap-2 text-sm font-semibold">
-              <span className="inline-flex items-center gap-1 rounded-md bg-muted/30 px-2 py-1">
-                {playerStats.player.name}
-                {h2hLeader === "A" && <IconTrophy size={13} className="text-amber-500" />}
-              </span>
-              <span className="text-xs font-black uppercase tracking-widest text-muted-foreground">vs</span>
-              <span className="inline-flex items-center gap-1 rounded-md bg-muted/30 px-2 py-1">
-                {headToHead?.playerB?.name || selectedOpponent?.name || t.headToHeadUnknownOpponent}
-                {h2hLeader === "B" && <IconTrophy size={13} className="text-amber-500" />}
-              </span>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <PlayerSearch
-              onPlayerSelected={(player) => {
-                setSelectedOpponent(player)
-                void fetchHeadToHead(player._id)
-              }}
-              placeholder={t.headToHeadSearchPlaceholder}
-              excludePlayerIds={[playerStats.player._id]}
-              showAddGuest={false}
-              isForTournament
-            />
-            {!topOpponentsLoading && mostPlayedTop5.length > 0 && (
-              <div className="space-y-2">
-                <p className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">{t.headToHeadTopOpponents}</p>
-                <div className="flex flex-wrap gap-2">
+        {/* Head-to-Head Section */}
+        <div className="space-y-8">
+          {/* Search Header */}
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+            <div className="flex-1 w-full max-w-xl">
+              <PlayerSearch
+                onPlayerSelected={(player) => {
+                  setSelectedOpponent(player)
+                  void fetchHeadToHead(player._id)
+                }}
+                placeholder={t.headToHeadSearchPlaceholder || "Ellenfél keresése..."}
+                excludePlayerIds={[playerStats.player._id]}
+                showAddGuest={false}
+                isForTournament
+              />
+              {!topOpponentsLoading && mostPlayedTop5.length > 0 && (
+                <div className="mt-4 flex flex-wrap gap-2 items-center">
+                  <span className="text-xs font-label text-muted-foreground mr-2 font-bold uppercase tracking-widest text-[10px]">Legutóbbiak:</span>
                   {mostPlayedTop5.map((entry) => (
                     <button
                       key={`quick-${entry.opponent._id}`}
-                      className="cursor-pointer rounded-full border border-muted/20 bg-muted/10 px-3 py-1 text-xs font-semibold hover:border-primary/30 hover:bg-primary/5"
+                      className="px-3 py-1 bg-card text-[10px] font-bold uppercase tracking-widest rounded-full border border-border/50 hover:bg-muted/50 transition-colors text-primary"
                       onClick={() => {
                         setSelectedOpponent(entry.opponent)
                         void fetchHeadToHead(entry.opponent._id)
@@ -668,385 +649,547 @@ export function PlayerStatisticsSection({
                     </button>
                   ))}
                 </div>
-              </div>
+              )}
+            </div>
+            {headToHead && (
+              <button onClick={handleClearHeadToHead} className="flex items-center gap-2 px-6 py-3 bg-destructive/10 text-destructive rounded-lg font-bold hover:bg-destructive/20 transition-all active:scale-95 group">
+                <IconSword size={18} className="group-hover:rotate-12 transition-transform" />
+                <span>{t.headToHeadClear || "Törlés"}</span>
+              </button>
             )}
+          </div>
 
-            {headToHeadLoading ? (
-              <p className="text-xs text-muted-foreground">{t.headToHeadLoading}</p>
-            ) : headToHeadError ? (
-              <div className="flex items-center justify-between gap-3 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2">
-                <p className="text-xs text-destructive">{headToHeadError}</p>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => selectedOpponent?._id && void fetchHeadToHead(selectedOpponent._id)}
-                >
-                  {t.retry}
+          {headToHeadLoading ? (
+             <div className="flex flex-col items-center justify-center p-12 bg-card rounded-2xl border border-border/50 shadow-sm">
+                <div className="w-8 h-8 rounded-full border-2 border-primary border-t-transparent animate-spin mb-4"></div>
+                <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">{t.headToHeadLoading || "Betöltés..."}</p>
+             </div>
+          ) : headToHeadError ? (
+             <div className="flex items-center justify-between gap-3 rounded-2xl border border-destructive/30 bg-destructive/5 p-6 shadow-sm">
+                <p className="text-sm font-medium text-destructive">{headToHeadError}</p>
+                <Button variant="outline" size="sm" onClick={() => selectedOpponent?._id && void fetchHeadToHead(selectedOpponent._id)}>
+                  {t.retry || "Újra"}
                 </Button>
-              </div>
-            ) : !headToHead ? (
-              <div className="space-y-2">
-                <p className="text-xs text-muted-foreground">{t.headToHeadNoSelection}</p>
-                <div className="rounded-lg border border-muted/20 bg-muted/5 p-3">
-                  <p className="mb-2 text-[10px] font-black uppercase tracking-wider text-muted-foreground">
-                    Összes ellenfél (győzelmi ráta szerint)
+             </div>
+          ) : !headToHead ? (
+             <div className="bg-card rounded-2xl border border-border/50 shadow-sm overflow-hidden line-clamp-2">
+                <div className="p-6 border-b border-border/50 bg-muted/20">
+                    <p className="text-xs font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                      <IconUsers size={16} /> Összes ellenfél (győzelmi ráta szerint)
+                    </p>
+                </div>
+                {topOpponentsLoading ? (
+                  <div className="p-8 text-center"><p className="text-xs text-muted-foreground">{t.headToHeadLoading || "Betöltés..."}</p></div>
+                ) : topOpponentsByWinRate.length === 0 ? (
+                  <div className="p-8 text-center text-muted-foreground/50 border-dashed border border-muted/20 m-6 rounded-xl"><p className="text-xs">{t.headToHeadNoTopOpponents || "Nincsenek elérhető ellenfelek"}</p></div>
+                ) : (
+                  <div className="max-h-[360px] overflow-y-auto pr-1 p-4 grid grid-cols-1 md:grid-cols-2 gap-3 custom-scrollbar">
+                    {topOpponentsByWinRate.map((entry) => (
+                      <button
+                        key={entry.opponent._id}
+                        className="flex w-full cursor-pointer items-center justify-between rounded-xl border border-border/50 bg-background p-4 text-left hover:border-primary/50 hover:bg-muted/30 transition-all group shadow-sm"
+                        onClick={() => {
+                          setSelectedOpponent(entry.opponent)
+                          void fetchHeadToHead(entry.opponent._id)
+                        }}
+                      >
+                        <div className="min-w-0 pr-4">
+                          <p className="truncate text-sm font-headline font-bold mb-1 group-hover:text-primary transition-colors">{entry.opponent.name}</p>
+                          <p className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground flex gap-2">
+                            <span>{entry.matchesPlayed} {t.headToHeadMatches?.toLowerCase() || "meccs"}</span> • 
+                            <span className="text-emerald-500/80">{entry.wins}W</span> • 
+                            <span className="text-primary">{Math.round(entry.winRate || 0)}% WR</span>
+                          </p>
+                        </div>
+                        <div className="shrink-0 flex items-center justify-center w-8 h-8 rounded-full bg-muted/50 group-hover:bg-primary/20 transition-colors">
+                           <IconSword size={14} className="text-muted-foreground group-hover:text-primary transition-colors" />
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+             </div>
+          ) : (
+            <div className="space-y-8">
+              {/* Head-to-Head Hero Section */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch relative">
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] bg-primary/10 rounded-full blur-[120px] pointer-events-none -z-10"></div>
+                
+                {/* Player 1 Card */}
+                <div className="lg:col-span-4 bg-card rounded-2xl p-8 flex flex-col items-center text-center relative overflow-hidden shadow-lg border border-border/50">
+                  <div className="w-28 h-28 rounded-full overflow-hidden mb-5 ring-4 ring-muted flex items-center justify-center bg-background border border-border/50 shadow-inner">
+                    <SmartAvatar playerId={playerStats.player._id} name={playerStats.player.name} className="w-full h-full text-4xl" />
+                  </div>
+                  <h2 className="font-headline text-2xl sm:text-3xl font-bold mb-1 line-clamp-1">{playerStats.player.name}</h2>
+                  <p className="text-primary font-medium tracking-widest text-[10px] uppercase font-bold mb-5 flex items-center gap-1">
+                     <IconTrophy size={12} /> {playerStats.player.stats?.mmr || 800} MMR
                   </p>
-                  {topOpponentsLoading ? (
-                    <p className="text-xs text-muted-foreground">{t.headToHeadLoading}</p>
-                  ) : topOpponentsByWinRate.length === 0 ? (
-                    <p className="text-xs text-muted-foreground">{t.headToHeadNoTopOpponents}</p>
+                  <div className="w-full h-px bg-border/50 mb-5"></div>
+                  <div className="grid grid-cols-2 gap-4 w-full">
+                    <div className="text-left bg-muted/20 p-3 rounded-lg border border-border/30">
+                      <span className="block text-[9px] text-muted-foreground font-bold uppercase tracking-widest">Avg</span>
+                      <span className="text-lg font-headline font-black text-foreground">{headToHead.summary.playerAAverage ? headToHead.summary.playerAAverage.toFixed(1) : "—"}</span>
+                    </div>
+                    <div className="text-right bg-muted/20 p-3 rounded-lg border border-border/30">
+                      <span className="block text-[9px] text-muted-foreground font-bold uppercase tracking-widest">180s</span>
+                      <span className="text-lg font-headline font-black text-primary">{headToHead.summary.playerAOneEighties || 0}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* VS Gauge Center */}
+                <div className="lg:col-span-4 flex flex-col justify-center items-center gap-6 py-8 lg:py-0">
+                  <div className="relative w-44 h-44 flex items-center justify-center group">
+                    <svg className="absolute w-full h-full -rotate-90 transform drop-shadow-xl" viewBox="0 0 100 100">
+                      <circle className="text-muted/30" cx="50" cy="50" fill="none" r="45" stroke="currentColor" strokeWidth="6"></circle>
+                      <circle 
+                        className="text-primary transition-all duration-1000 ease-out drop-shadow-sm" 
+                        cx="50" cy="50" fill="none" r="45" 
+                        stroke="currentColor" 
+                        strokeDasharray="282.7" 
+                        strokeDashoffset={282.7 - (282.7 * ((headToHead.summary.playerAWins / (headToHead.summary.matchesPlayed || 1))))} 
+                        strokeLinecap="round" strokeWidth="8">
+                      </circle>
+                    </svg>
+                    <div className="text-center z-10 transition-transform group-hover:scale-110">
+                      <span className="block text-4xl sm:text-5xl font-headline font-black text-primary drop-shadow-sm">
+                        {((headToHead.summary.playerAWins / (headToHead.summary.matchesPlayed || 1)) * 100).toFixed(0)}%
+                      </span>
+                      <span className="text-[10px] uppercase tracking-[0.2em] font-bold text-muted-foreground">Win Rate</span>
+                    </div>
+                    {/* VS Text */}
+                    <div className="absolute -top-6 font-headline italic font-black text-5xl sm:text-6xl text-muted/20 select-none">VS</div>
+                  </div>
+                  <div className="flex gap-4 w-full">
+                    <div className="flex-1 bg-primary/5 p-4 rounded-xl text-center border border-primary/20 shadow-sm">
+                      <span className="block text-[10px] font-bold uppercase tracking-widest text-primary mb-1">{t.wins || "Győzelem"}</span>
+                      <span className="text-3xl font-headline font-black text-primary">{headToHead.summary.playerAWins}</span>
+                    </div>
+                    <div className="flex-1 bg-destructive/5 p-4 rounded-xl text-center border border-destructive/20 shadow-sm">
+                      <span className="block text-[10px] font-bold uppercase tracking-widest text-destructive mb-1">{t.losses || "Vereség"}</span>
+                      <span className="text-3xl font-headline font-black text-destructive">{headToHead.summary.playerBWins}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Player 2 Card */}
+                <div className="lg:col-span-4 bg-card rounded-2xl p-8 flex flex-col items-center text-center relative overflow-hidden shadow-lg border border-border/50">
+                  <div className="w-28 h-28 rounded-full overflow-hidden mb-5 ring-4 ring-muted flex items-center justify-center bg-background border border-border/50 shadow-inner">
+                    <SmartAvatar playerId={headToHead.playerB._id} name={headToHead.playerB.name} className="w-full h-full text-4xl" />
+                  </div>
+                  <h2 className="font-headline text-2xl sm:text-3xl font-bold mb-1 line-clamp-1">{headToHead.playerB.name}</h2>
+                  <p className="text-muted-foreground font-medium tracking-widest text-[10px] uppercase font-bold mb-5 flex items-center gap-1">
+                     Ellenfél {h2hLeader === "B" && <IconTrophy size={11} className="text-amber-500" />}
+                  </p>
+                  <div className="w-full h-px bg-border/50 mb-5"></div>
+                  <div className="grid grid-cols-2 gap-4 w-full">
+                    <div className="text-left bg-muted/20 p-3 rounded-lg border border-border/30">
+                      <span className="block text-[9px] text-muted-foreground font-bold uppercase tracking-widest">Avg</span>
+                      <span className="text-lg font-headline font-black text-foreground">{headToHead.summary.playerBAverage ? headToHead.summary.playerBAverage.toFixed(1) : "—"}</span>
+                    </div>
+                    <div className="text-right bg-muted/20 p-3 rounded-lg border border-border/30">
+                      <span className="block text-[9px] text-muted-foreground font-bold uppercase tracking-widest">180s</span>
+                      <span className="text-lg font-headline font-black text-foreground">{headToHead.summary.playerBOneEighties || 0}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Stats Comparison Grids */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* All-time összehasonlítás Table */}
+                <div className="bg-card rounded-2xl overflow-hidden shadow-sm border border-border/50 flex flex-col">
+                  <div className="px-6 py-5 flex items-center justify-between border-b border-border/50 bg-muted/10">
+                    <h3 className="font-headline font-bold text-lg">All-time összehasonlítás</h3>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant={h2hComparisonMode === "tournament" ? "secondary" : "ghost"}
+                        size="sm"
+                        className="h-7 px-2 text-[10px] uppercase tracking-widest"
+                        onClick={() => setH2hComparisonMode("tournament")}
+                      >
+                        {t.headToHeadScopeTournament || "Tournament"}
+                      </Button>
+                      <Button
+                        variant={h2hComparisonMode === "all-time" ? "secondary" : "ghost"}
+                        size="sm"
+                        className="h-7 px-2 text-[10px] uppercase tracking-widest"
+                        onClick={() => setH2hComparisonMode("all-time")}
+                      >
+                        {t.headToHeadScopeAllTime || "All-time"}
+                      </Button>
+                      <IconChartBar size={16} className="text-primary" />
+                    </div>
+                  </div>
+                  <div className="p-0 overflow-x-auto">
+                    <table className="w-full table-fixed text-sm border-collapse min-w-[420px]">
+                      <colgroup>
+                        <col className="w-[42%]" />
+                        <col className="w-[29%]" />
+                        <col className="w-[29%]" />
+                      </colgroup>
+                      <thead>
+                        <tr className="text-muted-foreground uppercase text-[10px] tracking-widest font-bold bg-muted/5 border-b border-border/30">
+                          <th className="text-left py-4 px-6">{t.headToHeadStatsMetric || "Kategória"}</th>
+                          <th className="text-right py-4 px-4 truncate">{headToHead.playerA.name}</th>
+                          <th className="text-right py-4 px-6 truncate">{headToHead.playerB.name}</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border/30">
+                        <tr className="hover:bg-muted/30 transition-colors group">
+                          <td className="py-4 px-6 font-medium text-xs font-bold uppercase tracking-wider">{t.headToHeadAverage || "Összesített Átlag"}</td>
+                          <td className="py-4 px-4 text-right font-headline font-black text-lg text-primary">
+                            {h2hComparisonMode === "all-time"
+                              ? (headToHead.allTimeComparison.playerA.avg ? headToHead.allTimeComparison.playerA.avg.toFixed(1) : "—")
+                              : (headToHead.summary.playerAAverage ? headToHead.summary.playerAAverage.toFixed(1) : "—")}
+                          </td>
+                          <td className="py-4 px-6 text-right font-headline font-black text-lg text-muted-foreground">
+                            {h2hComparisonMode === "all-time"
+                              ? (headToHead.allTimeComparison.playerB.avg ? headToHead.allTimeComparison.playerB.avg.toFixed(1) : "—")
+                              : (headToHead.summary.playerBAverage ? headToHead.summary.playerBAverage.toFixed(1) : "—")}
+                          </td>
+                        </tr>
+                        <tr className="hover:bg-muted/30 transition-colors group">
+                          <td className="py-4 px-6 font-medium text-xs font-bold uppercase tracking-wider">{t.headToHeadFirstNineAvg || "First 9 Average"}</td>
+                          <td className="py-4 px-4 text-right font-headline font-black text-lg text-foreground">
+                            {h2hComparisonMode === "all-time"
+                              ? (typeof headToHead.allTimeComparison.playerA.firstNineAvg === "number" ? headToHead.allTimeComparison.playerA.firstNineAvg.toFixed(1) : "—")
+                              : (typeof headToHead.summary.playerAFirstNineAvg === "number" ? headToHead.summary.playerAFirstNineAvg.toFixed(1) : "—")}
+                          </td>
+                          <td className="py-4 px-6 text-right font-headline font-black text-lg text-muted-foreground">
+                            {h2hComparisonMode === "all-time"
+                              ? (typeof headToHead.allTimeComparison.playerB.firstNineAvg === "number" ? headToHead.allTimeComparison.playerB.firstNineAvg.toFixed(1) : "—")
+                              : (typeof headToHead.summary.playerBFirstNineAvg === "number" ? headToHead.summary.playerBFirstNineAvg.toFixed(1) : "—")}
+                          </td>
+                        </tr>
+                        <tr className="hover:bg-muted/30 transition-colors group">
+                          <td className="py-4 px-6 font-medium text-xs font-bold uppercase tracking-wider">{t.headToHeadWinrate || "Winrate"}</td>
+                          <td className="py-4 px-4 text-right font-headline font-black text-lg text-primary">
+                            {h2hComparisonMode === "all-time"
+                              ? `${headToHead.allTimeComparison.playerA.winRate.toFixed(0)}%`
+                              : `${((headToHead.summary.playerAWins / Math.max(1, headToHead.summary.matchesPlayed)) * 100).toFixed(0)}%`}
+                          </td>
+                          <td className="py-4 px-6 text-right font-headline font-black text-lg text-muted-foreground">
+                            {h2hComparisonMode === "all-time"
+                              ? `${headToHead.allTimeComparison.playerB.winRate.toFixed(0)}%`
+                              : `${((headToHead.summary.playerBWins / Math.max(1, headToHead.summary.matchesPlayed)) * 100).toFixed(0)}%`}
+                          </td>
+                        </tr>
+                        <tr className="hover:bg-muted/30 transition-colors group">
+                          <td className="py-4 px-6 font-medium text-xs font-bold uppercase tracking-wider">{t.headToHeadOneEighties || "180-as dobások"}</td>
+                          <td className="py-4 px-4 text-right font-headline font-black text-lg text-foreground">
+                            {h2hComparisonMode === "all-time" ? (headToHead.allTimeComparison.playerA.oneEightiesCount || 0) : (headToHead.summary.playerAOneEighties || 0)}
+                          </td>
+                          <td className="py-4 px-6 text-right font-headline font-black text-lg text-muted-foreground">
+                            {h2hComparisonMode === "all-time" ? (headToHead.allTimeComparison.playerB.oneEightiesCount || 0) : (headToHead.summary.playerBOneEighties || 0)}
+                          </td>
+                        </tr>
+                        <tr className="hover:bg-muted/30 transition-colors group">
+                          <td className="py-4 px-6 font-medium text-xs font-bold uppercase tracking-wider">{t.headToHeadHighestCheckout || "Legmagasabb Koszálló"}</td>
+                          <td className="py-4 px-4 text-right font-headline font-black text-lg text-foreground">
+                            {h2hComparisonMode === "all-time" ? (headToHead.allTimeComparison.playerA.highestCheckout || "—") : (headToHead.summary.playerAHighestCheckout || "—")}
+                          </td>
+                          <td className="py-4 px-6 text-right font-headline font-black text-lg text-muted-foreground">
+                            {h2hComparisonMode === "all-time" ? (headToHead.allTimeComparison.playerB.highestCheckout || "—") : (headToHead.summary.playerBHighestCheckout || "—")}
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* Match History equivalence Grid */}
+                <div className="bg-card rounded-2xl overflow-hidden shadow-sm border border-border/50 flex flex-col">
+                  <div className="px-6 py-5 flex items-center justify-between border-b border-border/50 bg-muted/10">
+                    <h3 className="font-headline font-bold text-lg">{t.headToHeadMatches || "Közös Meccsek"} ({headToHead.summary.matchesPlayed})</h3>
+                    <div className="flex gap-1">
+                      <span className="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+                    </div>
+                  </div>
+                  <div className="p-0 overflow-hidden flex-1 flex flex-col">
+                    {headToHead.matches.length === 0 ? (
+                      <div className="flex-1 flex items-center justify-center p-8 text-center text-sm font-bold uppercase tracking-widest text-muted-foreground/50">
+                        {t.headToHeadNoMatches || "Nincsenek közös meccsek"}
+                      </div>
+                    ) : (
+                      <div className="max-h-[385px] overflow-y-auto w-full custom-scrollbar">
+                        {headToHead.matches.map((match) => {
+                          const isWin = match.playerA.legsWon > match.playerB.legsWon;
+                          const isDraw = match.playerA.legsWon === match.playerB.legsWon;
+                          return (
+                            <div key={match._id} className="group relative bg-card border-b border-border/30 hover:bg-muted/30 transition-all p-1">
+                              <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-transparent via-primary/0 to-transparent group-hover:via-primary/50 transition-colors"></div>
+                              <div className="flex flex-col sm:flex-row justify-between gap-4 p-4">
+                                <div className="flex-1 min-w-0 flex items-center gap-4">
+                                  <div className={`w-10 h-10 rounded-lg shrink-0 flex items-center justify-center font-headline font-black text-lg shadow-inner ${isWin ? 'bg-primary/20 text-primary' : isDraw ? 'bg-muted text-muted-foreground' : 'bg-destructive/10 text-destructive/60'}`}>
+                                    {isWin ? 'W' : isDraw ? 'D' : 'L'}
+                                  </div>
+                                  <div className="min-w-0">
+                                    <p className="truncate text-sm font-bold capitalize">{match.tournament.name}</p>
+                                    <p className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">{new Date(match.date).toLocaleDateString("hu-HU")}</p>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-6 sm:justify-end shrink-0 pl-14 sm:pl-0">
+                                  <div className="text-right flex items-center gap-3 bg-muted/20 px-3 py-1.5 rounded-lg border border-border/30">
+                                    <span className={`font-headline text-2xl font-black ${isWin ? 'text-primary' : 'text-foreground'}`}>{match.playerA.legsWon}</span>
+                                    <span className="text-[10px] text-muted-foreground opacity-50 font-black">—</span>
+                                    <span className={`font-headline text-2xl font-black ${!isWin && !isDraw ? 'text-foreground' : 'text-muted-foreground/60'}`}>{match.playerB.legsWon}</span>
+                                  </div>
+                                  <div className="flex flex-col gap-1 items-end">
+                                    <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-primary/10 hover:text-primary transition-colors" onClick={() => onViewLegs({ _id: match._id })}>
+                                      <IconChartBar size={16} />
+                                    </Button>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Top Averages Section - Modern Grid */}
+        <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 pt-4">
+          
+          {/* Left Column: Elite Tournaments equivalent */}
+          <div className="xl:col-span-5 space-y-6">
+            <div className="flex justify-between items-end mb-2">
+              <h2 className="font-headline text-2xl font-bold flex items-center gap-3">
+                 <IconMedal className="text-primary" size={28} />
+                 {t.topTournamentAverages || "Top Torna Átlagok"}
+              </h2>
+              <div className="flex items-center gap-1">
+                <Button variant="ghost" size="sm" className="text-[10px] font-bold uppercase tracking-widest text-primary hover:bg-primary/10 h-7" onClick={() => setTopTournamentLimit((prev) => Math.min(prev + 5, tournamentAveragesAll.length || 5))}>{t.loadMore || "Több"}</Button>
+                {topTournamentLimit > 3 && <Button variant="ghost" size="sm" className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground h-7" onClick={() => setTopTournamentLimit(3)}>{t.reset || "Reset"}</Button>}
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              {topThreeAverages.length === 0 ? (
+                <div className="bg-card p-6 rounded-2xl border border-border/50 text-center border-dashed">
+                  <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">{t.notEnoughData || "Nincs elég adat"}</p>
+                </div>
+              ) : (
+                topThreeAverages.map((entry: any, index: number) => (
+                  <div key={entry.id} className="bg-card rounded-2xl p-5 sm:p-6 border border-border/50 hover:border-primary/50 transition-colors group shadow-sm relative overflow-hidden">
+                    <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none group-hover:scale-110 transition-transform">
+                      <IconTrendingUp size={80} />
+                    </div>
+                    <div className="flex items-start gap-4 mb-4">
+                      <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center font-headline font-black text-primary shrink-0 relative z-10">
+                        #{index + 1}
+                      </div>
+                      <div className="min-w-0 flex-1 relative z-10">
+                        <h4 className="font-headline font-bold text-base sm:text-lg leading-tight truncate">{entry.name}</h4>
+                        <div className="flex flex-wrap items-center gap-2 mt-1.5">
+                           <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                             {entry.date ? new Date(entry.date).toLocaleDateString('hu-HU', { month: 'long', day: 'numeric', year: 'numeric' }) : '—'}
+                           </span>
+                           {entry.finalPosition ? (
+                              <Badge variant="outline" className="text-[9px] h-4 py-0 px-1.5 font-bold uppercase tracking-widest border-primary/30 text-primary bg-primary/5">P#{entry.finalPosition}</Badge>
+                           ) : null}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-3 gap-3 relative z-10">
+                       <div className="bg-muted/30 rounded-lg p-2.5 sm:p-3 border border-border/50">
+                         <span className="block text-[9px] font-bold uppercase tracking-widest text-muted-foreground mb-1">{t.topTournamentAvg || "Átlag"}</span>
+                         <span className="font-headline font-black text-lg text-foreground">{entry.avg.toFixed(1)}</span>
+                       </div>
+                       <div className="bg-muted/30 rounded-lg p-2.5 sm:p-3 border border-border/50">
+                         <span className="block text-[9px] font-bold uppercase tracking-widest text-muted-foreground mb-1">{t.topTournamentMatches || "Meccsek"}</span>
+                         <span className="font-headline font-black text-[13px] sm:text-sm md:text-md text-foreground">{entry.matchesWon}W - {entry.matchesLost}L</span>
+                       </div>
+                       <div className="bg-muted/30 rounded-lg p-2.5 sm:p-3 border border-border/50 text-right">
+                         <span className="block text-[9px] font-bold uppercase tracking-widest text-muted-foreground mb-1">180s/CHK</span>
+                         <span className="font-headline font-black text-sm sm:text-md text-foreground">{entry.oneEightiesCount} / {entry.highestCheckout || "—"}</span>
+                       </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          {/* Right Column: Top Match Averages Table equivalent */}
+          <div className="xl:col-span-7 space-y-6">
+            <div className="bg-card rounded-2xl overflow-hidden shadow-lg border border-border/50 h-full flex flex-col">
+              <div className="p-6 sm:p-8 bg-muted/10 border-b border-border/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <h2 className="font-headline text-xl sm:text-2xl font-bold flex items-center gap-3">
+                  <span className="w-1.5 h-6 bg-primary rounded-full"></span>
+                  {t.topMatchAverages || "Top Meccs Átlagok"}
+                </h2>
+                <div className="flex gap-2">
+                  <Button variant="secondary" size="sm" className="text-[10px] font-bold uppercase tracking-widest h-8 bg-muted hover:bg-muted/80 text-foreground" onClick={() => setTopMatchLimit((prev) => Math.min(prev + 5, matchAveragesAll.length || 5))}>{t.loadMore || "Több"}</Button>
+                  {topMatchLimit > 3 && <Button variant="ghost" size="sm" className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground h-8" onClick={() => setTopMatchLimit(3)}>{t.reset || "Reset"}</Button>}
+                </div>
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="md:hidden">
+                  {topThreeMatchAverages.length === 0 ? (
+                    <div className="py-12 text-center">
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground border border-dashed border-border/50 rounded-xl px-6 py-4">{t.noData || "No data"}</span>
+                    </div>
                   ) : (
-                    <div className="max-h-[360px] space-y-2 overflow-y-auto pr-1">
-                      {topOpponentsByWinRate.map((entry) => (
-                        <button
-                          key={entry.opponent._id}
-                          className="flex w-full cursor-pointer items-center justify-between rounded-md border border-muted/20 bg-background px-3 py-2 text-left hover:border-primary/30"
-                          onClick={() => {
-                            setSelectedOpponent(entry.opponent)
-                            void fetchHeadToHead(entry.opponent._id)
-                          }}
+                    <div className="divide-y divide-border/30">
+                      {topThreeMatchAverages.map((match: any, index: number) => {
+                        const currentPlayerId = playerStats?.player?._id?.toString()
+                        const winnerId = match.winnerId?.toString?.() || match.winnerId
+                        const isWinnerById = Boolean(currentPlayerId) && Boolean(winnerId) && currentPlayerId === winnerId
+                        const userScore = Number(match.userScore ?? match.player1Score ?? 0)
+                        const oppScore = Number(match.opponentScore ?? match.player2Score ?? 0)
+                        const isWinnerByScore = Number.isFinite(userScore) && Number.isFinite(oppScore) && userScore > oppScore
+                        const didWin = match.winner === "user" || isWinnerById || isWinnerByScore
+                        return (
+                          <div
+                            key={`top-match-mobile-${match._id}`}
+                            className="p-4 cursor-pointer hover:bg-muted/10 transition-colors"
+                            onClick={() => onViewLegs(match)}
+                          >
+                            <div className="flex items-center justify-between gap-3">
+                              <div className="min-w-0">
+                                <p className="truncate font-headline font-bold text-sm flex items-center gap-1.5">
+                                  <span className="text-muted-foreground">#{index + 1}</span>
+                                  <span className="truncate">{match.opponent}</span>
+                                  {didWin ? <IconTrophy size={13} className="text-amber-500 shrink-0" /> : null}
+                                </p>
+                                <p className="mt-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                                  {match.userScore ?? match.player1Score} - {match.opponentScore ?? match.player2Score}
+                                </p>
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 gap-1 px-2 text-muted-foreground hover:text-primary hover:bg-primary/10"
+                                onClick={(event) => {
+                                  event.stopPropagation()
+                                  onViewLegs(match)
+                                }}
+                              >
+                                <IconChartBar size={15} />
+                                <span className="text-[10px] uppercase tracking-widest">{t.openDetails || "Open"}</span>
+                              </Button>
+                            </div>
+                            <div className="mt-3 grid grid-cols-3 gap-2">
+                              <div className="rounded-md border border-border/40 bg-muted/20 px-2 py-1.5 text-center">
+                                <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">{t.topTournamentAvg || "Avg"}</p>
+                                <p className="font-headline text-sm font-black text-primary">{Number(match.average).toFixed(1)}</p>
+                              </div>
+                              <div className="rounded-md border border-border/40 bg-muted/20 px-2 py-1.5 text-center">
+                                <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">{t.f9Avg || "F9"}</p>
+                                <p className="font-headline text-sm font-black text-foreground">{typeof match.firstNineAvg === "number" ? Number(match.firstNineAvg).toFixed(1) : "—"}</p>
+                              </div>
+                              <div className="rounded-md border border-border/40 bg-muted/20 px-2 py-1.5 text-center">
+                                <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">{t.date || "Date"}</p>
+                                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                                  {new Date(match.date).toLocaleDateString("hu-HU", { month: "short", day: "2-digit" })}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
+                <table className="hidden md:table w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-muted/5 border-b border-border/50">
+                      <th className="px-3 lg:px-6 py-4 font-label text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{t.headToHeadStatsOpponent || "Opponent"}</th>
+                      <th className="px-2 lg:px-4 py-4 font-label text-[10px] font-bold uppercase tracking-widest text-muted-foreground text-center">{t.opponentResult || "Result"}</th>
+                      <th className="px-2 lg:px-4 py-4 font-label text-[10px] font-bold uppercase tracking-widest text-muted-foreground text-right border-l border-border/30">{t.topTournamentAvg || "Átlag"}</th>
+                      <th className="px-2 lg:px-4 py-4 font-label text-[10px] font-bold uppercase tracking-widest text-muted-foreground text-center">{t.f9Avg || "F9 Átlag"}</th>
+                      <th className="px-2 lg:px-4 py-4 font-label text-[10px] font-bold uppercase tracking-widest text-muted-foreground text-center">{t.date || "Dátum"}</th>
+                      <th className="px-3 lg:px-6 py-4 text-right"></th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border/30">
+                    {topThreeMatchAverages.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="py-12 text-center">
+                          <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground border border-dashed border-border/50 rounded-xl px-6 py-4">{t.noData || "No data"}</span>
+                        </td>
+                      </tr>
+                    ) : (
+                      topThreeMatchAverages.map((match: any, index: number) => {
+                        const currentPlayerId = playerStats?.player?._id?.toString()
+                        const winnerId = match.winnerId?.toString?.() || match.winnerId
+                        const isWinnerById =
+                          Boolean(currentPlayerId) &&
+                          Boolean(winnerId) &&
+                          currentPlayerId === winnerId
+                        const userScore = Number(match.userScore ?? match.player1Score ?? 0)
+                        const oppScore = Number(match.opponentScore ?? match.player2Score ?? 0)
+                        const isWinnerByScore = Number.isFinite(userScore) && Number.isFinite(oppScore) && userScore > oppScore
+                        const didWin = match.winner === "user" || isWinnerById || isWinnerByScore
+                        return (
+                        <tr
+                          key={`top-match-${match._id}`}
+                          className="hover:bg-muted/10 transition-colors group cursor-pointer"
+                          onClick={() => onViewLegs(match)}
                         >
-                          <div className="min-w-0">
-                            <p className="truncate text-xs font-semibold">{entry.opponent.name}</p>
-                            <p className="text-[10px] text-muted-foreground">
-                              {entry.matchesPlayed} {t.headToHeadMatches.toLowerCase()} • {entry.wins} {t.headToHeadWins.toLowerCase()} • {entry.winRate?.toFixed(1)}% WR
-                            </p>
-                          </div>
-                          <span className="text-[10px] text-muted-foreground">
-                            {entry.lastPlayedAt ? new Date(entry.lastPlayedAt).toLocaleDateString("hu-HU") : ""}
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <div className="rounded-lg border border-muted/20 bg-muted/5 p-3">
-                  <p className="mb-2 text-[10px] font-black uppercase tracking-wider text-muted-foreground">
-                    All-time összehasonlítás
-                  </p>
-                  <div className="overflow-hidden rounded-md border border-muted/20">
-                    <div className="grid grid-cols-3 bg-muted/30 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
-                      <span>{t.headToHeadStatsMetric}</span>
-                      <span className="truncate text-center">{headToHead.playerA.name}</span>
-                      <span className="truncate text-center">{headToHead.playerB.name}</span>
-                    </div>
-                    <div className="grid grid-cols-3 px-2 py-1 text-[11px]">
-                      <span className="text-muted-foreground">{t.headToHeadAverage}</span>
-                      <span className="text-center font-semibold">{headToHead.summary.playerAAverage ? headToHead.summary.playerAAverage.toFixed(1) : "—"}</span>
-                      <span className="text-center font-semibold">{headToHead.summary.playerBAverage ? headToHead.summary.playerBAverage.toFixed(1) : "—"}</span>
-                    </div>
-                    <div className="grid grid-cols-3 border-t border-muted/20 px-2 py-1 text-[11px]">
-                      <span className="text-muted-foreground">First 9 Avg</span>
-                      <span className="text-center font-semibold">{typeof headToHead.summary.playerAFirstNineAvg === "number" ? headToHead.summary.playerAFirstNineAvg.toFixed(1) : "—"}</span>
-                      <span className="text-center font-semibold">{typeof headToHead.summary.playerBFirstNineAvg === "number" ? headToHead.summary.playerBFirstNineAvg.toFixed(1) : "—"}</span>
-                    </div>
-                    <div className="grid grid-cols-3 border-t border-muted/20 px-2 py-1 text-[11px]">
-                      <span className="text-muted-foreground">Winrate</span>
-                      <span className="text-center font-semibold">
-                        {headToHead.summary.matchesPlayed > 0
-                          ? `${((headToHead.summary.playerAWins / headToHead.summary.matchesPlayed) * 100).toFixed(1)}%`
-                          : "—"}
-                      </span>
-                      <span className="text-center font-semibold">
-                        {headToHead.summary.matchesPlayed > 0
-                          ? `${((headToHead.summary.playerBWins / headToHead.summary.matchesPlayed) * 100).toFixed(1)}%`
-                          : "—"}
-                      </span>
-                    </div>
-                    <div className="grid grid-cols-3 border-t border-muted/20 px-2 py-1 text-[11px]">
-                      <span className="text-muted-foreground">{t.headToHeadOneEighties}</span>
-                      <span className="text-center font-semibold">{headToHead.summary.playerAOneEighties || 0}</span>
-                      <span className="text-center font-semibold">{headToHead.summary.playerBOneEighties || 0}</span>
-                    </div>
-                    <div className="grid grid-cols-3 border-t border-muted/20 px-2 py-1 text-[11px]">
-                      <span className="text-muted-foreground">{t.headToHeadHighestCheckout}</span>
-                      <span className="text-center font-semibold">{headToHead.summary.playerAHighestCheckout || "—"}</span>
-                      <span className="text-center font-semibold">{headToHead.summary.playerBHighestCheckout || "—"}</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="rounded-lg border border-muted/20 bg-muted/5 p-3">
-                  <p className="mb-2 text-[10px] font-black uppercase tracking-wider text-muted-foreground">
-                    Játékosok egyéni all-time stat összehasonlítás
-                  </p>
-                  <div className="overflow-hidden rounded-md border border-muted/20">
-                    <div className="grid grid-cols-3 bg-muted/30 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
-                      <span>{t.headToHeadStatsMetric}</span>
-                      <span className="truncate text-center">{headToHead.playerA.name}</span>
-                      <span className="truncate text-center">{headToHead.playerB.name}</span>
-                    </div>
-                    <div className="grid grid-cols-3 px-2 py-1 text-[11px]">
-                      <span className="text-muted-foreground">{t.headToHeadAverage}</span>
-                      <span className="text-center font-semibold">{headToHead.allTimeComparison.playerA.avg ? headToHead.allTimeComparison.playerA.avg.toFixed(1) : "—"}</span>
-                      <span className="text-center font-semibold">{headToHead.allTimeComparison.playerB.avg ? headToHead.allTimeComparison.playerB.avg.toFixed(1) : "—"}</span>
-                    </div>
-                    <div className="grid grid-cols-3 border-t border-muted/20 px-2 py-1 text-[11px]">
-                      <span className="text-muted-foreground">First 9 Avg</span>
-                      <span className="text-center font-semibold">{typeof headToHead.allTimeComparison.playerA.firstNineAvg === "number" ? headToHead.allTimeComparison.playerA.firstNineAvg.toFixed(1) : "—"}</span>
-                      <span className="text-center font-semibold">{typeof headToHead.allTimeComparison.playerB.firstNineAvg === "number" ? headToHead.allTimeComparison.playerB.firstNineAvg.toFixed(1) : "—"}</span>
-                    </div>
-                    <div className="grid grid-cols-3 border-t border-muted/20 px-2 py-1 text-[11px]">
-                      <span className="text-muted-foreground">Winrate</span>
-                      <span className="text-center font-semibold">{headToHead.allTimeComparison.playerA.winRate.toFixed(1)}%</span>
-                      <span className="text-center font-semibold">{headToHead.allTimeComparison.playerB.winRate.toFixed(1)}%</span>
-                    </div>
-                    <div className="grid grid-cols-3 border-t border-muted/20 px-2 py-1 text-[11px]">
-                      <span className="text-muted-foreground">{t.headToHeadOneEighties}</span>
-                      <span className="text-center font-semibold">{headToHead.allTimeComparison.playerA.oneEightiesCount || 0}</span>
-                      <span className="text-center font-semibold">{headToHead.allTimeComparison.playerB.oneEightiesCount || 0}</span>
-                    </div>
-                    <div className="grid grid-cols-3 border-t border-muted/20 px-2 py-1 text-[11px]">
-                      <span className="text-muted-foreground">{t.headToHeadHighestCheckout}</span>
-                      <span className="text-center font-semibold">{headToHead.allTimeComparison.playerA.highestCheckout || "—"}</span>
-                      <span className="text-center font-semibold">{headToHead.allTimeComparison.playerB.highestCheckout || "—"}</span>
-                    </div>
-                    <div className="grid grid-cols-3 border-t border-muted/20 px-2 py-1 text-[11px]">
-                      <span className="text-muted-foreground">{t.headToHeadMatches}</span>
-                      <span className="text-center font-semibold">
-                        {headToHead.allTimeComparison.playerA.matchesPlayed} ({headToHead.allTimeComparison.playerA.wins}W-{headToHead.allTimeComparison.playerA.losses}L)
-                      </span>
-                      <span className="text-center font-semibold">
-                        {headToHead.allTimeComparison.playerB.matchesPlayed} ({headToHead.allTimeComparison.playerB.wins}W-{headToHead.allTimeComparison.playerB.losses}L)
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                  <CircularStatCard label={t.headToHeadPlayed} value={headToHead.summary.matchesPlayed} total={headToHead.summary.matchesPlayed} color="#3b82f6" />
-                  <CircularStatCard label={t.headToHeadWins} value={headToHead.summary.playerAWins} total={headToHead.summary.matchesPlayed} color="#10b981" />
-                  <CircularStatCard label={t.headToHeadLost} value={headToHead.summary.playerBWins} total={headToHead.summary.matchesPlayed} color="#ef4444" />
-                </div>
-
-                <div className="space-y-2">
-                  {headToHead.matches.length === 0 ? (
-                    <div className="rounded-lg border border-dashed border-muted/20 p-4 text-xs text-muted-foreground">
-                      {t.headToHeadNoMatches}
-                    </div>
-                  ) : (
-                    headToHead.matches.map((match) => (
-                      <div key={match._id} className="space-y-2 rounded-lg border border-muted/15 bg-muted/10 px-3 py-2">
-                        <div className="flex items-center justify-between">
-                          <div className="min-w-0">
-                            <p className="truncate text-xs font-semibold">{match.tournament.name}</p>
-                            <p className="text-[10px] text-muted-foreground">{new Date(match.date).toLocaleDateString("hu-HU")}</p>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-sm font-black">
-                              {match.playerA.legsWon} - {match.playerB.legsWon}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="overflow-hidden rounded-md border border-muted/20">
-                          <div className="grid grid-cols-3 bg-muted/30 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
-                            <span>{t.headToHeadStatsMetric}</span>
-                            <span className="truncate text-center">{headToHead.playerA.name}</span>
-                            <span className="truncate text-center">{headToHead.playerB.name}</span>
-                          </div>
-                          <div className="grid grid-cols-3 px-2 py-1 text-[11px]">
-                            <span className="text-muted-foreground">{t.headToHeadAverage}</span>
-                            <span className="text-center font-semibold">{match.playerA.average ? match.playerA.average.toFixed(1) : "—"}</span>
-                            <span className="text-center font-semibold">{match.playerB.average ? match.playerB.average.toFixed(1) : "—"}</span>
-                          </div>
-                          <div className="grid grid-cols-3 border-t border-muted/20 px-2 py-1 text-[11px]">
-                            <span className="text-muted-foreground">First 9 Avg</span>
-                            <span className="text-center font-semibold">{typeof match.playerA.firstNineAvg === "number" ? match.playerA.firstNineAvg.toFixed(1) : "—"}</span>
-                            <span className="text-center font-semibold">{typeof match.playerB.firstNineAvg === "number" ? match.playerB.firstNineAvg.toFixed(1) : "—"}</span>
-                          </div>
-                          <div className="grid grid-cols-3 border-t border-muted/20 px-2 py-1 text-[11px]">
-                            <span className="text-muted-foreground">{t.headToHeadHighestCheckout}</span>
-                            <span className="text-center font-semibold">{match.playerA.highestCheckout || "—"}</span>
-                            <span className="text-center font-semibold">{match.playerB.highestCheckout || "—"}</span>
-                          </div>
-                          <div className="grid grid-cols-3 border-t border-muted/20 px-2 py-1 text-[11px]">
-                            <span className="text-muted-foreground">{t.headToHeadOneEighties}</span>
-                            <span className="text-center font-semibold">{match.playerA.oneEightiesCount || 0}</span>
-                            <span className="text-center font-semibold">{match.playerB.oneEightiesCount || 0}</span>
-                          </div>
-                        </div>
-                        <div className="flex justify-end gap-2">
-                          <Link href={`/tournaments/${match.tournament.tournamentId}`}>
-                            <Button variant="outline" size="sm">
-                              {t.headToHeadOpenTournament}
+                          <td className="px-3 lg:px-6 py-5">
+                            <div className="flex items-center gap-4">
+                              <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center font-headline font-bold text-xs shrink-0 text-muted-foreground border border-border">
+                                #{index + 1}
+                              </div>
+                              <div className="min-w-0">
+                                <p className="font-headline font-bold text-sm lg:text-base capitalize flex items-center gap-1.5">
+                                  <span className="truncate">{match.opponent}</span>
+                                  {didWin && <IconTrophy size={13} className="text-amber-500 shrink-0" />}
+                                </p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-2 lg:px-4 py-5 text-center">
+                            <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                              {match.userScore ?? match.player1Score} - {match.opponentScore ?? match.player2Score}
+                            </span>
+                          </td>
+                          <td className="px-2 lg:px-4 py-5 text-right border-l border-border/30">
+                            <span className="font-headline text-lg sm:text-xl font-black text-primary">{Number(match.average).toFixed(1)}</span>
+                          </td>
+                          <td className="px-2 lg:px-4 py-5 text-center">
+                            <span className="font-headline text-base font-bold text-foreground">
+                              {typeof match.firstNineAvg === "number" ? Number(match.firstNineAvg).toFixed(1) : "—"}
+                            </span>
+                          </td>
+                          <td className="px-2 lg:px-4 py-5 text-center">
+                            <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground bg-muted/30 px-2 py-1.5 rounded-md border border-border/50 whitespace-nowrap">
+                              {new Date(match.date).toLocaleDateString("hu-HU", { month: 'short', day: '2-digit' })}
+                            </span>
+                          </td>
+                          <td className="px-3 lg:px-6 py-5 text-right">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 gap-1.5 px-2 text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+                              onClick={(event) => {
+                                event.stopPropagation()
+                                onViewLegs(match)
+                              }}
+                            >
+                              <IconChartBar size={16} />
+                              <span className="text-[10px] uppercase tracking-widest">{t.openDetails || "Open"}</span>
                             </Button>
-                          </Link>
-                          <Button variant="outline" size="sm" onClick={() => onViewLegs({ _id: match._id })}>
-                            {t.headToHeadReview}
-                          </Button>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card className="bg-card border-muted/20 shadow-sm">
-          <CardHeader className="pb-4">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <CardTitle className="flex items-center gap-2 text-sm font-black uppercase tracking-[0.2em] text-muted-foreground">
-                <IconTrendingUp size={16} className="text-primary" />
-                Top torna átlagok
-              </CardTitle>
-              <div className="flex items-center gap-1">
-                <Button variant="outline" size="sm" onClick={() => setTopTournamentLimit((prev) => Math.min(prev + 5, tournamentAveragesAll.length || 5))}>
-                  Következő 5 betöltése
-                </Button>
-                <Button variant="ghost" size="sm" onClick={() => setTopTournamentLimit(3)}>
-                  reset
-                </Button>
+                          </td>
+                        </tr>
+                      )})
+                    )}
+                  </tbody>
+                </table>
               </div>
             </div>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {topThreeAverages.length === 0 ? (
-              <p className="text-xs text-muted-foreground">Nincs elég adat az átlag rangsorhoz.</p>
-            ) : (
-              topThreeAverages.map((entry: {
-                id: string
-                tournamentId?: string
-                name: string
-                date?: string
-                avg: number
-                finalPosition?: number
-                mmrChange?: number
-                oacMmrChange?: number
-                matchesWon: number
-                matchesLost: number
-                legsWon: number
-                legsLost: number
-                oneEightiesCount: number
-                highestCheckout: number
-              }, index: number) => (
-                <div key={entry.id} className="group bg-card border border-muted/10 rounded-xl p-4 hover:border-primary/30 hover:bg-muted/5 transition-colors">
-                  <div className="flex justify-between items-start mb-2">
-                    <div className="space-y-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <Badge variant="outline" className="text-[10px] h-5 py-0 border-amber-500/20 text-amber-600 bg-amber-500/5">#{index + 1}</Badge>
-                        <h4 className="text-xs font-black tracking-tight truncate">{entry.name}</h4>
-                      </div>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        {entry.finalPosition ? (
-                          <Badge variant="outline" className="text-[10px] h-5 py-0 border-amber-500/20 text-amber-600 bg-amber-500/5">#{entry.finalPosition}.</Badge>
-                        ) : null}
-                        {entry.mmrChange !== undefined ? (
-                          <span className={cn("text-[10px] font-bold", entry.mmrChange >= 0 ? "text-emerald-500" : "text-rose-500")}>
-                            {entry.mmrChange >= 0 ? "+" : ""}{entry.mmrChange} MMR
-                          </span>
-                        ) : null}
-                        {entry.oacMmrChange !== undefined ? (
-                          <span className={cn("text-[10px] font-bold", entry.oacMmrChange >= 0 ? "text-blue-500" : "text-red-500")}>
-                            {entry.oacMmrChange >= 0 ? "+" : ""}{entry.oacMmrChange} OAC MMR
-                          </span>
-                        ) : null}
-                      </div>
-                    </div>
-                    {entry.tournamentId ? (
-                      <Link href={`/tournaments/${entry.tournamentId}`}>
-                        <Button variant="outline" size="sm">
-                          Megnyitás
-                        </Button>
-                      </Link>
-                    ) : null}
-                  </div>
-                  <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3 mt-3 pt-3 border-t border-muted/5">
-                    <div className="flex flex-col">
-                      <span className="text-[9px] text-muted-foreground uppercase opacity-60">Meccsek</span>
-                      <span className="text-[11px] font-bold">{entry.matchesWon}W - {entry.matchesLost}L</span>
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="text-[9px] text-muted-foreground uppercase opacity-60">Legek</span>
-                      <span className="text-[11px] font-bold text-muted-foreground">{entry.legsWon}W - {entry.legsLost}L</span>
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="text-[9px] text-muted-foreground uppercase opacity-60">Átlag</span>
-                      <span className="text-[11px] font-bold">{entry.avg.toFixed(1)}</span>
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="text-[9px] text-muted-foreground uppercase opacity-60">180-ak</span>
-                      <span className="text-[11px] font-bold">{entry.oneEightiesCount}</span>
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="text-[9px] text-muted-foreground uppercase opacity-60">Checkout</span>
-                      <span className="text-[11px] font-bold">{entry.highestCheckout || "—"}</span>
-                    </div>
-                    <div className="flex flex-col text-right">
-                      <span className="text-[9px] text-muted-foreground uppercase opacity-60">Dátum</span>
-                      <span className="text-[11px] font-bold opacity-60">{entry.date ? new Date(entry.date).toLocaleDateString('hu-HU', { month: '2-digit', day: '2-digit' }) : '—'}</span>
-                    </div>
-                  </div>
-                </div>
-              ))
-            )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        <Card className="bg-card border-muted/20 shadow-sm">
-          <CardHeader className="pb-4">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <CardTitle className="flex items-center gap-2 text-sm font-black uppercase tracking-[0.2em] text-muted-foreground">
-                <IconSword size={16} className="text-primary" />
-                Top meccs átlagok
-              </CardTitle>
-              <div className="flex items-center gap-1">
-                <Button variant="outline" size="sm" onClick={() => setTopMatchLimit((prev) => Math.min(prev + 5, matchAveragesAll.length || 5))}>
-                  Következő 5 betöltése
-                </Button>
-                <Button variant="ghost" size="sm" onClick={() => setTopMatchLimit(3)}>
-                  reset
-                </Button>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {topThreeMatchAverages.length === 0 ? (
-              <p className="text-xs text-muted-foreground">Nincs elérhető meccs átlag adat.</p>
-            ) : (
-              topThreeMatchAverages.map((match: any, index: number) => (
-                <div key={`top-match-${match._id}`} className="group rounded-xl border border-muted/10 bg-card p-3 hover:border-primary/30 hover:bg-muted/5 transition-colors">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0 space-y-1">
-                      <div className="flex items-center gap-2">
-                        <Badge variant="outline" className="text-[10px] h-5 py-0 border-amber-500/20 text-amber-600 bg-amber-500/5">
-                          #{index + 1}
-                        </Badge>
-                        <p className="truncate text-xs font-black flex items-center gap-1">{match.opponent} {match.winner === "user" && <IconTrophy size={11} className="text-amber-500" />}</p>
-                      </div>
-                      <div className="text-[10px] text-muted-foreground space-y-0.5">
-                        <p className="flex items-center gap-1">
-                         {match.userScore ?? match.player1Score} - {match.opponentScore ?? match.player2Score}
-                        </p>
-                        <p className="flex items-center gap-1">
-                         
-                        </p>
-                        <p>{new Date(match.date).toLocaleDateString("hu-HU")}</p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <span className="text-base font-black text-primary">{Number(match.average).toFixed(1)}</span>
-                      <div className="text-[10px] font-bold text-muted-foreground">
-                        F9: {typeof match.firstNineAvg === "number" ? Number(match.firstNineAvg).toFixed(1) : "—"}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="mt-2 flex justify-end">
-                    <Button variant="outline" size="sm" onClick={() => onViewLegs(match)}>
-                      Meccs statisztika
-                    </Button>
-                  </div>
-                </div>
-              ))
-            )}
-          </CardContent>
-        </Card>
-
-        <Card className="bg-card border-muted/20 shadow-sm">
+        <Card className="bg-card border-muted/20 shadow-sm mt-8">
           <CardHeader className="pb-4">
             <CardTitle className="flex items-center gap-2 text-sm font-black uppercase tracking-[0.2em] text-muted-foreground">
               <IconMail size={16} className="text-primary" />
@@ -1094,7 +1237,7 @@ export function PlayerStatisticsSection({
           <div className={cn("p-5 rounded-xl border transition-all hover:bg-opacity-10", "border-primary/20 bg-primary/5 text-primary")}>
             <div className="flex items-center justify-between mb-3">
               <span className="text-[10px] font-black uppercase tracking-widest opacity-70">
-                {selectedSeason === 'current' || selectedSeason === 'all-time' ? 'Aktuális MMR' : 'Szezon végi MMR'}
+                {selectedSeason === 'current' || selectedSeason === 'all-time' ? (t.currentMmr || 'Aktuális MMR') : (t.endOfSeasonMmr || 'Szezon végi MMR')}
               </span>
               <div className="opacity-50"><IconTarget className="w-4 h-4" /></div>
             </div>
@@ -1115,27 +1258,27 @@ export function PlayerStatisticsSection({
               )}
             </div>
             <div className="text-[10px] font-bold uppercase tracking-tighter mt-1 opacity-60">
-              {selectedSeason === 'current' || selectedSeason === 'all-time' ? playerStats.player.mmrTier.name : 'Archivált'}
+              {selectedSeason === 'current' || selectedSeason === 'all-time' ? playerStats.player.mmrTier.name : (t.archived || 'Archivált')}
             </div>
           </div>
           <StatCard 
-            label={selectedSeason === 'current' || selectedSeason === 'all-time' ? 'Rangsor' : 'Végezte'}
+            label={selectedSeason === 'current' || selectedSeason === 'all-time' ? (t.rank || 'Rangsor') : (t.finishedPlace || 'Végezte')}
             value={selectedSeason === 'current' || selectedSeason === 'all-time' ? `#${playerStats.player.globalRank || '—'}` : '—'}
-            subtext="Globális lista"
+            subtext={t.globalList || "Globális lista"}
             icon={<IconTrendingUp className="w-4 h-4" />}
             variant="blue"
           />
           <StatCard 
-            label="Tornák"
+            label={t.tournaments || "Tornák"}
             value={activeSummary.totalTournaments}
-            subtext={selectedSeason === 'all-time' ? 'Pályafutás' : 'Időszak'}
+            subtext={selectedSeason === 'all-time' ? (t.career || 'Pályafutás') : (t.period || 'Időszak')}
             icon={<IconCalendar className="w-4 h-4" />}
             variant="amber"
           />
           <StatCard 
-            label="Győzelmi ráta"
-            value={`${activeSummary.winRate}%`}
-            subtext={`${activeSummary.wins} Győzelem`}
+            label={t.winRate || "Győzelmi ráta"}
+            value={`${Math.round(Number(activeSummary.winRate || 0))}%`}
+            subtext={`${activeSummary.wins} ${t.winCount || 'Győzelem'}`}
             icon={<IconSword className="w-4 h-4" />}
             variant="emerald"
           />
@@ -1146,7 +1289,7 @@ export function PlayerStatisticsSection({
             <Card className="bg-card border-muted/20 shadow-sm">
                 <CardHeader className="py-4 border-b border-muted/10">
                     <CardTitle className="text-xs font-black uppercase tracking-widest text-muted-foreground flex items-center justify-between">
-                        Forma (Átlag)
+                        {t.formAverage || "Forma (Átlag)"}
                         <IconChartBar size={14} className="text-blue-500" />
                     </CardTitle>
                 </CardHeader>
@@ -1178,7 +1321,7 @@ export function PlayerStatisticsSection({
                         </ResponsiveContainer>
                     ) : (
                         <div className="h-full flex flex-col items-center justify-center text-muted-foreground/30">
-                            <span className="text-xs font-bold uppercase tracking-widest">Nincs adat</span>
+                            <span className="text-xs font-bold uppercase tracking-widest">{t.noData || "Nincs adat"}</span>
                         </div>
                     )}
                 </CardContent>
@@ -1187,7 +1330,7 @@ export function PlayerStatisticsSection({
             <Card className="bg-card border-muted/20 shadow-sm">
                 <CardHeader className="py-4 border-b border-muted/10">
                     <CardTitle className="text-xs font-black uppercase tracking-widest text-muted-foreground flex items-center justify-between">
-                        MMR Alakulás
+                        {t.mmrProgression || "MMR Alakulás"}
                         <IconTarget size={14} className="text-emerald-500" />
                     </CardTitle>
                 </CardHeader>
@@ -1228,7 +1371,7 @@ export function PlayerStatisticsSection({
                         </ResponsiveContainer>
                     ) : (
                         <div className="h-full flex flex-col items-center justify-center text-muted-foreground/30">
-                            <span className="text-xs font-bold uppercase tracking-widest">Nincs MMR történet</span>
+                            <span className="text-xs font-bold uppercase tracking-widest">{t.noMmrHistory || "Nincs MMR történet"}</span>
                         </div>
                     )}
                 </CardContent>
@@ -1240,15 +1383,15 @@ export function PlayerStatisticsSection({
           <div className="space-y-6">
             <h3 className="text-sm font-black uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2">
               <IconChartBar size={16} className="text-primary" />
-              Szezonális Mutatók
+              {t.seasonalStats || "Szezonális Mutatók"}
             </h3>
             <div className="bg-card border border-muted/20 rounded-xl overflow-hidden divide-y divide-muted/10">
-                <SimpleStatRow label="Átlag" value={activeStats.avg?.toFixed(1) || '—'} />
-                <SimpleStatRow label="First 9 Átlag" value={activeStats.firstNineAvg?.toFixed(1) || '—'} />
-                <SimpleStatRow label="180-as Dobások" value={activeStats.total180s || activeStats.oneEightiesCount || 0} />
-                <SimpleStatRow label="Legjobb Helyezés" value={activeStats.bestPosition !== 999 ? `#${activeStats.bestPosition}` : '—'} />
-                <SimpleStatRow label="Átlagos Helyezés" value={activeStats.averagePosition ? `#${activeStats.averagePosition.toFixed(1)}` : '—'} />
-                <SimpleStatRow label="Max Kiszálló" value={activeStats.highestCheckout || '—'} />
+                <SimpleStatRow label={t.average || "Átlag"} value={activeStats.avg?.toFixed(1) || '—'} />
+                <SimpleStatRow label={t.firstNine || "First 9 Átlag"} value={activeStats.firstNineAvg?.toFixed(1) || '—'} />
+                <SimpleStatRow label={t.oneEighties || "180-as Dobások"} value={activeStats.total180s || activeStats.oneEightiesCount || 0} />
+                <SimpleStatRow label={t.bestPosition || "Legjobb Helyezés"} value={activeStats.bestPosition !== 999 ? `#${activeStats.bestPosition}` : '—'} />
+                <SimpleStatRow label={t.avgPosition || "Átlagos Helyezés"} value={activeStats.averagePosition ? `#${activeStats.averagePosition.toFixed(1)}` : '—'} />
+                <SimpleStatRow label={t.maxCheckout || "Max Kiszálló"} value={activeStats.highestCheckout || '—'} />
             </div>
 
             {/* Recent Matches Restoration */}
@@ -1256,7 +1399,7 @@ export function PlayerStatisticsSection({
                 <>
                     <h3 className="text-sm font-black uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2 pt-4">
                         <IconSword size={16} className="text-primary" />
-                        Legutóbbi Meccsek
+                        {t.recentMatches || "Legutóbbi Meccsek"}
                     </h3>
                     <div className="space-y-2">
                         {playerStats.matchHistory.map((match: any) => (
@@ -1283,7 +1426,7 @@ export function PlayerStatisticsSection({
                 <>
                     <h3 className="text-sm font-black uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2 pt-4">
                         <IconUsers size={16} className="text-primary" />
-                        Párosaim / Csapataim
+                        {t.myTeams || "Párosaim / Csapataim"}
                     </h3>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         {playerStats.teams.map((team: any) => (
@@ -1300,7 +1443,7 @@ export function PlayerStatisticsSection({
                                           <CountryFlag countryCode={team.country} />
                                         </div>
                                         <span className="text-[10px] text-muted-foreground uppercase opacity-60">
-                                            {team.type === 'pair' ? 'Páros' : 'Csapat'} • {team.stats?.mmr || 800} MMR
+                                            {team.type === 'pair' ? (t.pair || "Páros") : (t.team || "Csapat")} • {team.stats?.mmr || 800} MMR
                                         </span>
                                     </div>
                                 </div>
@@ -1318,9 +1461,9 @@ export function PlayerStatisticsSection({
             <h3 className="text-sm font-black uppercase tracking-[0.2em] text-muted-foreground flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <IconCalendar size={16} className="text-primary" />
-                Esemény Napló
+                {t.eventLog || "Esemény Napló"}
               </div>
-              <span className="text-[10px] opacity-40">{activeHistory.length} Torna</span>
+              <span className="text-[10px] opacity-40">{activeHistory.length} {t.tournaments || "Torna"}</span>
             </h3>
             <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
               {activeHistory.length > 0 ? activeHistory.map((tournament: any, index: number) => (
@@ -1349,25 +1492,25 @@ export function PlayerStatisticsSection({
                     </div>
                     <Link href={`/tournaments/${tournament.tournamentId}`}>
                        <Button variant="outline" size="sm" className="">
-                         Megnyitás
+                         {t.openDetails || "Megnyitás"}
                        </Button>
                     </Link>
                   </div>
                   <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3 mt-3 pt-3 border-t border-muted/5">
                       <div className="flex flex-col">
-                          <span className="text-[9px] text-muted-foreground uppercase opacity-60">Meccsek</span>
+                          <span className="text-[9px] text-muted-foreground uppercase opacity-60">{t.matches || "Meccsek"}</span>
                           <span className="text-[11px] font-bold">{tournament.stats?.matchesWon || 0}W - {tournament.stats?.matchesLost || 0}L</span>
                       </div>
                       <div className="flex flex-col">
-                          <span className="text-[9px] text-muted-foreground uppercase opacity-60">Legek</span>
+                          <span className="text-[9px] text-muted-foreground uppercase opacity-60">{t.legs || "Legek"}</span>
                           <span className="text-[11px] font-bold text-muted-foreground">{tournament.stats?.legsWon || 0}W - {tournament.stats?.legsLost || 0}L</span>
                       </div>
                       <div className="flex flex-col">
-                          <span className="text-[9px] text-muted-foreground uppercase opacity-60">Átlag</span>
+                          <span className="text-[9px] text-muted-foreground uppercase opacity-60">{t.average || "Átlag"}</span>
                           <span className="text-[11px] font-bold">{tournament.stats?.average?.toFixed(1) || tournament.stats?.avg?.toFixed(1) || '—'}</span>
                       </div>
                       <div className="flex flex-col">
-                          <span className="text-[9px] text-muted-foreground uppercase opacity-60">180-ak</span>
+                          <span className="text-[9px] text-muted-foreground uppercase opacity-60">180s</span>
                           <span className="text-[11px] font-bold">{tournament.stats?.oneEightiesCount || 0}</span>
                       </div>
                       <div className="flex flex-col">
@@ -1375,14 +1518,14 @@ export function PlayerStatisticsSection({
                           <span className="text-[11px] font-bold">{tournament.stats?.highestCheckout || '—'}</span>
                       </div>
                       <div className="flex flex-col text-right">
-                          <span className="text-[9px] text-muted-foreground uppercase opacity-60">Dátum</span>
+                          <span className="text-[9px] text-muted-foreground uppercase opacity-60">{t.date || "Dátum"}</span>
                           <span className="text-[11px] font-bold opacity-60">{new Date(tournament.startDate || tournament.date).toLocaleDateString('hu-HU', { month: '2-digit', day: '2-digit' })}</span>
                       </div>
                   </div>
                 </div>
               )) : (
                 <div className="py-10 text-center text-muted-foreground/30 border border-dashed border-muted/10 rounded-xl">
-                    <span className="text-xs font-bold uppercase tracking-widest">Üres lista</span>
+                    <span className="text-xs font-bold uppercase tracking-widest">{t.emptyList || "Üres lista"}</span>
                 </div>
               )}
             </div>

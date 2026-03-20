@@ -3,7 +3,9 @@
 import * as React from "react"
 import toast from "react-hot-toast"
 import { IconQrcode, IconCopy, IconLogin, IconMapPin, IconNews, IconPhone, IconMail, IconWorld } from "@tabler/icons-react"
-import axios from "axios"
+import { getSubscriptionStatusAction } from "@/features/clubs/actions/getSubscriptionStatus.action"
+import { toggleSubscriptionAction } from "@/features/clubs/actions/toggleSubscription.action"
+import { getClubPostAction } from "@/features/clubs/actions/getClubPost.action"
 import { useSearchParams } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/Card"
 import { Button } from "@/components/ui/Button"
@@ -54,15 +56,28 @@ export default function ClubSummarySection({
   const [selectedPost, setSelectedPost] = React.useState<any>(null)
   const [isSubscribed, setIsSubscribed] = React.useState(false)
   const [subLoading, setSubLoading] = React.useState(false)
+  const [enableDeferredFetches, setEnableDeferredFetches] = React.useState(false)
+
+  React.useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setEnableDeferredFetches(true)
+    }, 1200)
+    return () => window.clearTimeout(timer)
+  }, [])
 
   // Fetch subscription status
   React.useEffect(() => {
+    if (!enableDeferredFetches) return
     if (user && club._id) {
-        axios.get(`/api/clubs/${club._id}/subscribe`)
-            .then(res => setIsSubscribed(res.data.subscribed))
+        getSubscriptionStatusAction({ clubId: club._id })
+            .then(res => {
+                if (res && typeof res === 'object' && 'subscribed' in res) {
+                    setIsSubscribed(res.subscribed)
+                }
+            })
             .catch(err => console.error("Failed to fetch sub status:", err))
     }
-  }, [user, club._id])
+  }, [user, club._id, enableDeferredFetches])
 
   const handleToggleSubscription = async () => {
       if (!user) {
@@ -73,9 +88,11 @@ export default function ClubSummarySection({
 
       setSubLoading(true)
       try {
-          const res = await axios.post(`/api/clubs/${club._id}/subscribe`)
-          setIsSubscribed(res.data.subscribed)
-          toast.success(res.data.subscribed ? t('toast.subscribed') : t('toast.unsubscribed'))
+          const res = await toggleSubscriptionAction({ clubId: club._id })
+          if (res && typeof res === 'object' && 'subscribed' in res) {
+              setIsSubscribed(res.subscribed)
+              toast.success(res.subscribed ? t('toast.subscribed') : t('toast.unsubscribed'))
+          }
       } catch {
           toast.error(t('toast.error'))
       } finally {
@@ -85,6 +102,7 @@ export default function ClubSummarySection({
 
   // Handle URL "postId" parameter
   React.useEffect(() => {
+      if (!enableDeferredFetches) return
       const postId = searchParams.get('postId')
       if (postId && club._id) {
           // Check if it's already loaded in visible posts
@@ -93,9 +111,10 @@ export default function ClubSummarySection({
               setSelectedPost(existingPost)
           } else {
               // Fetch individually
-              axios.get(`/api/clubs/${club._id}/posts/${postId}`)
-                  .then(res => {
-                      setSelectedPost(res.data)
+              getClubPostAction({ clubId: club._id, postId })
+                  .then(post => {
+                      if (post) setSelectedPost(post)
+                      else toast.error(t('toast.post_not_found'))
                   })
                   .catch(err => {
                       console.error("Failed to fetch post:", err)
@@ -103,7 +122,7 @@ export default function ClubSummarySection({
                   })
           }
       }
-  }, [searchParams, posts, club._id])
+  }, [searchParams, posts, club._id, enableDeferredFetches])
 
   const handleCloseModal = () => {
       setSelectedPost(null)
@@ -118,15 +137,22 @@ export default function ClubSummarySection({
   }
 
   // Calculate stats
-  const numPlayers = club.members.length
+  const numPlayers = Array.isArray(club.members) && club.members.length > 0
+    ? club.members.length
+    : Number((club as any).membersCount || 0)
   const tournaments = club.tournaments || []
   const pastTournaments = tournaments.filter(t => t.tournamentSettings?.status === 'finished').length
   const ongoingTournaments = tournaments.filter(t => 
     t.tournamentSettings?.status === 'group-stage' || t.tournamentSettings?.status === 'knockout'
   ).length
   const upcomingTournaments = tournaments.filter(t => t.tournamentSettings?.status === 'pending').length
-  const totalTournamentPlayers = tournaments.reduce((total, tournament) => {
-    return total + (tournament.tournamentPlayers?.length || 0)
+  const totalTournamentPlayers = tournaments.reduce((total, tournament: any) => {
+    const tournamentPlayerCount = typeof tournament.playerCount === "number"
+      ? tournament.playerCount
+      : Array.isArray(tournament.tournamentPlayers)
+        ? tournament.tournamentPlayers.length
+        : 0
+    return total + tournamentPlayerCount
   }, 0)
 
   const handleCopyLink = () => {
@@ -259,7 +285,7 @@ export default function ClubSummarySection({
       )}
 
       {/* Gallery Section */}
-      <ClubGallerySection clubId={club._id} />
+      <ClubGallerySection clubId={club._id} deferUntilVisible />
 
       {/* Posts Section */}
       <div className="space-y-4">

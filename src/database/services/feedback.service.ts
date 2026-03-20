@@ -224,6 +224,11 @@ export class FeedbackService {
       .populate('messages.sender', 'name username');
   }
 
+  static async getUnreadFeedbackCountByUserId(userId: string): Promise<number> {
+    await connectMongo();
+    return FeedbackModel.countDocuments({ userId, isReadByUser: false });
+  }
+
   static async addMessage(
     feedbackId: string, 
     messageData: { sender?: string, content: string, isInternal?: boolean, attachment?: string },

@@ -58,14 +58,14 @@ export function PlayerLeaderboard({ players, isOac, rankingType, onRankingChange
                 </div>
             ) : (
                 <div className="grid gap-4">
-                    {players.map((player) => (
+                    {players.map((player, index) => (
                         <Card key={player._id} className={cn(
                             "overflow-hidden transition-all hover:shadow-md border-base-200",
                             isOac && "border-primary/20 bg-primary/5" // Highlight OAC cards slightly
                         )}>
                             <CardContent className="p-4 flex items-center gap-4">
                                 <div className="shrink-0 font-mono text-2xl font-bold text-base-content/20 w-8 text-center">
-                                    {player.globalRank || '#'}
+                                    {player.globalRank || index + 1}
                                 </div>
                                 
                                 <SmartAvatar 

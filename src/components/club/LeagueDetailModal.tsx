@@ -37,7 +37,19 @@ import { Button } from '@/components/ui/Button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Input } from "@/components/ui/Input";
 import { Label } from '@/components/ui/Label';
-;
+import { coerceNumericValue } from '@/lib/number-input';
+import {
+  addLeaguePlayerAction,
+  adjustLeaguePointsAction,
+  attachTournamentToLeagueAction,
+  detachTournamentFromLeagueAction,
+  getClubFinishedTournamentsAction,
+  getLeagueDetailsAction,
+  removeLeaguePlayerAction,
+  undoLeaguePlayerRemovalAction,
+  undoLeaguePointsAdjustmentAction,
+  updateLeagueSettingsAction,
+} from '@/features/leagues/actions/manageLeague.action';
 
 interface LeagueDetailModalProps {
   league: League;
@@ -112,13 +124,8 @@ export default function LeagueDetailModal({
   const fetchLeagueStats = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`/api/clubs/${clubId}/leagues/${league._id}`);
-      if (response.ok) {
-        const data = await response.json();
-        setLeagueStats(data);
-      } else {
-        console.error('Failed to load league details');
-      }
+      const data = await getLeagueDetailsAction({ clubId, leagueId: String(league._id) });
+      setLeagueStats(data as LeagueStatsResponse);
     } catch (err) {
       console.error('Error fetching league stats:', err);
     } finally {
@@ -128,23 +135,20 @@ export default function LeagueDetailModal({
 
   const handleManualPointsAdjustment = async (playerId: string, points: number, reason: string) => {
     try {
-      const response = await fetch(`/api/clubs/${clubId}/leagues/${league._id}/adjust-points`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          playerId,
-          pointsAdjustment: points,
-          reason,
-        }),
+      const response = await adjustLeaguePointsAction({
+        clubId,
+        leagueId: String(league._id),
+        playerId,
+        pointsAdjustment: points,
+        reason,
       });
 
-      if (response.ok) {
+      if (response && typeof response === 'object' && 'success' in response && response.success) {
         fetchLeagueStats();
       } else {
-        const errorData = await response.json();
-        showErrorToast(errorData.error || 'Hiba a pontszám módosítása során', {
+        showErrorToast('Hiba a pontszám módosítása során', {
           context: 'Liga pontszám módosítása',
-          error: errorData.error,
+          error: 'adjustLeaguePointsAction returned unsuccessful result',
         });
       }
     } catch (err) {
@@ -158,43 +162,20 @@ export default function LeagueDetailModal({
 
   const handleAddPlayerToLeague = async (player: any) => {
     try {
-      let playerId = player._id;
-      const playerName = player.name;
-
-      if (!playerId) {
-        const createResponse = await fetch('/api/players', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name: playerName }),
-        });
-
-        if (!createResponse.ok) {
-          const errorData = await createResponse.json();
-          showErrorToast(errorData.error || 'Hiba a játékos létrehozása során', {
-            context: 'Liga játékos létrehozása',
-            error: errorData.error,
-          });
-          return;
-        }
-
-        const createData = await createResponse.json();
-        playerId = createData._id;
-      }
-
-      const response = await fetch(`/api/clubs/${clubId}/leagues/${league._id}/players`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ playerId, playerName }),
+      const response = await addLeaguePlayerAction({
+        clubId,
+        leagueId: String(league._id),
+        playerId: player._id,
+        playerName: player.name,
       });
 
-      if (response.ok) {
+      if (response && typeof response === 'object' && 'success' in response && response.success) {
         fetchLeagueStats();
         showSuccessToast(t("játékos_sikeresen_hozzáadva"));
       } else {
-        const errorData = await response.json();
-        showErrorToast(errorData.error || 'Hiba a játékos hozzáadása során', {
+        showErrorToast('Hiba a játékos hozzáadása során', {
           context: 'Liga játékos hozzáadása',
-          error: errorData.error,
+          error: 'addLeaguePlayerAction returned unsuccessful result',
         });
       }
     } catch (error) {
@@ -207,20 +188,20 @@ export default function LeagueDetailModal({
 
   const handleRemovePlayerFromLeague = async (playerId: string, playerName: string, reason: string) => {
     try {
-      const response = await fetch(`/api/clubs/${clubId}/leagues/${league._id}/players/${playerId}`, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ reason }),
+      const response = await removeLeaguePlayerAction({
+        clubId,
+        leagueId: String(league._id),
+        playerId,
+        reason,
       });
 
-      if (response.ok) {
+      if (response && typeof response === 'object' && 'success' in response && response.success) {
         fetchLeagueStats();
         showSuccessToast(`${playerName} sikeresen eltávolítva a ligából!`);
       } else {
-        const errorData = await response.json();
-        showErrorToast(errorData.error || 'Hiba a játékos eltávolítása során', {
+        showErrorToast('Hiba a játékos eltávolítása során', {
           context: 'Liga játékos eltávolítása',
-          error: errorData.error,
+          error: 'removeLeaguePlayerAction returned unsuccessful result',
         });
       }
     } catch (error) {
@@ -786,11 +767,10 @@ function TournamentsTab({ tournaments, canManage, clubId, leagueId, onTournament
   const fetchAvailableTournaments = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`/api/clubs/${clubId}/tournaments`);
-      if (response.ok) {
-        const data = await response.json();
+      const data = await getClubFinishedTournamentsAction({ clubId, leagueId });
+      if (data && typeof data === 'object' && 'tournaments' in data) {
         const attachedIds = tournaments.map((t) => t._id);
-        const available = data.tournaments.filter(
+        const available = ((data as { tournaments?: any[] }).tournaments || []).filter(
           (t: any) => !attachedIds.includes(t._id) && t.tournamentSettings.status === 'finished',
         );
         setAvailableTournaments(available);
@@ -816,13 +796,14 @@ function TournamentsTab({ tournaments, canManage, clubId, leagueId, onTournament
 
     try {
       setLoading(true);
-      const response = await fetch(`/api/clubs/${clubId}/leagues/${leagueId}/attach-tournament`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tournamentId: selectedTournamentId, calculatePoints }),
+      const response = await attachTournamentToLeagueAction({
+        clubId,
+        leagueId,
+        tournamentId: selectedTournamentId,
+        calculatePoints,
       });
 
-      if (response.ok) {
+      if (response && typeof response === 'object' && 'success' in response && response.success) {
         showSuccessToast(
           calculatePoints
             ? 'Verseny sikeresen hozzárendelve pontszámítással!'
@@ -833,10 +814,9 @@ function TournamentsTab({ tournaments, canManage, clubId, leagueId, onTournament
         setCalculatePoints(false);
         onTournamentAttached();
       } else {
-        const errorData = await response.json();
-        showErrorToast(errorData.error || 'Hiba a verseny hozzárendelése során', {
+        showErrorToast('Hiba a verseny hozzárendelése során', {
           context: 'Verseny hozzárendelése',
-          error: errorData.error,
+          error: 'attachTournamentToLeagueAction returned unsuccessful result',
         });
       }
     } catch (error) {
@@ -854,22 +834,21 @@ function TournamentsTab({ tournaments, canManage, clubId, leagueId, onTournament
 
     try {
       setLoading(true);
-      const response = await fetch(`/api/clubs/${clubId}/leagues/${leagueId}/detach-tournament`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tournamentId: tournamentToDetach.id }),
+      const response = await detachTournamentFromLeagueAction({
+        clubId,
+        leagueId,
+        tournamentId: tournamentToDetach.id,
       });
 
-      if (response.ok) {
+      if (response && typeof response === 'object' && 'success' in response && response.success) {
         showSuccessToast(t("verseny_sikeresen_eltávolítva"));
         setShowDetachModal(false);
         setTournamentToDetach(null);
         onTournamentAttached();
       } else {
-        const errorData = await response.json();
-        showErrorToast(errorData.error || 'Hiba a verseny eltávolítása során', {
+        showErrorToast('Hiba a verseny eltávolítása során', {
           context: 'Verseny eltávolítása',
-          error: errorData.error,
+          error: 'detachTournamentFromLeagueAction returned unsuccessful result',
         });
       }
     } catch (error) {
@@ -1105,20 +1084,20 @@ function SettingsTab({ league, clubId, onLeagueUpdated, leagueStats, disabled }:
     if (!confirm('Biztosan visszavonod ezt a pontszám módosítást?')) return;
 
     try {
-      const response = await fetch(`/api/clubs/${clubId}/leagues/${league._id}/undo-adjustment`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ playerId, adjustmentIndex }),
+      const response = await undoLeaguePointsAdjustmentAction({
+        clubId,
+        leagueId: String(league._id),
+        playerId,
+        adjustmentIndex,
       });
 
-      if (response.ok) {
+      if (response && typeof response === 'object' && 'success' in response && response.success) {
         onLeagueUpdated();
         showSuccessToast(t("pontszám_módosítás_visszavonva"));
       } else {
-        const errorData = await response.json();
-        showErrorToast(errorData.error || 'Hiba a visszavonás során', {
+        showErrorToast('Hiba a visszavonás során', {
           context: 'Liga pontszám visszavonása',
-          error: errorData.error,
+          error: 'undoLeaguePointsAdjustmentAction returned unsuccessful result',
         });
       }
     } catch (error) {
@@ -1133,20 +1112,20 @@ function SettingsTab({ league, clubId, onLeagueUpdated, leagueStats, disabled }:
     if (!confirm('Biztosan visszahelyezed ezt a játékost a ligába?')) return;
 
     try {
-      const response = await fetch(`/api/clubs/${clubId}/leagues/${league._id}/undo-removal`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ playerId, removalIndex }),
+      const response = await undoLeaguePlayerRemovalAction({
+        clubId,
+        leagueId: String(league._id),
+        playerId,
+        removalIndex,
       });
 
-      if (response.ok) {
+      if (response && typeof response === 'object' && 'success' in response && response.success) {
         onLeagueUpdated();
         showSuccessToast(t("játékos_visszahelyezve_a"));
       } else {
-        const errorData = await response.json();
-        showErrorToast(errorData.error || 'Hiba a visszahelyezés során', {
+        showErrorToast('Hiba a visszahelyezés során', {
           context: 'Liga játékos visszahelyezése',
-          error: errorData.error,
+          error: 'undoLeaguePlayerRemovalAction returned unsuccessful result',
         });
       }
     } catch (error) {
@@ -1177,13 +1156,13 @@ function SettingsTab({ league, clubId, onLeagueUpdated, leagueStats, disabled }:
         pointsConfig: cleanedPointsConfig,
       };
 
-      const response = await fetch(`/api/clubs/${clubId}/leagues/${league._id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(dataToSubmit),
+      const response = await updateLeagueSettingsAction({
+        clubId,
+        leagueId: String(league._id),
+        data: dataToSubmit,
       });
 
-      if (response.ok) {
+      if (response && typeof response === 'object' && 'success' in response && response.success) {
         setIsEditing(false);
         onLeagueUpdated();
         showSuccessToast(t("liga_beállítások_sikeresen"));
@@ -1479,13 +1458,12 @@ function SettingsTab({ league, clubId, onLeagueUpdated, leagueStats, disabled }:
                         type="number"
                         min={0}
                         value={(formData.pointsConfig as any).groupDropoutPoints ?? 0}
-                        onChange={(event) => {
-                          const val = event.target.value;
+                        onNumberChange={(value) => {
                           setFormData({
                             ...formData,
                             pointsConfig: {
                               ...formData.pointsConfig,
-                              groupDropoutPoints: val === '' ? 0 : parseInt(val, 10),
+                              groupDropoutPoints: coerceNumericValue(value),
                             },
                           });
                         }}
@@ -1499,8 +1477,7 @@ function SettingsTab({ league, clubId, onLeagueUpdated, leagueStats, disabled }:
                           type="number"
                           min={0}
                           value={((formData.pointsConfig?.fixedRankPoints as any)?.[placement] ?? 0) as number}
-                          onChange={(event) => {
-                            const val = event.target.value;
+                          onNumberChange={(value) => {
                             setFormData({
                               ...formData,
                               pointsConfig: {
@@ -1508,7 +1485,7 @@ function SettingsTab({ league, clubId, onLeagueUpdated, leagueStats, disabled }:
                                 useFixedRanks: true,
                                 fixedRankPoints: {
                                   ...(formData.pointsConfig?.fixedRankPoints || {}),
-                                  [placement]: val === '' ? 0 : parseInt(val, 10),
+                                  [placement]: coerceNumericValue(value),
                                 }
                               },
                             });
@@ -1533,13 +1510,13 @@ function SettingsTab({ league, clubId, onLeagueUpdated, leagueStats, disabled }:
                           min={0}
                           step={config.step ?? 1}
                           value={(formData.pointsConfig as any)[config.key] ?? 0}
-                          onChange={(event) => {
-                            const val = event.target.value;
+                          parseMode={config.step ? 'float' : 'int'}
+                          onNumberChange={(value) => {
                             setFormData({
                               ...formData,
                               pointsConfig: {
                                 ...formData.pointsConfig,
-                                [config.key]: val === '' ? 0 : (config.step ? parseFloat(val) : parseInt(val, 10)),
+                                [config.key]: coerceNumericValue(value),
                               },
                             });
                           }}

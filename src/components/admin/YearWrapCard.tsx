@@ -1,6 +1,5 @@
 import { useTranslations } from "next-intl";
 import { useState } from "react"
-import axios from "axios"
 import { IconAlertTriangle, IconLoader2 } from "@tabler/icons-react"
 import toast from "react-hot-toast"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/Card"
@@ -8,6 +7,8 @@ import { Button } from "@/components/ui/Button"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/Input"
 import { Label } from "@/components/ui/Label"
+import { coerceNumericValue } from "@/lib/number-input"
+import { adminYearWrapActions } from "@/features/admin/actions/adminDomains.action"
 
 export function YearWrapCard() {
     const t = useTranslations("Admin.components");
@@ -27,19 +28,16 @@ export function YearWrapCard() {
 
     try {
       setLoading(true)
-      const response = await axios.post("/api/admin/year-wrap", {
-        year,
-        confirm: confirmText
-      })
+      const response = await adminYearWrapActions.wrap(year, confirmText)
 
-      if (response.data.success) {
+      if (response.data?.success) {
         toast.success(`Sikeres évzárás! Feldolgozva: ${response.data.processed}, Kiosztott címek: ${response.data.honorsAwarded}`)
         setIsOpen(false)
         setConfirmText("")
       }
     } catch (error: any) {
       console.error("Year wrap error:", error)
-      toast.error(error.response?.data?.error || "Hiba történt az évzárás során")
+      toast.error(error?.message || "Hiba történt az évzárás során")
     } finally {
       setLoading(false)
     }
@@ -53,18 +51,16 @@ export function YearWrapCard() {
 
     try {
       setLoading(true)
-      const response = await axios.post("/api/admin/restore-stats", {
-        year
-      })
+      const response = await adminYearWrapActions.restore(year)
 
-      if (response.data.success) {
+      if (response.data?.success) {
         toast.success(response.data.message || "Sikeres visszaállítás!")
         setIsRestoreOpen(false)
         setConfirmText("")
       }
     } catch (error: any) {
       console.error("Restore error:", error)
-      toast.error(error.response?.data?.error || "Hiba történt a visszaállítás során")
+      toast.error(error?.message || "Hiba történt a visszaállítás során")
     } finally {
       setLoading(false)
     }
@@ -125,7 +121,7 @@ export function YearWrapCard() {
               <Input 
                 type="number" 
                 value={year} 
-                onChange={(e) => setYear(parseInt(e.target.value))}
+                onNumberChange={(value) => setYear(coerceNumericValue(value, new Date().getFullYear()))}
               />
             </div>
             <div className="space-y-2">
@@ -171,7 +167,7 @@ export function YearWrapCard() {
               <Input 
                 type="number" 
                 value={year} 
-                onChange={(e) => setYear(parseInt(e.target.value))}
+                onNumberChange={(value) => setYear(coerceNumericValue(value, new Date().getFullYear()))}
               />
             </div>
             <div className="space-y-2">

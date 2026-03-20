@@ -1,47 +1,45 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { authorizeUserResult } from '@/features/auth/lib/authorizeUser';
 import { MediaService } from '@/database/services/media.service';
-import { AuthorizationService } from '@/database/services/authorization.service';
-import { withApiTelemetry } from '@/lib/api-telemetry';
+import { handleError } from '@/middleware/errorHandle';
 
-async function __POST(req: NextRequest) {
+export async function POST(request: NextRequest) {
   try {
-    const userId = await AuthorizationService.getUserIdFromRequest(req);
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const authResult = await authorizeUserResult({ request });
+    if (!authResult.ok) {
+      return NextResponse.json({ error: authResult.message }, { status: authResult.status });
     }
 
-    const formData = await req.formData();
-    const file = formData.get('file') as File;
-    const clubId = formData.get('clubId') as string;
+    const formData = await request.formData();
+    const file = formData.get('file');
+    const clubId = formData.get('clubId');
 
-    if (!file) {
+    if (!(file instanceof File)) {
       return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
     }
 
-    // Max 15MB
-    const MAX_SIZE = 15 * 1024 * 1024;
-    if (file.size > MAX_SIZE) {
-        return NextResponse.json({ error: 'File size exceeds 15MB limit' }, { status: 400 });
-    }
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
 
-    const buffer = Buffer.from(await file.arrayBuffer());
     const media = await MediaService.createMedia(
-      userId,
+      authResult.data.userId,
       buffer,
-      file.type,
-      file.name,
+      file.type || 'application/octet-stream',
+      file.name || 'upload',
       file.size,
-      clubId
+      typeof clubId === 'string' ? clubId : undefined
     );
 
-    return NextResponse.json({ 
-        url: `/api/media/${media._id}`, 
-        id: media._id 
-    }, { status: 201 });
-  } catch (error: any) {
-    console.error('Media upload error:', error);
-    return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json({
+      success: true,
+      mediaId: media._id.toString(),
+      url: `/api/media/${media._id.toString()}`,
+      mimeType: media.mimeType,
+      size: media.size,
+      filename: media.filename || file.name,
+    });
+  } catch (error) {
+    const handled = handleError(error);
+    return NextResponse.json(handled.body, { status: handled.status });
   }
 }
-
-export const POST = withApiTelemetry('/api/media', __POST as any);

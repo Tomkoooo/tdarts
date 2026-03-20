@@ -1,5 +1,9 @@
 import React, { useEffect, useState } from "react"
 import { toast } from "react-hot-toast"
+import { getClubAction } from "@/features/clubs/actions/getClub.action"
+import { getClubLeaguesAction } from "@/features/clubs/actions/getClubLeagues.action"
+import { createTournamentAction } from "@/features/tournaments/actions/createTournament.action"
+import { isGuardFailureResult } from "@/shared/lib/guards/result"
 import {
   IconCalendar,
   IconCheck,
@@ -23,7 +27,7 @@ import { useRouter } from "next/navigation"
 import { TournamentSettings } from "@/interface/tournament.interface"
 import { BillingInfo } from "@/interface/club.interface"
 import { cn } from "@/lib/utils"
-import { FeatureFlagService } from "@/lib/featureFlags"
+import { FeatureFlagService } from "@/features/flags/lib/featureFlags"
 import { Button } from "@/components/ui/Button"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { FormField } from "@/components/ui/form-field"
@@ -161,19 +165,16 @@ export default function CreateTournamentModal({
 
   const fetchClubBillingInfo = async () => {
     try {
-      const response = await fetch(`/api/clubs/${clubId}`)
-      if (response.ok) {
-        const data = await response.json()
-        if (data.club?.billingInfo) {
-          setSettings(prev => ({
-            ...prev,
-            saveBillingInfo: true,
-            billingInfo: {
-              ...prev.billingInfo,
-              ...data.club.billingInfo
-            } as BillingInfo
-          }))
-        }
+      const club = await getClubAction({ clubId })
+      if (club?.billingInfo) {
+        setSettings(prev => ({
+          ...prev,
+          saveBillingInfo: true,
+          billingInfo: {
+            ...prev.billingInfo,
+            ...club.billingInfo
+          } as BillingInfo
+        }))
       }
     } catch (err) {
       console.error("Error fetching club billing info:", err)
@@ -182,13 +183,9 @@ export default function CreateTournamentModal({
 
   const fetchAvailableLeagues = async () => {
     try {
-      const response = await fetch(`/api/clubs/${clubId}/leagues`)
-      if (response.ok) {
-        const data = await response.json()
-        // Filter out inactive/terminated leagues
-        const activeLeagues = (data.leagues || []).filter((league: any) => league.isActive !== false)
-        setAvailableLeagues(activeLeagues)
-      }
+      const { leagues } = await getClubLeaguesAction({ clubId, includeInactive: false })
+      const activeLeagues = (leagues || []).filter((league: any) => league.isActive !== false)
+      setAvailableLeagues(activeLeagues)
     } catch (err) {
       console.error("Error fetching leagues:", err)
     }
@@ -284,10 +281,12 @@ export default function CreateTournamentModal({
     setIsSubmitting(true)
 
     try {
+      const startDate = settings.startDate instanceof Date ? settings.startDate : new Date(settings.startDate)
+      const regDeadline = settings.registrationDeadline instanceof Date ? settings.registrationDeadline : new Date(settings.registrationDeadline)
       const payload = {
         name: settings.name,
         description: settings.description,
-        startDate: settings.startDate,
+        startDate: startDate.toISOString(),
         entryFee: settings.entryFee === '' as unknown as number ? 0 : settings.entryFee,
         maxPlayers: settings.maxPlayers === '' as unknown as number ? 0 : settings.maxPlayers,
         format: settings.format,
@@ -300,33 +299,27 @@ export default function CreateTournamentModal({
           status: "idle",
           isActive: true,
         })),
-        location: settings.location,
+        location: settings.location || null,
         type: settings.type,
-        registrationDeadline: settings.registrationDeadline,
+        registrationDeadline: regDeadline.toISOString(),
         leagueId: selectedLeagueId || undefined,
         isSandbox: settings.isSandbox || false,
         verified: isOac,
-        billingInfo: isOac ? settings.billingInfo : undefined,
+        billingInfo: isOac ? (settings.billingInfo as unknown as Record<string, unknown>) : undefined,
         saveBillingInfo: isOac ? settings.saveBillingInfo : false,
         participationMode: settings.participationMode || 'individual',
       }
 
-      const response = await fetch(`/api/clubs/${clubId}/createTournament`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      })
+      const result = await createTournamentAction({ clubId, payload })
 
-      if (!response.ok) {
-        const errorData = await response.json()
-        const errorMsg = errorData.error || t('errors.default')
+      if (isGuardFailureResult(result)) {
+        const errorMsg = result.message || t('errors.default')
         setError(errorMsg)
         toast.error(errorMsg)
         return
       }
 
-      const data = await response.json()
-      
+      const data = result as { checkoutUrl?: string | null; tournamentId?: string; code?: string }
       if (data.checkoutUrl) {
         window.location.href = data.checkoutUrl
         return
@@ -351,15 +344,15 @@ export default function CreateTournamentModal({
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent
-        className="flex max-h-[90vh] max-w-3xl flex-col overflow-hidden bg-gradient-to-br from-card/98 to-card/95 backdrop-blur-xl p-0 shadow-2xl shadow-primary/20"
+        className="flex max-h-[90vh] max-w-3xl flex-col overflow-hidden bg-linear-to-br from-card/98 to-card/95 backdrop-blur-xl p-0 shadow-2xl shadow-primary/20"
       >
-        <DialogHeader className="bg-gradient-to-r from-primary/10 to-transparent px-4 md:px-6 py-3 md:py-4 shadow-sm shadow-primary/10">
+        <DialogHeader className="bg-linear-to-r from-primary/10 to-transparent px-4 md:px-6 py-3 md:py-4 shadow-sm shadow-primary/10">
           <DialogTitle className="text-xl md:text-2xl text-foreground">{t('title')}</DialogTitle>
           <DialogDescription className="text-sm">{t('subtitle')}</DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto px-4 md:px-6 py-4 md:py-6">
-          <div className="mb-4 md:mb-6 flex items-center justify-between gap-2">
+        <div className="flex-1 overflow-y-auto px-4 py-4 md:px-6 md:py-6">
+          <div className="mb-4 flex items-center justify-between gap-2 md:mb-6">
             {visibleSteps.map((step, idx) => {
               const StepIcon = step.icon
               const isActive = currentStep === step.id
@@ -407,9 +400,10 @@ export default function CreateTournamentModal({
 
           {/* Error Alert removed as per user request to show it in footer */}
 
-          <Card className="bg-gradient-to-br from-card/95 to-card/80 backdrop-blur-sm shadow-lg shadow-primary/10">
-            <CardContent className="pt-6">
-              {currentStep === "details" && (
+          <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_260px]">
+            <Card className="bg-linear-to-br from-card/95 to-card/80 backdrop-blur-sm shadow-lg shadow-primary/10">
+              <CardContent className="pt-6">
+                {currentStep === "details" && (
                 <div className="space-y-4">
                   <FormField
                     label={t('details.name_label')}
@@ -481,7 +475,7 @@ export default function CreateTournamentModal({
                 </div>
               )}
 
-              {currentStep === "boards" && (
+                {currentStep === "boards" && (
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <h3 className="text-lg font-semibold">{t('boards.title')}</h3>
@@ -526,7 +520,7 @@ export default function CreateTournamentModal({
                 </div>
               )}
 
-              {currentStep === "settings" && (
+                {currentStep === "settings" && (
                 <div className="space-y-4">
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <FormField
@@ -676,7 +670,7 @@ export default function CreateTournamentModal({
                 </div>
               )}
 
-              {currentStep === "billing" && settings.billingInfo && (
+                {currentStep === "billing" && settings.billingInfo && (
                 <div className="space-y-6">
                   <div className="flex items-center justify-between gap-4 p-4 rounded-xl bg-primary/10 border border-primary/20">
                     <div className="flex items-center gap-3">
@@ -796,12 +790,46 @@ export default function CreateTournamentModal({
                     </AlertDescription>
                   </Alert>
                 </div>
-              )}
-            </CardContent>
-          </Card>
+                )}
+              </CardContent>
+            </Card>
+
+            <aside className="hidden lg:block">
+              <Card className="sticky top-0 bg-linear-to-b from-primary/12 to-card/60 shadow-lg shadow-primary/15">
+                <CardContent className="space-y-4 pt-6">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      {t('steps.details')}
+                    </p>
+                    <p className="mt-1 text-lg font-bold text-foreground">
+                      {settings.name || t('details.name_placeholder')}
+                    </p>
+                  </div>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">{t('boards.title')}</span>
+                      <span className="font-semibold">{boards.length}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">{t('settings.max_players_label')}</span>
+                      <span className="font-semibold">{settings.maxPlayers || 0}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">{t('settings.format_label')}</span>
+                      <span className="font-semibold">{settings.format}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">{t('settings.mode_label')}</span>
+                      <span className="font-semibold">{settings.participationMode || 'individual'}</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </aside>
+          </div>
         </div>
 
-        <DialogFooter className="flex flex-col gap-2 bg-gradient-to-r from-transparent to-primary/5 px-4 md:px-6 py-3 md:py-4 sm:flex-row sm:items-center sm:justify-between shadow-[0_-4px_12px_rgba(0,0,0,0.1)]">
+        <DialogFooter className="flex flex-col gap-2 bg-linear-to-r from-transparent to-primary/5 px-4 md:px-6 py-3 md:py-4 sm:flex-row sm:items-center sm:justify-between shadow-[0_-4px_12px_rgba(0,0,0,0.1)]">
           <Button variant="ghost" size="sm" onClick={onClose} disabled={isSubmitting} className="md:size-default">
             {t('footer.cancel')}
           </Button>

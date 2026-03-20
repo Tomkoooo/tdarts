@@ -1,60 +1,47 @@
 {
-  "title": "Hogyan Működik a tDarts? - Gyakran Ismételt Kérdések",
-  "subtitle": "Teljes útmutató a tDarts platform használatához. Regisztráció, klubkezelés, versenyek indítása, eredményrögzítés és liga kezelés lépésről lépésre.",
+  "title": "Hogyan működik a tDarts? - Friss útmutató",
+  "subtitle": "Naprakész, gyakorlati útmutató a platform mindennapi használatához: bejelentkezés, klubkezelés, versenyszervezés, író program és liga pontozás.",
   "steps": [
     {
       "id": 0,
-      "title": "Fiók létrehozása és hitelesítés",
+      "title": "Kezdés: bejelentkezés és fiók",
       "icon": "IconUserPlus",
-      "description": "Regisztráció és bejelentkezés",
+      "description": "Google-first bejelentkezés, opcionális e-mail/jelszó",
       "content": {
         "sections": [
           {
             "type": "text",
-            "content": "A tDarts platform használata egyszerű és intuitív. Az alábbiakban lépésről lépésre bemutatjuk, hogyan regisztrálhatsz, jelentkezhetsz be, kezelheted a klubodat, és hogyan indíthatsz vagy vehetsz részt versenyeken."
+            "content": "A tDarts használatához első lépésként jelentkezz be. A platformon a <strong>Google bejelentkezés az elsődleges</strong>, az e-mail + jelszó opció továbbra is elérhető alternatívaként."
           },
           {
             "type": "subsection",
-            "title": "Regisztráció",
+            "title": "Ajánlott bejelentkezési mód",
             "content": [
-              "A felső menüsorban kattints a &ldquo;Regisztráció&rdquo; gombra.",
-              "Add meg a felhasználóneved, teljes neved, e-mail címedet és jelszavadat.",
-              "A regisztráció után kapsz egy e-mailt egy hitelesítő kóddal, amit a következő lépésben kell megadnod.",
-              "A hitelesítést követően bejelentkezhetsz az oldalra."
+              "Nyisd meg a &ldquo;Bejelentkezés&rdquo; vagy &ldquo;Regisztráció&rdquo; oldalt.",
+              "Elsőként a Google gomb jelenik meg - ezt használd, ha gyors és egyszerű belépést szeretnél.",
+              "Ha nem Google fiókkal használnád a rendszert, átválthatsz e-mail + jelszó módra."
             ],
             "note": {
               "type": "info",
-              "content": "Szervezetként nem szükséges központi e-mail címet használni, mivel több moderátor is hozzárendelhető a klubhoz, mindenki saját fiókkal férhet hozzá."
+              "content": "Szervezői környezetben javasolt minden felhasználónak saját személyes fiókot használni, nem közös belépést."
             }
           },
           {
             "type": "subsection",
-            "title": "Bejelentkezés",
+            "title": "Mikor használd az e-mail + jelszó módot?",
             "content": [
-              "A felső menüsorban válaszd a &ldquo;Bejelentkezés&rdquo; fület, majd add meg e-mail címedet és jelszavadat.",
-              "A bejelentkezés 180 napig érvényes az adott böngészőben."
+              "Ha nincs vagy nem szeretnél Google fiókot használni.",
+              "Ha meglévő e-mailes fiókhoz kapcsolnád a belépést.",
+              "Ha szervezeti szabályzat miatt külön bejelentkezést kell használnod."
             ]
           },
           {
             "type": "subsection",
-            "title": "Kijelentkezés",
+            "title": "Kilépés és profil",
             "content": [
-              "Bejelentkezés után a felső menüsorban megjelenik a felhasználóneved. Kattints rá, navigálj a &ldquo;Profil&rdquo; oldalra, majd görgess le a &ldquo;Kijelentkezés&rdquo; gombhoz."
-            ]
-          },
-          {
-            "type": "subsection",
-            "title": "Adatmódosítás",
-            "content": [
-              "A &ldquo;Profil&rdquo; oldalon minden adatodat módosíthatod. Ha az e-mail címedet változtatod, új hitelesítő kódot kell megadnod."
-            ]
-          },
-          {
-            "type": "subsection",
-            "title": "Elfelejtett jelszó",
-            "content": [
-              "A &ldquo;Bejelentkezés&rdquo; oldalon kattints az &ldquo;Elfelejtett jelszó&rdquo; gombra.",
-              "Add meg e-mail címedet, majd a kapott hitelesítő kód segítségével állíthatsz be új jelszót."
+              "Bejelentkezés után a profiloldalon módosíthatod adataidat.",
+              "E-mail cím vagy jelszó változtatása esetén kövesd a rendszer megerősítési lépéseit.",
+              "Elfelejtett jelszó esetén a bejelentkezési oldalon kérhetsz visszaállítást."
             ]
           }
         ]
@@ -62,375 +49,120 @@
     },
     {
       "id": 1,
-      "title": "Klubkezelés",
+      "title": "Klubkezelés: szerepkörök és alapok",
       "icon": "IconBuilding",
-      "description": "Klub létrehozása és kezelése",
+      "description": "Admin, moderátor, tag és felelős működés",
       "content": {
         "sections": [
           {
             "type": "subsection",
-            "title": "Klub regisztráció",
+            "title": "Klub létrehozása és tagság",
             "content": [
-              "Ha nem vagy más klub tagja vagy moderátora, a felső menüsorban a &ldquo;Saját klub&rdquo; gombra kattintva létrehozhatsz egy új klubot.",
-              "Add meg a klub adatait, például a nevét és helyszínét."
+              "A &ldquo;Saját klub&rdquo; menüben hozhatsz létre új klubot, ha még nem vagy másik klubhoz rendelve.",
+              "A klubhoz tagokat adhatsz hozzá, így több szervező is tud dolgozni saját fiókkal.",
+              "A klub folyamatos működéséhez érdemes minimum 2-3 aktív szervezőt beállítani.",
+              "Fontos: a klub ügyeinek kezeléséhez (szervezői műveletekhez) a tagot moderátornak kell emelni, különben csak normál klubtag marad.",
+              "Ez a játékos felvételi és kezelő felületeken is látszik, így könnyebb azonosítani, ki moderátor és ki sima tag."
             ]
           },
           {
             "type": "subsection",
-            "title": "Táblák kezelése",
+            "title": "Miért fontosak a klubtagok?",
             "content": [
-              "A táblák mostantól közvetlenül a versenyekhez tartoznak, nem a klubhoz.",
-              "Verseny létrehozásakor dinamikusan adhatsz hozzá táblákat:",
-              "• Kattints a &ldquo;Tábla hozzáadása&rdquo; gombra",
-              "• Add meg a tábla egyedi nevét (pl. &ldquo;VIP Tábla&rdquo;, &ldquo;Főtábla&rdquo;)",
-              "• A táblák automatikusan sorszámot kapnak (1, 2, 3...)",
-              "• Verseny szerkesztésekor is módosíthatod a táblákat",
-              "A táblák egyedi elnevezése segíti a játékosokat a fizikai és a platformon lévő tábla azonosításában."
+              "A klubtagok biztosítják, hogy a versenyek kezelése ne egyetlen emberen múljon.",
+              "Különböző feladatok (check-in, meccsfelügyelet, kommunikáció, eredményellenőrzés) párhuzamosan végezhetők.",
+              "A saját fiókos működés átláthatóbb és biztonságosabb, mint a közös bejelentkezés."
             ],
             "note": {
-              "type": "info",
-              "content": "Minden versenyhez külön táblák rendelhetők, így rugalmasan kezelheted a különböző méretű versenyeket."
+              "type": "warning",
+              "content": "Ne használjatok 1 közös fiókot több emberrel a klub menedzselésére. Minden szervező saját profillal dolgozzon."
             }
           },
           {
             "type": "subsection",
-            "title": "Tagok kezelése",
+            "title": "Admin és moderátor jogosultságok",
             "content": [
-              "A &ldquo;Beállítások&rdquo; menüpontban adhatsz hozzá regisztrált felhasználókat a klubhoz.",
-              "A tagok moderátori jogokat kaphatnak, így hozzáférnek a klub beállításaihoz, valamint versenyeket indíthatnak és kezelhetnek."
+              "Admin: teljes klubkezelés, moderátorok kiosztása/visszavonása, kulcsbeállítások kezelése.",
+              "Moderátor: napi működtetés, versenyek indítása és kezelése, tagok kezelése a kijelölt keretben.",
+              "Tag: részvétel és alap klubhasználat, menedzsment jogosultság nélkül."
+            ]
+          },
+          {
+            "type": "subsection",
+            "title": "Landing page, galéria és blog",
+            "content": [
+              "A klub megjelenését (landing page) testreszabhatod: színek, borítókép, bemutatkozó szöveg, SEO mezők.",
+              "Ha a klubnál részletes címet adsz meg, az megjelenik a kereső térkép (Map) nézetében is.",
+              "Galériák létrehozhatók és megoszthatók a klub oldalán.",
+              "Blog/hírek bejegyzésekkel frissítheted a játékosokat és követőket."
             ],
             "note": {
-              "type": "warning",
-              "content": "Egy felhasználó csak egy klubhoz csatlakozhat."
+              "type": "tip",
+              "content": "Használjátok a landing + galéria + blog funkciókat a nevezések és közösségi aktivitás növelésére."
             }
+          },
+          {
+            "type": "subsection",
+            "title": "Táblák kezelése (fontos változás)",
+            "content": [
+              "A táblák versenyszinten kezelhetők.",
+              "Minden verseny saját táblalistával és tábla-beállításokkal rendelkezik.",
+              "Ez rugalmasabb működést ad különböző méretű eseményekhez."
+            ]
           }
         ]
       }
     },
     {
       "id": 2,
-      "title": "Versenyek kezelése",
+      "title": "Verseny létrehozása és szerkesztése",
       "icon": "IconTrophy",
-      "description": "Verseny indítása és lebonyolítása",
+      "description": "Aktuális folyamat a klub verseny nézetből",
       "content": {
         "sections": [
           {
             "type": "subsection",
-            "title": "Verseny indítása",
+            "title": "Hol indíts új versenyt?",
             "content": [
-              "A &ldquo;Saját klub&rdquo; → &ldquo;Beállítások&rdquo; menüpontban a &ldquo;Verseny indítása&rdquo; gombbal hozhatsz létre új versenyt.",
-              "Add meg a következő adatokat:"
-            ],
-            "list": [
-              "Verseny neve",
-              "Leírás",
-              "Kezdés időpontja",
-              "Nevezési díj",
-              "Helyszín",
-              "Típus (amatőr vagy nyílt)",
-              "Nevezési határidő"
+              "Új versenyt a klub Versenyek nézetéből indíts, a létrehozás gombbal.",
+              "Új versenyt a klub Versenyek nézetében indíthatsz."
+            ]
+          },
+          {
+            "type": "subsection",
+            "title": "Létrehozás lépései",
+            "content": [
+              "1) Alap adatok: név, dátum, nevezés, helyszín, formátum, részvételi mód.",
+              "A versenynél megadott részletes cím megjelenik a kereső térkép (Map) nézetében.",
+              "2) Táblák: adj hozzá táblákat (&ldquo;Tábla hozzáadása&rdquo;), nevezd el őket egyértelműen.",
+              "3) További beállítások: kezdő pontszám, max létszám, jelszó, liga kapcsolat stb.",
+              "4) Mentés után a verseny áttekintő oldalán folytathatod a szervezést."
             ],
             "note": {
               "type": "info",
-              "content": "Minden versenyhez külön táblák rendelhetők, így rugalmasan kezelheted a különböző méretű versenyeket. A táblák száma határozza meg, hogy hány meccs játszható párhuzamosan."
+              "content": "A táblák száma meghatározza, hány meccs futhat párhuzamosan, és befolyásolja a csoportos lebonyolítás kapacitását."
             }
           },
           {
             "type": "subsection",
-            "title": "OAC Verseny Indítása",
+            "title": "Csoportok aktuális szabályai",
             "content": [
-              "OAC ligába verseny indítására a jóváhagyás után van lehetőség.",
-              "A klub verseny fülnél megjelen egy új opció arra, hogy OAC versenyt hozz létre.",
-              "Itt hasonló módon kell minden adatot megadni, mint egy sima verseny létrehozásánál, annyi különbséggel, hogy az OAC ligához egyből hozzá van rendelve és nem lehet ezt megváltoztatni.",
-              "Ez azért fontos, mert máshogyan a ligába nem lehet felvenni versenyt, és csak az itt hozzáadott versenyek lesznek érvényesek."
+              "Támogatott csoportméret: 3-7 fő/csoport.",
+              "Minimum 2 csoport szükséges a csoportkörös lebonyolításhoz.",
+              "A tábla darabszám a gyakorlatban meghatározza, mennyi csoport kezelhető jól párhuzamosan."
             ],
             "note": {
               "type": "important",
-              "content": "OAC versenyt csak a jóváhagyás után, a dedikált OAC opcióval lehet létrehozni."
+              "content": "Csoportgenerálás előtt ellenőrizd: check-inelt játékosok száma, táblaszám, választott lebonyolítás."
             }
           },
           {
             "type": "subsection",
-            "title": "Lebonyolítási mód",
+            "title": "Mit lehet később módosítani?",
             "content": [
-              "Határozd meg a lebonyolítási módot:",
-              "• Csak csoportkör",
-              "• Csak egyenes kiesés",
-              "• Csoportkör és egyenes kiesés kombinációja"
-            ]
-          },
-          {
-            "type": "subsection",
-            "title": "Sandbox Mód (Teszt verseny)",
-            "content": [
-              "A &ldquo;Beállítások&rdquo; fülön bekapcsolhatod a &ldquo;Sandbox Mód&rdquo; opciót.",
-              "A sandbox versenyek NEM jelennek meg a publikus keresőben.",
-              "A sandbox versenyek eredményei NEM számítanak bele a statisztikákba és az MMR-be.",
-              "Ideális a rendszer kipróbálására, tesztelésre vagy baráti játékhoz, amit nem szeretnétek nyilvánossá tenni.",
-              "A klub admin felületén külön &ldquo;Sandbox&rdquo; jelöléssel és szűrővel érhetők el ezek a versenyek."
-            ]
-          },
-          {
-            "type": "subsection",
-            "title": "Végső beállítások",
-            "content": [
-              "Add meg a kezdő pontszámot, a maximális létszámot és a torna jelszavát, amit a játékosok az írói felület eléréséhez használnak.",
-              "Kattints a &ldquo;Torna létrehozása&rdquo; gombra, és a rendszer átirányít az új torna oldalára."
-            ]
-          },
-          {
-            "type": "subsection",
-            "title": "Nevezés a versenyre",
-            "content": [
-              "Regisztrált és bejelentkezett felhasználók a torna oldalán jelentkezhetnek, ha a nevezés nyitott és nem telt be.",
-              "A moderátorok manuálisan is hozzáadhatnak játékosokat a &ldquo;Torna játékosok&rdquo; fül alatt:",
-              "Írd be a játékos nevét a keresőbe. Ha regisztrált vagy korábban vendégként szerepelt, a rendszer felkínálja. Új vendégjátékos esetén válaszd a &ldquo;Felvétel vendégként&rdquo; opciót."
-            ]
-          },
-          {
-            "type": "subsection",
-            "title": "Versenyzők kezelése",
-            "content": [
-              "A moderátorok eltávolíthatnak játékosokat, illetve a &ldquo;check-in&rdquo; gombbal jelezhetik, ha a játékos megjelent és befizette a nevezési díjat. Csak a bejelentkeztetett játékosokat sorsolja a rendszer."
-            ]
-          },
-          {
-            "type": "subsection",
-            "title": "Torna törlése",
-            "content": [
-              "A klub adminok, moderátorok és super adminok törölhetnek még el nem indult (pending) tornákat.",
-              "A torna oldalán vagy a klub versenyei között a törlés gombra kattintva megnyílik a törlés megerősítő ablak.",
-              "Ha a tornán vannak már jelentkezők, akkor opcionálisan küldhetsz e-mail értesítést az összes regisztrált résztvevőnek.",
-              "Az e-mail értesítésben megadhatod a tárgyat és az üzenetet, amit minden résztvevő megkap (ha van érvényes e-mail címe).",
-              "A törlés után a torna soft delete módon törlődik, így a statisztikák megmaradnak, de a torna már nem jelenik meg a listában."
-            ],
-            "note": {
-              "type": "warning",
-              "content": "Csak pending (még el nem indult) tornákat lehet törölni. Aktív vagy befejezett tornákat nem lehet törölni."
-            }
-          },
-          {
-            "type": "subsection",
-            "title": "Játékosok értesítése",
-            "content": [
-              "A moderátorok és adminok értesítést küldhetnek a regisztrált játékosoknak a &ldquo;Értesítés&rdquo; gomb segítségével.",
-              "Az értesítés e-mail formájában érkezik meg a játékosokhoz, például:",
-              "• Nevezési díj befizetésére való emlékeztetés",
-              "• Torna információk frissítése",
-              "• Jelentkezési határidő közeledésének értesítése",
-              "• Eltávolítási figyelmeztetés, ha nem fizetik be a díjat",
-              "A játékosok e-mail címe nem látható a moderátorok számára, csak az értesítés küldése történik meg."
-            ],
-            "note": {
-              "type": "info",
-              "content": "Az értesítés csak regisztrált felhasználóknak küldhető, akiknek van érvényes e-mail címe a rendszerben."
-            }
-          },
-          {
-            "type": "subsection",
-            "title": "Torna indítása",
-            "content": [
-              "Az &ldquo;Admin műveletek&rdquo; szekcióban indíthatod el a tornát."
-            ],
-            "subsections": [
-              {
-                "title": "Csoportkör",
-                "content": [
-                  "Automatikus generálás: A rendszer véletlenszerűen osztja be a játékosokat csoportokba (3-6 fős csoportokat támogat), és minden csoporthoz hozzárendel egy táblát.",
-                  "Manuális generálás: Te választhatod ki, hogy mely játékosok melyik csoportban és táblán játszanak.",
-                  "A &ldquo;Generálás&rdquo; gomb megnyomásával indul a játék."
-                ],
-                "subsections": [
-                  {
-                    "title": "Csoport helyezések kezelése",
-                    "content": [
-                      "A csoportokban a játékosok helyezése automatikusan számítódik a meccs eredmények alapján.",
-                      "Ha azonos pontszám és leg arány esetén nem egyértelmű a helyezés, az admin/moderátor manuálisan módosíthatja a sorrendet.",
-                      "A csoport nézetben fel/le nyilakkal mozgathatod a játékosokat a helyezésben.",
-                      "Ez különösen hasznos, ha körbeverés történt (A nyeri B-t, B nyeri C-t, C nyeri A-t)."
-                    ],
-                    "subsections": [
-                      {
-                        "title": "Manuális helyezés módosítás",
-                        "content": [
-                          "A csoport táblázatban minden játékos mellett találhatók fel/le nyilak (csak admin/moderátor jogosultsággal).",
-                          "Fel nyíl: A játékos egy hellyel feljebb kerül a helyezésben.",
-                          "Le nyíl: A játékos egy hellyel lejjebb kerül a helyezésben.",
-                          "A módosítás azonnal érvénybe lép az adatbázisban."
-                        ]
-                      },
-                      {
-                        "title": "Fontos figyelmeztetés",
-                        "content": [
-                          "A manuális helyezés módosítás minden meccs végén újra szükséges lehet.",
-                          "A rendszer automatikusan újraszámolja a helyezéseket minden meccs befejezése után.",
-                          "Ha egy meccs után a helyezések megváltoznak, újra módosítani kell a kívánt sorrendet.",
-                          "Ez különösen fontos körbeverés esetén, ahol a rendszer nem tudja automatikusan eldönteni a helyezést."
-                        ]
-                      },
-                      {
-                        "title": "Mikor használd?",
-                        "content": [
-                          "Körbeverés esetén: Ha A nyeri B-t, B nyeri C-t, C nyeri A-t.",
-                          "Azonos pontszám és leg arány esetén.",
-                          "Speciális esetekben, amikor a rendszer nem tudja automatikusan eldönteni a helyezést.",
-                          "Admin döntés alapján, ha más kritériumok alapján kell eldönteni a sorrendet."
-                        ]
-                      }
-                    ],
-                    "note": {
-                      "type": "warning",
-                      "content": "A manuális helyezés módosítás csak admin/moderátor jogosultsággal érhető el. A módosítás minden meccs után újra szükséges lehet, mivel a rendszer automatikusan újraszámolja a helyezéseket."
-                    }
-                  }
-                ]
-              },
-              {
-                "title": "Egyenes kiesés (Knockout)",
-                "content": [
-                  "Csoportkörös torna esetén ez a lehetőség a csoportkör végeztével jelenik meg.",
-                  "Két mód közül választhatsz: Automatikus vagy Manuális."
-                ],
-                "subsections": [
-                  {
-                    "title": "Automatikus mód",
-                    "content": [
-                      "A rendszer automatikusan párosítja a továbbjutókat hogyha 2, 4, 8, 16 csoport van tornán - a tábla szám = csoport számmal -.",
-                      "A csoportbeli helyezések figyelembevételével történik a párosítás az MDL szabályai szerint.",
-                      "A &ldquo;Következő kör generálása&rdquo; gomb csak akkor aktív, ha az aktuális kör összes meccse befejeződött.",
-                      "A győztesek automatikusan továbbjutnak a következő körbe.",
-                      "Egyszerű és gyors megoldás kisebb versenyekhez."
-                    ]
-                  },
-                  {
-                    "title": "Manuális mód - Teljes kontroll",
-                    "content": [
-                      "Teljesen testreszabható ágrajz (bracket) készíthető.",
-                      "Előre felépítheted a teljes vagy fél bracket struktúrát üres meccsekkel.",
-                      "Később töltheted fel játékosokkal a párosításokat."
-                    ]
-                  },
-                  {
-                    "title": "Üres bracket felépítése",
-                    "content": [
-                      "1. &ldquo;Üres körök generálása&rdquo; - Adj meg hány kört szeretnél (pl. 4 kör = 16 fős bracket)",
-                      "2. Az üres körök megjelennek a bracket nézetben",
-                      "3. Később adhatsz hozzá meccseket és játékosokat"
-                    ]
-                  },
-                  {
-                    "title": "Játékosok hozzáadása",
-                    "content": [
-                      "Kattints a kör neve melletti + gombra új meccs hozzáadásához.",
-                      "Üres meccs létrehozása: Ne válassz játékosokat, csak kattints &ldquo;Hozzáadás&rdquo;-ra.",
-                      "Részleges meccs (Bye): Adj meg csak 1 játékost - ez egy bye meccs lesz.",
-                      "Teljes meccs: Add meg mindkét játékost és válassz táblát.",
-                      "Üres párok szerkesztése: Kattints a + gombra az üres slot mellett."
-                    ]
-                  },
-                  {
-                    "title": "Bye játékosok kezelése",
-                    "content": [
-                      "Bye meccs = csak 1 játékos van megadva, nincs ellenfél.",
-                      "A bye játékos automatikusan továbbjut a következő körbe.",
-                      "Bye meccsek NEM kerülnek táblához - nem kell őket lejátszani.",
-                      "Bye meccsek &ldquo;finished&rdquo; státuszban is szerkeszthetők (2. játékos hozzáadható).",
-                      "Ha bye meccshez hozzáadsz 2. játékost, normál meccs lesz és táblához kerül.",
-                      "Ideális kiemelések (seeding) kezelésére nagy versenyeken."
-                    ]
-                  },
-                  {
-                    "title": "Random párosítás",
-                    "content": [
-                      "A &ldquo;Random párosítás&rdquo; gombbal gyorsan párosíthatsz játékosokat.",
-                      "Válaszd ki a párosítandó játékosokat a listából.",
-                      "A rendszer véletlenszerűen párosítja őket.",
-                      "Páratlan számú játékos esetén az utolsó bye játékos lesz."
-                    ]
-                  },
-                  {
-                    "title": "Meccsek szerkesztése és törlése",
-                    "content": [
-                      "Meccs beállítások ikon (fogaskerék): Játékosok, scorer és tábla módosítása.",
-                      "Csak pending (várakozó) meccseket lehet szerkeszteni.",
-                      "Ongoing (folyamatban) és finished (befejezett) meccseket NEM lehet szerkeszteni.",
-                      "Kivétel: Bye meccsek finished állapotban is szerkeszthetők.",
-                      "Törlés ikon (kuka): Meccs teljes törlése a bracketből.",
-                      "Törlés után a tábla automatikusan a következő meccshez kerül."
-                    ]
-                  },
-                  {
-                    "title": "Következő kör generálása",
-                    "content": [
-                      "Manuális módban bármikor generálható a következő kör.",
-                      "A rendszer a befejezett meccsek győzteseit és a bye játékosokat viszi tovább.",
-                      "Az új körben automatikusan párosítja őket.",
-                      "Páratlan számú továbbjutó esetén az utolsó bye játékos lesz."
-                    ]
-                  },
-                  {
-                    "title": "Utolsó kör visszavonása",
-                    "content": [
-                      "Az &ldquo;Utolsó kör visszavonása&rdquo; gombbal törölheted a legutolsó kört.",
-                      "Az összes meccs törlődik ebből a körből.",
-                      "A táblák automatikusan újra hozzárendelődnek a korábbi meccsekhez.",
-                      "Hasznos, ha hibás generálás történt vagy módosítani szeretnéd a bracket struktúrát."
-                    ]
-                  },
-                  {
-                    "title": "Bracket nézet és navigáció",
-                    "content": [
-                      "Zoom kontrollok: Nagyítás/kicsinyítés a bracket jobb láthatóságához.",
-                      "Vízszintes görgetés: Nagy bracketek esetén görgethetsz jobbra-balra.",
-                      "Kompakt nézet: Optimalizált megjelenítés sok meccs esetén.",
-                      "Színkódok: Zöld = győztes, Sárga = bye meccs, Szürke = üres pár.",
-                      "Teljes képernyős mód: TV-n vagy nagy kijelzőn való megjelenítéshez.",
-                      "Kompakt mód kapcsoló: Kisebb kártyákat és kevesebb információt jelenít meg a jobb áttekinthetőségért.",
-                      "Meccs gombok elrejtése: A kompakt módban elrejthetők a meccs szerkesztési gombok a helymegtakarítás érdekében."
-                    ],
-                    "subsections": [
-                      {
-                        "title": "Teljes képernyős mód",
-                        "content": [
-                          "A teljes képernyős mód ideális TV-n vagy nagy kijelzőn való megjelenítéshez.",
-                          "A teljes képernyős mód bekapcsolásával:",
-                          "• Csökkentett távolság a meccsek között (térhatékonyság)",
-                          "• Kompakt mód kapcsoló a kisebb kártyákhoz",
-                          "• Meccs gombok elrejtése/kijelzése opció",
-                          "• Bal oldali padding a TV felbontásokhoz",
-                          "• A &ldquo;Következő kör generálása&rdquo; gomb a header mellett jelenik meg"
-                        ]
-                      }
-                    ]
-                  },
-                  {
-                    "title": "Példa: 16 fős verseny manuális brackettel",
-                    "content": [
-                      "1. Válaszd a &ldquo;Manuális&rdquo; knockout módot",
-                      "2. Kattints az &ldquo;Üres körök generálása&rdquo; gombra, adj meg 4 kört",
-                      "3. Az 1. körben 8 meccs jelenik meg (üres párokkal)",
-                      "4. Használd a &ldquo;Random párosítás&rdquo; gombot: válaszd ki mind a 16 játékost",
-                      "5. A rendszer véletlenszerűen párosítja őket",
-                      "6. Vagy manuálisan: kattints a kör neve melletti + gombra, adj hozzá meccseket egyesével",
-                      "7. Kiemelések (seeding): Adj meg csak 1 játékost → bye meccs",
-                      "8. A bye játékos automatikusan továbbjut, nem kell lejátszani a meccset",
-                      "9. Meccsek befejezése után: &ldquo;Következő kör generálása&rdquo;",
-                      "10. A győztesek és bye játékosok automatikusan a 2. körbe kerülnek"
-                    ]
-                  },
-                  {
-                    "title": "Tippek és trükkök",
-                    "content": [
-                      "Előre felépítheted a teljes bracket struktúrát üres meccsekkel, majd fokozatosan töltheted fel.",
-                      "Használj egyedi tábla neveket (pl. &ldquo;Döntő tábla&rdquo;) a jobb azonosíthatóságért.",
-                      "A zoom funkció segít nagy bracketek áttekintésében.",
-                      "Bye meccsek használatával biztosíthatod, hogy a legjobb játékosok később csatlakozzanak.",
-                      "Az &ldquo;Utolsó kör visszavonása&rdquo; funkcióval gyorsan javíthatsz hibákat.",
-                      "Törlés előtt mindig ellenőrizd a meccs státuszát - folyamatban lévő meccseket nem lehet törölni."
-                    ]
-                  }
-                ]
-              }
+              "A verseny áttekintő oldalon a &ldquo;Szerkesztés&rdquo; lehetőséggel több beállítás frissíthető.",
+              "Táblák hozzáadása/átnevezése, helyszín és egyéb részletek módosíthatók a kezelő felületen.",
+              "Státusztól függően egyes műveletek korlátozottak lehetnek."
             ]
           }
         ]
@@ -438,49 +170,36 @@
     },
     {
       "id": 3,
-      "title": "Páros és Csapat versenyek",
+      "title": "Játékosok és verseny napi működés",
       "icon": "IconSword",
-      "description": "Hogyan működnek a többszereplős formátumok",
+      "description": "Nevezés, check-in, csoportok, kieséses ág",
       "content": {
         "sections": [
           {
-            "type": "text",
-            "content": "A tDarts platform támogatja a páros és csapatos versenyeket is. Ezekben a formátumokban a játékosok nem egyénileg, hanem egy egységként versenyeznek, saját közös MMR-rel és statisztikákkal."
-          },
-          {
             "type": "subsection",
-            "title": "Verseny létrehozása (Kluboknak)",
+            "title": "Nevezés és check-in",
             "content": [
-              "Verseny létrehozásakor a 'Részvételi mód' (Participation Mode) beállításnál választható ki a formátum:",
-              "• Egyéni: Hagyományos 1v1 verseny.",
-              "• Páros: 2 fős csapatok versenye.",
-              "• Csapat: Többfős csapatok (jelenleg szintén 2 főre optimalizálva)."
-            ],
-            "note": {
-              "type": "info",
-              "content": "A részvételi mód meghatározza, hogyan jelentkezhetnek a játékosok a tornára."
-            }
-          },
-          {
-            "type": "subsection",
-            "title": "Nevezés párosként (Játékosoknak)",
-            "content": [
-              "1. Kattints a 'Páros nevezés' gombra a torna oldalán.",
-              "2. Add meg a páros/csapat nevét.",
-              "3. Hívd meg a társadat email cím alapján. (Ha van már tDarts regisztrációja akkor a fiókhoz tartozó email cím alapján)",
-              "4. A meghívott félnek elküldésre kerül egy emailben egy link, amivel tudja fogadni a meghívást. (Ehhez a meghívottnak az email címhez tartozó tDarts fiókba kell bejelentkezve lennie, ha beépített böngészőbe nyitja meg az email a linket akkor ez trükkös lehet így ajánlott azt kimásolni és rendes böngésző munkamenetbe megnyitni)",
-              "5. Elfogadást követően kerül fel a csapat a nevezők listájára, ameddig folyamatba van a nevezés addig a várólistára kerülnek, elutasítás esetén pedig onnan levételre kerülnek.",
-              "A folyamatba lévő nevezőket át tudja emelni a rendező a regisztrációs listára illetve tud a rendező párokat felvenni regisztrált/vendégként."
+              "A játékosok a versenyoldalon nevezhetnek, ha nyitott a nevezés.",
+              "Szervezőként kézzel is hozzáadhatsz játékost (regisztrált vagy vendég).",
+              "A check-in kulcsfontosságú: a generálásnál a rendszer a check-in állapotot veszi alapul."
             ]
           },
           {
             "type": "subsection",
-            "title": "Hogyan működik a rendszer?",
+            "title": "Csoportkör és kieséses szakasz",
             "content": [
-              "• A páros egy 'virtuális játékosként' szerepel a sorsolásban.",
-              "• A párosnak saját MMR-je van, ami a tagok egyéni MMR-vel nem azonos, de abból számítódik.",
-              "• A meccsek során a páros statisztikái (átlag, 180, kiszálló) közösen rögzülnek.",
-              "• A tagok profiljában a 'Statisztika' fülön megjelenik, hogy mely párosoknak/csapatoknak a tagjai."
+              "A csoportok indíthatók automatikus vagy manuális módban.",
+              "A kieséses ág szintén kezelhető automatikusan vagy manuálisan, a verseny beállításaitól függően.",
+              "Ha vitás helyzet alakul ki (pl. körbeverés), a rendezői felületen manuális korrekció is lehetséges."
+            ]
+          },
+          {
+            "type": "subsection",
+            "title": "Kommunikáció és kontroll",
+            "content": [
+              "A szervezői műveleteket csak felelősen, ellenőrzött adatokkal futtasd.",
+              "Játékosok értesítése e-mailben küldhető, ha a profil adatok rendelkezésre állnak.",
+              "Minden kritikus művelet előtt ellenőrizd az aktuális státuszt (pending, group-stage, knockout, finished)."
             ]
           }
         ]
@@ -488,85 +207,173 @@
     },
     {
       "id": 4,
-      "title": "Eredményrögzítés",
+      "title": "Író program és pontszám rögzítés",
       "icon": "IconTarget",
-      "description": "Játékosok számára - Eredményrögzítés",
+      "description": "Aktuális belépési pontok és megerősítési logika",
       "content": {
         "sections": [
           {
             "type": "subsection",
-            "title": "Telefonon keresztül",
+            "title": "Honnan nyisd meg az író felületet?",
             "content": [
-              "Olvasd be a tábla melletti QR-kódot, vagy a torna oldalán a &ldquo;Táblák&rdquo; fülön kattints a &ldquo;Megnyitás&rdquo; gombra a kívánt tábla mellett.",
-              "A &ldquo;Megnyitás&rdquo; gomb közvetlenül a tábla oldalára visz, ahol megadhatod a torna jelszavát (csak az első belépésnél szükséges).",
-              "A jelszó automatikusan mentésre kerül a böngésződben, így következő alkalommal nem kell újra megadni.",
-              "A tábla oldalán választhatod ki a meccset, amit rögzíteni szeretnél."
-            ]
-          },
-          {
-            "type": "subsection",
-            "title": "Kihelyezett tableten - Gyors hozzáférés",
-            "content": [
-              "A felső menüsorban található &ldquo;Tábla&rdquo; gomb (monitor ikon) gyors hozzáférést biztosít.",
-              "Add meg a torna azonosítóját (pl. A1Y5) és a jelszavát.",
-              "A rendszer automatikusan átirányít a torna oldalára.",
-              "A jelszó mentésre kerül, így frissítés után sem kell újra bejelentkezni.",
-              "Ideális megoldás fix tabletek számára a verseny helyszínén."
-            ]
-          },
-          {
-            "type": "subsection",
-            "title": "Eredményrögzítés",
-            "content": [
-              "Válaszd ki a táblát és a rögzítendő meccset.",
-              "Állítsd be a nyert legek számát és a kezdő játékost (a bal oldali játékos kezd, ő dob először bullra).",
-              "A felület egyszerű és intuitív, hasonló a Target DartCounter alkalmazáshoz.",
-              "Minden leg végén erősítsd meg a győztest, mivel a mentés nem visszavonható. A meccs végén is szükséges egy végső megerősítés."
-            ]
-          },
-          {
-            "type": "subsection",
-            "title": "Meccs beállítások - Nyert legek száma",
-            "content": [
-              "A meccs közben bármikor módosíthatod a nyert legek számát a beállítások gombbal (fogaskerék ikon) a bal felső sarokban.",
-              "A nyert legek száma 1-20 között állítható be.",
-              "A módosítás azonnal érvénybe lép, és visszamenőleg is hatással lehet a meccsre.",
-              "A beállítások modal-ban további opciók is elérhetők:",
-              "• Beállítások mentése: Csak az új nyert legek számát menti el",
-              "• Újraindítás új beállításokkal: Újraindítja a meccset az új beállításokkal",
-              "• Újraindítás (ugyanazokkal a beállításokkal): Újraindítja a meccset a jelenlegi beállításokkal",
-              "• Kilépés: Kilép a meccsből és visszatér a tábla választó oldalra"
-            ],
-            "subsections": [
-              {
-                "title": "Visszamenőleges hatás",
-                "content": [
-                  "Ha valamelyik játékos már elérte az új nyert legek számát, a rendszer automatikusan felajánlja a meccs befejezését.",
-                  "Ha mindkét játékos elérte a célt, akkor aki több leget nyert (hamarabb érte el) lesz a győztes.",
-                  "Ha csak egy játékos érte el, ő lesz automatikusan a győztes.",
-                  "A rendszer megkérdezi, hogy biztos befejezni szeretnéd-e a meccset."
-                ]
-              },
-              {
-                "title": "Példák",
-                "content": [
-                  "Játékos 1: 3 leg, Játékos 2: 1 leg → Nyert legek: 2-re állítva → Játékos 1 nyert",
-                  "Játékos 1: 3 leg, Játékos 2: 3 leg → Nyert legek: 2-re állítva → Játékos 1 nyert (hamarabb érte el)",
-                  "Játékos 1: 1 leg, Játékos 2: 1 leg → Nyert legek: 3-ra állítva → Nincs változás (senki sem érte el)"
-                ]
-              }
+              "A verseny fejlécében a &ldquo;Táblák / író program&rdquo; belépési pontból.",
+              "Vagy a táblalistában az adott tábla &ldquo;Megnyitás&rdquo; gombjával.",
+              "A rendszer célja, hogy az adott táblához tartozó meccshez juss gyorsan."
             ],
             "note": {
               "type": "warning",
-              "content": "A nyert legek számának módosítása visszavonhatatlan hatással lehet a meccsre. Csak akkor módosítsd, ha biztos vagy benne!"
+              "content": "A scorer eléréséhez a verseny fejlécében lévő &ldquo;Táblák / író program&rdquo; belépési pontot vagy a táblalistás &ldquo;Megnyitás&rdquo; gombot használd."
             }
+          },
+          {
+            "type": "subsection",
+            "title": "Megerősítő ablakok (nagyon fontos)",
+            "content": [
+              "A leg és meccs végi megerősítő ablakok nem dísznek vannak: ezek tényleges mentési pontok.",
+              "A megerősítés után az adott állapot mentésre kerül, és nem úgy kezelendő, mint egy könnyen visszavonható lépés.",
+              "Hibás megerősítés komoly következményt okozhat a verseny eredményeiben."
+            ],
+            "note": {
+              "type": "important",
+              "content": "Ne kattints rutinból az &ldquo;Igen&rdquo; gombra. Minden megerősítés előtt ellenőrizd a játékosokat, állást és kontextust."
+            }
+          },
+          {
+            "type": "subsection",
+            "title": "Ha mégis hiba történt",
+            "content": [
+              "Az azonnali visszalépés lehetősége korlátozott.",
+              "Korrekciót általában csak a verseny menedzser tud végrehajtani, megfelelő admin/moderátor jogosultsággal.",
+              "Ezért a legjobb védelem a pontos, tudatos megerősítés."
+            ]
           }
         ]
       }
     },
     {
       "id": 5,
-      "title": "Megosztás",
+      "title": "Liga kezelés és pontozási rendszerek",
+      "icon": "IconChartLine",
+      "description": "Aktuális pontrendszerek és verseny-hozzárendelés",
+      "content": {
+        "sections": [
+          {
+            "type": "subsection",
+            "title": "Liga létrehozása",
+            "content": [
+              "A klub Liga nézetében hozhatsz létre új ligát.",
+              "Liga létrehozáskor kiválaszthatod a pontszámítási rendszert.",
+              "A pontozási modell később is felülvizsgálható a liga beállításokban."
+            ]
+          },
+          {
+            "type": "subsection",
+            "title": "Előre definiált pontszámítási rendszerek",
+            "content": [
+              "Platform - helyezés alapú pontozás, konfigurálható helyezés-pontokkal és csoportkör kiesési ponttal.",
+              "Remiz Christmas Series - részvétel + csoport teljesítmény + végső helyezés alapján.",
+              "DartsBarlang OnTour - fix helyezési ponttábla.",
+              "Goldfisch - fix helyezési pontozás, kisebb mezőnyre külön kezeléssel."
+            ],
+            "note": {
+              "type": "info",
+              "content": "Mindig az aktuálisan kiválasztott pontszámítási rendszer szabályait kövesd."
+            }
+          },
+          {
+            "type": "subsection",
+            "title": "Befejezett versenyek hozzárendelése ligához",
+            "content": [
+              "Ligához befejezett (finished) versenyek rendelhetők hozzá.",
+              "Hozzárendeléskor eldöntheted, hogy történjen-e pontszámítás.",
+              "Pontszámítás nélkül is csatolható verseny (pl. statisztikai vagy admin célból)."
+            ]
+          },
+          {
+            "type": "subsection",
+            "title": "Manuális pontmódosítás",
+            "content": [
+              "Szükség esetén admin/moderátor manuális pontkorrekciót végezhet indoklással.",
+              "A transzparencia érdekében minden módosítást érdemes dokumentált okkal rögzíteni."
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 6,
+      "title": "Mindennapi ajánlott munkafolyamat",
+      "icon": "IconPlayerPlay",
+      "description": "Egyszerű rutin versenynapokra",
+      "content": {
+        "sections": [
+          {
+            "type": "subsection",
+            "title": "Verseny előtti checklist",
+            "content": [
+              "Ellenőrizd a verseny alapadatokat és kezdési időt.",
+              "Állítsd be a táblákat egyértelmű nevekkel.",
+              "Oszd ki a szervezői feladatokat (check-in, táblafigyelés, támogatás).",
+              "Teszteld a &ldquo;Táblák / író program&rdquo; belépési útvonalat."
+            ]
+          },
+          {
+            "type": "subsection",
+            "title": "Verseny közben",
+            "content": [
+              "Csak check-inelt játékosokkal generálj csoportot/kieséses ágat.",
+              "Minden megerősítő ablakot tudatosan kezelj, ne rutinból.",
+              "Eltérés esetén azonnal egyeztess a másik szervezővel a hibák megelőzésére."
+            ]
+          },
+          {
+            "type": "subsection",
+            "title": "Verseny után",
+            "content": [
+              "Ellenőrizd a végső eredményeket és a lezárási státuszt.",
+              "Ha liga kapcsolódik, döntsd el, hogy a finished verseny pontszámítással vagy anélkül kerüljön csatolásra.",
+              "Kommunikáld az eredményeket a klub hírfolyamban/blogban."
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 7,
+      "title": "Gyakori hibák és elkerülésük",
+      "icon": "IconFlagCheck",
+      "description": "Rövid hibamegelőzési útmutató",
+      "content": {
+        "sections": [
+          {
+            "type": "subsection",
+            "title": "Top hibák",
+            "content": [
+              "Közös (megosztott) klubfiók használata több szervezővel.",
+              "Megerősítő ablakok figyelmetlen átkattintása.",
+              "Elhamarkodott csoportgenerálás hiányos check-in mellett.",
+              "Nem egyértelmű táblaelnevezések, ami terepen félreértést okoz."
+            ]
+          },
+          {
+            "type": "subsection",
+            "title": "Javasolt gyakorlat",
+            "content": [
+              "Minden szervezőnek saját fiók + megfelelő szerepkör.",
+              "Művelet előtti ellenőrzés: játékoslista, tábla, státusz, meccs.",
+              "A kritikus módosításokat mindig dokumentált felelőssel végezd."
+            ],
+            "note": {
+              "type": "tip",
+              "content": "Egy rövid, 2 perces szervezői egyeztetés minden fő fázis előtt sok hibát megelőz."
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 8,
+      "title": "Megosztás: klubok, versenyek, galériák",
       "icon": "IconShare",
       "description": "Klubok és versenyek megosztása QR kóddal és linkekkel",
       "content": {
@@ -575,47 +382,47 @@
             "type": "subsection",
             "title": "Megosztási típusok",
             "content": [
-              "Regisztrációs megosztás: A felhasználót először a regisztrációs/bejelentkezési oldalra viszi, majd bejelentkezés után átirányítja a megfelelő oldalra.",
-              "Nyilvános megosztás: Közvetlenül megnyitja a megosztandó linket, regisztráció nélkül is elérhető."
+              "Regisztrációs megosztás: a felhasználót először a bejelentkezési/regisztrációs oldalra viszi, majd belépés után a megfelelő oldalra irányítja.",
+              "Nyilvános megosztás: közvetlenül megnyitja a megosztott oldalt, bejelentkezés nélkül is."
             ]
           },
           {
             "type": "subsection",
             "title": "Klub megosztása",
             "content": [
-              "A klub oldalon a megosztás gombra kattintva érhető el.",
-              "Nyomtatható QR kód és link formájában jelenik meg.",
-              "A link a klub összes versenyét jeleníti meg.",
-              "Regisztrációs link: Bejelentkezés után a klub versenyeihez vezet.",
-              "Nyilvános link: Közvetlenül megjeleníti a klub versenyeit."
+              "A klub oldalon a megosztás gombból érhető el.",
+              "Nyomtatható QR-kód és link formájában jelenik meg.",
+              "A link a klub releváns nyilvános tartalmait és versenyeit mutatja.",
+              "Regisztrációs link: bejelentkezés után a kluboldalra vezet.",
+              "Nyilvános link: közvetlenül megnyitja a kluboldalt."
             ]
           },
           {
             "type": "subsection",
             "title": "Verseny megosztása",
             "content": [
-              "A verseny oldalán a megosztás gombra kattintva érhető el.",
-              "Nyomtatható QR kód és link formájában jelenik meg.",
-              "A link az adott verseny nyitólapját mutatja.",
-              "Regisztrációs link: Bejelentkezés után a verseny oldalára vezet.",
-              "Nyilvános link: Közvetlenül megjeleníti a verseny adatait."
+              "A verseny oldalon a megosztás gombra kattintva érhető el.",
+              "Nyomtatható QR-kód és link is rendelkezésre áll.",
+              "A link az adott verseny nyitóoldalát mutatja.",
+              "Regisztrációs link: belépés után a versenyoldalra vezet.",
+              "Nyilvános link: közvetlenül megnyitja a verseny adatait."
             ]
           },
           {
             "type": "subsection",
-            "title": "QR kód használata",
+            "title": "QR-kód használata",
             "content": [
-              "A QR kódokat ki lehet nyomtatni és fel lehet tenni a táblák mellé.",
-              "Játékosok egyszerűen beolvashatják a kódot telefonjukkal.",
-              "Gyors hozzáférés a verseny információkhoz és eredményrögzítéshez.",
-              "Ideális megoldás nagyobb versenyekhez, ahol sok tábla van."
+              "A QR-kódok nyomtathatók és kihelyezhetők a helyszínen.",
+              "A játékosok telefonról gyorsan beolvashatják őket.",
+              "Gyors hozzáférést adnak versenyinformációkhoz és kapcsolódó oldalakhoz.",
+              "Nagyobb eseményeken különösen hasznos a gyors tájékozódáshoz."
             ]
           }
         ]
       }
     },
     {
-      "id": 6,
+      "id": 9,
       "title": "MMR Rangsor Rendszer",
       "icon": "IconChartLine",
       "description": "Teljesítmény alapú játékos rangsor",
@@ -625,17 +432,17 @@
             "type": "subsection",
             "title": "Mi az MMR?",
             "content": [
-              "Az MMR (Matchmaking Rating) egy teljesítmény alapú rangsor rendszer, amely minden játékos képességeit méri.",
-              "Minden játékos 800 MMR-rel kezd, és ez a szám a versenyeken elért eredmények alapján változik.",
-              "Minél több versenyen veszel részt és minél jobb eredményeket érsz el, annál magasabb lesz az MMR-ed."
+              "Az MMR (Matchmaking Rating) egy teljesítmény alapú rangsor, amely a játékosok eredményei alapján alakul.",
+              "A rendszer a versenyeken elért teljesítményt veszi figyelembe.",
+              "Minél több versenyeredmény áll rendelkezésre, annál stabilabb a rangsorbeli besorolás."
             ]
           },
           {
             "type": "subsection",
-            "title": "MMR Számítás",
+            "title": "MMR számítási logika",
             "content": [
-              "Az MMR változását több tényező befolyásolja, ahol a helyezés a legfontosabb:",
-              "A helyezés súlya dinamikusan változik a verseny mérete alapján:"
+              "Az MMR változását több tényező befolyásolja, ahol a helyezés kiemelt szerepet kap.",
+              "A helyezés és teljesítmény súlya a verseny méretével arányosan változhat."
             ],
             "list": [
               "Kis verseny (8 fő vagy kevesebb): Helyezés 60%, Teljesítmény 40%",
@@ -645,31 +452,27 @@
             ],
             "subsections": [
               {
-                "title": "Teljesítmény összetevői",
+                "title": "Teljesítmény összetevők",
                 "content": [
-                  "A teljesítmény pontszám a következőkből áll:",
-                  "• Meccs nyerési arány (50% a teljesítményből)",
-                  "• Leg nyerési arány (30% a teljesítményből)",
-                  "• Átlagos pontszám a verseny átlagához képest (20% a teljesítményből)"
+                  "Meccs nyerési arány.",
+                  "Leg nyerési arány.",
+                  "Átlagos pontszám a mezőny átlagához viszonyítva."
                 ]
               },
               {
-                "title": "Verseny méret hatása az MMR változásra",
+                "title": "Versenyméret hatás",
                 "content": [
-                  "Nagyobb versenyeken több MMR változik (szorzó):",
-                  "• 8 fő vagy kevesebb: 0.5x szorzó",
-                  "• 9-15 fő: 1.0x szorzó (normál)",
-                  "• 16-31 fő: 1.5x szorzó",
-                  "• 32+ fő: 2.0x szorzó (maximum)"
+                  "Nagyobb versenyeken jellemzően nagyobb MMR elmozdulás történik.",
+                  "A rendszer a mezőny méretét is figyelembe veszi az értékelésnél."
                 ]
               }
             ]
           },
           {
             "type": "subsection",
-            "title": "MMR Rangok",
+            "title": "MMR rangok",
             "content": [
-              "Az MMR alapján különböző rangokat érhetsz el:"
+              "Az MMR érték alapján rangszintekbe sorol a rendszer."
             ],
             "list": [
               "Kezdő: 0-799 MMR",
@@ -682,447 +485,15 @@
           },
           {
             "type": "subsection",
-            "title": "Rangsor Megtekintése",
+            "title": "Rangsor megtekintése",
             "content": [
-              "A keresés oldalon megtekintheted a játékosok rangsorát MMR szerint rendezve.",
-              "Minden játékos kártyáján látható az MMR értéke és a rangja.",
-              "A ranglista folyamatosan frissül a versenyek befejezése után.",
-              "Minél több versenyen veszel részt a tDarts platformon, annál pontosabb lesz az MMR-ed."
+              "A keresés oldalon MMR szerint rendezve követhető a játékos rangsor.",
+              "A játékos kártyákon az aktuális MMR érték és rang is látható.",
+              "A ranglista a versenyek lezárása után frissül."
             ],
             "note": {
               "type": "info",
-              "content": "Az MMR rendszer motiválja a játékosokat, hogy minél több versenyen induljanak és folyamatosan fejlődjenek. Versenyezz rendszeresen, hogy feljebb kerülj a ranglistán!"
-            }
-          }
-        ]
-      }
-    },
-    {
-      "id": 7,
-      "title": "Liga kezelés",
-      "icon": "IconTrophy",
-      "description": "Verseny ligák létrehozása és kezelése",
-      "content": {
-        "sections": [
-          {
-            "type": "subsection",
-            "title": "Liga létrehozása",
-            "content": [
-              "A ligák funkció csak prémium előfizetéssel rendelkező klubok számára elérhető.",
-              "A &ldquo;Saját klub&rdquo; → &ldquo;Ligák&rdquo; menüpontban hozhatsz létre új ligát.",
-              "Add meg a liga nevét, leírását és a pontszámítási beállításokat:"
-            ],
-            "list": [
-              "Csoportkör kiesés pontjai (alapértelmezetten 5 pont)",
-              "Egyenes kiesés alappontjai (alapértelmezetten 10 pont)",
-              "Szorzó tényező (alapértelmezetten 1.5x)",
-              "Győztes bónusz pontjai (alapértelmezetten 20 pont)",
-              "Maximális egyenes kiesős körök száma (alapértelmezetten 3)"
-            ]
-          },
-          {
-            "type": "subsection",
-            "title": "Játékosok hozzáadása",
-            "content": [
-              "A liga létrehozása után hozzáadhatsz játékosokat a ranglistához.",
-              "A &ldquo;Ranglista&rdquo; fülön a keresőmező segítségével keress rá regisztrált játékosokra vagy vendég játékosokra.",
-              "A hozzáadott játékosok automatikusan megjelennek a ranglistán 0 ponttal."
-            ]
-          },
-          {
-            "type": "subsection",
-            "title": "Versenyek csatolása",
-            "content": [
-              "Verseny létrehozásakor kiválaszthatod, hogy melyik ligához tartozzon.",
-              "A verseny befejezése után a rendszer automatikusan kiszámítja és hozzáadja a pontokat a liga ranglistájához.",
-              "A pontszámítás a versenyben elért helyezés alapján történik:",
-              "• Csoportkör kiesés: Rögzített pontszám",
-              "• Egyenes kiesés: Geometriai sorozat alapján (alappont × szorzó^kör)",
-              "• Győztes: Legmagasabb pontszám + bónusz"
-            ]
-          },
-          {
-            "type": "subsection",
-            "title": "Ranglista kezelése",
-            "content": [
-              "A ranglistán láthatod minden játékos helyezését, pontszámát és statisztikáit.",
-              "Moderátorok manuálisan is módosíthatják a pontszámokat, ha szükséges.",
-              "A &ldquo;Versenyek&rdquo; fülön láthatod az összes csatolt versenyt és azok állapotát.",
-              "A &ldquo;Beállítások&rdquo; fülön módosíthatod a liga nevét, leírását és pontszámítási beállításait."
-            ]
-          },
-          {
-            "type": "subsection",
-            "title": "Pontszámítási példa",
-            "content": [
-              "Egy 16 fős verseny esetén:",
-              "• Csoportkör kiesés: 5 pont",
-              "• 1. kör kiesés: 10 pont",
-              "• 2. kör kiesés: 15 pont (10 × 1.5)",
-              "• 3. kör kiesés: 22.5 pont (15 × 1.5)",
-              "• Győztes: 22.5 + 20 = 42.5 pont"
-            ]
-          }
-        ]
-      }
-    },
-    {
-      "id": 8,
-      "title": "Helyi meccs - Offline játék",
-      "icon": "IconPlayerPlay",
-      "description": "Helyi meccs indítása adatbázis kapcsolat nélkül",
-      "content": {
-        "sections": [
-          {
-            "type": "subsection",
-            "title": "Mi az a helyi meccs?",
-            "content": [
-              "A helyi meccs funkció lehetővé teszi, hogy offline, adatbázis kapcsolat nélkül játszhass darts meccset.",
-              "Ideális gyakorláshoz, baráti meccsekhez vagy olyan helyzetekhez, ahol nincs internetkapcsolat.",
-              "A meccs adatai a böngésző helyi tárolójában (localStorage) kerülnek mentésre.",
-              "A meccs statisztikái 5 napig elérhetők maradnak, vagy amíg manuálisan nem törlöd őket."
-            ]
-          },
-          {
-            "type": "subsection",
-            "title": "Helyi meccs indítása",
-            "content": [
-              "A helyi meccs indítása több helyen is elérhető:",
-              "• A fő &ldquo;Tábla&rdquo; oldalon (/board) - globális gomb",
-              "• A torna tábla oldalán (/board/[tournamentId]) - header gomb",
-              "• A tábla választó képernyőn - header gomb"
-            ],
-            "subsections": [
-              {
-                "title": "Beállítások",
-                "content": [
-                  "A helyi meccs indításakor megjelenik egy beállítási ablak:",
-                  "• Nyert legek száma: 1-20 között választható (Best of X formátum)",
-                  "• Kezdő pontszám: 170, 201, 301, 401, 501, 601, 701 közül választható",
-                  "A játékosok neve automatikusan &ldquo;1&rdquo; és &ldquo;2&rdquo; lesz.",
-                  "A játékos 1 mindig kezd minden legben."
-                ]
-              },
-              {
-                "title": "Meccs indítása",
-                "content": [
-                  "A beállítások megadása után kattints a &ldquo;Meccs indítása&rdquo; gombra.",
-                  "A meccs azonnal elindul, és hasonló a verseny meccsekhez, de nincs adatbázis kapcsolat.",
-                  "A meccs állapota automatikusan mentésre kerül, így ha bezárod a böngészőt, folytathatod később."
-                ]
-              }
-            ]
-          },
-          {
-            "type": "subsection",
-            "title": "Helyi meccs játékmenet",
-            "content": [
-              "A helyi meccs ugyanúgy működik, mint a verseny meccsek:",
-              "• Pontszám rögzítés számbillentyűzettel vagy gombokkal",
-              "• Chalkboard szerkesztés (visszavonás, módosítás)",
-              "• Leg befejezés megerősítés",
-              "• Meccs befejezés megerősítés",
-              "• Statisztikák számítása (átlag, 180-asok, legnagyobb kiszálló)"
-            ],
-            "subsections": [
-              {
-                "title": "Chalkboard szerkesztés",
-                "content": [
-                  "A chalkboard-on bármelyik dobást szerkesztheted:",
-                  "1. Kattints a módosítani kívánt dobás értékére",
-                  "2. Add meg az új értéket (0-180 között)",
-                  "3. Kattints a &ldquo;SAVE&rdquo; gombra vagy a ✓ gombra",
-                  "4. Ha a szerkesztés után a játékos pontszáma 0-ra csökken, automatikusan megjelenik a leg befejezés megerősítő ablak"
-                ]
-              },
-              {
-                "title": "Meccs beállítások módosítása",
-                "content": [
-                  "A meccs közben bármikor módosíthatod a beállításokat a fogaskerék ikonra kattintva:",
-                  "• Nyert legek száma módosítása",
-                  "• Újraindítás új beállításokkal",
-                  "• Újraindítás ugyanazokkal a beállításokkal (rematch)",
-                  "• Kilépés a meccsből"
-                ]
-              }
-            ]
-          },
-          {
-            "type": "subsection",
-            "title": "Meccs befejezése és statisztikák",
-            "content": [
-              "A meccs befejezése után megjelennek a részletes statisztikák:",
-              "• Győztes játékos",
-              "• Leg nyert/vesztett",
-              "• Átlag",
-              "• 180-asok száma",
-              "• Legnagyobb kiszálló",
-              "A statisztikák 5 napig elérhetők maradnak, vagy amíg manuálisan nem törlöd őket."
-            ],
-            "subsections": [
-              {
-                "title": "Rematch",
-                "content": [
-                  "A meccs befejezése után a &ldquo;Rematch&rdquo; gombra kattintva azonnal elindíthatod egy új meccset ugyanazokkal a beállításokkal.",
-                  "A rematch automatikusan visszaállítja mindkét játékos pontszámát és statisztikáit."
-                ]
-              },
-              {
-                "title": "Statisztikák megtekintése",
-                "content": [
-                  "A befejezett meccs statisztikái középre igazítva jelennek meg.",
-                  "A statisztikák tartalmaznak minden fontos információt a meccsről.",
-                  "A &ldquo;Vissza&rdquo; gombbal kiléphetsz a statisztikák nézetből."
-                ]
-              }
-            ]
-          },
-          {
-            "type": "subsection",
-            "title": "Offline működés",
-            "content": [
-              "A helyi meccs funkció teljesen offline működik:",
-              "• Nincs szükség internetkapcsolatra",
-              "• Nincs adatbázis kapcsolat",
-              "• Minden adat a böngésző helyi tárolójában van",
-              "• PWA telepítés után offline is elérhető",
-              "A /board oldal és a helyi meccs funkciók offline is működnek, ha PWA-ként van telepítve."
-            ],
-            "note": {
-              "type": "info",
-              "content": "A helyi meccs adatai csak a böngészőben maradnak. Ha törlöd a böngésző adatait vagy másik eszközt használsz, a meccs adatai elvesznek."
-            }
-          }
-        ]
-      }
-    },
-    {
-      "id": 9,
-      "title": "Scolia Autoscoring Integráció",
-      "icon": "IconTarget",
-      "description": "Automatikus pontszámítás Scolia táblákkal",
-      "content": {
-        "sections": [
-          {
-            "type": "text",
-            "content": "A tDarts platform támogatja a Scolia autoscoring integrációt, amely lehetővé teszi az automatikus pontszám érzékelést Scolia dartstáblákon. Ez kiküszöböli a manuális pontszám bevitelt és professzionális versenyélményt nyújt."
-          },
-          {
-            "type": "subsection",
-            "title": "Mi az a Scolia?",
-            "content": [
-              "A Scolia egy intelligens dartstábla rendszer, amely automatikusan érzékeli a dobásokat.",
-              "WebSocket kapcsolaton keresztül valós időben küldi az adatokat a tDarts platformnak.",
-              "Minden egyes nyíl dobását külön érzékeli (pontszám és szorzó).",
-              "A rendszer automatikusan összesíti a dobásokat és beküldi a teljes fordulót."
-            ]
-          },
-          {
-            "type": "subsection",
-            "title": "Scolia használata helyi meccseken",
-            "content": [
-              "A helyi meccsek esetén a Scolia beállítások a játék közben konfigurálhatók."
-            ],
-            "subsections": [
-              {
-                "title": "Beállítás lépései",
-                "content": [
-                  "1. Indíts el egy helyi meccset",
-                  "2. Kattints a Beállítások (⚙️) ikonra a jobb felső sarokban",
-                  "3. Görgess le a 'Scolia Autoscoring' szekcióhoz",
-                  "4. Add meg a Scolia Szériaszámot (pl. SCO-12345)",
-                  "5. Add meg a Scolia Access Token-t (Hozzáférési Token)",
-                  "6. Kapcsold be a 'Scolia engedélyezése' kapcsolót",
-                  "7. Kattints a 'Mentés' gombra"
-                ]
-              },
-              {
-                "title": "Használat játék közben",
-                "content": [
-                  "Miután engedélyezted a Scoliát:",
-                  "• Dobj a nyilakkal - a Scolia automatikusan érzékeli minden dobást",
-                  "• 3 nyíl után (vagy kiszálló/bust esetén) a pontszám automatikusan beküldésre kerül",
-                  "• A scoreboard azonnal frissül",
-                  "• Továbbra is lehetőséged van manuális pontszám bevitelre, ha szükséges"
-                ]
-              },
-              {
-                "title": "Scolia kikapcsolása",
-                "content": [
-                  "Ha ki szeretnéd kapcsolni a Scoliát:",
-                  "1. Nyisd meg a Beállításokat (⚙️ ikon)",
-                  "2. Kapcsold ki a 'Scolia engedélyezése' kapcsolót",
-                  "3. Mentsd el a beállításokat",
-                  "4. A manuális pontszám bevitel folytatódik"
-                ]
-              }
-            ],
-            "note": {
-              "type": "info",
-              "content": "A helyi meccsek Scolia beállításai a böngésződben kerülnek tárolásra, így következő alkalommal nem kell újra megadni őket."
-            }
-          },
-          {
-            "type": "subsection",
-            "title": "Scolia használata verseny meccseken",
-            "content": [
-              "Verseny meccsek esetén a Scolia beállításokat a tábla szintjén kell konfigurálni az admin felületen.",
-              "Így a játékosoknak nem kell semmit beállítaniuk - minden automatikusan működik."
-            ],
-            "subsections": [
-              {
-                "title": "Admin beállítás (Verseny szervezők részére)",
-                "content": [
-                  "1. Navigálj a Control Center-be (Admin Dashboard)",
-                  "2. Válaszd ki a versenyt",
-                  "3. Menj a 'Táblák' fülre",
-                  "4. Húzd az egeret a tábla kártya fölé - megjelenik a Beállítások (⚙️) ikon a jobb felső sarokban",
-                  "5. Kattints a Beállítások ikonra",
-                  "6. Add meg a következő adatokat:",
-                  "   • Tábla neve (opcionális egyedi név)",
-                  "   • Scolia Szériaszám",
-                  "   • Scolia Access Token",
-                  "7. Kattints a 'Mentés' gombra"
-                ]
-              },
-              {
-                "title": "Játékos élmény",
-                "content": [
-                  "Amikor egy verseny meccs betöltődik egy Scolia-val felszerelt táblán:",
-                  "• A rendszer automatikusan csatlakozik a Scoliához a tábla mentett beállításaival",
-                  "• A játékosoknak semmit nem kell konfigurálniuk",
-                  "• Dobnak a nyilakkal, és a pontszámok automatikusan rögzítésre kerülnek",
-                  "• A scoreboard valós időben frissül minden néző számára",
-                  "• Ha a Scolia leáll vagy megszakad a kapcsolat, a manuális pontszám bevitel továbbra is elérhető"
-                ]
-              },
-              {
-                "title": "Kapcsolat állapot",
-                "content": [
-                  "A rendszer vizuális visszajelzést ad a kapcsolat állapotáról:",
-                  "• Csatlakozva - A Scolia aktív és érzékeli a dobásokat",
-                  "• Lecsatlakozva - Manuális pontszám bevitel szükséges",
-                  "• A böngésző konzolban részletes kapcsolati logok találhatók ([Scolia] előtaggal)"
-                ]
-              }
-            ],
-            "note": {
-              "type": "important",
-              "content": "A verseny táblák Scolia beállításai az adatbázisban kerülnek tárolásra, így minden meccs automatikusan használja őket az adott táblán."
-            }
-          },
-          {
-            "type": "subsection",
-            "title": "Hogyan működik a rendszer?",
-            "content": [
-              "A Scolia intelligens pufferelést használ az egyes nyíl dobások csoportosítására:"
-            ],
-            "subsections": [
-              {
-                "title": "Dobás pufferelés",
-                "content": [
-                  "1. nyíl: 60 → Puffer: [60]",
-                  "2. nyíl: 60 → Puffer: [60, 60]",
-                  "3. nyíl: 60 → Puffer: [60, 60, 60] → Beküldés: 180"
-                ]
-              },
-              {
-                "title": "Automatikus beküldés eseményei",
-                "content": [
-                  "• 3 nyíl eldobva - Normál forduló befejezése",
-                  "• Kiszálló érzékelve - A maradék pontszám pontosan 0-ra csökken",
-                  "• Bust érzékelve - A maradék pontszám 0 alá megy vagy 1-re csökken"
-                ]
-              }
-            ]
-          },
-          {
-            "type": "subsection",
-            "title": "Hibaelhárítás",
-            "content": [
-              "Ha problémáid vannak a Scolia kapcsolattal, kövesd ezeket a lépéseket:"
-            ],
-            "subsections": [
-              {
-                "title": "A Scolia nem csatlakozik",
-                "content": [
-                  "Ellenőrizd:",
-                  "• A szériaszám és access token helyesek-e",
-                  "• A Scolia tábla be van-e kapcsolva és csatlakozik-e a hálózathoz",
-                  "• A böngésző konzolban vannak-e hibaüzenetek ([Scolia] Error)",
-                  "",
-                  "Megoldások:",
-                  "• Ellenőrizd a hitelesítő adatokat a Scolia ügyfélszolgálattal",
-                  "• Ellenőrizd a hálózati kapcsolatot",
-                  "• Próbáld meg kikapcsolni és újra bekapcsolni a Scoliát"
-                ]
-              },
-              {
-                "title": "A pontszámok nem rögzítődnek",
-                "content": [
-                  "Ellenőrizd:",
-                  "• A kapcsolat állapotát (a konzolban 'Connected' üzenetnek kell megjelennie)",
-                  "• A dobások érzékelését (konzol log: [Scolia] Throw detected)",
-                  "• A puffer beküldését (konzol log a dobás beküldéséről)",
-                  "",
-                  "Megoldások:",
-                  "• Győződj meg róla, hogy az aktív Scolia táblára dobsz",
-                  "• Ellenőrizd, hogy a tábla a megfelelő módban van-e",
-                  "• Ha szükséges, térj át manuális pontszám bevitelre"
-                ]
-              },
-              {
-                "title": "Duplikált pontszámok",
-                "content": [
-                  "Probléma: A pontszám kétszer kerül rögzítésre (Scolia + manuális bevitel)",
-                  "",
-                  "Megoldás:",
-                  "• Ne adj meg manuálisan pontszámokat, amikor a Scolia engedélyezve van",
-                  "• Várj az automatikus beküldésre minden forduló után",
-                  "• Ha egy pontszám nem rögzítődik, kapcsold ki a Scoliát manuális bevitel előtt"
-                ]
-              },
-              {
-                "title": "Kapcsolat megszakad játék közben",
-                "content": [
-                  "Mi történik:",
-                  "• A Scolia lecsatlakozik a meccs közben",
-                  "• A manuális pontszám bevitel azonnal elérhetővé válik",
-                  "• A játék állapota megmarad",
-                  "",
-                  "Megoldás:",
-                  "• Folytasd manuális pontszám bevitellel",
-                  "• Próbáld meg újra engedélyezni a Scoliát a beállításokban",
-                  "• Ellenőrizd a hálózat stabilitását"
-                ]
-              }
-            ]
-          },
-          {
-            "type": "subsection",
-            "title": "Legjobb gyakorlatok",
-            "content": [
-              "Verseny szervezők számára:",
-              "• Konfiguráld előre az összes táblát a verseny kezdete előtt",
-              "• Teszteld a kapcsolatokat minden Scolia táblával a meccsek előtt",
-              "• Legyen tartalék hitelesítő adatod problémák esetére",
-              "• Képezd ki a személyzetet a manuális felülírási eljárásokra",
-              "• Figyeld a kapcsolat állapotát a meccsek alatt",
-              "",
-              "Játékosok számára:",
-              "• Várj az automatikus beküldésre - ne siess a manuális pontszám bevitellel",
-              "• Ellenőrizd, hogy a helyes pontszám került-e rögzítésre",
-              "• Azonnal jelezd a problémákat a verseny személyzetnek",
-              "• Ismerd a manuális tartalék megoldást, ha a Scolia leáll",
-              "",
-              "Helyi játék esetén:",
-              "• Mentsd el biztonságosan a hitelesítő adataidat",
-              "• Teszteld a kapcsolatot fontos meccsek előtt",
-              "• Tartsd elérhetően a manuális opciót - ne hagyatkozz 100%-ban a Scoliára"
-            ],
-            "note": {
-              "type": "warning",
-              "content": "Az access token-ek érzékeny adatok - kezeld őket jelszóként! Csak adminisztrátorok/moderátorok konfigurálhatják a táblákat."
+              "content": "Az MMR jól használható fejlődési trend követésére, érdemes meccs- és legstatisztikákkal együtt értelmezni."
             }
           }
         ]
@@ -1130,7 +501,53 @@
     },
     {
       "id": 10,
-      "title": "PWA - Alkalmazás Telepítése",
+      "title": "Helyi meccs (Local Match)",
+      "icon": "IconPlayerPlay",
+      "description": "Gyors gyakorlás vagy ad-hoc meccs verseny nélkül",
+      "content": {
+        "sections": [
+          {
+            "type": "subsection",
+            "title": "Mire jó a helyi meccs?",
+            "content": [
+              "Gyakorláshoz és baráti meccsekhez, amikor nem versenyt kezelsz.",
+              "Gyors induláshoz külön versenystruktúra létrehozása nélkül.",
+              "A scorer felület logikájának megtanulásához (új játékosoknak is hasznos)."
+            ]
+          },
+          {
+            "type": "subsection",
+            "title": "Helyi meccs indítása lépésről lépésre",
+            "content": [
+              "Nyisd meg a board felületet, majd válaszd a &ldquo;Helyi meccs&rdquo; indítását.",
+              "Ez elérhető a fő /board oldalon, illetve a /board/[tournamentId] nézet fejlécében is.",
+              "Állítsd be a nyert legek számát és a kezdő pontszámot a megjelenő ablakban.",
+              "A &ldquo;Meccs indítása&rdquo; gombbal azonnal belépsz a helyi meccs scorer felületére."
+            ]
+          },
+          {
+            "type": "subsection",
+            "title": "Használat közben",
+            "content": [
+              "Pontot ugyanúgy tudsz rögzíteni, mint verseny meccsnél.",
+              "A fogaskerék menüben meccs közben módosíthatók a fő beállítások (pl. nyert legek száma), illetve újraindítható a meccs.",
+              "A leg/meccs megerősítéseknél itt is figyelmesen ellenőrizd az adatokat mentés előtt."
+            ]
+          },
+          {
+            "type": "subsection",
+            "title": "Használati tipp",
+            "content": [
+              "Verseny nap előtt futtassatok egy rövid helyi tesztmeccset az eszközökön.",
+              "Így éles helyzetben kevesebb hibával megy az eredményrögzítés."
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 11,
+      "title": "PWA telepítés",
       "icon": "IconDeviceMobile",
       "description": "Mobilalkalmazásként való használat",
       "content": {
@@ -1139,101 +556,73 @@
             "type": "subsection",
             "title": "Mi az a PWA?",
             "content": [
-              "A tDarts Progressive Web App (PWA) technológiával készült, ami azt jelenti, hogy telepítheted a telefonodra vagy tabletedre, és úgy használhatod, mint egy natív alkalmazást.",
-              "Nincs szükség App Store vagy Google Play letöltésre - közvetlenül a böngészőből telepítheted."
+              "A tDarts PWA-ként telepíthető telefonra vagy tabletre, és app-szerű élményt ad.",
+              "Nincs szükség külön alkalmazásboltos letöltésre, böngészőből telepíthető."
             ]
           },
           {
             "type": "subsection",
-            "title": "Telepítés Android eszközökre",
+            "title": "Telepítés Androidon",
             "content": [
-              "1. Nyisd meg a tdarts.sironic.hu oldalt Chrome böngészőben",
-              "2. Koppints a böngésző menü gombra (3 pont jobb felül)",
-              "3. Válaszd a &ldquo;Hozzáadás a kezdőképernyőhöz&rdquo; vagy &ldquo;Alkalmazás telepítése&rdquo; opciót",
-              "4. Erősítsd meg a telepítést",
-              "5. A tDarts ikon megjelenik a kezdőképernyőn"
+              "Nyisd meg a tDarts oldalt Chrome böngészőben.",
+              "A böngésző menüben válaszd az &ldquo;Alkalmazás telepítése&rdquo; vagy &ldquo;Hozzáadás a kezdőképernyőhöz&rdquo; opciót.",
+              "A telepítés után külön ikonnal indítható a platform."
             ]
           },
           {
             "type": "subsection",
-            "title": "Telepítés iOS eszközökre (iPhone, iPad)",
+            "title": "Telepítés iOS-en",
             "content": [
-              "1. Nyisd meg a tdarts.sironic.hu oldalt Safari böngészőben",
-              "2. Koppints a megosztás gombra (négyzet felfelé mutató nyíllal)",
-              "3. Görgess le és válaszd a &ldquo;Hozzáadás a kezdőképernyőhöz&rdquo; opciót",
-              "4. Add meg az alkalmazás nevét (pl. tDarts)",
-              "5. Koppints a &ldquo;Hozzáadás&rdquo; gombra",
-              "6. A tDarts ikon megjelenik a kezdőképernyőn"
+              "Nyisd meg a tDarts oldalt Safari böngészőben.",
+              "A megosztás menüben válaszd a &ldquo;Hozzáadás a kezdőképernyőhöz&rdquo; opciót.",
+              "Az ikon felkerül a kezdőképernyőre, onnan közvetlenül indítható."
             ]
           },
           {
             "type": "subsection",
-            "title": "PWA Előnyei",
+            "title": "PWA előnyök",
             "content": [
-              "Teljes képernyős élmény: Nincs böngésző címsor, több hely a tartalomnak",
-              "Gyorsabb betöltés: Az alkalmazás gyorsítótárazza a gyakran használt elemeket",
-              "Offline működés: Alapvető funkciók offline is elérhetők",
-              "Natív élmény: Úgy viselkedik, mint egy telepített alkalmazás",
-              "Automatikus frissítések: Mindig a legfrissebb verziót használod",
-              "Kisebb adatforgalom: Optimalizált betöltés és gyorsítótárazás"
+              "Gyorsabb indulás és app-szerű kezelés verseny közben.",
+              "Teljes képernyős megjelenítés, kényelmesebb használat scorer eszközökön.",
+              "Stabilabb napi rutin szervezőknek és fix tableteknek."
             ]
           },
           {
             "type": "subsection",
-            "title": "PWA Használati Esetek",
+            "title": "PWA használati esetek",
             "content": [
-              "Eredményrögzítés tableten: Telepítsd a tabletre és használd teljes képernyős módban a verseny helyszínén.",
-              "Gyors hozzáférés: Egy koppintással nyithatod meg az alkalmazást a kezdőképernyőről.",
-              "Verseny követés: Játékosként kövesd a verseny állását offline is.",
-              "Moderátori feladatok: Gyors hozzáférés a verseny kezeléséhez.",
-              "Landscape mód: Tableten fekvő módban optimalizált megjelenítés az eredményrögzítéshez.",
-              "Helyi meccs offline: A /board oldal és a helyi meccs funkciók offline is működnek PWA telepítés után."
+              "Fix scorer tablet a helyszínen gyors belépéssel.",
+              "Szervezői feladatok gyors elérése mobilról.",
+              "Helyi meccs és board felület kényelmesebb, app-szerű használata."
             ]
           },
           {
             "type": "subsection",
             "title": "Teljes képernyős mód",
             "content": [
-              "PWA módban az alkalmazás automatikusan teljes képernyőn nyílik meg.",
-              "Nincs böngésző címsor vagy navigációs gombok - tiszta, professzionális megjelenés.",
-              "Ideális verseny helyszínén használt tabletekhez.",
-              "A képernyő teljes területe kihasználható az eredményrögzítéshez.",
-              "Landscape (fekvő) módban optimalizált elrendezés nagy számokkal és gombokkal."
+              "PWA indításnál a felület teljes képernyőn nyílik meg.",
+              "Ez különösen hasznos versenyhelyszíni tableteken."
             ],
             "note": {
               "type": "tip",
-              "content": "Verseny helyszínén használt fix tableteknél telepítsd PWA-ként, így gyorsabb és professzionálisabb lesz az élmény!"
+              "content": "Verseny előtt ellenőrizd minden kijelölt eszközön, hogy a PWA telepítve van és az indítás működik."
             }
-          }
-        ]
-      }
-    },
-    {
-      "id": 11,
-      "title": "Záró megjegyzés",
-      "icon": "IconFlagCheck",
-      "description": "Végső információk és támogatás",
-      "content": {
-        "sections": [
-          {
-            "type": "text",
-            "content": "A tDarts platform célja, hogy a versenyek lebonyolítása és az eredmények rögzítése gyors, egyszerű és átlátható legyen. Ha kérdésed van, a platform támogatási csatornáin elérheted a fejlesztőket."
           }
         ]
       }
     }
   ],
   "cta": {
-    "title": "Készen állsz a kezdésre?",
-    "description": "Most már mindent tudsz a tDarts platform használatáról. Regisztrálj és kezdj el versenyeket szervezni!",
+    "title": "Készen állsz a használatra?",
+    "description": "Nyisd meg a klubod oldalát, állítsd be a versenyt, és használd a friss folyamatot tudatos megerősítésekkel.",
     "buttons": [
       {
-        "text": "Regisztráció",
-        "href": "/auth/register",
+        "text": "Belépés / Regisztráció",
+        "href": "/auth/login",
         "variant": "primary"
       },
       {
-        "text": "Versenyek Keresése",
+        "text": "Versenyek keresése",
         "href": "/search",
         "variant": "secondary"
       }

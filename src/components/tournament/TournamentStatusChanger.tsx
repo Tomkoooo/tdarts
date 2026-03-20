@@ -1,12 +1,19 @@
-import React, { useCallback, useMemo, useState } from "react"
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useTranslations } from "next-intl"
-import axios from "axios"
 import {
   CreateManualGroupsRequest,
   ManualGroupsAvailablePlayer,
   ManualGroupsContextResponse,
   Tournament,
 } from "@/interface/tournament.interface"
+import {
+  cancelKnockoutAction,
+  createManualGroupsAction,
+  finishTournamentAction,
+  generateGroupsAction,
+  generateKnockoutAction,
+  getManualGroupsContextAction,
+} from "@/features/tournaments/actions/manageTournament.action"
 
 import { Button } from "@/components/ui/Button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card"
@@ -22,6 +29,7 @@ interface TournamentStatusManagerProps {
   tournament: Tournament
   userClubRole: "admin" | "moderator" | "member" | "none"
   onRefetch: () => void
+  section?: "all" | "groups" | "knockout"
 }
 
 type KnockoutMode = "automatic" | "manual"
@@ -41,6 +49,7 @@ export default function TournamentStatusChanger({
   tournament,
   userClubRole,
   onRefetch,
+  section = "all",
 }: TournamentStatusManagerProps) {
   const t = useTranslations("Tournament.components");
   const tTour = useTranslations("Tournament");
@@ -53,6 +62,14 @@ export default function TournamentStatusChanger({
   const [isCancelKnockoutDialogOpen, setIsCancelKnockoutDialogOpen] = useState(false)
   const [isThirdPlaceDialogOpen, setIsThirdPlaceDialogOpen] = useState(false)
   const [selectedThirdPlaceId, setSelectedThirdPlaceId] = useState<string | null>(null)
+  const [cancelKnockoutConfirmStep, setCancelKnockoutConfirmStep] = useState<1 | 2>(1)
+  const [isPendingKnockoutCancel, setIsPendingKnockoutCancel] = useState(false)
+  const [knockoutCancelCountdown, setKnockoutCancelCountdown] = useState(20)
+  const [isExecutingPendingCancel, setIsExecutingPendingCancel] = useState(false)
+  const [finalConfirmCountdown, setFinalConfirmCountdown] = useState(0)
+  const countdownIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const countdownFinishedRef = useRef(false)
+  const finalConfirmIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const [knockoutMode, setKnockoutMode] = useState<KnockoutMode>("automatic")
   const [groupsMode, setGroupsMode] = useState<GroupsMode>("automatic")
@@ -84,6 +101,8 @@ export default function TournamentStatusChanger({
     boardCount === 0 ||
     tournamentFormat === "knockout" ||
     (tournamentFormat === "group_knockout" && [2, 4, 8, 16].includes(boardCount))
+  const showGroupsControls = section === "all" || section === "groups"
+  const showKnockoutControls = section === "all" || section === "knockout"
 
   const resetError = () => setError(null)
 
@@ -96,10 +115,10 @@ export default function TournamentStatusChanger({
         await request()
         onRefetch()
       } catch (err: any) {
-        const message = err?.response?.data?.error || err?.message || tTour('status_changer.error_unknown')
+        const message = err?.message || tTour('status_changer.error_unknown')
         setError(message)
         showErrorToast(message, {
-          error: err?.response?.data?.details || err?.message,
+          error: err?.message,
           context: `Action: ${pendingAction}`,
           errorName: "Tournament Status Change Error"
         })
@@ -117,9 +136,12 @@ export default function TournamentStatusChanger({
 
   const handleAutomaticGroups = () => {
     handleApiRequest("generate-groups", async () => {
-      const response = await axios.post(`/api/tournaments/${tournamentCode}/generateGroups`)
-      if (!response?.data || response.status !== 200) {
-        throw new Error(response?.data?.error || tTour('status_changer.error_groups_generate'))
+      if (!tournamentCode) {
+        throw new Error(tTour('status_changer.error_groups_generate'))
+      }
+      const response = await generateGroupsAction({ code: tournamentCode })
+      if (!response || typeof response !== 'object' || ('ok' in response && response.ok === false)) {
+        throw new Error(tTour('status_changer.error_groups_generate'))
       }
       setIsGroupsDialogOpen(false)
     })
@@ -127,16 +149,21 @@ export default function TournamentStatusChanger({
 
   const handleLoadManualContext = () => {
     handleApiRequest("manual-groups", async () => {
-      const { data } = await axios.get(`/api/tournaments/${tournamentCode}/manualGroups/context`)
-      if (!data?.success) {
-        throw new Error(data?.error || tTour('status_changer.manual_groups_dialog.error_load'))
+      if (!tournamentCode) {
+        throw new Error(tTour('status_changer.manual_groups_dialog.error_load'))
       }
+      const data = await getManualGroupsContextAction({ code: tournamentCode })
+      if (!data || typeof data !== 'object' || !('success' in data) || !data.success) {
+        throw new Error(tTour('status_changer.manual_groups_dialog.error_load'))
+      }
+      const context = data as ManualGroupsContextResponse & { success: boolean }
 
-      const availableBoards = (data.boards || []).filter((board: { isUsed: boolean }) => !board.isUsed)
+      const availableBoards = (context.boards || []).filter((board: { isUsed: boolean }) => !board.isUsed)
       const defaultBoard = availableBoards.length > 0 ? availableBoards[0].boardNumber : null
 
       setManualContext({
-        ...data,
+        boards: context.boards || [],
+        availablePlayers: context.availablePlayers || [],
         searchQuery: "",
       })
       setSelectedBoard(defaultBoard)
@@ -161,9 +188,15 @@ export default function TournamentStatusChanger({
     }
 
     handleApiRequest("generate-groups", async () => {
-      const { data } = await axios.post(`/api/tournaments/${tournamentCode}/manualGroups/create`, payload)
-      if (!data?.success) {
-        throw new Error(data?.error || tTour('status_changer.manual_groups_dialog.error_create'))
+      if (!tournamentCode) {
+        throw new Error(tTour('status_changer.manual_groups_dialog.error_create'))
+      }
+      const data = await createManualGroupsAction({
+        code: tournamentCode,
+        groups: payload.groups,
+      })
+      if (!data || typeof data !== 'object' || ('ok' in data && data.ok === false)) {
+        throw new Error(tTour('status_changer.manual_groups_dialog.error_create'))
       }
 
       setIsManualGroupsDialogOpen(false)
@@ -175,31 +208,17 @@ export default function TournamentStatusChanger({
 
   const handleGenerateKnockout = () => {
     handleApiRequest("generate-knockout", async () => {
-      let response
-
-      if (tournamentFormat === "knockout") {
-        if (knockoutMode === "automatic") {
-          response = await axios.post(`/api/tournaments/${tournamentCode}/generateKnockout`, {
-            useSeededPlayers: false,
-            seededPlayersCount: 0,
-          })
-        } else {
-          response = await axios.post(`/api/tournaments/${tournamentCode}/generateManualKnockout`)
-        }
-      } else {
-        if (knockoutMode === "automatic") {
-          response = await axios.post(`/api/tournaments/${tournamentCode}/generateKnockout`, {
-            qualifiersPerGroup: selectedPlayers,
-            useSeededPlayers: false,
-            seededPlayersCount: 0,
-          })
-        } else {
-          response = await axios.post(`/api/tournaments/${tournamentCode}/generateManualKnockout`)
-        }
+      if (!tournamentCode) {
+        throw new Error(tTour('status_changer.knockout_dialog.error_generate'))
       }
-
-      if (!response?.data?.success) {
-        throw new Error(response?.data?.error || tTour('status_changer.knockout_dialog.error_generate'))
+      const response = await generateKnockoutAction({
+        code: tournamentCode,
+        tournamentFormat,
+        selectedPlayers,
+        mode: knockoutMode,
+      })
+      if (!response || typeof response !== 'object' || ('ok' in response && response.ok === false)) {
+        throw new Error(tTour('status_changer.knockout_dialog.error_generate'))
       }
 
       setIsKnockoutDialogOpen(false)
@@ -247,11 +266,15 @@ export default function TournamentStatusChanger({
     }
 
     handleApiRequest("finish", async () => {
-      const response = await axios.post(`/api/tournaments/${tournamentCode}/finish`, {
+      if (!tournamentCode) {
+        throw new Error(tTour('status_changer.third_place_dialog.error'))
+      }
+      const response = await finishTournamentAction({
+        code: tournamentCode,
         thirdPlacePlayerId: thirdPlaceId,
       })
-      if (!response?.data?.success) {
-        throw new Error(response?.data?.error || tTour('status_changer.third_place_dialog.error'))
+      if (!response || typeof response !== 'object' || ('ok' in response && response.ok === false)) {
+        throw new Error(tTour('status_changer.third_place_dialog.error'))
       }
       setIsThirdPlaceDialogOpen(false)
     })
@@ -259,13 +282,119 @@ export default function TournamentStatusChanger({
 
   const handleCancelKnockout = () => {
     handleApiRequest("cancel-knockout", async () => {
-      const response = await axios.post(`/api/tournaments/${tournamentCode}/cancel-knockout`)
-      if (!response?.data?.success) {
-        throw new Error(response?.data?.error || tTour('status_changer.cancel_knockout_dialog.error'))
+      if (!tournamentCode) {
+        throw new Error(tTour('status_changer.cancel_knockout_dialog.error'))
+      }
+      const response = await cancelKnockoutAction({ code: tournamentCode })
+      if (!response || typeof response !== 'object' || ('ok' in response && response.ok === false)) {
+        throw new Error(tTour('status_changer.cancel_knockout_dialog.error'))
       }
       setIsCancelKnockoutDialogOpen(false)
+      setCancelKnockoutConfirmStep(1)
+      setIsPendingKnockoutCancel(false)
+      setKnockoutCancelCountdown(20)
+      setIsExecutingPendingCancel(false)
+      countdownFinishedRef.current = false
     })
   }
+
+  const clearKnockoutCancelTimer = useCallback(() => {
+    if (countdownIntervalRef.current) {
+      clearInterval(countdownIntervalRef.current)
+      countdownIntervalRef.current = null
+    }
+  }, [])
+
+  const clearFinalConfirmTimer = useCallback(() => {
+    if (finalConfirmIntervalRef.current) {
+      clearInterval(finalConfirmIntervalRef.current)
+      finalConfirmIntervalRef.current = null
+    }
+  }, [])
+
+  const startPendingKnockoutCancel = useCallback(() => {
+    clearKnockoutCancelTimer()
+    countdownFinishedRef.current = false
+    setKnockoutCancelCountdown(20)
+    setIsPendingKnockoutCancel(true)
+    setIsExecutingPendingCancel(false)
+    setIsCancelKnockoutDialogOpen(false)
+    setCancelKnockoutConfirmStep(1)
+
+    countdownIntervalRef.current = setInterval(() => {
+      setKnockoutCancelCountdown((prev) => {
+        if (prev <= 1) {
+          clearKnockoutCancelTimer()
+          countdownFinishedRef.current = true
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
+  }, [clearKnockoutCancelTimer])
+
+  const executePendingKnockoutCancel = useCallback(() => {
+    if (isExecutingPendingCancel || action === "cancel-knockout") return
+    setIsExecutingPendingCancel(true)
+    clearKnockoutCancelTimer()
+    handleCancelKnockout()
+  }, [isExecutingPendingCancel, action, clearKnockoutCancelTimer])
+
+  const undoPendingKnockoutCancel = useCallback(() => {
+    clearKnockoutCancelTimer()
+    countdownFinishedRef.current = false
+    setIsPendingKnockoutCancel(false)
+    setKnockoutCancelCountdown(20)
+    setIsExecutingPendingCancel(false)
+  }, [clearKnockoutCancelTimer])
+
+  const handleCancelKnockoutDialogChange = (open: boolean) => {
+    setIsCancelKnockoutDialogOpen(open)
+    if (!open) {
+      setCancelKnockoutConfirmStep(1)
+      setFinalConfirmCountdown(0)
+      clearFinalConfirmTimer()
+    }
+  }
+
+  useEffect(() => {
+    if (
+      isPendingKnockoutCancel &&
+      knockoutCancelCountdown === 0 &&
+      !isExecutingPendingCancel &&
+      action !== "cancel-knockout" &&
+      countdownFinishedRef.current
+    ) {
+      executePendingKnockoutCancel()
+    }
+  }, [isPendingKnockoutCancel, knockoutCancelCountdown, isExecutingPendingCancel, action, executePendingKnockoutCancel])
+
+  useEffect(() => {
+    return () => {
+      clearKnockoutCancelTimer()
+      clearFinalConfirmTimer()
+    }
+  }, [clearKnockoutCancelTimer, clearFinalConfirmTimer])
+
+  useEffect(() => {
+    if (isCancelKnockoutDialogOpen && cancelKnockoutConfirmStep === 2) {
+      clearFinalConfirmTimer()
+      setFinalConfirmCountdown(3)
+      finalConfirmIntervalRef.current = setInterval(() => {
+        setFinalConfirmCountdown((prev) => {
+          if (prev <= 1) {
+            clearFinalConfirmTimer()
+            return 0
+          }
+          return prev - 1
+        })
+      }, 1000)
+      return
+    }
+
+    setFinalConfirmCountdown(0)
+    clearFinalConfirmTimer()
+  }, [isCancelKnockoutDialogOpen, cancelKnockoutConfirmStep, clearFinalConfirmTimer])
 
   const handleTogglePlayer = (playerId: string, checked: boolean) => {
     if (!selectedBoard) return
@@ -353,7 +482,8 @@ export default function TournamentStatusChanger({
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex flex-wrap gap-2">
-            {tournamentStatus === "pending" &&
+            {showGroupsControls &&
+              tournamentStatus === "pending" &&
               (tournamentFormat === "group" || tournamentFormat === "group_knockout") && (
                 <Button
                   variant="secondary"
@@ -365,7 +495,8 @@ export default function TournamentStatusChanger({
                 </Button>
               )}
 
-            {((tournamentStatus === "group-stage" &&
+            {showKnockoutControls &&
+              ((tournamentStatus === "group-stage" &&
               (tournamentFormat === "knockout" || tournamentFormat === "group_knockout")) ||
               (tournamentStatus === "pending" && tournamentFormat === "knockout")) && (
                 <Button
@@ -378,9 +509,9 @@ export default function TournamentStatusChanger({
                   {t("egyenes_kieses_generalasa_msbj")}</Button>
               )}
 
-            {tournamentStatus === "knockout" && (
+            {showKnockoutControls && tournamentStatus === "knockout" && (
               <Button
-                variant="destructive"
+                variant="outline"
                 className="flex-1 min-w-[200px]"
                 onClick={() => {
                   resetError()
@@ -391,16 +522,18 @@ export default function TournamentStatusChanger({
               </Button>
             )}
 
-            {(tournamentStatus === "knockout" ||
+            {showKnockoutControls &&
+              (tournamentStatus === "knockout" ||
               (tournamentStatus === "group-stage" && tournamentFormat === "group") ||
               (tournamentStatus === "pending" && tournamentFormat === "knockout")) && (
-                <Button variant="outline" className="flex-1 min-w-[200px]" onClick={() => handleFinishTournament()}>
+                <Button variant="destructive" className="flex-1 min-w-[200px]" onClick={() => handleFinishTournament()}>
                   {tTour('status_changer.btn_finish')}
                 </Button>
               )}
           </div>
 
-          {!isGroupGenerationAllowed &&
+          {showGroupsControls &&
+            !isGroupGenerationAllowed &&
             tournamentStatus === "pending" &&
             (tournamentFormat === "group" || tournamentFormat === "group_knockout") &&
             boardCount > 0 && (
@@ -421,6 +554,35 @@ export default function TournamentStatusChanger({
             <Alert variant="destructive">
               <AlertTitle>{tTour('status_changer.alert_error_title')}</AlertTitle>
               <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+
+          {showKnockoutControls && isPendingKnockoutCancel && (
+            <Alert variant="warning">
+              <AlertTitle>{tTour('status_changer.cancel_knockout_dialog.pending_title')}</AlertTitle>
+              <AlertDescription className="space-y-3">
+                <p>
+                  {tTour('status_changer.cancel_knockout_dialog.pending_desc', { seconds: knockoutCancelCountdown })}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={undoPendingKnockoutCancel}
+                    disabled={isExecutingPendingCancel || action === "cancel-knockout"}
+                  >
+                    {tTour('status_changer.cancel_knockout_dialog.btn_undo')}
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    onClick={executePendingKnockoutCancel}
+                    disabled={isExecutingPendingCancel || action === "cancel-knockout"}
+                  >
+                    {isExecutingPendingCancel || action === "cancel-knockout"
+                      ? tTour('status_changer.cancel_knockout_dialog.executing')
+                      : tTour('status_changer.cancel_knockout_dialog.btn_skip_now')}
+                  </Button>
+                </div>
+              </AlertDescription>
             </Alert>
           )}
         </CardContent>
@@ -492,7 +654,7 @@ export default function TournamentStatusChanger({
 
       <Dialog open={isManualGroupsDialogOpen} onOpenChange={setIsManualGroupsDialogOpen}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
-          <DialogHeader className="flex-shrink-0">
+          <DialogHeader className="shrink-0">
             <DialogTitle>{tTour('status_changer.manual_groups_dialog.title')}</DialogTitle>
             <DialogDescription>
               {tTour('status_changer.manual_groups_dialog.description')}
@@ -635,7 +797,7 @@ export default function TournamentStatusChanger({
             </div>
           )}
 
-          <DialogFooter className="flex-shrink-0 flex flex-col-reverse gap-2 sm:flex-row sm:justify-between">
+          <DialogFooter className="shrink-0 flex flex-col-reverse gap-2 sm:flex-row sm:justify-between">
             <Button
               onClick={handleCreateManualGroups}
               disabled={
@@ -749,26 +911,62 @@ export default function TournamentStatusChanger({
         </DialogContent>
       </Dialog>
 
-      <Dialog open={isCancelKnockoutDialogOpen} onOpenChange={setIsCancelKnockoutDialogOpen}>
+      <Dialog open={isCancelKnockoutDialogOpen} onOpenChange={handleCancelKnockoutDialogChange}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>{tTour('status_changer.cancel_knockout_dialog.title')}</DialogTitle>
             <DialogDescription>
-              {tTour('status_changer.cancel_knockout_dialog.description')}
+              {cancelKnockoutConfirmStep === 1
+                ? tTour('status_changer.cancel_knockout_dialog.description_step1')
+                : tTour('status_changer.cancel_knockout_dialog.description_step2')}
             </DialogDescription>
           </DialogHeader>
 
+          {cancelKnockoutConfirmStep === 2 && (
+            <Alert variant="destructive">
+              <AlertTitle>{tTour('status_changer.cancel_knockout_dialog.step2_title')}</AlertTitle>
+              <AlertDescription>
+                {tTour('status_changer.cancel_knockout_dialog.step2_desc')}
+              </AlertDescription>
+            </Alert>
+          )}
+
           <DialogFooter className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-between">
-            <Button variant="destructive" onClick={handleCancelKnockout} disabled={action === "cancel-knockout"}>
-              {action === "cancel-knockout" ? (
-                <span className="flex items-center gap-2">
-                  <LoadingSpinner size="sm" />
-                  {tTour('status_changer.cancel_knockout_dialog.cancelling')}
-                </span>
-              ) : (
-                tTour('status_changer.cancel_knockout_dialog.btn_cancel')
-              )}
-            </Button>
+            {cancelKnockoutConfirmStep === 1 ? (
+              <Button
+                variant="destructive"
+                onClick={() => setCancelKnockoutConfirmStep(2)}
+                disabled={action === "cancel-knockout"}
+              >
+                {tTour('status_changer.cancel_knockout_dialog.btn_continue')}
+              </Button>
+            ) : (
+              <>
+                <Button
+                  variant="outline"
+                  onClick={() => setCancelKnockoutConfirmStep(1)}
+                  disabled={action === "cancel-knockout"}
+                >
+                  {tTour('status_changer.cancel_knockout_dialog.btn_back')}
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={startPendingKnockoutCancel}
+                  disabled={action === "cancel-knockout" || finalConfirmCountdown > 0}
+                >
+                  {action === "cancel-knockout" ? (
+                    <span className="flex items-center gap-2">
+                      <LoadingSpinner size="sm" />
+                      {tTour('status_changer.cancel_knockout_dialog.cancelling')}
+                    </span>
+                  ) : finalConfirmCountdown > 0 ? (
+                    `${tTour('status_changer.cancel_knockout_dialog.btn_confirm_schedule')} (${finalConfirmCountdown}s)`
+                  ) : (
+                    tTour('status_changer.cancel_knockout_dialog.btn_confirm_schedule')
+                  )}
+                </Button>
+              </>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>

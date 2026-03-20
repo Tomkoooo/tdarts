@@ -37,6 +37,53 @@ type PlayerTranslations = {
   pendingInvitesTypeAccount: string;
   viewHeadToHead: string;
   retry: string;
+  wins: string;
+  losses: string;
+  headToHeadFirstNineAvg: string;
+  headToHeadWinrate: string;
+  headToHeadScopeTournament: string;
+  headToHeadScopeAllTime: string;
+  topTournamentAverages: string;
+  reset: string;
+  notEnoughData: string;
+  topTournamentAvg: string;
+  topTournamentMatches: string;
+  topMatchAverages: string;
+  opponentResult: string;
+  f9Avg: string;
+  date: string;
+  loadMore: string;
+  currentMmr: string;
+  endOfSeasonMmr: string;
+  archived: string;
+  rank: string;
+  finishedPlace: string;
+  globalList: string;
+  tournaments: string;
+  career: string;
+  period: string;
+  winRate: string;
+  winCount: string;
+  formAverage: string;
+  noData: string;
+  mmrProgression: string;
+  noMmrHistory: string;
+  seasonalStats: string;
+  recentMatches: string;
+  myTeams: string;
+  eventLog: string;
+  emptyList: string;
+  openDetails: string;
+  average: string;
+  firstNine: string;
+  oneEighties: string;
+  bestPosition: string;
+  avgPosition: string;
+  maxCheckout: string;
+  pair: string;
+  team: string;
+  matches: string;
+  legs: string;
 };
 
 const translations: Record<PlayerLocale, PlayerTranslations> = {
@@ -77,6 +124,53 @@ const translations: Record<PlayerLocale, PlayerTranslations> = {
     pendingInvitesTypeAccount: "Regisztrált fiók",
     viewHeadToHead: "Head-to-Head",
     retry: "Újrapróbálás",
+    wins: "Győzelem",
+    losses: "Vereség",
+    headToHeadFirstNineAvg: "First 9 Átlag",
+    headToHeadWinrate: "Győzelmi ráta",
+    headToHeadScopeTournament: "Torna",
+    headToHeadScopeAllTime: "Összesített",
+    topTournamentAverages: "Top Torna Átlagok",
+    reset: "Reset",
+    notEnoughData: "Nincs elég adat",
+    topTournamentAvg: "Átlag",
+    topTournamentMatches: "Meccsek",
+    topMatchAverages: "Top Meccs Átlagok",
+    opponentResult: "Ellenfél / Eredmény",
+    f9Avg: "F9 Átlag",
+    date: "Dátum",
+    loadMore: "Több",
+    currentMmr: "Aktuális MMR",
+    endOfSeasonMmr: "Szezon végi MMR",
+    archived: "Archivált",
+    rank: "Rangsor",
+    finishedPlace: "Végezte",
+    globalList: "Globális lista",
+    tournaments: "Tornák",
+    career: "Pályafutás",
+    period: "Időszak",
+    winRate: "Győzelmi ráta",
+    winCount: "Győzelem",
+    formAverage: "Forma (Átlag)",
+    noData: "Nincs adat",
+    mmrProgression: "MMR Alakulás",
+    noMmrHistory: "Nincs MMR történet",
+    seasonalStats: "Szezonális Mutatók",
+    recentMatches: "Legutóbbi Meccsek",
+    myTeams: "Párosaim / Csapataim",
+    eventLog: "Esemény Napló",
+    emptyList: "Üres lista",
+    openDetails: "Megnyitás",
+    average: "Átlag",
+    firstNine: "First 9 Átlag",
+    oneEighties: "180-as Dobások",
+    bestPosition: "Legjobb Helyezés",
+    avgPosition: "Átlagos Helyezés",
+    maxCheckout: "Max Kiszálló",
+    pair: "Páros",
+    team: "Csapat",
+    matches: "Meccsek",
+    legs: "Legek",
   },
   en: {
     headToHeadTitle: "Head-to-Head",
@@ -115,6 +209,53 @@ const translations: Record<PlayerLocale, PlayerTranslations> = {
     pendingInvitesTypeAccount: "Registered account",
     viewHeadToHead: "Head-to-Head",
     retry: "Retry",
+    wins: "Wins",
+    losses: "Losses",
+    headToHeadFirstNineAvg: "First 9 Avg",
+    headToHeadWinrate: "Winrate",
+    headToHeadScopeTournament: "Tournament",
+    headToHeadScopeAllTime: "All-time",
+    topTournamentAverages: "Top Tournament Averages",
+    reset: "Reset",
+    notEnoughData: "Not enough data",
+    topTournamentAvg: "Average",
+    topTournamentMatches: "Matches",
+    topMatchAverages: "Top Match Averages",
+    opponentResult: "Opponent / Result",
+    f9Avg: "F9 Avg",
+    date: "Date",
+    loadMore: "Load more",
+    currentMmr: "Current MMR",
+    endOfSeasonMmr: "End of Season MMR",
+    archived: "Archived",
+    rank: "Rank",
+    finishedPlace: "Finished",
+    globalList: "Global list",
+    tournaments: "Tournaments",
+    career: "Career",
+    period: "Period",
+    winRate: "Win rate",
+    winCount: "Wins",
+    formAverage: "Form (Average)",
+    noData: "No data",
+    mmrProgression: "MMR Progression",
+    noMmrHistory: "No MMR history",
+    seasonalStats: "Seasonal Stats",
+    recentMatches: "Recent Matches",
+    myTeams: "My Pairs / Teams",
+    eventLog: "Event Log",
+    emptyList: "Empty list",
+    openDetails: "Open",
+    average: "Average",
+    firstNine: "First 9 Avg",
+    oneEighties: "180s Hit",
+    bestPosition: "Best Position",
+    avgPosition: "Average Position",
+    maxCheckout: "Max Checkout",
+    pair: "Pair",
+    team: "Team",
+    matches: "Matches",
+    legs: "Legs",
   },
 };
 

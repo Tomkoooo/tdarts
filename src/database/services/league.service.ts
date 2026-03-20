@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import { LeagueModel } from '@/database/models/league.model';
 import { PlayerModel } from '@/database/models/player.model';
+import { UserModel } from '@/database/models/user.model';
 import { ClubModel } from '@/database/models/club.model';
 import {
   LeagueDocument,
@@ -1032,41 +1033,47 @@ export class LeagueService {
     const leaderboard = await this.getLeagueLeaderboard(leagueId);
     const totalTournaments = league.attachedTournaments.length;
     const totalPlayers = league.players.length;
+    const playerIds = Array.from(
+      new Set(
+        league.players
+          .map((p: any) => this.getPlayerId(p.player))
+          .filter((id: any) => !!id)
+      )
+    );
+    const adjustedByIds = Array.from(
+      new Set(
+        league.players.flatMap((p: any) =>
+          (p.manualAdjustments || [])
+            .map((adjustment: any) =>
+              typeof adjustment.adjustedBy === 'object' && adjustment.adjustedBy?._id
+                ? String(adjustment.adjustedBy._id)
+                : String(adjustment.adjustedBy || '')
+            )
+            .filter(Boolean)
+        )
+      )
+    );
+    const removedByIds = Array.from(
+      new Set(
+        (league.removedPlayers || [])
+          .map((removal: any) =>
+            typeof removal.removedBy === 'object' && removal.removedBy?._id
+              ? String(removal.removedBy._id)
+              : String(removal.removedBy || '')
+          )
+          .filter(Boolean)
+      )
+    );
 
-    // Debug: Check if players are populated
-    console.log('League players populated check:', league.players.map((p: any) => ({
-      playerId: p.player?._id || p.player,
-      playerName: p.player?.name || 'NOT POPULATED',
-      isPopulated: typeof p.player === 'object'
-    })));
+    const [playerDocs, userDocs] = await Promise.all([
+      playerIds.length ? PlayerModel.find({ _id: { $in: playerIds } }).select('name username').lean() : [],
+      (adjustedByIds.length || removedByIds.length)
+        ? UserModel.find({ _id: { $in: [...new Set([...adjustedByIds, ...removedByIds])] } }).select('name username').lean()
+        : [],
+    ]);
 
-    // If players are not populated, manually populate them
-    if (league.players.length > 0 && typeof league.players[0].player === 'string') {
-      console.log('Players not populated, manually populating...');
-      const PlayerModel = (await import('@/database/models/player.model')).PlayerModel;
-
-      for (let i = 0; i < league.players.length; i++) {
-        const playerId = league.players[i].player;
-        const playerDoc = await PlayerModel.findById(playerId).select('name username');
-        if (playerDoc) {
-          league.players[i].player = playerDoc;
-        }
-      }
-
-      // Also populate manualAdjustments.adjustedBy
-      for (let i = 0; i < league.players.length; i++) {
-        for (let j = 0; j < league.players[i].manualAdjustments.length; j++) {
-          const adjustedById = league.players[i].manualAdjustments[j].adjustedBy;
-          if (typeof adjustedById === 'string') {
-            const UserModel = (await import('@/database/models/user.model')).UserModel;
-            const userDoc = await UserModel.findById(adjustedById).select('name username');
-            if (userDoc) {
-              league.players[i].manualAdjustments[j].adjustedBy = userDoc;
-            }
-          }
-        }
-      }
-    }
+    const playersById = new Map(playerDocs.map((doc: any) => [String(doc._id), doc]));
+    const usersById = new Map(userDocs.map((doc: any) => [String(doc._id), doc]));
 
     // Calculate average points per tournament
     const totalPointsAwarded = league.players.reduce((sum: number, player: any) =>
@@ -1104,31 +1111,52 @@ export class LeagueService {
       players: league.players
         .filter((player: any) => player.player !== null && player.player !== undefined)
         .map((player: any) => ({
-          player: {
-            _id: player.player._id,
-            name: player.player.name,
-            username: player.player.username
-          },
+          player: (() => {
+            const playerRef = typeof player.player === 'object' && player.player !== null
+              ? player.player
+              : playersById.get(this.getPlayerId(player.player));
+            return {
+              _id: playerRef?._id || this.getPlayerId(player.player),
+              name: playerRef?.name || 'Unknown',
+              username: playerRef?.username || 'unknown',
+            };
+          })(),
           totalPoints: player.totalPoints,
           tournamentPoints: player.tournamentPoints,
           manualAdjustments: player.manualAdjustments.map((adjustment: any) => ({
             points: adjustment.points,
             reason: adjustment.reason,
-            adjustedBy: {
-              _id: adjustment.adjustedBy._id,
-              name: adjustment.adjustedBy.name,
-              username: adjustment.adjustedBy.username
-            },
+            adjustedBy: (() => {
+              const adjustedById = typeof adjustment.adjustedBy === 'object' && adjustment.adjustedBy?._id
+                ? String(adjustment.adjustedBy._id)
+                : String(adjustment.adjustedBy || '');
+              const adjustedByDoc = typeof adjustment.adjustedBy === 'object' && adjustment.adjustedBy?.name
+                ? adjustment.adjustedBy
+                : usersById.get(adjustedById);
+              return {
+                _id: adjustedById,
+                name: adjustedByDoc?.name || 'Unknown',
+                username: adjustedByDoc?.username || 'unknown',
+              };
+            })(),
             adjustedAt: adjustment.adjustedAt
           }))
         })),
       // Include removed players with full data
       removedPlayers: league.removedPlayers ? league.removedPlayers.map((removal: any) => ({
-        player: {
-          _id: removal.player._id,
-          name: removal.player.name,
-          username: removal.player.username
-        },
+        player: (() => {
+          const removedPlayerId = typeof removal.player === 'object' && removal.player?._id
+            ? String(removal.player._id)
+            : String(removal.player || '');
+          const removedPlayerDoc = typeof removal.player === 'object' && removal.player?.name
+            ? removal.player
+            : playersById.get(removedPlayerId);
+          return {
+            _id: removedPlayerId,
+            name: removedPlayerDoc?.name || 'Unknown',
+            username: removedPlayerDoc?.username || 'unknown',
+          };
+        })(),
         totalPoints: removal.totalPoints,
         tournamentPoints: removal.tournamentPoints.map((tp: any) => ({
           tournament: tp.tournament,
@@ -1139,19 +1167,35 @@ export class LeagueService {
         manualAdjustments: removal.manualAdjustments.map((adjustment: any) => ({
           points: adjustment.points,
           reason: adjustment.reason,
-          adjustedBy: {
-            _id: adjustment.adjustedBy._id || adjustment.adjustedBy,
-            name: adjustment.adjustedBy.name || 'Unknown',
-            username: adjustment.adjustedBy.username || 'Unknown'
-          },
+          adjustedBy: (() => {
+            const adjustedById = typeof adjustment.adjustedBy === 'object' && adjustment.adjustedBy?._id
+              ? String(adjustment.adjustedBy._id)
+              : String(adjustment.adjustedBy || '');
+            const adjustedByDoc = typeof adjustment.adjustedBy === 'object' && adjustment.adjustedBy?.name
+              ? adjustment.adjustedBy
+              : usersById.get(adjustedById);
+            return {
+              _id: adjustedById,
+              name: adjustedByDoc?.name || 'Unknown',
+              username: adjustedByDoc?.username || 'unknown',
+            };
+          })(),
           adjustedAt: adjustment.adjustedAt
         })),
         reason: removal.reason,
-        removedBy: {
-          _id: removal.removedBy._id,
-          name: removal.removedBy.name,
-          username: removal.removedBy.username
-        },
+        removedBy: (() => {
+          const removedById = typeof removal.removedBy === 'object' && removal.removedBy?._id
+            ? String(removal.removedBy._id)
+            : String(removal.removedBy || '');
+          const removedByDoc = typeof removal.removedBy === 'object' && removal.removedBy?.name
+            ? removal.removedBy
+            : usersById.get(removedById);
+          return {
+            _id: removedById,
+            name: removedByDoc?.name || 'Unknown',
+            username: removedByDoc?.username || 'unknown',
+          };
+        })(),
         removedAt: removal.removedAt
       })) : []
     };

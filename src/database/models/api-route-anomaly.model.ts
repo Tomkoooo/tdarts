@@ -1,8 +1,16 @@
 import mongoose, { Document, Schema } from 'mongoose';
 
-export type ApiRouteAnomalySignal = 'calls' | 'traffic' | 'latency';
+export type ApiRouteAnomalySignal =
+  | 'calls'
+  | 'traffic'
+  | 'latency'
+  | 'error_rate'
+  | 'packet_size'
+  | 'timeouts'
+  | 'calls_per_sec';
 
 export interface IApiRouteAnomaly extends Document {
+  sourceType: 'api' | 'action' | 'page';
   routeKey: string;
   method: string;
   signal: ApiRouteAnomalySignal;
@@ -21,16 +29,22 @@ export interface IApiRouteAnomaly extends Document {
 
 const ApiRouteAnomalySchema = new Schema<IApiRouteAnomaly>(
   {
+    sourceType: { type: String, enum: ['api', 'action', 'page'], required: true, default: 'api', index: true },
     routeKey: { type: String, required: true, index: true },
     method: { type: String, required: true, index: true },
-    signal: { type: String, enum: ['calls', 'traffic', 'latency'], required: true, index: true },
+    signal: {
+      type: String,
+      enum: ['calls', 'traffic', 'latency', 'error_rate', 'packet_size', 'timeouts', 'calls_per_sec'],
+      required: true,
+      index: true,
+    },
     currentValue: { type: Number, required: true, default: 0 },
     baselineValue: { type: Number, required: true, default: 0 },
     ratio: { type: Number, required: true, default: 0 },
     isActive: { type: Boolean, required: true, default: true, index: true },
     firstDetectedAt: { type: Date, required: true, default: Date.now },
     lastDetectedAt: { type: Date, required: true, default: Date.now },
-    lastObservedAt: { type: Date, required: true, default: Date.now, index: true },
+    lastObservedAt: { type: Date, required: true, default: Date.now },
     lastRealtimeEmailAt: { type: Date },
     lastDigestEmailAt: { type: Date },
   },
@@ -42,6 +56,7 @@ const ApiRouteAnomalySchema = new Schema<IApiRouteAnomaly>(
 
 ApiRouteAnomalySchema.index({ routeKey: 1, method: 1, signal: 1 }, { unique: true });
 ApiRouteAnomalySchema.index({ isActive: 1, ratio: -1, lastObservedAt: -1 });
+ApiRouteAnomalySchema.index({ lastObservedAt: 1 }, { expireAfterSeconds: 7 * 24 * 60 * 60 });
 
 export const ApiRouteAnomalyModel =
   mongoose.models.ApiRouteAnomaly ||

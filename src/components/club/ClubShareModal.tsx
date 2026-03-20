@@ -4,7 +4,8 @@ import React, { useState } from 'react'
 import { QRCodeSVG } from 'qrcode.react'
 import { IconPrinter, IconCopy } from '@tabler/icons-react'
 import toast from 'react-hot-toast'
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { AppModal } from '@/components/modal/AppModal'
+import { DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { useTranslations } from 'next-intl'
@@ -19,9 +20,16 @@ interface ClubShareModalProps {
 export default function ClubShareModal({ isOpen, onClose, clubCode, clubName }: ClubShareModalProps) {
   const t = useTranslations('Club.share_modal')
   const [shareType, setShareType] = useState<'public' | 'auth'>('public')
+  const [baseUrl, setBaseUrl] = useState('')
+
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setBaseUrl(window.location.origin)
+    }
+  }, [])
 
   const generateQRCodeData = () => {
-    const baseUrl = window.location.origin
+    if (!baseUrl) return ''
     if (shareType === 'auth') {
       return `${baseUrl}/auth/login?redirect=${encodeURIComponent(`/clubs/${clubCode}?page=tournaments`)}`
     }
@@ -76,8 +84,7 @@ export default function ClubShareModal({ isOpen, onClose, clubCode, clubName }: 
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose() }}>
-      <DialogContent className="w-[95vw] sm:max-w-md max-h-[90vh] overflow-hidden flex flex-col bg-card/95 p-0 shadow-2xl shadow-black/45">
+    <AppModal open={isOpen} onOpenChange={(open) => !open && onClose()} size="md">
         <div className="flex-1 overflow-y-auto px-6 py-6 space-y-5">
         <DialogHeader className="space-y-2">
           <DialogTitle>{t('title')}</DialogTitle>
@@ -114,7 +121,7 @@ export default function ClubShareModal({ isOpen, onClose, clubCode, clubName }: 
 
           <div className="flex justify-center">
             <div className="rounded-lg border-0 bg-white p-3 shadow-lg">
-              <QRCodeSVG value={generateQRCodeData()} size={140} level="M" fgColor="#000000" bgColor="#FFFFFF" />
+              <QRCodeSVG value={generateQRCodeData() || `${clubCode}-${shareType}`} size={140} level="M" fgColor="#000000" bgColor="#FFFFFF" />
             </div>
           </div>
 
@@ -142,7 +149,6 @@ export default function ClubShareModal({ isOpen, onClose, clubCode, clubName }: 
           </Button>
         </DialogFooter>
         </div>
-      </DialogContent>
-    </Dialog>
+    </AppModal>
   )
 }

@@ -1,8 +1,8 @@
 import { getTranslations } from "next-intl/server";
 import { redirect } from 'next/navigation';
-import { FeatureFlagService } from '@/lib/featureFlags';
+import { FeatureFlagService } from '@/features/flags/lib/featureFlags';
 import { connectMongo } from '@/lib/mongoose';
-import { TournamentModel } from '@/database/models/tournament.model';
+import { findTournamentByCode } from '@/features/tournaments/lib/liveLayout.db';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { IconAlertTriangle, IconHome, IconMail } from '@tabler/icons-react';
@@ -22,7 +22,7 @@ export default async function LiveLayout({ children, params }: LiveLayoutProps) 
     await connectMongo();
 
     // Get tournament data to find clubId
-    const tournament = await TournamentModel.findOne({ tournamentId: code });
+    const tournament = await findTournamentByCode(code);
     if (!tournament) {
       redirect(`/${locale}/tournaments`);
     }

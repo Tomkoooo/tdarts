@@ -9,7 +9,8 @@ const client = new MongoClient(process.env.MONGODB_URI!);
 const clientPromise = client.connect();
 
 export const authOptions: NextAuthOptions = {
-  adapter: MongoDBAdapter(clientPromise),
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- mongodb version mismatch between @auth/mongodb-adapter and mongoose
+  adapter: MongoDBAdapter(clientPromise as any),
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
@@ -121,6 +122,10 @@ export const authOptions: NextAuthOptions = {
       // Ha Google OAuth callback, akkor a saját route-unkra irányítsunk
       if (url.includes('/api/auth/callback/google')) {
         return `${baseUrl}/api/auth/google-callback?callbackUrl=${encodeURIComponent(url)}`;
+      }
+      // Relative callback URL-eket engedjük, hogy a ?redirect=... flow működjön
+      if (url.startsWith('/')) {
+        return `${baseUrl}${url}`;
       }
       // Ha a főoldalra akarunk menni, akkor oda
       if (url === baseUrl || url === '/') {

@@ -70,6 +70,8 @@ const leagueSchema = new mongoose.Schema({
 
 // Indexes for performance
 leagueSchema.index({ club: 1, isActive: 1 });
+leagueSchema.index({ club: 1, isActive: 1, createdAt: -1 });
+leagueSchema.index({ verified: 1, isActive: 1, createdAt: -1 });
 leagueSchema.index({ 'attachedTournaments': 1 });
 leagueSchema.index({ 'players.player': 1 });
 leagueSchema.index({ createdBy: 1 });

@@ -1,7 +1,6 @@
 'use client'
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import axios from "axios";
 import { toast } from "react-hot-toast";
 import { useTranslations } from "next-intl";
 import {
@@ -36,8 +35,21 @@ import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Label } from "@/components/ui/Label";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { coerceNumericValue } from "@/lib/number-input";
 import { showErrorToast } from "@/lib/toastUtils";
 import { useUserContext } from "@/hooks/useUser";
+import {
+  addManualKnockoutMatchAction,
+  deleteKnockoutMatchAction,
+  deleteLastKnockoutRoundAction,
+  finishKnockoutMatchAction,
+  generateEmptyKnockoutRoundsAction,
+  generateNextKnockoutRoundAction,
+  generateRandomPairingsAction,
+  getKnockoutViewDataAction,
+  updateEmptyKnockoutPairAction,
+  updateKnockoutMatchSettingsAction,
+} from "@/features/tournaments/actions/knockoutManagement.action";
 
 import LegsViewModal from "./LegsViewModal";
 import KnockoutBracketDiagram, { DiagramMatch, DiagramRound, RoundSummary } from "./KnockoutBracketDiagram";
@@ -85,6 +97,7 @@ class KnockoutErrorBoundary extends React.Component<
 
 interface TournamentKnockoutBracketProps {
   tournamentCode: string
+  tournament?: any
   userClubRole: "admin" | "moderator" | "member" | "none"
   tournamentPlayers?: any[]
   knockoutMethod?: "automatic" | "manual"
@@ -97,11 +110,13 @@ interface KnockoutMatch {
   matchReference: {
     player1: {
       legsWon: number
+      average?: number
       highestCheckout?: number
       oneEightiesCount?: number
     }
     player2: {
       legsWon: number
+      average?: number
       highestCheckout?: number
       oneEightiesCount?: number
     }
@@ -126,6 +141,7 @@ interface KnockoutRound {
 
 const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps> = ({
   tournamentCode,
+  tournament,
   userClubRole,
   tournamentPlayers = [],
   knockoutMethod,
@@ -150,8 +166,8 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
   const [editForm, setEditForm] = useState({
     player1LegsWon: 0,
     player2LegsWon: 0,
-    player1Stats: { highestCheckout: 0, oneEightiesCount: 0, totalThrows: 0, totalScore: 0 },
-    player2Stats: { highestCheckout: 0, oneEightiesCount: 0, totalThrows: 0, totalScore: 0 },
+    player1Stats: { average: 0, highestCheckout: 0, oneEightiesCount: 0, totalThrows: 0, totalScore: 0 },
+    player2Stats: { average: 0, highestCheckout: 0, oneEightiesCount: 0, totalThrows: 0, totalScore: 0 },
   })
   const [availablePlayers, setAvailablePlayers] = useState<any[]>([])
   const [availableBoards, setAvailableBoards] = useState<any[]>([])
@@ -191,26 +207,45 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
   const [showActionsInFullscreen, setShowActionsInFullscreen] = useState(true)
   const [tournamentStatus, setTournamentStatus] = useState<string | null>(null)
 
-  useEffect(() => {
-    fetchKnockoutData()
-    fetchAvailableBoards()
-  }, [tournamentCode])
+  const applyKnockoutViewData = (response: any) => {
+    if (!response || typeof response !== "object" || !("success" in response) || !response.success) {
+      return false
+    }
 
-  useEffect(() => {
-    if (tournamentPlayers && tournamentPlayers.length > 0) {
+    const knockoutRounds = (response as { knockout?: any[] }).knockout || []
+    knockoutRounds.forEach((round: any) => {
+      if (!round.matches) {
+        round.matches = []
+      }
+    })
+    setKnockoutData(knockoutRounds)
+    setAvailableBoards((response as { availableBoards?: any[] }).availableBoards || [])
+    setTournamentStatus((response as { tournamentStatus?: string | null }).tournamentStatus || null)
+    setCurrentKnockoutMethod((response as { knockoutMethod?: "automatic" | "manual" }).knockoutMethod || "automatic")
+
+    const responsePlayers = (response as { tournamentPlayers?: any[] }).tournamentPlayers || []
+    if (Array.isArray(responsePlayers) && responsePlayers.length > 0) {
+      setAvailablePlayers(responsePlayers)
+    } else if (Array.isArray(tournamentPlayers) && tournamentPlayers.length > 0) {
       setAvailablePlayers(tournamentPlayers)
     } else {
-      fetchTournamentPlayers()
+      setAvailablePlayers([])
     }
-  }, [tournamentPlayers])
+    return true
+  }
 
   useEffect(() => {
-    if (!knockoutMethod) {
-      fetchKnockoutMethod()
-    } else {
-      setCurrentKnockoutMethod(knockoutMethod)
+    if (Array.isArray(tournament?.knockout) && tournament.knockout.length > 0) {
+      setKnockoutData(tournament.knockout)
+      setAvailableBoards(Array.isArray(tournament?.boards) ? tournament.boards : [])
+      setTournamentStatus(tournament?.tournamentSettings?.status || null)
+      setCurrentKnockoutMethod(
+        (tournament?.tournamentSettings?.knockoutMethod as "automatic" | "manual" | undefined) || knockoutMethod
+      )
+      return
     }
-  }, [knockoutMethod])
+    void fetchKnockoutData()
+  }, [tournamentCode, tournament?.knockout, tournament?.boards, tournament?.tournamentSettings?.status, tournament?.tournamentSettings?.knockoutMethod, knockoutMethod])
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -291,66 +326,12 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
     })
   }, [availablePlayers, playerSearchTerm])
 
-  const fetchKnockoutMethod = async () => {
-    try {
-      const response = await axios.get(`/api/tournaments/${tournamentCode}/knockoutMethod`)
-      if (response.data?.success) {
-        setCurrentKnockoutMethod(response.data.knockoutMethod)
-      }
-    } catch (err) {
-      console.error("Failed to fetch knockout method", err)
-      setCurrentKnockoutMethod("automatic")
-    }
-  }
-
-  const fetchTournamentPlayers = async () => {
-    try {
-      const response = await axios.get(`/api/tournaments/${tournamentCode}`)
-      if (response.data?.tournamentPlayers) {
-        setAvailablePlayers(response.data.tournamentPlayers)
-      }
-
-      const statusFromResponse =
-        response.data?.tournament?.tournamentSettings?.status || response.data?.tournament?.status || response.data?.status || null
-
-      if (statusFromResponse) {
-        setTournamentStatus(statusFromResponse as string)
-      }
-    } catch (err) {
-      console.error("Failed to fetch tournament players", err)
-    }
-  }
-
-  const fetchAvailableBoards = async () => {
-    try {
-      const response = await axios.get(`/api/tournaments/${tournamentCode}/board-context`)
-      if (response.data?.availableBoards) {
-        setAvailableBoards(response.data.availableBoards)
-      }
-    } catch (err) {
-      console.error("Failed to fetch available boards", err)
-    }
-  }
-
   const fetchKnockoutData = async () => {
     setLoading(true)
     try {
-      const response = await axios.get(`/api/tournaments/${tournamentCode}/knockout`)
-      if (response.data?.success) {
-        const knockoutRounds = response.data.knockout || []
-        knockoutRounds.forEach((round: any) => {
-          if (!round.matches) {
-            round.matches = []
-          }
-        })
-        setKnockoutData(knockoutRounds)
-        const statusFromKnockout =
-          response.data?.tournament?.tournamentSettings?.status || response.data?.tournamentStatus || response.data?.status || null
-        if (statusFromKnockout) {
-          setTournamentStatus(statusFromKnockout as string)
-        }
-      } else {
-        showErrorToast(response.data?.error || "Nem sikerült betölteni a knockout adatokat.", {
+      const response = await getKnockoutViewDataAction({ tournamentCode })
+      if (!applyKnockoutViewData(response)) {
+        showErrorToast("Nem sikerült betölteni a knockout adatokat.", {
           context: "Knockout adatok betöltése",
           errorName: "Betöltés sikertelen",
         })
@@ -376,14 +357,14 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
     setLoading(true)
 
     try {
-      const response = await axios.post(`/api/tournaments/${tournamentCode}/generateNextRound`, { currentRound })
-      if (response.data?.success) {
+      const response = await generateNextKnockoutRoundAction({ tournamentCode, currentRound })
+      if (response && typeof response === 'object' && 'success' in response && response.success) {
         await fetchKnockoutData()
         setShowGenerateNextRound(false)
         toast.success(tTour('knockout.success_next_round'))
       } else {
-        showErrorToast(response.data?.error || "Nem sikerült generálni a következő kört.", {
-          error: response.data?.error,
+        showErrorToast("Nem sikerült generálni a következő kört.", {
+          error: 'generateNextKnockoutRoundAction returned unsuccessful result',
           context: "Következő kör generálása",
           errorName: "Generálás sikertelen",
         })
@@ -413,12 +394,14 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
       player1LegsWon: match.matchReference?.player1?.legsWon || 0,
       player2LegsWon: match.matchReference?.player2?.legsWon || 0,
       player1Stats: {
+        average: match.matchReference?.player1?.average || 0,
         highestCheckout: match.matchReference?.player1?.highestCheckout || 0,
         oneEightiesCount: match.matchReference?.player1?.oneEightiesCount || 0,
         totalThrows: 0,
         totalScore: 0,
       },
       player2Stats: {
+        average: match.matchReference?.player2?.average || 0,
         highestCheckout: match.matchReference?.player2?.highestCheckout || 0,
         oneEightiesCount: match.matchReference?.player2?.oneEightiesCount || 0,
         totalThrows: 0,
@@ -439,19 +422,20 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
 
     setLoading(true)
     try {
-      // Convert empty strings to 0
       const cleanedForm = {
-        player1LegsWon: editForm.player1LegsWon === '' as unknown as number ? 0 : editForm.player1LegsWon,
-        player2LegsWon: editForm.player2LegsWon === '' as unknown as number ? 0 : editForm.player2LegsWon,
+        player1LegsWon: coerceNumericValue(editForm.player1LegsWon),
+        player2LegsWon: coerceNumericValue(editForm.player2LegsWon),
         player1Stats: {
           ...editForm.player1Stats,
-          oneEightiesCount: editForm.player1Stats.oneEightiesCount === '' as unknown as number ? 0 : editForm.player1Stats.oneEightiesCount,
-          highestCheckout: editForm.player1Stats.highestCheckout === '' as unknown as number ? 0 : editForm.player1Stats.highestCheckout,
+          average: coerceNumericValue(editForm.player1Stats.average),
+          oneEightiesCount: coerceNumericValue(editForm.player1Stats.oneEightiesCount),
+          highestCheckout: coerceNumericValue(editForm.player1Stats.highestCheckout),
         },
         player2Stats: {
           ...editForm.player2Stats,
-          oneEightiesCount: editForm.player2Stats.oneEightiesCount === '' as unknown as number ? 0 : editForm.player2Stats.oneEightiesCount,
-          highestCheckout: editForm.player2Stats.highestCheckout === '' as unknown as number ? 0 : editForm.player2Stats.highestCheckout,
+          average: coerceNumericValue(editForm.player2Stats.average),
+          oneEightiesCount: coerceNumericValue(editForm.player2Stats.oneEightiesCount),
+          highestCheckout: coerceNumericValue(editForm.player2Stats.highestCheckout),
         },
         allowManualFinish: true, // Allow finishing without legs (admin manual entry)
         isManual: true,
@@ -462,15 +446,21 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
         typeof selectedMatch.matchReference === "object"
           ? selectedMatch.matchReference._id
           : selectedMatch.matchReference
-      const response = await axios.post(`/api/matches/${matchId}/finish`, cleanedForm)
-      if (response.data?.success) {
+      const response = await finishKnockoutMatchAction({
+        matchId,
+        player1LegsWon: Number(cleanedForm.player1LegsWon),
+        player2LegsWon: Number(cleanedForm.player2LegsWon),
+        player1Stats: cleanedForm.player1Stats,
+        player2Stats: cleanedForm.player2Stats,
+      })
+      if (response && typeof response === 'object' && 'success' in response && response.success) {
         await fetchKnockoutData()
         setShowMatchEditModal(false)
         setSelectedMatch(null)
         toast.success(tTour('knockout.success_match_updated'))
       } else {
-        showErrorToast(response.data?.error || "Nem sikerült frissíteni a meccset.", {
-          error: response.data?.error,
+        showErrorToast("Nem sikerült frissíteni a meccset.", {
+          error: 'finishKnockoutMatchAction returned unsuccessful result',
           context: "Meccs frissítése",
           errorName: "Frissítés sikertelen",
         })
@@ -487,6 +477,10 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
   }
 
   const handleAddMatch = async () => {
+    if (!selectedPlayer1 || !selectedPlayer2) {
+      toast.error(tTour('knockout.error_select_player'))
+      return
+    }
     if (selectedPlayer1 && selectedPlayer2 && selectedPlayer1 === selectedPlayer2) {
       toast.error(tTour('knockout.error_different_players'))
       return
@@ -500,15 +494,16 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
     setLoading(true)
 
     try {
-      const response = await axios.post(`/api/tournaments/${tournamentCode}/addManualMatch`, {
+      const response = await addManualKnockoutMatchAction({
+        tournamentCode,
         round: selectedRound,
-        player1Id: selectedPlayer1 || undefined,
-        player2Id: selectedPlayer2 || undefined,
+        player1Id: selectedPlayer1,
+        player2Id: selectedPlayer2,
         scorerId: selectedScorer || undefined,
         boardNumber: selectedBoard ? parseInt(selectedBoard) : undefined,
       })
 
-      if (response.data?.success) {
+      if (response && typeof response === 'object' && 'success' in response && response.success) {
         await fetchKnockoutData()
         setShowAddMatchModal(false)
         setSelectedPlayer1("")
@@ -523,8 +518,8 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
         setShowScorerDropdown(false)
         toast.success(tTour('knockout.success_match_added'))
       } else {
-        showErrorToast(response.data?.error || "Nem sikerült hozzáadni a meccset.", {
-          error: response.data?.error,
+        showErrorToast("Nem sikerült hozzáadni a meccset.", {
+          error: 'addManualKnockoutMatchAction returned unsuccessful result',
           context: "Meccs hozzáadása",
           errorName: "Hozzáadás sikertelen",
         })
@@ -543,16 +538,17 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
   const handleGenerateEmptyRounds = async () => {
     setLoading(true)
     try {
-      const response = await axios.post(`/api/tournaments/${tournamentCode}/generateEmptyRounds`, {
+      const response = await generateEmptyKnockoutRoundsAction({
+        tournamentCode,
         roundsCount: roundsToGenerate,
       })
-      if (response.data?.success) {
+      if (response && typeof response === 'object' && 'success' in response && response.success) {
         await fetchKnockoutData()
         setShowGenerateEmptyRoundsModal(false)
         toast.success(tTour('knockout.success_empty_rounds'))
       } else {
-        showErrorToast(response.data?.error || "Nem sikerült generálni az üres köröket.", {
-          error: response.data?.error,
+        showErrorToast("Nem sikerült generálni az üres köröket.", {
+          error: 'generateEmptyKnockoutRoundsAction returned unsuccessful result',
           context: "Üres körök generálása",
           errorName: "Generálás sikertelen",
         })
@@ -577,18 +573,19 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
     setLoading(true)
 
     try {
-      const response = await axios.post(`/api/tournaments/${tournamentCode}/generateRandomPairings`, {
+      const response = await generateRandomPairingsAction({
+        tournamentCode,
         round: selectedRound,
         selectedPlayerIds: selectedPlayersForPairing,
       })
-      if (response.data?.success) {
+      if (response && typeof response === 'object' && 'success' in response && response.success) {
         await fetchKnockoutData()
         setShowRandomPairingModal(false)
         setSelectedPlayersForPairing([])
         toast.success(tTour('knockout.success_pairings'))
       } else {
-        showErrorToast(response.data?.error || "Nem sikerült generálni a párosításokat.", {
-          error: response.data?.error,
+        showErrorToast("Nem sikerült generálni a párosításokat.", {
+          error: 'generateRandomPairingsAction returned unsuccessful result',
           context: "Párosítások generálása",
           errorName: "Generálás sikertelen",
         })
@@ -621,14 +618,15 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
           ? editingMatchSettings.matchReference._id
           : editingMatchSettings.matchReference
 
-      const response = await axios.post(`/api/matches/${matchId}/update-settings`, {
+      const response = await updateKnockoutMatchSettingsAction({
+        matchId,
         player1Id: selectedPlayer1 || null,
         player2Id: selectedPlayer2 || null,
         scorerId: selectedScorer || undefined,
         boardNumber: selectedBoard ? parseInt(selectedBoard) : undefined,
       })
 
-      if (response.data?.success) {
+      if (response && typeof response === 'object' && 'success' in response && response.success) {
         await fetchKnockoutData()
         setShowMatchSettingsModal(false)
         setEditingMatchSettings(null)
@@ -644,8 +642,8 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
         setShowScorerDropdown(false)
         toast.success(tTour('knockout.success_settings_updated'))
       } else {
-        showErrorToast(response.data?.error || "Nem sikerült frissíteni a meccs beállításait.", {
-          error: response.data?.error,
+        showErrorToast("Nem sikerült frissíteni a meccs beállításait.", {
+          error: 'updateKnockoutMatchSettingsAction returned unsuccessful result',
           context: "Meccs beállítások frissítése",
           errorName: "Frissítés sikertelen",
         })
@@ -695,7 +693,8 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
           }
         }
 
-        const response = await axios.post(`/api/tournaments/${tournamentCode}/updateEmptyPair`, {
+        const response = await updateEmptyKnockoutPairAction({
+          tournamentCode,
           round: matchRound,
           pairIndex,
           player1Id: editPairPlayer1 || undefined,
@@ -704,14 +703,14 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
           boardNumber: editPairBoard ? parseInt(editPairBoard) : undefined,
         })
 
-        if (response.data?.success) {
+        if (response && typeof response === 'object' && 'success' in response && response.success) {
           await fetchKnockoutData()
           toast.success(tTour('knockout.success_match_created'))
           setShowMatchPlayerEditModal(false)
           resetEditPairState()
         } else {
-          showErrorToast(response.data?.error || "Nem sikerült létrehozni a meccset.", {
-            error: response.data?.error,
+          showErrorToast("Nem sikerült létrehozni a meccset.", {
+            error: 'updateEmptyKnockoutPairAction returned unsuccessful result',
             context: "Knockout meccs létrehozása",
             errorName: "Meccs létrehozása sikertelen",
           })
@@ -722,21 +721,22 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
             ? editingMatch.matchReference._id
             : editingMatch.matchReference
 
-        const response = await axios.post(`/api/matches/${matchId}/update-settings`, {
+        const response = await updateKnockoutMatchSettingsAction({
+          matchId,
           player1Id: editPairPlayer1 || null,
           player2Id: editPairPlayer2 || null,
           scorerId: editPairScorer || undefined,
           boardNumber: editPairBoard ? parseInt(editPairBoard) : undefined,
         })
 
-        if (response.data?.success) {
+        if (response && typeof response === 'object' && 'success' in response && response.success) {
           await fetchKnockoutData()
           toast.success(tTour('knockout.success_match_updated'))
           setShowMatchPlayerEditModal(false)
           resetEditPairState()
         } else {
-          showErrorToast(response.data?.error || "Nem sikerült frissíteni a meccset.", {
-            error: response.data?.error,
+          showErrorToast("Nem sikerült frissíteni a meccset.", {
+            error: 'updateKnockoutMatchSettingsAction returned unsuccessful result',
             context: "Knockout meccs frissítése",
             errorName: "Meccs frissítése sikertelen",
           })
@@ -766,18 +766,19 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
     if (!matchToDelete) return
     setLoading(true)
     try {
-      const response = await axios.post(`/api/tournaments/${tournamentCode}/deleteMatch`, {
+      const response = await deleteKnockoutMatchAction({
+        tournamentCode,
         round: matchToDelete.round,
         pairIndex: matchToDelete.index,
       })
-      if (response.data?.success) {
+      if (response && typeof response === 'object' && 'success' in response && response.success) {
         await fetchKnockoutData()
         toast.success(tTour('knockout.success_match_deleted'))
         setShowDeleteMatchModal(false)
         setMatchToDelete(null)
       } else {
-        showErrorToast(response.data?.error || "Nem sikerült törölni a meccset.", {
-          error: response.data?.error,
+        showErrorToast("Nem sikerült törölni a meccset.", {
+          error: 'deleteKnockoutMatchAction returned unsuccessful result',
           context: "Knockout meccs törlése",
           errorName: "Meccs törlése sikertelen",
         })
@@ -796,14 +797,14 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
   const handleDeleteLastRound = async () => {
     setLoading(true)
     try {
-      const response = await axios.post(`/api/tournaments/${tournamentCode}/deleteLastRound`)
-      if (response.data?.success) {
+      const response = await deleteLastKnockoutRoundAction({ tournamentCode })
+      if (response && typeof response === 'object' && 'success' in response && response.success) {
         await fetchKnockoutData()
         toast.success(tTour('knockout.success_round_deleted'))
         setShowDeleteLastRoundModal(false)
       } else {
-        showErrorToast(response.data?.error || "Nem sikerült törölni az utolsó kört.", {
-          error: response.data?.error,
+        showErrorToast("Nem sikerült törölni az utolsó kört.", {
+          error: 'deleteLastKnockoutRoundAction returned unsuccessful result',
           context: "Knockout kör törlése",
           errorName: "Utolsó kör törlése sikertelen",
         })
@@ -1377,7 +1378,7 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                 min={0}
                 max={10}
                 value={roundsToGenerate ?? ''}
-                onChange={(event) => setRoundsToGenerate(event.target.value === '' ? '' as unknown as number : Number(event.target.value))}
+                onNumberChange={(value) => setRoundsToGenerate(coerceNumericValue(value))}
               />
             </div>
             <DialogFooter className="flex flex-col gap-2 sm:flex-row sm:justify-end">
@@ -1604,25 +1605,24 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
         </Dialog>
 
         <Dialog open={showMatchEditModal} onOpenChange={setShowMatchEditModal}>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
+          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto p-0">
+            <DialogHeader className="px-6 pt-6 pb-4 border-b">
               <DialogTitle>{t("meccs_eredmeny_rogzitese_h1ee")}</DialogTitle>
               <DialogDescription>
                 {t("allitsd_be_a_legek_ifc6")}</DialogDescription>
             </DialogHeader>
 
             {selectedMatch && (
-              <Card className="bg-muted/10">
-                <CardContent className="space-y-6 pt-6">
+              <div className="p-6">
                   <div className="text-center text-sm text-muted-foreground">
                     <span className="font-semibold text-foreground">{selectedMatch.player1?.name || "TBD"}</span>
                     <span className="mx-2 text-muted-foreground">vs</span>
                     <span className="font-semibold text-foreground">{selectedMatch.player2?.name || "TBD"}</span>
                   </div>
 
-                  <div className="grid gap-6 md:grid-cols-2">
-                    <div className="space-y-4 rounded-xl bg-card/95 p-4 shadow-sm shadow-black/20">
-                      <h4 className="text-sm font-semibold text-primary">{selectedMatch.player1?.name || "Player 1"}</h4>
+                  <div className="mt-5 grid gap-6 md:grid-cols-2">
+                    <div className="space-y-4 p-1">
+                      <h4 className="text-sm font-semibold text-foreground">{selectedMatch.player1?.name || "Player 1"}</h4>
                       <div className="grid gap-3">
                         <div className="grid gap-2">
                           <Label>{t("nyert_legek_es4r")}</Label>
@@ -1631,9 +1631,27 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                             min={0}
                             max={15}
                             value={editForm.player1LegsWon ?? ''}
-                            onChange={(event) => setEditForm((prev) => ({
+                            onNumberChange={(value) => setEditForm((prev) => ({
                               ...prev,
-                              player1LegsWon: event.target.value === '' ? 0 : Number(event.target.value),
+                              player1LegsWon: coerceNumericValue(value),
+                            }))}
+                          />
+                        </div>
+                        <div className="grid gap-2">
+                          <Label>{tTour('groups.dialog.average')}</Label>
+                          <Input
+                            type="number"
+                            min={0}
+                            max={200}
+                            step={0.01}
+                            parseMode="float"
+                            value={editForm.player1Stats.average ?? ''}
+                            onNumberChange={(value) => setEditForm((prev) => ({
+                              ...prev,
+                              player1Stats: {
+                                ...prev.player1Stats,
+                                average: coerceNumericValue(value),
+                              },
                             }))}
                           />
                         </div>
@@ -1644,11 +1662,11 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                             min={0}
                             max={60}
                             value={editForm.player1Stats.oneEightiesCount ?? ''}
-                            onChange={(event) => setEditForm((prev) => ({
+                            onNumberChange={(value) => setEditForm((prev) => ({
                               ...prev,
                               player1Stats: {
                                 ...prev.player1Stats,
-                                oneEightiesCount: event.target.value === '' ? 0 : Number(event.target.value),
+                                oneEightiesCount: coerceNumericValue(value),
                               },
                             }))}
                           />
@@ -1660,11 +1678,11 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                             min={0}
                             max={170}
                             value={editForm.player1Stats.highestCheckout ?? ''}
-                            onChange={(event) => setEditForm((prev) => ({
+                            onNumberChange={(value) => setEditForm((prev) => ({
                               ...prev,
                               player1Stats: {
                                 ...prev.player1Stats,
-                                highestCheckout: event.target.value === '' ? 0 : Number(event.target.value),
+                                highestCheckout: coerceNumericValue(value),
                               },
                             }))}
                           />
@@ -1672,8 +1690,8 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                       </div>
                     </div>
 
-                    <div className="space-y-4 rounded-xl bg-card/95 p-4 shadow-sm shadow-black/20">
-                      <h4 className="text-sm font-semibold text-accent">{selectedMatch.player2?.name || "Player 2"}</h4>
+                    <div className="space-y-4 p-1">
+                      <h4 className="text-sm font-semibold text-foreground">{selectedMatch.player2?.name || "Player 2"}</h4>
                       <div className="grid gap-3">
                         <div className="grid gap-2">
                           <Label>{t("nyert_legek_es4r")}</Label>
@@ -1682,9 +1700,27 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                             min={0}
                             max={15}
                             value={editForm.player2LegsWon ?? ''}
-                            onChange={(event) => setEditForm((prev) => ({
+                            onNumberChange={(value) => setEditForm((prev) => ({
                               ...prev,
-                              player2LegsWon: event.target.value === '' ? 0 : Number(event.target.value),
+                              player2LegsWon: coerceNumericValue(value),
+                            }))}
+                          />
+                        </div>
+                        <div className="grid gap-2">
+                          <Label>{tTour('groups.dialog.average')}</Label>
+                          <Input
+                            type="number"
+                            min={0}
+                            max={200}
+                            step={0.01}
+                            parseMode="float"
+                            value={editForm.player2Stats.average ?? ''}
+                            onNumberChange={(value) => setEditForm((prev) => ({
+                              ...prev,
+                              player2Stats: {
+                                ...prev.player2Stats,
+                                average: coerceNumericValue(value),
+                              },
                             }))}
                           />
                         </div>
@@ -1695,11 +1731,11 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                             min={0}
                             max={60}
                             value={editForm.player2Stats.oneEightiesCount ?? ''}
-                            onChange={(event) => setEditForm((prev) => ({
+                            onNumberChange={(value) => setEditForm((prev) => ({
                               ...prev,
                               player2Stats: {
                                 ...prev.player2Stats,
-                                oneEightiesCount: event.target.value === '' ? 0 : Number(event.target.value),
+                                oneEightiesCount: coerceNumericValue(value),
                               },
                             }))}
                           />
@@ -1711,11 +1747,11 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                             min={0}
                             max={170}
                             value={editForm.player2Stats.highestCheckout ?? ''}
-                            onChange={(event) => setEditForm((prev) => ({
+                            onNumberChange={(value) => setEditForm((prev) => ({
                               ...prev,
                               player2Stats: {
                                 ...prev.player2Stats,
-                                highestCheckout: event.target.value === '' ? 0 : Number(event.target.value),
+                                highestCheckout: coerceNumericValue(value),
                               },
                             }))}
                           />
@@ -1723,11 +1759,10 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                       </div>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
+              </div>
             )}
 
-            <DialogFooter className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+            <DialogFooter className="px-6 py-4 border-t flex flex-col gap-2 sm:flex-row sm:justify-end">
               <Button onClick={handleSaveMatch} disabled={editForm.player1LegsWon === editForm.player2LegsWon}>
                 {t("mentes_wz35")}</Button>
             </DialogFooter>

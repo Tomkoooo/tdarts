@@ -3,7 +3,6 @@ import { useTranslations } from "next-intl";
 
 
 import { useEffect, useState } from "react"
-import axios from "axios"
 import {
   IconCrown,
   IconUser,
@@ -47,6 +46,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils"
+import {
+  adminPlayersActions,
+  adminUsersActions,
+} from "@/features/admin/actions/adminDomains.action"
 // import Pagination from "@/components/common/Pagination" // Replaced with custom or shadcn pagination below
 
 interface AdminUser {
@@ -108,20 +111,14 @@ export default function AdminUsersPage() {
   const fetchUsers = async (pageToFetch: number, search: string, role: string) => {
     try {
       setLoading(true)
-      const response = await axios.get(`/api/admin/users`, {
-        params: {
-          page: pageToFetch,
-          limit: 10,
-          search,
-          role
-        }
-      })
+      const response = await adminUsersActions.list({ page: pageToFetch, limit: 10, search, role })
       
-      setUsers(response.data.users || [])
-      setStats(response.data.stats || { total: 0, admins: 0, verified: 0, unverified: 0 })
-      setTotalPages(response.data.pagination.totalPages || 1)
-      setPaginationTotal(response.data.pagination.total || 0)
-      setPage(response.data.pagination.page || 1)
+      const payload = response.data || {}
+      setUsers(payload.users || [])
+      setStats(payload.stats || { total: 0, admins: 0, verified: 0, unverified: 0 })
+      setTotalPages(payload.pagination?.totalPages || 1)
+      setPaginationTotal(payload.pagination?.total || 0)
+      setPage(payload.pagination?.page || 1)
     } catch {
       console.error("Error fetching users")
       toast.error(tCommon("hiba_történt_az"))
@@ -132,8 +129,7 @@ export default function AdminUsersPage() {
 
   const toggleAdminStatus = async (userId: string, currentStatus: boolean) => {
     try {
-      const action = currentStatus ? "remove-admin" : "make-admin"
-      await axios.post(`/api/admin/users/${userId}/${action}`)
+      await adminUsersActions.toggleAdmin(userId, !currentStatus)
       fetchUsers(page, searchTerm, roleFilter) // Refresh to ensure data consistency
       toast.success(currentStatus ? "Admin jogosultság eltávolítva" : "Admin jogosultság hozzáadva")
     } catch {
@@ -144,7 +140,7 @@ export default function AdminUsersPage() {
   const deactivateUser = async (userId: string) => {
     if (!window.confirm("Biztosan deaktiválja ezt a felhasználót?")) return
     try {
-      await axios.post(`/api/admin/users/${userId}/deactivate`)
+      await adminUsersActions.deactivate(userId)
       fetchUsers(page, searchTerm, roleFilter)
       toast.success(t("felhasználó_deaktiválva"))
     } catch {
@@ -154,11 +150,11 @@ export default function AdminUsersPage() {
 
   const toggleVerifiedStatus = async (user: AdminUser) => {
     try {
-      await axios.patch(`/api/admin/users/${user._id}`, { isVerified: !user.isVerified })
+      await adminUsersActions.updateVerification(user._id, !user.isVerified)
       fetchUsers(page, searchTerm, roleFilter)
       toast.success(!user.isVerified ? "Email megerősítve" : "Email megerősítés visszavonva")
     } catch (error: any) {
-      toast.error(error?.response?.data?.error || "Hiba történt az ellenőrzés során")
+      toast.error(error?.message || "Hiba történt az ellenőrzés során")
     }
   }
 
@@ -171,7 +167,7 @@ export default function AdminUsersPage() {
     }
 
     try {
-      await axios.post(`/api/admin/users/${user._id}/set-password`, { newPassword })
+      await adminUsersActions.setPassword(user._id, newPassword)
       toast.success("Jelszó sikeresen frissítve")
     } catch (error: any) {
       toast.error(error?.response?.data?.error || "Jelszó frissítése sikertelen")
@@ -182,7 +178,7 @@ export default function AdminUsersPage() {
     if (!window.confirm(`Reset jelszó email küldése ennek a felhasználónak?\n${user.email}`)) return
 
     try {
-      await axios.post(`/api/admin/users/${user._id}/send-reset`)
+      await adminUsersActions.sendReset(user._id)
       toast.success("Reset email elküldve")
     } catch (error: any) {
       toast.error(error?.response?.data?.error || "Reset email küldése sikertelen")
@@ -199,7 +195,7 @@ export default function AdminUsersPage() {
     if (!newName || newName.trim().length < 2) return
 
     try {
-      await axios.patch(`/api/admin/players/${user.playerProfile._id}`, { name: newName.trim() })
+      await adminPlayersActions.updateProfile(user.playerProfile._id, { name: newName.trim() })
       fetchUsers(page, searchTerm, roleFilter)
       toast.success("Játékos profil név frissítve")
     } catch (error: any) {
@@ -223,7 +219,7 @@ export default function AdminUsersPage() {
 
     try {
       const parsedHonors = JSON.parse(input)
-      await axios.patch(`/api/admin/players/${user.playerProfile._id}`, { honors: parsedHonors })
+      await adminPlayersActions.updateProfile(user.playerProfile._id, { honors: parsedHonors })
       fetchUsers(page, searchTerm, roleFilter)
       toast.success("Játékos honors frissítve")
     } catch (error: any) {
@@ -237,12 +233,7 @@ export default function AdminUsersPage() {
   const sendEmail = async (subject: string, message: string, language: "hu" | "en") => {
     if (!emailModal.user) return
     try {
-      await axios.post("/api/admin/send-email", {
-        userId: emailModal.user._id,
-        subject,
-        message,
-        language,
-      })
+      await adminUsersActions.sendEmail({ userId: emailModal.user._id, subject, message, language })
       toast.success(t("email_sikeresen_elküldve"))
       setEmailModal({ isOpen: false, user: null })
     } catch {

@@ -1,10 +1,8 @@
 import React, { useState } from 'react'
-import axios from 'axios'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
+import { AppModal } from '@/components/modal/AppModal'
 import {
-  Dialog,
-  DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
@@ -12,6 +10,7 @@ import {
 } from '@/components/ui/dialog'
 import PlayerSearch from './PlayerSearch'
 import { useTranslations } from 'next-intl'
+import { addMemberAction } from '@/features/clubs/actions/addMember.action'
 
 interface AddPlayerModalProps {
   isOpen: boolean
@@ -26,7 +25,6 @@ export default function AddPlayerModal({
   isOpen,
   onClose,
   clubId,
-  userId,
   onPlayerAdded,
 }: AddPlayerModalProps) {
   const t = useTranslations('Club.settings.add_player_modal')
@@ -41,12 +39,7 @@ export default function AddPlayerModal({
     if (!selectedPlayer) return
     setLoading(true)
     try {
-      await axios.post(`/api/clubs/${clubId}/addMember`, {
-        userId: selectedPlayer._id,
-        requesterId: userId,
-        isGuest: selectedPlayer.isGuest,
-        name: selectedPlayer.name,
-      })
+      await addMemberAction({ clubId, userId: selectedPlayer._id })
       onPlayerAdded()
       onClose()
     } catch (error) {
@@ -57,8 +50,8 @@ export default function AddPlayerModal({
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose() }}>
-      <DialogContent className="max-w-lg">
+    <AppModal open={isOpen} onOpenChange={(open) => !open && onClose()} size="lg">
+        <div className="px-6 py-6 space-y-4">
         <DialogHeader>
           <DialogTitle>{t('title')}</DialogTitle>
           <DialogDescription>
@@ -103,7 +96,7 @@ export default function AddPlayerModal({
             {loading ? t('adding') : t('add')}
           </Button>
         </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </div>
+    </AppModal>
   )
 }

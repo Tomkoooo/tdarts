@@ -4,6 +4,7 @@ import * as React from "react"
 import { useSearchParams } from "next/navigation"
 import { signIn, signOut, useSession } from "next-auth/react"
 import axios from "axios"
+import { getAuthProvidersAction } from "@/features/profile/actions"
 import toast from "react-hot-toast"
 import { IconBrandGoogle, IconCircleCheck, IconCircleX, IconLink, IconUnlink } from "@tabler/icons-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card"
@@ -32,9 +33,9 @@ export default function GoogleAuthSection({ email }: GoogleAuthSectionProps) {
 
   const loadStatus = React.useCallback(async () => {
     try {
-      const response = await axios.get("/api/profile/auth-providers")
-      if (response.data?.success) {
-        setStatus(response.data.data)
+      const result = await getAuthProvidersAction()
+      if (typeof result === "object" && "success" in result && result.success && result.data) {
+        setStatus(result.data)
       }
     } catch (error) {
       console.error("Failed to load provider status:", error)

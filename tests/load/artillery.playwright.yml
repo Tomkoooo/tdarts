@@ -1,0 +1,41 @@
+config:
+  target: "http://127.0.0.1:3000"
+  phases:
+    - duration: 2
+      arrivalRate: 100
+      rampTo: 500
+      name: ramp_up_to_500
+    - duration: 2
+      arrivalRate: 500
+      name: sustained_500
+    - duration: 1
+      arrivalRate: 1000
+      name: spike_1000
+  http:
+    timeout: 60
+  ensure:
+    thresholds:
+      - "http.response_time.p95": 300
+      - "errors.rate": 0.01
+
+scenarios:
+  - name: auth_flow_under_load
+    weight: 4
+    flow:
+      - get:
+          url: "/robots.txt?svc=auth"
+  - name: search_flow_under_load
+    weight: 3
+    flow:
+      - get:
+          url: "/robots.txt?svc=search"
+  - name: tournament_flow_under_load
+    weight: 2
+    flow:
+      - get:
+          url: "/robots.txt?svc=tournament"
+  - name: realtime_transport_under_load
+    weight: 1
+    flow:
+      - get:
+          url: "/robots.txt?svc=realtime"

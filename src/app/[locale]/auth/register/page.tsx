@@ -91,7 +91,7 @@ export default function RegisterPage() {
             if (redirectPath) {
               router.push(redirectPath);
             } else {
-              router.push('/search');
+              router.push('/home');
             }
           }
         }),

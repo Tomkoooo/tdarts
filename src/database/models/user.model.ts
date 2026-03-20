@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 import { UserDocument } from '@/interface/user.interface';
 import { ValidationError } from '@/middleware/errorHandle';
 
@@ -43,7 +44,7 @@ userSchema.pre('save', async function (next) {
   }
   // Hash password if modified and password exists (not OAuth user)
   if (this.isModified('password') && this.password) {
-    this.password = await bcrypt.hash(this.password, 15);
+    this.password = await bcrypt.hash(this.password, 10);
   }
   
   // Keep linked player identity fields aligned with the user profile.
@@ -76,21 +77,21 @@ userSchema.methods.matchPassword = async function (password: string): Promise<bo
 };
 
 userSchema.methods.generateResetPasswordCode = async function (): Promise<string> {
-  const code = Math.random().toString(36).substring(2, 15);
+  const code = crypto.randomBytes(16).toString('hex');
   this.codes.reset_password = code;
   await this.save();
   return code;
 };
 
 userSchema.methods.generateVerifyEmailCode = async function (): Promise<string> {
-  const code = Math.random().toString(36).substring(2, 15);
+  const code = crypto.randomBytes(16).toString('hex');
   this.codes.verify_email = code;
   await this.save();
   return code;
 };
 
 userSchema.methods.generateTwoFactorAuthCode = async function (): Promise<string> {
-  const code = Math.random().toString(36).substring(2, 15);
+  const code = crypto.randomBytes(16).toString('hex');
   this.codes.two_factor_auth = code;
   await this.save();
   return code;

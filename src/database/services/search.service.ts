@@ -60,48 +60,43 @@ export class SearchService {
         leagues: number;
     }> {
         await connectMongo();
-        
-        const counts = {
-            global: 0,
-            tournaments: 0,
-            players: 0,
-            clubs: 0,
-            leagues: 0
-        };
 
         const regex = query ? new RegExp(query, 'i') : null;
 
-        // 1. Tournaments Count
-    // Ensure query is processed same as search results
-    const tournamentPipeline = this.buildTournamentPipeline(query, filters, true); // true = count only
-    const tournamentCountResult = await TournamentModel.aggregate(tournamentPipeline);
-    counts.tournaments = tournamentCountResult[0]?.total || 0;
+        const playerQuery: any = {};
+        if (regex) playerQuery.name = regex;
+        if (filters.playerMode && filters.playerMode !== 'all') {
+            playerQuery.type = filters.playerMode;
+        }
+        if (filters.isOac) {
+            // Consistent with searchPlayers logic: check for verified tournament history
+            playerQuery['tournamentHistory.isVerified'] = true;
+        }
 
-    // 2. Players Count
-    const playerQuery: any = {};
-    if (regex) playerQuery.name = regex;
-    if (filters.playerMode && filters.playerMode !== 'all') {
-        playerQuery.type = filters.playerMode;
-    }
-    
-    if (filters.isOac) {
-         // Consistent with searchPlayers logic: check for verified tournament history
-         playerQuery['tournamentHistory.isVerified'] = true;
-    }
-
-    counts.players = await PlayerModel.countDocuments(playerQuery);
-
-        // 3. Clubs Count
+        const tournamentPipeline = this.buildTournamentPipeline(query, filters, true);
         const clubQuery = this.buildClubQuery(query, filters);
-        counts.clubs = await ClubModel.countDocuments(clubQuery);
-
-        // 4. Leagues Count
         const leagueQuery = this.buildLeagueQuery(query, filters);
         const { LeagueModel } = await import('../models/league.model');
-        counts.leagues = await LeagueModel.countDocuments(leagueQuery);
-        counts.global = counts.tournaments + counts.players + counts.clubs + counts.leagues;
 
-        return counts;
+        const [tournamentCountResult, playersCount, clubsCount, leaguesCount] = await Promise.all([
+            TournamentModel.aggregate(tournamentPipeline),
+            PlayerModel.countDocuments(playerQuery),
+            ClubModel.countDocuments(clubQuery),
+            LeagueModel.countDocuments(leagueQuery),
+        ]);
+
+        const tournaments = tournamentCountResult[0]?.total || 0;
+        const players = Number(playersCount || 0);
+        const clubs = Number(clubsCount || 0);
+        const leagues = Number(leaguesCount || 0);
+
+        return {
+            tournaments,
+            players,
+            clubs,
+            leagues,
+            global: tournaments + players + clubs + leagues,
+        };
     }
 
     /**
@@ -192,10 +187,10 @@ export class SearchService {
             .sort({ [sortField]: -1, name: 1 })
             .skip(skip)
             .limit(limit)
-            .populate('userRef', 'name email')
+            .populate('userRef', 'name')
             .populate('members', 'name');
 
-        const results = sortedPlayers.map(player => {
+        const results = sortedPlayers.map((player, index) => {
             const mmr = player.stats?.mmr ?? 800;
             const stats = player.stats || {};
             stats.mmr = mmr;
@@ -212,7 +207,7 @@ export class SearchService {
                 stats: stats,
                 mmr: filters.isOac ? (player.stats?.oacMmr ?? 800) : mmr,
                 mmrTier: this.getMMRTier(filters.isOac ? (player.stats?.oacMmr ?? 800) : mmr),
-                globalRank: null,
+                globalRank: skip + index + 1,
                 oacMmr: player.stats?.oacMmr ?? 800, // Explicitly return OAC MMR for display
                 honors: player.honors || [], // Include honors for badge display
                 profilePicture: player.profilePicture
@@ -247,33 +242,51 @@ export class SearchService {
         // Requirement: "ranking based on tournament count"
         
         const pipeline: any[] = [
-             { $match: queryObj },
-             {
-                 $lookup: {
-                     from: 'tournaments',
-                     localField: '_id',
-                     foreignField: 'clubId',
-                     as: 'tournaments'
-                 }
-             },
-             {
-                 $addFields: {
-                     tournamentCount: { $size: { $filter: {
-                        input: '$tournaments',
-                        as: 't',
-                        cond: { $and: [
-                            { $ne: ['$$t.isDeleted', true] },
-                            { $ne: ['$$t.isArchived', true] },
-                            { $ne: ['$$t.isSandbox', true] }
-                        ]}
-                     }} },
-                     memberCount: { $size: { $ifNull: ['$members', []] } }
-                 }
-             },
-             { $sort: { tournamentCount: -1 } }, // Ranking logic
-             { $skip: skip },
-             { $limit: limit },
-             // Populate members/moderators if needed, but keeping it light
+            { $match: queryObj },
+            {
+                // Use a lookup pipeline with $count so we don't materialize huge tournaments arrays.
+                $lookup: {
+                    from: 'tournaments',
+                    let: { clubId: '$_id' },
+                    pipeline: [
+                        {
+                            $match: {
+                                $expr: {
+                                    $and: [
+                                        { $eq: ['$clubId', '$$clubId'] },
+                                        { $ne: ['$isDeleted', true] },
+                                        { $ne: ['$isArchived', true] },
+                                        { $ne: ['$isSandbox', true] },
+                                    ],
+                                },
+                            },
+                        },
+                        { $count: 'count' },
+                    ],
+                    as: 'tournamentStats',
+                },
+            },
+            {
+                $addFields: {
+                    tournamentCount: {
+                        $ifNull: [{ $arrayElemAt: ['$tournamentStats.count', 0] }, 0],
+                    },
+                    memberCount: { $size: { $ifNull: ['$members', []] } },
+                },
+            },
+            {
+                $project: {
+                    name: 1,
+                    description: 1,
+                    location: 1,
+                    verified: 1,
+                    memberCount: 1,
+                    tournamentCount: 1,
+                },
+            },
+            { $sort: { tournamentCount: -1, name: 1 } }, // Ranking logic + stable order
+            { $skip: skip },
+            { $limit: limit },
         ];
 
         const clubs = await ClubModel.aggregate(pipeline);
@@ -282,12 +295,9 @@ export class SearchService {
         const results = clubs.map(club => ({
             _id: club._id,
             name: club.name,
-            description: club.description,
             location: club.location,
-            verified: club.verified,
             memberCount: club.memberCount, // Calculated in aggregation
             tournamentCount: club.tournamentCount,
-            type: 'club'
         }));
 
         return { results, total };
@@ -479,76 +489,47 @@ export class SearchService {
 
     private static buildTournamentPipeline(query: string, filters: SearchFilters, countOnly: boolean = false): any[] {
         const pipeline: any[] = [];
-        
-        // 1. Base Match
+
         pipeline.push({
             $match: {
                 isDeleted: { $ne: true },
                 isArchived: { $ne: true },
-                isSandbox: { $ne: true }
+                isSandbox: { $ne: true },
             }
         });
 
-        // 2. Lookup & City Extraction
-        pipeline.push(
-            {
-                $lookup: {
-                    from: 'clubs',
-                    localField: 'clubId',
-                    foreignField: '_id',
-                    as: 'club'
-                }
-            },
-            { $unwind: { path: '$club', preserveNullAndEmptyArrays: true } },
-            {
-                $lookup: {
-                    from: 'leagues',
-                    localField: 'league',
-                    foreignField: '_id',
-                    as: 'leagueData'
-                }
-            },
-            { $unwind: { path: '$leagueData', preserveNullAndEmptyArrays: true } }
-        );
+        // Keep documents slim before joins.
+        pipeline.push({
+            $project: {
+                tournamentId: 1,
+                tournamentPlayers: 1,
+                tournamentSettings: 1,
+                clubId: 1,
+                league: 1,
+                verified: 1,
+            }
+        });
 
-        // City Extraction Logic: "First word that is not containing numbers and repeats"
-        // Implementing heuristic: Split by space, find first token without digits.
-        // MongoDB aggregation is tricky for regex search in array.
-        // Simplified approach: Split by comma (to get city part), then trim.
-        // Then apply regex to remove zip codes.
-        
         pipeline.push({
             $addFields: {
-                isVerified: { $eq: ['$verified', true] },
-                isOac: { $eq: ['$leagueData.pointSystemType', 'remiz_christmas'] }, // Only remiz_christmas is strictly OAC? Wait, "isOac" usually means verified context.
-                // The prompt says "isOac=true i get listed only verified tournaments...".
-                // We should align 'isOac' property for the frontend.
-                // NOTE: 'oac' flag in search result usually just purely informational or derived. 
-                // Let's keep existing derivation but allow filter to enforce verified.
-                // City extraction
                 city: {
                     $trim: {
                         input: {
                             $let: {
                                 vars: {
-                                    // Improved logic: Look for 4-digit zip code pattern and take the word AFTER it.
-                                    // Pattern: 4 digits, whitespace, then City name.
-                                    // If not found, fall back to first part of comma split.
-                                    
-                                    // Note: $regexFind is available in Mongo 4.2+.
-                                    zipMatch: { 
-                                        $regexFind: { 
-                                            input: '$tournamentSettings.location', 
-                                            regex: /\b\d{4}\s+([^\s,]+)/ 
-                                        } 
+                                    zipMatch: {
+                                        $regexFind: {
+                                            input: '$tournamentSettings.location',
+                                            regex: /\b\d{4}\s+([^\s,]+)/
+                                        }
                                     },
                                     commaSplit: { $arrayElemAt: [{ $split: ['$tournamentSettings.location', ','] }, 0] }
                                 },
                                 in: {
                                     $cond: {
                                         if: { $ne: ['$$zipMatch', null] },
-                                        then: { $arrayElemAt: ['$$zipMatch.captures', 0] }, // Capture group 1 is the city
-                                        else: '$$commaSplit' // Fallback
+                                        then: { $arrayElemAt: ['$$zipMatch.captures', 0] },
+                                        else: '$$commaSplit'
                                     }
                                 }
                             }
@@ -558,7 +539,6 @@ export class SearchService {
             }
         });
 
-        // 3. Apply Filters
         const matchStage: any = {};
         const regex = query ? new RegExp(query, 'i') : null;
         const andConditions: any[] = [];
@@ -568,69 +548,105 @@ export class SearchService {
                 $or: [
                     { 'tournamentSettings.name': regex },
                     { 'tournamentSettings.description': regex },
-                    { 'city': regex }, // Search extracted city
+                    { city: regex },
                     { 'tournamentSettings.location': regex }
                 ]
             });
         }
 
-        // Status Logic: Default "Upcoming" unless 'all' is requested
-        if (filters.status === 'upcoming' || !filters.status) { // Default
-             const timeZone = filters.timeZone || getUserTimeZone();
-             const { dayStartUtc, nextDayStartUtc } = getDayBoundsInTimeZone(timeZone);
-             
-             // 'Upcoming' includes:
-             // 1. Pending tournaments starting today or in the future
-             // 2. Ongoing tournaments (started but not pending) that started TODAY
-             andConditions.push({
-                 $or: [
-                    { 
-                        'tournamentSettings.status': 'pending', 
-                        'tournamentSettings.startDate': { $gte: dayStartUtc } 
+        if (filters.status === 'upcoming' || !filters.status) {
+            const timeZone = filters.timeZone || getUserTimeZone();
+            const { dayStartUtc, nextDayStartUtc } = getDayBoundsInTimeZone(timeZone);
+            andConditions.push({
+                $or: [
+                    {
+                        'tournamentSettings.status': 'pending',
+                        'tournamentSettings.startDate': { $gte: dayStartUtc }
                     },
                     {
                         'tournamentSettings.status': { $in: ['group-stage', 'knockout'] },
                         'tournamentSettings.startDate': { $gte: dayStartUtc, $lt: nextDayStartUtc }
                     }
-                 ]
-             });
-        }
-        // If status == 'all', we don't apply specific filter (allow finished)
-
-        if (filters.city) {
-            matchStage.city = new RegExp(filters.city, 'i');
-        }
-
-        if (filters.tournamentType) {
-            matchStage['tournamentSettings.type'] = filters.tournamentType;
-        }
-        if (filters.country) {
-            andConditions.push({
-                $or: [
-                    { 'club.billingInfo.country': filters.country.toUpperCase() },
-                    { 'club.location': new RegExp(filters.country, 'i') }
                 ]
             });
         }
 
-        if (filters.isVerified || filters.isOac) {
-             matchStage.isVerified = true;
+        if (filters.city) {
+            matchStage.city = new RegExp(filters.city, 'i');
         }
-
-        // Combine AND conditions
+        if (filters.tournamentType) {
+            matchStage['tournamentSettings.type'] = filters.tournamentType;
+        }
+        if (filters.isVerified || filters.isOac) {
+            matchStage.verified = true;
+        }
         if (andConditions.length > 0) {
             matchStage.$and = andConditions;
         }
-
         if (Object.keys(matchStage).length > 0) {
             pipeline.push({ $match: matchStage });
         }
 
-        // 4. Return count or results
+        const requiresCountryLookup = Boolean(filters.country);
+        const includeLeagueLookup = !countOnly;
+        const includeClubLookup = !countOnly || requiresCountryLookup;
+
+        if (includeClubLookup) {
+            pipeline.push(
+                {
+                    $lookup: {
+                        from: 'clubs',
+                        localField: 'clubId',
+                        foreignField: '_id',
+                        as: 'club'
+                    }
+                },
+                { $unwind: { path: '$club', preserveNullAndEmptyArrays: true } },
+            );
+        }
+
+        if (filters.country) {
+            pipeline.push({
+                $match: {
+                    $or: [
+                        { 'club.billingInfo.country': filters.country.toUpperCase() },
+                        { 'club.location': new RegExp(filters.country, 'i') }
+                    ]
+                }
+            });
+        }
+
+        if (includeLeagueLookup) {
+            pipeline.push(
+                {
+                    $lookup: {
+                        from: 'leagues',
+                        localField: 'league',
+                        foreignField: '_id',
+                        as: 'leagueData'
+                    }
+                },
+                { $unwind: { path: '$leagueData', preserveNullAndEmptyArrays: true } },
+            );
+        }
+
+        pipeline.push({
+            $addFields: {
+                isVerified: { $eq: ['$verified', true] },
+                isOac: {
+                    $cond: {
+                        if: includeLeagueLookup,
+                        then: { $eq: ['$leagueData.pointSystemType', 'remiz_christmas'] },
+                        else: false,
+                    }
+                }
+            }
+        });
+
         if (countOnly) {
             pipeline.push({ $count: 'total' });
         } else {
-            pipeline.push({ $sort: { 'tournamentSettings.startDate': 1 } }); // Sort by Date Ascending for upcoming
+            pipeline.push({ $sort: { 'tournamentSettings.startDate': 1 } });
         }
 
         return pipeline;
@@ -711,6 +727,7 @@ export class SearchService {
     static async searchGlobal(query: string, filters: SearchFilters = {}): Promise<{
         results: { tournaments: any[]; players: any[]; clubs: any[]; leagues: any[] };
         total: number;
+        countsByType: { tournaments: number; players: number; clubs: number; leagues: number; global: number };
     }> {
         const baseLimit = Math.max(3, Math.floor((filters.limit || 10) / 2));
         const perTypeFilters = { ...filters, limit: baseLimit, page: 1 };
@@ -721,6 +738,14 @@ export class SearchService {
             this.searchLeagues(query, perTypeFilters),
         ]);
 
+        const countsByType = {
+            tournaments: tournaments.total,
+            players: players.total,
+            clubs: clubs.total,
+            leagues: leagues.total,
+            global: tournaments.total + players.total + clubs.total + leagues.total,
+        };
+
         return {
             results: {
                 tournaments: tournaments.results,
@@ -728,7 +753,8 @@ export class SearchService {
                 clubs: clubs.results,
                 leagues: leagues.results,
             },
-            total: tournaments.total + players.total + clubs.total + leagues.total,
+            total: countsByType.global,
+            countsByType,
         };
     }
 
@@ -1035,6 +1061,115 @@ export class SearchService {
         c.results.forEach(x => suggestions.add(x.name));
 
         return Array.from(suggestions).slice(0, 10).filter(Boolean);
+    }
+
+    /**
+     * Get map items (clubs and tournaments with coordinates) for map explorer
+     */
+    static async searchMapItems(
+        query: string,
+        options: { showClubs?: boolean; showTournaments?: boolean; limit?: number } = {}
+    ): Promise<{ items: any[]; total: number }> {
+        await connectMongo();
+        const { showClubs = true, showTournaments = true, limit = 200 } = options;
+        const regex = query ? new RegExp(query, 'i') : null;
+        const items: any[] = [];
+        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://tdarts.hu';
+
+        if (showClubs) {
+            const clubQuery: any = {
+                isActive: true,
+                'structuredLocation.lat': { $exists: true, $ne: null, $type: 'number' },
+                'structuredLocation.lng': { $exists: true, $ne: null, $type: 'number' },
+            };
+            if (regex) {
+                clubQuery.$or = [{ name: regex }, { location: regex }];
+            }
+            const clubs = await ClubModel.find(clubQuery)
+                .select('name location address structuredLocation logo landingPage')
+                .limit(limit);
+            for (const club of clubs) {
+                const loc = club.structuredLocation as any;
+                const lat = typeof loc?.lat === 'number' ? loc.lat : null;
+                const lng = typeof loc?.lng === 'number' ? loc.lng : null;
+                if (lat == null || lng == null || !Number.isFinite(lat) || !Number.isFinite(lng)) continue;
+                items.push({
+                    id: `club-${club._id}`,
+                    kind: 'club',
+                    name: club.name,
+                    address: club.address || club.location || null,
+                    country: loc?.country || null,
+                    lat,
+                    lng,
+                    mapReady: true,
+                    href: `${baseUrl}/hu/clubs/${club._id}`,
+                    previewImage: club.landingPage?.coverImage || club.landingPage?.logo || club.logo || null,
+                    clubName: null,
+                    clubLogo: null,
+                    clubHref: null,
+                    startDate: null,
+                });
+            }
+        }
+
+        if (showTournaments) {
+            const tournamentMatch: any = {
+                isDeleted: { $ne: true },
+                isArchived: { $ne: true },
+                isSandbox: { $ne: true },
+                $or: [
+                    { 'tournamentSettings.locationData.lat': { $exists: true, $ne: null, $type: 'number' } },
+                    { clubId: { $exists: true, $ne: null } },
+                ],
+            };
+            if (regex) {
+                tournamentMatch['$and'] = [
+                    { $or: tournamentMatch.$or },
+                    { $or: [{ 'tournamentSettings.name': regex }, { 'tournamentSettings.location': regex }] },
+                ];
+                delete tournamentMatch.$or;
+            }
+            const tournaments = await TournamentModel.find(tournamentMatch)
+                .populate('clubId', 'name location structuredLocation logo')
+                .select('tournamentId tournamentSettings clubId')
+                .limit(limit);
+            for (const t of tournaments) {
+                const club = t.clubId as any;
+                const locData = t.tournamentSettings?.locationData;
+                let lat: number | null = null;
+                let lng: number | null = null;
+                if (locData && typeof locData.lat === 'number' && typeof locData.lng === 'number') {
+                    lat = locData.lat;
+                    lng = locData.lng;
+                } else if (club?.structuredLocation) {
+                    const sl = club.structuredLocation as any;
+                    if (typeof sl?.lat === 'number' && typeof sl?.lng === 'number') {
+                        lat = sl.lat;
+                        lng = sl.lng;
+                    }
+                }
+                if (lat == null || lng == null || !Number.isFinite(lat) || !Number.isFinite(lng)) continue;
+                const clubId = club?._id?.toString?.() || club;
+                items.push({
+                    id: `tournament-${t._id}`,
+                    kind: 'tournament',
+                    name: t.tournamentSettings?.name || 'Tournament',
+                    address: t.tournamentSettings?.location || club?.location || null,
+                    country: club?.structuredLocation?.country || club?.billingInfo?.country || null,
+                    lat,
+                    lng,
+                    mapReady: true,
+                    href: `${baseUrl}/hu/tournaments/${t.tournamentId}`,
+                    previewImage: t.tournamentSettings?.coverImage || null,
+                    clubName: club?.name || null,
+                    clubLogo: club?.logo || club?.landingPage?.logo || null,
+                    clubHref: clubId ? `${baseUrl}/hu/clubs/${clubId}` : null,
+                    startDate: t.tournamentSettings?.startDate || null,
+                });
+            }
+        }
+
+        return { items, total: items.length };
     }
 
     /**

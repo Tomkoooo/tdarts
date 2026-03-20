@@ -30,7 +30,7 @@ export default function Footer() {
   ];
 
   return (
-    <footer className=" z-10 bg-[#4a2828] text-foreground border-t border-border mt-auto w-full">
+    <footer className="z-10 mt-auto w-full border-t border-border/70 bg-linear-to-b from-card/90 to-card/70 text-foreground backdrop-blur-xl">
       <div className="container mx-auto px-4 py-8">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           
@@ -67,7 +67,7 @@ export default function Footer() {
                 </Link>
               </p>
               
-              <div className="mt-4 p-4 bg-muted rounded-lg border border-border">
+              <div className="mt-4 rounded-lg border border-border/70 bg-muted/35 p-4 backdrop-blur-sm">
                 <p className="text-sm font-semibold mb-2 text-foreground">{t('oac_info')}</p>
                 <Button 
                   variant="outline"
@@ -93,7 +93,7 @@ export default function Footer() {
               {partners.map((partner) => (
                 <div
                   key={partner.src}
-                  className="bg-white p-2 rounded-lg transition duration-300 flex items-center justify-center h-20 sm:h-24 w-full relative"
+                  className="relative flex h-20 w-full items-center justify-center rounded-lg border border-border/60 bg-card/85 p-2 transition duration-300 sm:h-24"
                 >
                   <Image
                     src={partner.src}

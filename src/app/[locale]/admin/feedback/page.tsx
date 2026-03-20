@@ -2,13 +2,16 @@
 import { useTranslations } from "next-intl";
 
 
+import { useCallback } from "react";
 import FeedbackTable from "@/components/admin/FeedbackTable"
 import DailyChart from "@/components/admin/DailyChart"
 import { Card } from "@/components/ui/Card"
 import { IconBug } from "@tabler/icons-react"
+import { adminChartsActions } from "@/features/admin/actions/adminDomains.action";
 
 export default function AdminFeedbackPage() {
     const t = useTranslations("Admin.feedback");
+  const loadFeedbackDailyChart = useCallback(() => adminChartsActions.feedbackDaily(), []);
   return (
     <div className="space-y-8 pb-8">
       {/* Header */}
@@ -27,7 +30,8 @@ export default function AdminFeedbackPage() {
       
       <DailyChart 
         title={t("visszajelzések_napi_beérkezése")} 
-        apiEndpoint="/api/admin/charts/feedback/daily" 
+        loadData={loadFeedbackDailyChart}
+        loadKey="feedback-daily"
         color="warning" 
       />
       

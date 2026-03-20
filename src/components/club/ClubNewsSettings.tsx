@@ -2,6 +2,10 @@
 
 import { useState, useEffect } from 'react'
 import axios from "axios"
+import { getClubPostsAction } from "@/features/clubs/actions/getClubPosts.action"
+import { createPostAction } from "@/features/clubs/actions/createPost.action"
+import { updatePostAction } from "@/features/clubs/actions/updatePost.action"
+import { deletePostAction } from "@/features/clubs/actions/deletePost.action"
 import toast from "react-hot-toast"
 import { IconTrash, IconPencil, IconPlus, IconDeviceFloppy } from "@tabler/icons-react"
 import { Button } from "@/components/ui/Button"
@@ -33,8 +37,8 @@ export default function ClubNewsSettings({ club }: ClubNewsSettingsProps) {
 
   const fetchPosts = async () => {
       try {
-          const res = await axios.get(`/api/clubs/${club._id}/posts`)
-          setPosts(res.data.posts)
+          const res = await getClubPostsAction({ clubId: club._id })
+          if (res && typeof res === 'object' && 'posts' in res) setPosts((res as { posts: any[] }).posts || [])
       } catch (err) {
           console.error(err)
       }
@@ -80,10 +84,17 @@ export default function ClubNewsSettings({ club }: ClubNewsSettingsProps) {
              await Promise.all(allDeletedIds.map(id => axios.delete(`/api/media/${id}`).catch(err => console.error("Failed to delete media", id, err))));
          }
 
-         await axios.put(`/api/clubs/${club._id}/posts/${currentPost._id}`, payload)
+         await updatePostAction({
+           clubId: club._id,
+           postId: currentPost._id,
+           ...payload,
+         })
          toast.success(t('toast.updated'))
       } else {
-         await axios.post(`/api/clubs/${club._id}/posts`, payload)
+         await createPostAction({
+           clubId: club._id,
+           ...payload,
+         })
          toast.success(t('toast.created'))
       }
 
@@ -132,7 +143,7 @@ export default function ClubNewsSettings({ club }: ClubNewsSettingsProps) {
               await Promise.all(allMediaIds.map(id => axios.delete(`/api/media/${id}`).catch(err => console.error("Failed to delete media", id, err))));
           }
 
-          await axios.delete(`/api/clubs/${club._id}/posts/${post._id}`)
+          await deletePostAction({ clubId: club._id, postId: post._id })
           toast.success(t('toast.deleted'))
           fetchPosts()
       } catch (err: any) {

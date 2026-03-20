@@ -1,6 +1,7 @@
 "use client";
 
 import axios from "axios";
+import { getSocketAuthToken, invalidateSocketAuthToken } from "@/lib/socketAuthToken";
 
 const SOCKET_SERVER_URL = process.env.NEXT_PUBLIC_SOCKET_SERVER_URL || 'https://socket.tdarts.hu';
 
@@ -8,27 +9,10 @@ if (!SOCKET_SERVER_URL) {
   throw new Error('NEXT_PUBLIC_SOCKET_SERVER_URL is not defined');
 }
 
-// Function to get JWT token for socket server requests
-const getAuthToken = async (): Promise<string> => {
-  try {
-    const response = await axios.post('/api/socket/auth');
-    
-    if (response.status === 503) {
-      console.warn('Socket authentication not configured. Socket API calls disabled.');
-      throw new Error('Socket authentication not configured');
-    }
-    
-    return response.data.token;
-  } catch (error: any) {
-    console.error('Failed to get socket auth token:', error);
-    throw new Error('Authentication failed');
-  }
-};
-
 // Make authenticated API call to socket server
 export const socketApiCall = async (endpoint: string, data?: any) => {
   try {
-    const token = await getAuthToken();
+    const token = await getSocketAuthToken();
     
     console.log('🔑 Making socket API call:', {
       endpoint,
@@ -47,6 +31,18 @@ export const socketApiCall = async (endpoint: string, data?: any) => {
     
     return response.data;
   } catch (error: any) {
+    if (error.response?.status === 401) {
+      invalidateSocketAuthToken();
+      const refreshedToken = await getSocketAuthToken({ forceRefresh: true });
+      const retryResponse = await axios.post(`${SOCKET_SERVER_URL}${endpoint}`, data, {
+        headers: {
+          'Authorization': `Bearer ${refreshedToken}`,
+          'Content-Type': 'application/json'
+        },
+        withCredentials: true
+      });
+      return retryResponse.data;
+    }
     if (error.response?.status === 503) {
       console.warn('Socket authentication not configured. Socket API calls disabled.');
       throw new Error('Socket authentication not configured');

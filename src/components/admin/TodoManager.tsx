@@ -1,6 +1,5 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 import { 
   IconPlus, 
   IconEdit, 
@@ -19,6 +18,7 @@ import {
   IconCircleX
 } from '@tabler/icons-react';
 import { useTranslations } from 'next-intl';
+import { adminTodosActions } from '@/features/admin/actions/adminDomains.action';
 
 interface Todo {
   _id: string;
@@ -88,12 +88,12 @@ export default function TodoManager() {
     try {
       setLoading(true);
       const [todosResponse, statsResponse] = await Promise.all([
-        axios.get('/api/admin/todos'),
-        axios.get('/api/admin/todos/stats')
+        adminTodosActions.list(),
+        adminTodosActions.stats()
       ]);
 
-      setTodos(todosResponse.data.todos);
-      setStats(statsResponse.data.stats);
+      setTodos((todosResponse.data?.todos || []) as Todo[]);
+      setStats((statsResponse.data?.stats || null) as TodoStats | null);
     } catch (error) {
       console.error('Error fetching todos:', error);
     } finally {
@@ -109,7 +109,7 @@ export default function TodoManager() {
     try {
       if (!newTodo.title.trim()) return;
 
-      await axios.post('/api/admin/todos', newTodo);
+      await adminTodosActions.create(newTodo as unknown as Record<string, unknown>);
       setNewTodo({
         title: '',
         description: '',
@@ -127,7 +127,7 @@ export default function TodoManager() {
 
   const handleUpdateTodo = async (todoId: string, updates: Partial<Todo>) => {
     try {
-      await axios.put(`/api/admin/todos/${todoId}`, updates);
+      await adminTodosActions.update(todoId, updates as unknown as Record<string, unknown>);
       setEditingTodo(null);
       fetchTodos();
     } catch (error) {
@@ -139,7 +139,7 @@ export default function TodoManager() {
     if (!confirm(t('toasts.delete_confirm'))) return;
 
     try {
-      await axios.delete(`/api/admin/todos/${todoId}`);
+      await adminTodosActions.delete(todoId);
       fetchTodos();
     } catch (error) {
       console.error('Error deleting todo:', error);
@@ -327,19 +327,19 @@ export default function TodoManager() {
       {/* Stats Cards */}
       {stats && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="bg-gradient-to-br from-primary/20 to-primary/5   rounded-xl p-6 text-center">
+          <div className="bg-linear-to-br from-primary/20 to-primary/5   rounded-xl p-6 text-center">
             <div className="text-4xl font-bold text-primary mb-2">{stats.total}</div>
             <div className="text-sm text-base-content/70 font-medium">{t('stats.total')}</div>
           </div>
-          <div className="bg-gradient-to-br from-warning/20 to-warning/5   rounded-xl p-6 text-center">
+          <div className="bg-linear-to-br from-warning/20 to-warning/5   rounded-xl p-6 text-center">
             <div className="text-4xl font-bold text-warning mb-2">{stats.pending}</div>
             <div className="text-sm text-base-content/70 font-medium">{t('stats.pending')}</div>
           </div>
-          <div className="bg-gradient-to-br from-info/20 to-info/5   rounded-xl p-6 text-center">
+          <div className="bg-linear-to-br from-info/20 to-info/5   rounded-xl p-6 text-center">
             <div className="text-4xl font-bold text-info mb-2">{stats.inProgress}</div>
             <div className="text-sm text-base-content/70 font-medium">{t('stats.in_progress')}</div>
           </div>
-          <div className="bg-gradient-to-br from-success/20 to-success/5   rounded-xl p-6 text-center">
+          <div className="bg-linear-to-br from-success/20 to-success/5   rounded-xl p-6 text-center">
             <div className="text-4xl font-bold text-success mb-2">{stats.completed}</div>
             <div className="text-sm text-base-content/70 font-medium">{t('stats.completed')}</div>
           </div>

@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { eventEmitter, EVENTS } from '@/lib/events';
+import { EVENTS, createSseDeltaPayload, eventsBus } from '@/lib/events';
 import { withApiTelemetry } from '@/lib/api-telemetry';
+import { assertEligibilityResult } from '@/shared/lib/guards';
+import { TournamentService } from '@/database/services/tournament.service';
+
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+export const fetchCache = 'force-no-store';
 
 // Helper to format SSE message
 const formatMessage = (event: string, data: any) => {
@@ -13,6 +19,9 @@ const MAX_MAX_CONNECTION_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 const HEARTBEAT_MS = 20_000;
 const SSE_DEBUG = process.env.SSE_DEBUG === 'true';
 const SSE_MEMORY_DEBUG = process.env.SSE_MEMORY_DEBUG === 'true';
+const SCOPE_ENFORCEMENT_MODE = process.env.FF_SSE_REQUIRE_SCOPE ?? 'hard';
+const ALLOW_INTERNAL_UNSCOPED = process.env.FF_SSE_ALLOW_INTERNAL_UNSCOPED === 'true';
+const INTERNAL_EVENTS_KEY = process.env.INTERNAL_EVENTS_KEY;
 
 function clampMaxConnectionMs(value: string | null): number {
   const parsed = Number(value);
@@ -22,9 +31,9 @@ function clampMaxConnectionMs(value: string | null): number {
 
 function listenerCounts() {
   return {
-    tournament: eventEmitter.listenerCount(EVENTS.TOURNAMENT_UPDATE),
-    match: eventEmitter.listenerCount(EVENTS.MATCH_UPDATE),
-    group: eventEmitter.listenerCount(EVENTS.GROUP_UPDATE),
+    tournament: eventsBus.listenerCount(EVENTS.TOURNAMENT_UPDATE),
+    match: eventsBus.listenerCount(EVENTS.MATCH_UPDATE),
+    group: eventsBus.listenerCount(EVENTS.GROUP_UPDATE),
   };
 }
 
@@ -45,10 +54,104 @@ function debugMemory(connectionId: string, message: string) {
   });
 }
 
+function normalizeEventPayload(eventName: string, payload: any) {
+  if (payload?.kind === 'delta' && payload?.schemaVersion === 1) {
+    return payload;
+  }
+
+  const tournamentId =
+    typeof payload?.tournamentId === 'string' && payload.tournamentId
+      ? payload.tournamentId
+      : '';
+
+  if (!tournamentId) return payload;
+
+  if (eventName === EVENTS.MATCH_UPDATE) {
+    return createSseDeltaPayload({
+      tournamentId,
+      scope: 'match',
+      action:
+        payload?.type === 'started'
+          ? 'started'
+          : payload?.type === 'finished'
+            ? 'finished'
+            : payload?.type === 'leg-finished'
+              ? 'leg-finished'
+              : 'updated',
+      data: payload,
+    });
+  }
+
+  if (eventName === EVENTS.GROUP_UPDATE) {
+    return createSseDeltaPayload({
+      tournamentId,
+      scope: 'group',
+      action: 'standings-updated',
+      data: payload,
+      requiresResync: true,
+    });
+  }
+
+  return createSseDeltaPayload({
+    tournamentId,
+    scope: 'tournament',
+    action: payload?.type === 'knockout-update' ? 'knockout-updated' : 'updated',
+    data: payload,
+    requiresResync: payload?.type === 'knockout-update',
+  });
+}
+
 async function __GET(req: NextRequest) {
   const encoder = new TextEncoder();
-  const scopedTournamentId = req.nextUrl.searchParams.get('tournamentId')?.trim() || undefined;
+  const requestedTournamentId = req.nextUrl.searchParams.get('tournamentId')?.trim() || undefined;
+  const isInternalUnscopedRequest =
+    ALLOW_INTERNAL_UNSCOPED &&
+    Boolean(INTERNAL_EVENTS_KEY) &&
+    req.headers.get('x-internal-events-key') === INTERNAL_EVENTS_KEY;
+  const isUnscopedPublicRequest = !requestedTournamentId && !isInternalUnscopedRequest;
+  if (isUnscopedPublicRequest && SCOPE_ENFORCEMENT_MODE === 'hard') {
+    return NextResponse.json(
+      { error: 'tournamentId query parameter is required', code: 'TOURNAMENT_SCOPE_REQUIRED' },
+      { status: 400 }
+    );
+  }
+  if (isUnscopedPublicRequest && SCOPE_ENFORCEMENT_MODE !== 'hard') {
+    console.warn('[SSE] Unscoped public subscription attempt', {
+      mode: SCOPE_ENFORCEMENT_MODE,
+      path: req.nextUrl.pathname,
+    });
+  }
+  let scopedTournamentId = requestedTournamentId;
+  let scopedTournamentMongoId: string | undefined;
   const maxConnectionMs = clampMaxConnectionMs(req.nextUrl.searchParams.get('maxConnectionMs'));
+  if (requestedTournamentId) {
+    let tournament: Awaited<ReturnType<typeof TournamentService.getTournamentLite>> | null = null;
+    try {
+      tournament = await TournamentService.getTournamentLite(requestedTournamentId);
+    } catch {
+      tournament = null;
+    }
+    if (!tournament) {
+      return NextResponse.json(
+        { error: 'Tournament not found', code: 'TOURNAMENT_NOT_FOUND' },
+        { status: 404 }
+      );
+    }
+    scopedTournamentId = tournament.tournamentId;
+    scopedTournamentMongoId = tournament._id?.toString();
+    const clubId = tournament.clubId?.toString();
+    if (clubId) {
+      const eligibility = await assertEligibilityResult({
+        featureName: 'socket',
+        clubId,
+        allowPaidOverride: true,
+      });
+      if (!eligibility.ok) {
+        return NextResponse.json({ error: eligibility.message, code: eligibility.code }, { status: eligibility.status });
+      }
+    }
+  }
+
   const connectionId = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
   let closeStream: ((reason: string) => void) | null = null;
 
@@ -57,25 +160,61 @@ async function __GET(req: NextRequest) {
       let closed = false;
 
       const shouldDispatch = (data: any) => {
+        if (isInternalUnscopedRequest) return true;
         if (!scopedTournamentId) return true;
         const eventTournamentId = data?.tournamentId;
-        return typeof eventTournamentId === 'string' && eventTournamentId === scopedTournamentId;
+        return (
+          typeof eventTournamentId === 'string' &&
+          (eventTournamentId === scopedTournamentId ||
+            (scopedTournamentMongoId !== undefined &&
+              eventTournamentId === scopedTournamentMongoId))
+        );
       };
 
       const onTournamentUpdate = (data: any) => {
         if (!shouldDispatch(data)) return;
-        safeEnqueue(EVENTS.TOURNAMENT_UPDATE, data, 'tournament-update-enqueue-failed');
+        safeEnqueue(
+          EVENTS.TOURNAMENT_UPDATE,
+          normalizeEventPayload(EVENTS.TOURNAMENT_UPDATE, data),
+          'tournament-update-enqueue-failed'
+        );
       };
 
       const onMatchUpdate = (data: any) => {
         if (!shouldDispatch(data)) return;
-        safeEnqueue(EVENTS.MATCH_UPDATE, data, 'match-update-enqueue-failed');
+        safeEnqueue(
+          EVENTS.MATCH_UPDATE,
+          normalizeEventPayload(EVENTS.MATCH_UPDATE, data),
+          'match-update-enqueue-failed'
+        );
       };
 
       const onGroupUpdate = (data: any) => {
         if (!shouldDispatch(data)) return;
-        safeEnqueue(EVENTS.GROUP_UPDATE, data, 'group-update-enqueue-failed');
+        safeEnqueue(
+          EVENTS.GROUP_UPDATE,
+          normalizeEventPayload(EVENTS.GROUP_UPDATE, data),
+          'group-update-enqueue-failed'
+        );
       };
+      const subscribeOptions = scopedTournamentId
+        ? { tournamentId: scopedTournamentId }
+        : { tournamentId: undefined, includeGlobal: true };
+      const stopTournamentSubscription = eventsBus.subscribe(
+        EVENTS.TOURNAMENT_UPDATE,
+        onTournamentUpdate,
+        subscribeOptions,
+      );
+      const stopMatchSubscription = eventsBus.subscribe(
+        EVENTS.MATCH_UPDATE,
+        onMatchUpdate,
+        subscribeOptions,
+      );
+      const stopGroupSubscription = eventsBus.subscribe(
+        EVENTS.GROUP_UPDATE,
+        onGroupUpdate,
+        subscribeOptions,
+      );
 
       const onAbort = () => cleanup('request-aborted');
 
@@ -85,9 +224,9 @@ async function __GET(req: NextRequest) {
         clearInterval(keepAlive);
         clearTimeout(maxAgeTimer);
         if (memoryInterval) clearInterval(memoryInterval);
-        eventEmitter.off(EVENTS.TOURNAMENT_UPDATE, onTournamentUpdate);
-        eventEmitter.off(EVENTS.MATCH_UPDATE, onMatchUpdate);
-        eventEmitter.off(EVENTS.GROUP_UPDATE, onGroupUpdate);
+        stopTournamentSubscription();
+        stopMatchSubscription();
+        stopGroupSubscription();
         req.signal.removeEventListener('abort', onAbort);
         try {
           controller.close();
@@ -130,10 +269,6 @@ async function __GET(req: NextRequest) {
         cleanup('max-connection-age-reached');
       }, maxConnectionMs);
 
-      // Subscribe
-      eventEmitter.on(EVENTS.TOURNAMENT_UPDATE, onTournamentUpdate);
-      eventEmitter.on(EVENTS.MATCH_UPDATE, onMatchUpdate);
-      eventEmitter.on(EVENTS.GROUP_UPDATE, onGroupUpdate);
       debugLog(connectionId, `connection opened (scope=${scopedTournamentId ?? 'all'})`);
       debugMemory(connectionId, 'memory snapshot (opened)');
 
@@ -159,7 +294,8 @@ async function __GET(req: NextRequest) {
   return new NextResponse(customReadable, {
     headers: {
       'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache, no-transform',
+      'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, no-transform',
+      'Pragma': 'no-cache',
       'Connection': 'keep-alive',
       'X-Accel-Buffering': 'no', // Disable nginx/Cloudflare buffering
     },

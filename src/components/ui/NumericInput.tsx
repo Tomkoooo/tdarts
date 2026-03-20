@@ -1,8 +1,9 @@
 import React from 'react';
+import { coerceNumericValue, normalizeNumericDraft, type NumericEditableValue } from '@/lib/number-input';
 
 interface NumericInputProps {
-  value: number | string;
-  onChange: (value: number) => void;
+  value: NumericEditableValue | string;
+  onChange: (value: NumericEditableValue) => void;
   min?: number;
   max?: number;
   placeholder?: string;
@@ -29,22 +30,17 @@ export default function NumericInput({
   allowNegative = false,
   allowDecimal = false
 }: NumericInputProps) {
-  const [internalValue, setInternalValue] = React.useState<string>(value.toString());
+  const [internalValue, setInternalValue] = React.useState<string>(
+    value === '' || value === null || value === undefined ? '' : String(value)
+  );
 
   // Sync internal value when external value changes
   React.useEffect(() => {
-    setInternalValue(value.toString());
+    setInternalValue(value === '' || value === null || value === undefined ? '' : String(value));
   }, [value]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
-
-    // Allow empty string
-    if (newValue === '') {
-      setInternalValue('');
-      onChange(0);
-      return;
-    }
 
     // Build regex pattern based on options
     let pattern = '^';
@@ -62,32 +58,38 @@ export default function NumericInput({
     // Validate input
     if (regex.test(newValue) || (allowNegative && newValue === '-')) {
       setInternalValue(newValue);
-
-      // Parse and validate number
-      const numValue = allowDecimal ? parseFloat(newValue) : parseInt(newValue);
-      
-      if (!isNaN(numValue)) {
-        // Apply min/max constraints
-        let finalValue = numValue;
-        if (min !== undefined && numValue < min) {
-          finalValue = min;
-        }
-        if (max !== undefined && numValue > max) {
-          finalValue = max;
-        }
-        
-        onChange(finalValue);
+      const normalized = normalizeNumericDraft(newValue, {
+        parseMode: allowDecimal ? 'float' : 'int',
+        blurMode: 'none',
+      });
+      if (normalized.parsedValue === '') {
+        onChange('');
+        return;
       }
+      let finalValue = normalized.parsedValue;
+      if (min !== undefined && typeof finalValue === 'number' && finalValue < min) {
+        finalValue = min;
+      }
+      if (max !== undefined && typeof finalValue === 'number' && finalValue > max) {
+        finalValue = max;
+      }
+      onChange(finalValue);
     }
   };
 
   const handleBlur = () => {
-    // On blur, if empty or just minus sign, reset to 0 or min
-    if (internalValue === '' || internalValue === '-') {
-      const defaultValue = min !== undefined && min > 0 ? min : 0;
-      setInternalValue(defaultValue.toString());
-      onChange(defaultValue);
+    const normalized = normalizeNumericDraft(internalValue, {
+      parseMode: allowDecimal ? 'float' : 'int',
+      blurMode: 'zero',
+      min,
+    });
+    const coerced = coerceNumericValue(normalized.parsedValue, min !== undefined && min > 0 ? min : 0);
+    let finalValue = coerced;
+    if (max !== undefined && finalValue > max) {
+      finalValue = max;
     }
+    setInternalValue(String(finalValue));
+    onChange(finalValue);
   };
 
   return (

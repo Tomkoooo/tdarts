@@ -2,7 +2,7 @@
 // import { useRouter } from 'next/navigation';
 import { signOut } from 'next-auth/react';
 import { useUserContext } from './useUser';
-import axios from 'axios';
+import { logoutAction } from '@/features/profile/actions';
 
 export const useLogout = () => {
   // const router = useRouter();
@@ -12,12 +12,12 @@ export const useLogout = () => {
     try {
       console.log('Logout - Starting logout process...');
       
-      // 1. Hívjuk meg a saját logout API-t
+      // 1. Hívjuk meg a saját logout action-t
       try {
-        const response = await axios.post('/api/profile/logout');
-        console.log('Logout - API response:', response.data);
+        await logoutAction();
+        console.log('Logout - Server logout completed');
       } catch (error) {
-        console.error('Logout - API error:', error);
+        console.error('Logout - Server logout error:', error);
         // Folytatjuk a NextAuth logout-tal is
       }
       
