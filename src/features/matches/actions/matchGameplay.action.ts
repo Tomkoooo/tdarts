@@ -9,7 +9,6 @@ import { eventsBus, EVENTS, createSseDeltaPayload } from '@/lib/events';
 import { BadRequestError } from '@/middleware/errorHandle';
 import { withTelemetry } from '@/shared/lib/withTelemetry';
 import { resolveGuardAwareStatus } from '@/shared/lib/guards/result';
-import { authorizeUserResult } from '@/shared/lib/guards';
 import { serializeForClient } from '@/shared/lib/serializeForClient';
 
 const finishLegSchema = z.object({
@@ -29,9 +28,6 @@ export async function finishMatchLegAction(input: z.infer<typeof finishLegSchema
       if (!parsed.success) {
         throw new BadRequestError(parsed.error.issues[0]?.message || 'Invalid input');
       }
-
-      const authResult = await authorizeUserResult();
-      if (!authResult.ok) return authResult;
 
       const data = parsed.data;
       await MatchService.finishLeg(data.matchId, {
@@ -71,9 +67,6 @@ export async function undoMatchLegAction(input: z.infer<typeof undoLegSchema>) {
         throw new BadRequestError(parsed.error.issues[0]?.message || 'Invalid input');
       }
 
-      const authResult = await authorizeUserResult();
-      if (!authResult.ok) return authResult;
-
       await MatchService.undoLastLeg(parsed.data.matchId);
       return serializeForClient({
         success: true,
@@ -110,9 +103,6 @@ export async function updateMatchGameplaySettingsAction(input: z.infer<typeof up
       if (!parsed.success) {
         throw new BadRequestError(parsed.error.issues[0]?.message || 'Invalid input');
       }
-
-      const authResult = await authorizeUserResult();
-      if (!authResult.ok) return authResult;
 
       const data = parsed.data;
 
