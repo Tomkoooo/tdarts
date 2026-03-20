@@ -16,6 +16,11 @@
 /test-results/
 **/playwright-report/
 **/test-results/
+**/*.test.ts
+**/*.test.tsx
+**/*.spec.ts
+**/*.spec.tsx
+**/tests/**
 
 # next.js
 /.next/
