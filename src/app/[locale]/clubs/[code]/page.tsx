@@ -25,7 +25,8 @@ function resolveDefaultPage(page?: string): "summary" | "players" | "tournaments
 }
 
 export default async function ClubDetailPage({ params, searchParams }: ClubPageProps) {
-  const [{ code }, search] = await Promise.all([params, searchParams]);
+  const [{ locale, code }, search] = await Promise.all([params, searchParams]);
+  const uiLocale = toSupportedLocale(locale);
   const defaultPage = resolveDefaultPage(search.page);
   const initialDetailLevel: ClubInitialDataLevel = "summary";
   const requestId = `club-page-${code}-${Date.now().toString(36)}`;

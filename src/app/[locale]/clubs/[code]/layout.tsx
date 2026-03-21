@@ -1,6 +1,5 @@
 import React, { ReactNode } from "react";
 import { Metadata } from "next";
-import { cache } from "react";
 import { unstable_cache } from "next/cache";
 import { getTranslations } from "next-intl/server";
 import { ClubService } from "@/database/services/club.service";
@@ -13,12 +12,10 @@ interface LayoutProps {
   params: Promise<{ code: string }>;
 }
 
-const getClubMetadataThemeCached = cache(
-  unstable_cache(
-    async (clubId: string) => ClubService.getClubMetadataTheme(clubId),
-    ["club-metadata-theme"],
-    { revalidate: 15 }
-  )
+const getClubMetadataThemeCached = unstable_cache(
+  async (clubId: string) => ClubService.getClubMetadataTheme(clubId),
+  ["club-metadata-theme"],
+  { revalidate: 15 }
 );
 
 export async function generateMetadata({

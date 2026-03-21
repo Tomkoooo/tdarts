@@ -45,6 +45,7 @@ export default function ClubSummarySection({
   onLoadMorePosts
 }: ClubSummarySectionProps) {
   const t = useTranslations('Club.summary')
+  const locale = useLocale() as SupportedLocale
   const router = useRouter()
   const searchParams = useSearchParams()
   const [selectedPost, setSelectedPost] = React.useState<any>(null)
