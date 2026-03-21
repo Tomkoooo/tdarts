@@ -5,7 +5,9 @@ FROM node:20-alpine3.20 AS deps
 WORKDIR /app
 ENV NEXT_TELEMETRY_DISABLED=1
 COPY package.json package-lock.json ./
-RUN npm ci
+# next-auth (optional @auth/core 0.34) vs @auth/mongodb-adapter (@auth/core 0.41) and OTel peers
+# disagree with npm’s strict resolver; lockfile is still honored.
+RUN npm ci --legacy-peer-deps
 
 # --- build: compile Next.js (needs devDependencies from deps) ---
 FROM node:20-alpine3.20 AS builder
