@@ -27,22 +27,99 @@ const toNumericBoardNumber = (value: unknown): number | null => {
   return Number.isFinite(parsed) ? parsed : null;
 };
 
+/**
+ * SSE match payloads are often unpopulated Mongo shapes (playerId without name).
+ * Merge so legsWon etc. update while keeping display names from the hydrated client state.
+ */
+function mergeMatchPlayerSlot(existing: any, incoming: any) {
+  if (!incoming) return existing;
+  if (!existing) return incoming;
+  const out: any = { ...existing, ...incoming };
+  const ePid = existing?.playerId;
+  const iPid = incoming?.playerId;
+  if (iPid !== undefined && iPid !== null) {
+    if (typeof iPid === "object" && !Array.isArray(iPid)) {
+      const base =
+        typeof ePid === "object" && ePid !== null && !Array.isArray(ePid) ? ePid : {};
+      out.playerId = {
+        ...base,
+        ...iPid,
+        name: (iPid as { name?: string }).name ?? (base as { name?: string }).name,
+      };
+    } else {
+      out.playerId =
+        typeof ePid === "object" && ePid !== null && !Array.isArray(ePid)
+          ? { ...ePid, _id: iPid }
+          : iPid;
+    }
+  }
+  return out;
+}
+
+function deepMergeSseMatch(existing: any, incoming: any) {
+  if (!incoming) return existing;
+  if (!existing) return incoming;
+  const next: any = {
+    ...existing,
+    ...incoming,
+    player1: mergeMatchPlayerSlot(existing.player1, incoming.player1),
+    player2: mergeMatchPlayerSlot(existing.player2, incoming.player2),
+  };
+  if (incoming.scorer !== undefined) {
+    const eSc = existing.scorer;
+    const iSc = incoming.scorer;
+    const incomingScorerName = iSc && typeof iSc === "object" ? (iSc as { name?: string }).name : undefined;
+    if (
+      iSc &&
+      typeof iSc === "object" &&
+      (incomingScorerName === undefined || incomingScorerName === "") &&
+      eSc &&
+      typeof eSc === "object" &&
+      (eSc as { name?: string }).name
+    ) {
+      next.scorer = { ...eSc, ...iSc, name: (eSc as { name?: string }).name };
+    } else {
+      next.scorer = iSc;
+    }
+  }
+  return next;
+}
+
 const mergeIntoMatchReference = (existing: any, incoming: any) => {
   if (!incoming) return existing;
   if (existing?.matchReference) {
     return {
       ...existing,
-      matchReference: {
-        ...(existing.matchReference || {}),
-        ...incoming,
-      },
+      matchReference: deepMergeSseMatch(existing.matchReference || {}, incoming),
     };
   }
-  return {
-    ...(existing || {}),
-    ...incoming,
-  };
+  return deepMergeSseMatch(existing || {}, incoming);
 };
+
+/** Resolve match id from board slot shapes: id string, { _id }, { matchReference: { _id } }. */
+function boardMatchRefId(ref: unknown): string | null {
+  if (ref == null) return null;
+  if (typeof ref === "string" && ref.trim()) return ref.trim();
+  if (typeof ref === "object") {
+    const r = ref as { _id?: unknown; matchReference?: { _id?: unknown } };
+    if (r.matchReference?._id != null) return String(r.matchReference._id);
+    if (r._id != null) return String(r._id);
+  }
+  return null;
+}
+
+function mergeBoardSlotMatch(existing: any, incoming: any) {
+  if (!incoming) return existing;
+  if (existing == null) return incoming;
+  if (typeof existing === "string") return incoming;
+  if (existing?.matchReference) {
+    return {
+      ...existing,
+      matchReference: deepMergeSseMatch(existing.matchReference || {}, incoming),
+    };
+  }
+  return deepMergeSseMatch(existing, incoming);
+}
 
 function mergeTournamentByView(prev: any, next: any, view: TournamentView) {
   if (!prev || view === "overview" || view === "full") {
@@ -270,17 +347,18 @@ export function useTournamentPageData(
         if (!prev) return tournamentLite;
         const previousBoards = Array.isArray(prev.boards) ? prev.boards : [];
         const liteBoards = Array.isArray(tournamentLite.boards) ? tournamentLite.boards : [];
-        const mergedBoards = previousBoards.map((board: any) => {
-          const liteBoard = liteBoards.find(
-            (candidate: any) => Number(candidate?.boardNumber) === Number(board?.boardNumber),
+        // Lite payload is authoritative for which boards exist (count / ids). Mapping over
+        // previous boards and keeping unmatched entries resurrected deleted boards in the UI.
+        const mergedBoards = liteBoards.map((liteBoard: any) => {
+          const prevBoard = previousBoards.find(
+            (b: any) => Number(b?.boardNumber) === Number(liteBoard?.boardNumber),
           );
-          if (!liteBoard) return board;
-          // Keep match references from full/tab payloads while accepting fresh status from lite payload.
+          if (!prevBoard) return liteBoard;
           return {
-            ...board,
+            ...prevBoard,
             ...liteBoard,
-            currentMatch: board?.currentMatch,
-            nextMatch: board?.nextMatch,
+            currentMatch: prevBoard?.currentMatch,
+            nextMatch: prevBoard?.nextMatch,
           };
         });
         return {
@@ -290,7 +368,7 @@ export function useTournamentPageData(
             ...(prev.tournamentSettings || {}),
             ...(tournamentLite.tournamentSettings || {}),
           },
-          boards: mergedBoards.length > 0 ? mergedBoards : previousBoards,
+          boards: mergedBoards,
         };
       });
       return true;
@@ -390,14 +468,14 @@ export function useTournamentPageData(
         if (!incomingIdRaw) return next;
         const incomingId = String(incomingIdRaw);
         let matchFound = false;
-        let boardFound = false;
+        let boardVisualUpdate = false;
 
         if (Array.isArray(next.matches)) {
           next.matches = next.matches.map((match: any) =>
             String(match?._id) === incomingId
               ? (() => {
                   matchFound = true;
-                  return { ...match, ...incomingMatch };
+                  return deepMergeSseMatch(match, incomingMatch);
                 })()
               : match
           );
@@ -418,39 +496,83 @@ export function useTournamentPageData(
           });
         }
 
+        if (Array.isArray(next.knockout)) {
+          next.knockout = next.knockout.map((round: any) => {
+            if (!Array.isArray(round?.matches)) return round;
+            const matches = round.matches.map((match: any) =>
+              String(match?._id ?? match?.matchReference?._id) === incomingId
+                ? (() => {
+                    matchFound = true;
+                    return mergeIntoMatchReference(match, incomingMatch);
+                  })()
+                : match
+            );
+            return { ...round, matches };
+          });
+        }
+
         if (Array.isArray(next.boards)) {
           const boardNumber = toNumericBoardNumber(delta.data?.boardNumber ?? incomingMatch?.boardReference);
           if (boardNumber !== null) {
             const incomingMatchId = incomingId;
             next.boards = next.boards.map((board: any) => {
               if (toNumericBoardNumber(board?.boardNumber) !== boardNumber) return board;
-              boardFound = true;
-              return {
-                ...board,
-                status:
-                  delta.action === "started"
-                    ? "playing"
-                    : delta.action === "finished"
-                      ? "waiting"
-                      : board.status,
-                currentMatch:
-                  delta.action === "started"
-                    ? (incomingMatch || board.currentMatch || incomingMatchId)
-                    : delta.action === "finished"
-                      ? undefined
-                      : board.currentMatch,
-                nextMatch:
-                  delta.action === "finished"
-                    ? (delta.data?.nextMatch ?? board.nextMatch)
-                    : delta.action === "started"
-                      ? (delta.data?.nextMatch ?? board.nextMatch)
-                    : board.nextMatch,
-              };
+
+              if (delta.action === "started") {
+                boardVisualUpdate = true;
+                return {
+                  ...board,
+                  status: "playing",
+                  currentMatch:
+                    incomingMatch || board.currentMatch || incomingMatchId,
+                  nextMatch: delta.data?.nextMatch ?? board.nextMatch,
+                };
+              }
+
+              if (delta.action === "finished") {
+                boardVisualUpdate = true;
+                return {
+                  ...board,
+                  status: "waiting",
+                  currentMatch: undefined,
+                  nextMatch: delta.data?.nextMatch ?? board.nextMatch,
+                };
+              }
+
+              const updatedBoard = { ...board };
+              let slotMerged = false;
+
+              if (incomingMatch) {
+                if (boardMatchRefId(board.currentMatch) === incomingId) {
+                  updatedBoard.currentMatch = mergeBoardSlotMatch(board.currentMatch, incomingMatch);
+                  slotMerged = true;
+                } else if (
+                  !board.currentMatch &&
+                  toNumericBoardNumber(incomingMatch.boardReference) === boardNumber
+                ) {
+                  updatedBoard.currentMatch = incomingMatch;
+                  slotMerged = true;
+                }
+
+                if (boardMatchRefId(board.nextMatch) === incomingId) {
+                  updatedBoard.nextMatch = mergeBoardSlotMatch(board.nextMatch, incomingMatch);
+                  slotMerged = true;
+                }
+              }
+
+              if (slotMerged) {
+                boardVisualUpdate = true;
+              }
+              return updatedBoard;
             });
           }
         }
-        applied = matchFound || boardFound;
+
+        applied = matchFound || boardVisualUpdate;
         if (delta.action === "finished" && !applied) {
+          forceResync = true;
+        }
+        if (delta.action === "leg-finished" && !applied) {
           forceResync = true;
         }
       }

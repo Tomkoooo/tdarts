@@ -13,7 +13,7 @@ import { MMRService } from './mmr.service';
 import { OacMmrService } from './oac-mmr.service';
 
 import { TournamentGroupService } from './tournament-group.service';
-import { TournamentStatsService } from './tournament-stats.service';
+import { TournamentStatsService, type UpdateGroupStandingOptions } from './tournament-stats.service';
 import { TournamentPlayerService } from './tournament-player.service';
 import { GeocodingService } from './geocoding.service';
 import { ErrorService } from './error.service';
@@ -891,8 +891,11 @@ export class TournamentService {
     }
 
     //re calculate the group standing for each group
-    static async updateGroupStanding(tournamentId: string): Promise<boolean> {
-        return TournamentStatsService.updateGroupStanding(tournamentId);
+    static async updateGroupStanding(
+        tournamentId: string,
+        options?: UpdateGroupStandingOptions
+    ): Promise<boolean> {
+        return TournamentStatsService.updateGroupStanding(tournamentId, options);
     }
 
     static async validateTournamentByPassword(tournamentId: string, password: string): Promise<boolean> {
@@ -4635,7 +4638,9 @@ export class TournamentService {
 
             const format = tournament.tournamentSettings?.format || 'group_knockout';
             if (format !== 'knockout') {
-                await TournamentStatsService.updateGroupStanding(tournamentCode);
+                await TournamentStatsService.updateGroupStanding(tournamentCode, {
+                    updatePlayerStatsForGroup: false,
+                });
                 const refreshedTournament = await TournamentService.getTournament(tournamentCode);
                 if (refreshedTournament) {
                     tournament = refreshedTournament;
@@ -5403,7 +5408,7 @@ export class TournamentService {
                         tournamentStanding: standing,
                         finalPosition: standing,
                         eliminatedIn: this.getEliminationText(standing, format),
-                        // Keep legacy `stats` in sync with final tournament stats for compatibility.
+                        // `stats` = full tournament (group + knockout). `groupStats` = group stage only (see getGroupTableStats).
                         stats: {
                             matchesWon: finalStats?.matchesWon || 0,
                             matchesLost: finalStats?.matchesPlayed ? finalStats.matchesPlayed - finalStats.matchesWon : 0,
@@ -5740,6 +5745,80 @@ export class TournamentService {
         }
     }
 
+    static async cancelGroups(tournamentCode: string): Promise<boolean> {
+        try {
+            await connectMongo();
+            const tournament = await TournamentModel.findOne({ tournamentId: tournamentCode });
+            if (!tournament) {
+                throw new BadRequestError('Tournament not found');
+            }
+
+            if (tournament.tournamentSettings?.status !== 'group-stage') {
+                throw new BadRequestError('Tournament is not in group stage');
+            }
+
+            if (!tournament.groups || !Array.isArray(tournament.groups) || tournament.groups.length === 0) {
+                throw new BadRequestError('No groups to cancel');
+            }
+
+            const matchIdStrings = new Set<string>();
+            for (const group of tournament.groups as any[]) {
+                if (group.matches && Array.isArray(group.matches)) {
+                    for (const ref of group.matches) {
+                        const matchId =
+                            typeof ref === 'object' && ref !== null && '_id' in ref
+                                ? (ref as { _id: mongoose.Types.ObjectId })._id
+                                : ref;
+                        if (matchId) {
+                            matchIdStrings.add(matchId.toString());
+                        }
+                    }
+                }
+            }
+
+            const groupMatchIds = Array.from(matchIdStrings).map((id) => new mongoose.Types.ObjectId(id));
+            if (groupMatchIds.length > 0) {
+                await MatchModel.deleteMany({ _id: { $in: groupMatchIds } });
+                console.log(`Deleted ${groupMatchIds.length} group matches`);
+            }
+
+            tournament.groups = [];
+
+            for (const tp of tournament.tournamentPlayers as any[]) {
+                if (!tp) continue;
+                tp.groupId = null;
+                tp.groupOrdinalNumber = null;
+                tp.groupStanding = null;
+                if (tp.stats) {
+                    tp.stats.matchesWon = 0;
+                    tp.stats.matchesLost = 0;
+                    tp.stats.legsWon = 0;
+                    tp.stats.legsLost = 0;
+                    tp.stats.avg = 0;
+                    tp.stats.oneEightiesCount = 0;
+                    tp.stats.highestCheckout = 0;
+                }
+            }
+
+            tournament.boards = tournament.boards.map((board: any) => ({
+                ...board,
+                status: 'idle',
+                currentMatch: null,
+                nextMatch: null,
+            }));
+
+            tournament.tournamentSettings.status = 'pending';
+
+            await tournament.save();
+            console.log(`Groups cancelled for tournament ${tournamentCode}`);
+
+            return true;
+        } catch (error) {
+            console.error('Cancel groups error:', error);
+            return false;
+        }
+    }
+
     private static getEliminationText(position: number, format: string): string {
         if (position === 1) return 'winner';
         if (position === 2) return 'final';
@@ -5773,7 +5852,11 @@ export class TournamentService {
             if (!tournament) {
                 throw new Error('Tournament not found');
             }
-            
+
+            const startingScore = Number(
+                (tournament as any).tournamentSettings?.startingScore ?? 501
+            );
+
             // Get all ongoing matches
             const liveMatches = await MatchModel.find({
                 tournamentRef: tournament._id,
@@ -5787,11 +5870,28 @@ export class TournamentService {
             return liveMatches.map((match: any) => {
                 const player1LegsWon = Number(match?.player1?.legsWon || 0);
                 const player2LegsWon = Number(match?.player2?.legsWon || 0);
+                const legs: any[] = Array.isArray(match.legs) ? match.legs : [];
+                const openLeg = [...legs].reverse().find((l: any) => !l?.winnerId);
+                let currentLeg = player1LegsWon + player2LegsWon + 1;
+                let player1Remaining: number | undefined;
+                let player2Remaining: number | undefined;
+
+                if (openLeg) {
+                    currentLeg = Number(openLeg.legNumber ?? currentLeg);
+                    player1Remaining = Number(openLeg.player1Score);
+                    player2Remaining = Number(openLeg.player2Score);
+                } else {
+                    // No persisted in-leg row yet (or leg only exists after leg-complete): show starting score until throws are persisted.
+                    player1Remaining = startingScore;
+                    player2Remaining = startingScore;
+                }
+
                 return {
                     ...match,
-                    currentLeg: player1LegsWon + player2LegsWon + 1,
-                    player1Remaining: 501,
-                    player2Remaining: 501,
+                    startingScore,
+                    currentLeg,
+                    player1Remaining,
+                    player2Remaining,
                     lastUpdate: match.updatedAt || match.createdAt,
                 };
             });
@@ -5832,12 +5932,16 @@ export class TournamentService {
 
             // Validate settings based on tournament status
             const currentStatus = tournament.tournamentSettings.status;
+
+            const { boards: boardsPayload, ...settingsRest } = settings as Partial<TournamentSettings> & {
+                boards?: any[];
+            };
             
             // Don't allow editing certain fields if tournament has started
             if (currentStatus !== 'pending') {
                 const restrictedFields = ['format', 'maxPlayers', 'startingScore'];
                 const attemptedRestrictedChanges = restrictedFields.filter(field => {
-                    const newValue = settings[field as keyof TournamentSettings];
+                    const newValue = settingsRest[field as keyof TournamentSettings];
                     const currentValue = tournament.tournamentSettings[field as keyof TournamentSettings];
                     return newValue !== undefined && newValue !== currentValue;
                 });
@@ -5847,14 +5951,14 @@ export class TournamentService {
                 }
             }
 
-            if (settings.boards !== undefined && !Array.isArray(settings.boards)) {
+            if (boardsPayload !== undefined && !Array.isArray(boardsPayload)) {
                 throw new BadRequestError('boards must be an array');
             }
 
             // Handle board updates if provided
-            if (Array.isArray(settings.boards) && currentStatus === 'pending') {
+            if (Array.isArray(boardsPayload) && currentStatus === 'pending') {
                 // Update boards array
-                tournament.boards = settings.boards.map((board: any, index: number) => ({
+                tournament.boards = boardsPayload.map((board: any, index: number) => ({
                     boardNumber: index + 1,
                     name: board.name || `Tábla ${index + 1}`,
                     currentMatch: board.currentMatch || undefined,
@@ -5866,22 +5970,22 @@ export class TournamentService {
                 console.log(`Updated boards for tournament ${tournamentId}: ${tournament.boards.length} boards`);
                 
                 // Automatically update boardCount to match boards length
-                settings.boardCount = tournament.boards.length;
+                settingsRest.boardCount = tournament.boards.length;
             }
 
-            // Update tournament settings
-            const updatedSettings = { ...tournament.tournamentSettings, ...settings };
+            // Update tournament settings (boards live on tournament root, not tournamentSettings)
+            const updatedSettings = { ...tournament.tournamentSettings, ...settingsRest };
 
-            if (typeof settings.location === 'string' && settings.location.trim()) {
-                const geocodeResult = await GeocodingService.geocodeAddress(settings.location, 'user');
+            if (typeof settingsRest.location === 'string' && settingsRest.location.trim()) {
+                const geocodeResult = await GeocodingService.geocodeAddress(settingsRest.location, 'user');
                 (updatedSettings as any).locationData = geocodeResult.location;
             }
             
             // Check subscription limits if start date is being changed
-            if (settings.startDate && new Date(settings.startDate).getTime() !== new Date(tournament.tournamentSettings.startDate).getTime()) {
+            if (settingsRest.startDate && new Date(settingsRest.startDate).getTime() !== new Date(tournament.tournamentSettings.startDate).getTime()) {
                 const subscriptionCheck = await SubscriptionService.canUpdateTournament(
                     resolvedClubId,
-                    new Date(settings.startDate),
+                    new Date(settingsRest.startDate),
                     tournament.tournamentId
                 );
                 

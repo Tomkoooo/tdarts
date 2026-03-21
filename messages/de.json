@@ -972,6 +972,7 @@
       "btn_generate_groups": "Gruppen generieren",
       "btn_generate_knockout": "Einen geraden Tropfen erzeugen",
       "btn_cancel_knockout": "Widerruf der direkten Eliminierung",
+      "btn_cancel_groups": "Gruppen abbrechen",
       "btn_finish": "Abschluss der Übung",
       "alert_player_count_title": "Falsche Spieleranzahl",
       "alert_player_count_desc": "Pro Gruppe sind mindestens {min} und maximal {max} Spieler erforderlich.",
@@ -1050,6 +1051,23 @@
         "cancelling": "Rückzug...",
         "executing": "Ausführung...",
         "error": "Es war nicht möglich, die vollständige Eliminierung rückgängig zu machen."
+      },
+      "cancel_groups_dialog": {
+        "title": "Gruppen abbrechen",
+        "description_step1": "Erste Bestätigung: Du bist dabei, die Gruppenphase abzubrechen. Zur finalen Bestätigung weiter?",
+        "description_step2": "Finale Bestätigung: Es startet ein 20-Sekunden-Sicherheitsfenster. In dieser Zeit kannst du Undo oder Skip now nutzen.",
+        "step2_title": "Eingriff mit hoher Wirkung",
+        "step2_desc": "Nach der Ausführung werden alle Gruppenspiele gelöscht, Gruppenzuordnungen entfernt, die Bretter zurückgesetzt und das Turnier auf „ausstehend“ gesetzt, damit du Spieler hinzufügen und Gruppen neu erzeugen kannst.",
+        "pending_title": "Gruppenabbruch geplant",
+        "pending_desc": "Der Abbruch wird in {seconds}s ausgeführt. Bis dahin kannst du ihn noch rückgängig machen.",
+        "btn_continue": "Weiter",
+        "btn_back": "Zurück",
+        "btn_confirm_schedule": "Mit 20s-Undo-Fenster planen",
+        "btn_undo": "Undo",
+        "btn_skip_now": "Skip now (sofort ausführen)",
+        "cancelling": "Abbrechen...",
+        "executing": "Ausführung...",
+        "error": "Gruppen konnten nicht abgebrochen werden."
       },
       "third_place_dialog": {
         "title": "3. Einen Ort auswählen",
@@ -1222,7 +1240,15 @@
       "pts": "Punkt",
       "avg": "Durchschnitt",
       "max": "Max",
-      "close": "Schließung"
+      "close": "Schließung",
+      "export_error": "Bild konnte nicht erstellt werden.",
+      "share_unsupported": "Teilen wird in diesem Browser nicht unterstützt.",
+      "recap_subtitle": "Legs und Aufnahmen",
+      "highest_checkout": "Höchstes Checkout"
+    },
+    "legs": {
+      "share": "Teilen",
+      "export_image": "Bild speichern"
     },
     "live_viewer": {
       "back": "Zurück",
@@ -1440,11 +1466,17 @@
         "admin": "Admin"
       },
       "header": {
+        "hosted_by_label": "Ausrichter",
         "tournament_code": "Fitnessstudio-Code: {code}",
         "refresh": "Aktualisieren",
         "boards_writer": "Tabellen / Schreibprogramm",
         "tv_view": "Fernseher",
-        "share": "Teilen"
+        "share": "Teilen",
+        "live_open": "Live",
+        "sse_connected": "Live-Updates: verbunden",
+        "sse_offline": "Live-Updates: verbindet erneut…",
+        "sse_expired": "Live-Updates: Sitzung beendet",
+        "sse_na": "Live-Updates: aus"
       },
       "loading": "Übung wird geladen...",
       "error": {
@@ -1744,6 +1776,10 @@
     "organized_by": "organized by"
   },
   "Club": {
+    "seo": {
+      "description_fallback": "{clubName} — Dartverein auf tDarts. Turniere, Mitglieder und Ligen.",
+      "description_fallback_with_place": "{clubName} — Dartverein in {place} auf tDarts. Turniere, Mitglieder und Ligen."
+    },
     "layout": {
       "summary": "Überblick",
       "players": "Spieler",
@@ -2963,7 +2999,18 @@
       "műveletek": "műveletek",
       "nincs_találat_a": "nincs találat a",
       "státusz": "státusz",
-      "title": "title"
+      "title": "title",
+      "admin_actions": "Admin-Aktionen",
+      "soft_delete": "Als gelöscht markieren",
+      "restore": "Wiederherstellen",
+      "purge": "Endgültig löschen",
+      "purge_dialog_title": "Turnier endgültig löschen",
+      "purge_dialog_desc": "Entfernt das Turnier und seine Matches aus der Datenbank. Gib den exakten Turniernamen zur Bestätigung ein.",
+      "purge_name_label": "Turniername",
+      "purge_confirm": "Endgültig löschen",
+      "soft_delete_confirm": "Dieses Turnier als gelöscht markieren? Es wird in normalen Listen ausgeblendet.",
+      "restore_confirm": "Dieses Turnier wiederherstellen?",
+      "cancel": "Abbrechen"
     },
     "users": {
       "admin": "Admin",
@@ -3687,6 +3734,23 @@
     "nyíl": "Dart",
     "nyíl_lehetséges": "Dart(s) möglich",
     "rematch": "Revanche",
+    "local": {
+      "export_png": "Bild speichern",
+      "share": "Teilen",
+      "throws": "Aufnahmen",
+      "scores_100_plus": "100+",
+      "scores_140_plus": "140+",
+      "first_nine_avg": "Erste 9 Ø",
+      "share_unsupported": "Teilen wird in diesem Browser nicht unterstützt.",
+      "export_error": "Bild konnte nicht erstellt werden.",
+      "finish_subtitle": "Legs und Aufnahmen",
+      "leg_winner": "Leg-Gewinner",
+      "remaining_short": "Rest",
+      "darts_abbr": "Darts",
+      "no_legs_recorded": "Für dieses Match wurde kein Leg-Protokoll gespeichert.",
+      "best_leg_darts": "Bestes Leg (Darts)",
+      "worst_leg_darts": "Schlechtestes Leg (Darts)"
+    },
     "sco": "SCO...",
     "scolia_access_token": "Scolia Zugriffstoken",
     "scolia_autoscoring": "Scolia Auto-Scoring",
@@ -3753,6 +3817,12 @@
       "nextPlaying": "Du spielst gerade auf {board}",
       "nextScoring": "Du schreibst gerade auf {board}",
       "nextPending": "Dein nächster Einsatz ist auf {board}",
+      "nextPendingPlaying": "Nächstes Match auf {board} (du spielst)",
+      "nextPendingScoring": "Nächster Einsatz auf {board} (du schreibst)",
+      "nextPendingUnknown": "Nächster Tisch: {board}",
+      "nextMatchVsWarning": "Nächstes Match gegen {opponent}",
+      "nextScoringReminder": "Du bist als Schreiber für diesen Tisch eingeteilt — bleib bereit.",
+      "landingPage": "Über tDarts",
       "nextUnknown": "Noch keine nächste Board-Zuweisung"
     },
     "stats": {

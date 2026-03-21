@@ -51,7 +51,17 @@ export async function getUserTournamentsAction(input: z.infer<typeof schema> = {
                 { 'tournamentSettings.startDate': { $gte: todayStart } },
                 {
                   'tournamentSettings.status': {
-                    $in: ['active', 'live', 'ongoing', 'in_progress', 'in-progress', 'started'],
+                    $in: [
+                      'active',
+                      'live',
+                      'ongoing',
+                      'in_progress',
+                      'in-progress',
+                      'started',
+                      'group-stage',
+                      'knockout',
+                      'finished',
+                    ],
                   },
                 },
               ],
@@ -101,9 +111,19 @@ export async function getUserTournamentsAction(input: z.infer<typeof schema> = {
               ],
             })
               .select('tournamentRef status boardReference player1.playerId player2.playerId scorer createdAt')
+              .populate('player1.playerId', 'name')
+              .populate('player2.playerId', 'name')
               .sort({ createdAt: 1 })
               .lean()
           : [];
+
+        const pidStr = String(playerObjectId);
+
+        const slotPlayerId = (slot: any): string => {
+          const ref = slot?.playerId;
+          if (ref && typeof ref === 'object' && '_id' in ref) return String((ref as { _id: unknown })._id);
+          return ref ? String(ref) : '';
+        };
 
         return tournaments.map((item) => {
           const playerEntry = item.playerEntry || null;
@@ -114,14 +134,39 @@ export async function getUserTournamentsAction(input: z.infer<typeof schema> = {
             (match: any) => String(match.tournamentRef) === String(item._id) && match.status === 'pending'
           );
           const nextRelevantMatch = ongoingMatch || pendingMatch || null;
-          const isScorer = Boolean(nextRelevantMatch?.scorer && String(nextRelevantMatch.scorer) === String(playerObjectId));
-          const nextMatchType = nextRelevantMatch
-            ? ongoingMatch
-              ? isScorer
-                ? 'scoring'
-                : 'playing'
-              : 'pending'
-            : 'unknown';
+          const isScorer = Boolean(
+            nextRelevantMatch?.scorer && String(nextRelevantMatch.scorer) === pidStr
+          );
+          const p1Id = slotPlayerId(nextRelevantMatch?.player1);
+          const p2Id = slotPlayerId(nextRelevantMatch?.player2);
+          const isP1 = Boolean(p1Id && p1Id === pidStr);
+          const isP2 = Boolean(p2Id && p2Id === pidStr);
+
+          let nextMatchType:
+            | 'playing'
+            | 'scoring'
+            | 'pendingPlaying'
+            | 'pendingScoring'
+            | 'pendingUnknown'
+            | 'unknown' = 'unknown';
+          if (nextRelevantMatch) {
+            if (ongoingMatch) {
+              nextMatchType = isScorer ? 'scoring' : 'playing';
+            } else if (pendingMatch) {
+              if (isP1 || isP2) nextMatchType = 'pendingPlaying';
+              else if (isScorer) nextMatchType = 'pendingScoring';
+              else nextMatchType = 'pendingUnknown';
+            }
+          }
+
+          let nextMatchOpponentName: string | null = null;
+          if (nextRelevantMatch && (isP1 || isP2)) {
+            const oppSlot = isP1 ? nextRelevantMatch.player2 : nextRelevantMatch.player1;
+            const ref = oppSlot?.playerId as { name?: string } | string | undefined;
+            if (ref && typeof ref === 'object' && 'name' in ref && ref.name) {
+              nextMatchOpponentName = String(ref.name);
+            }
+          }
 
           return {
             _id: String(item._id),
@@ -138,6 +183,7 @@ export async function getUserTournamentsAction(input: z.infer<typeof schema> = {
             legsLost: Number(playerEntry?.stats?.legsLost ?? 0),
             nextMatchType,
             nextMatchBoard: Number(nextRelevantMatch?.boardReference ?? 0) || null,
+            nextMatchOpponentName,
           };
         });
       };

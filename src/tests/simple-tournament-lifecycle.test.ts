@@ -360,6 +360,14 @@ describe('Simple Tournament Lifecycle Test', () => {
     expect(finishedTournament?.tournamentSettings?.status).toBe('finished');
     expect(finishedTournament?.tournamentPlayers?.length).toBe(TEST_CONFIG.playerCount);
 
+    const tpSample = (finishedTournament?.tournamentPlayers || []).find(
+      (p: any) => p.groupStats != null && typeof p.groupStats.matchesWon === 'number'
+    );
+    if (tpSample) {
+      expect(tpSample.stats.matchesWon).toBeGreaterThanOrEqual(tpSample.groupStats.matchesWon);
+      expect(tpSample.groupStats.matchesWon).toBeGreaterThanOrEqual(0);
+    }
+
     const pointSystemsToTest = parsePointSystemsFromEnv();
     for (let index = 0; index < pointSystemsToTest.length; index++) {
       const pointSystemType = pointSystemsToTest[index];

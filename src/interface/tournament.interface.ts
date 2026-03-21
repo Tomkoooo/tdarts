@@ -23,7 +23,19 @@ export interface TournamentPlayer {
         highestCheckout: number;
         oneEighties: number;
     };
+    /** Live group stage and, after finish, full tournament (group + knockout) match/leg totals. */
     stats: {
+        matchesWon: number;
+        matchesLost: number;
+        legsWon: number;
+        legsLost: number;
+        avg: number;
+        firstNineAvg?: number;
+        oneEightiesCount: number;
+        highestCheckout: number;
+    };
+    /** Set when a tournament is finished: group-stage-only snapshot (W/L, legs, averages). */
+    groupStats?: {
         matchesWon: number;
         matchesLost: number;
         legsWon: number;

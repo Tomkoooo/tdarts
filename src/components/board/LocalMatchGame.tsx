@@ -1,10 +1,17 @@
 "use client"
 import { useTranslations } from "next-intl";
 
-import { IconSettings, IconPlayerPlay } from '@tabler/icons-react';
+import { IconSettings } from '@tabler/icons-react';
 import React, { useState, useEffect, useRef } from 'react';
 import toast from 'react-hot-toast';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import LocalMatchFinishPanel, {
+  type LocalMatchFinishSnapshot,
+} from '@/components/board/LocalMatchFinishPanel';
+import {
+  buildLocalMatchLegsSnapshot,
+  getPossibleCheckoutDartCounts,
+} from '@/components/board/localMatchFinishUtils';
 import { Button } from '@/components/ui/Button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/Label';
@@ -57,9 +64,11 @@ const LocalMatchGame: React.FC<LocalMatchGameProps> = ({ legsToWin: initialLegsT
   const [pendingMatchWinner, setPendingMatchWinner] = useState<1 | 2 | null>(null);
   const [arrowCount, setArrowCount] = useState(3);
   const [matchFinished, setMatchFinished] = useState(false);
-  const [matchStats, setMatchStats] = useState<any>(null);
+  const [matchStats, setMatchStats] = useState<LocalMatchFinishSnapshot | null>(null);
+  const [exportBusy, setExportBusy] = useState(false);
   
   const chalkboardRef = useRef<HTMLDivElement>(null);
+  const matchSheetExportRef = useRef<HTMLDivElement>(null);
   const quickAccessScores = [180, 140, 100, 95, 85, 81, 80, 60, 45, 41, 40, 26];
 
   const currentPlayer = gameState.currentPlayer;
@@ -229,7 +238,7 @@ const LocalMatchGame: React.FC<LocalMatchGameProps> = ({ legsToWin: initialLegsT
   ]);
 
   const confirmLegEnd = () => {
-    startNextLeg();
+    startNextLeg(arrowCount);
     setShowLegConfirmation(false);
     setPendingLegWinner(null);
     setArrowCount(3);
@@ -242,10 +251,13 @@ const LocalMatchGame: React.FC<LocalMatchGameProps> = ({ legsToWin: initialLegsT
   };
 
   const confirmMatchEnd = () => {
+    if (pendingMatchWinner == null) return;
     setMatchStats({
       winner: pendingMatchWinner,
       player1: gameState.player1,
-      player2: gameState.player2
+      player2: gameState.player2,
+      legs: buildLocalMatchLegsSnapshot(gameState, pendingMatchWinner, arrowCount),
+      startingScore,
     });
     setMatchFinished(true);
     setShowMatchConfirmation(false);
@@ -257,15 +269,26 @@ const LocalMatchGame: React.FC<LocalMatchGameProps> = ({ legsToWin: initialLegsT
     setPendingMatchWinner(null);
   };
 
-  const getPossibleArrowCounts = (checkoutScore: number): number[] => {
-    if (checkoutScore <= 40 || checkoutScore === 50 || (checkoutScore < 100 && checkoutScore % 3 === 0)) {
-      return [1, 2, 3]; // 1-40: 1-3 nyíl lehetséges
-    } else if (checkoutScore <= 98 || checkoutScore === 100 || checkoutScore === 101 || checkoutScore === 104 || checkoutScore === 107 || checkoutScore === 110) {
-      return [2, 3]; // 41-98: 2-3 nyíl lehetséges
-    } else {
-      return [3]; // 99-180: csak 3 nyíl lehetséges
-    }
-  };
+  // Sensible default checkout dart count when confirmation opens (user can still change).
+  useEffect(() => {
+    if (!showLegConfirmation || pendingLegWinner == null) return;
+    const lastThrow =
+      pendingLegWinner === 1
+        ? gameState.player1.allThrows[gameState.player1.allThrows.length - 1]
+        : gameState.player2.allThrows[gameState.player2.allThrows.length - 1];
+    const possible = getPossibleCheckoutDartCounts(lastThrow || 0);
+    setArrowCount(possible.includes(3) ? 3 : possible[possible.length - 1]);
+  }, [showLegConfirmation, pendingLegWinner, gameState.player1.allThrows, gameState.player2.allThrows]);
+
+  useEffect(() => {
+    if (!showMatchConfirmation || pendingMatchWinner == null) return;
+    const lastThrow =
+      pendingMatchWinner === 1
+        ? gameState.player1.allThrows[gameState.player1.allThrows.length - 1]
+        : gameState.player2.allThrows[gameState.player2.allThrows.length - 1];
+    const possible = getPossibleCheckoutDartCounts(lastThrow || 0);
+    setArrowCount(possible.includes(3) ? 3 : possible[possible.length - 1]);
+  }, [showMatchConfirmation, pendingMatchWinner, gameState.player1.allThrows, gameState.player2.allThrows]);
 
   const handleSaveLegsToWin = () => {
     setLegsToWin(tempLegsToWin);
@@ -287,86 +310,65 @@ const LocalMatchGame: React.FC<LocalMatchGameProps> = ({ legsToWin: initialLegsT
     return throws.filter(t => t === 180).length;
   };
 
+  const captureMatchSheetPngBlob = async (): Promise<Blob | null> => {
+    if (!matchSheetExportRef.current) return null;
+    const { toBlob } = await import("html-to-image");
+    return toBlob(matchSheetExportRef.current, { pixelRatio: 2, cacheBust: true });
+  };
+
+  const handleDownloadSummaryPng = async () => {
+    setExportBusy(true);
+    try {
+      const blob = await captureMatchSheetPngBlob();
+      if (!blob) throw new Error("no blob");
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `tdarts-local-${Date.now()}.png`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      toast.error(t("local.export_error"));
+    } finally {
+      setExportBusy(false);
+    }
+  };
+
+  const handleShareSummaryPng = async () => {
+    if (typeof navigator === "undefined" || !navigator.share) {
+      toast.error(t("local.share_unsupported"));
+      return;
+    }
+    setExportBusy(true);
+    try {
+      const blob = await captureMatchSheetPngBlob();
+      if (!blob) throw new Error("no blob");
+      const file = new File([blob], "tdarts-local-match.png", { type: "image/png" });
+      if (typeof navigator.canShare === "function" && !navigator.canShare({ files: [file] })) {
+        toast.error(t("local.share_unsupported"));
+        return;
+      }
+      await navigator.share({ files: [file], title: "tDarts" });
+    } catch (err: unknown) {
+      const name = err instanceof Error ? err.name : "";
+      if (name === "AbortError") return;
+      toast.error(t("local.export_error"));
+    } finally {
+      setExportBusy(false);
+    }
+  };
 
   if (matchFinished && matchStats) {
     return (
-      <div className="min-h-screen bg-background p-4 flex items-center justify-center">
-        <Card className="max-w-4xl w-full mx-auto">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-2xl">{t("meccs_statisztikák")}</CardTitle>
-              <div className="flex gap-2">
-                {onRematch && (
-                  <Button onClick={onRematch} className="gap-2">
-                    <IconPlayerPlay size={18} />
-                    {t("rematch")}</Button>
-                )}
-                <Button onClick={onBack} variant="outline">{t("vissza")}</Button>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="text-center">
-              <h3 className="text-xl font-bold mb-2">
-                {t("győztes")}{matchStats.winner === 1 ? 'Játékos 1' : 'Játékos 2'}
-              </h3>
-              <p className="text-muted-foreground">
-                {matchStats.player1.legsWon} - {matchStats.player2.legsWon}
-              </p>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">{t("játékos_71")}</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  <div className="flex justify-between">
-                    <span>{t("átlag")}</span>
-                    <span className="font-bold">{matchStats.player1.stats.average.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>{t("leg_nyert")}</span>
-                    <span className="font-bold">{matchStats.player1.legsWon}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>180:</span>
-                    <span className="font-bold">{count180s(matchStats.player1.allThrows)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>{t("legnagyobb_kiszálló")}</span>
-                    <span className="font-bold">{matchStats.player1.stats.highestCheckout}</span>
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">{t("játékos_23")}</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  <div className="flex justify-between">
-                    <span>{t("átlag")}</span>
-                    <span className="font-bold">{matchStats.player2.stats.average.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>{t("leg_nyert")}</span>
-                    <span className="font-bold">{matchStats.player2.legsWon}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>180:</span>
-                    <span className="font-bold">{count180s(matchStats.player2.allThrows)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>{t("legnagyobb_kiszálló")}</span>
-                    <span className="font-bold">{matchStats.player2.stats.highestCheckout}</span>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      <LocalMatchFinishPanel
+        snapshot={matchStats}
+        exportRef={matchSheetExportRef}
+        exportBusy={exportBusy}
+        onDownloadPng={() => void handleDownloadSummaryPng()}
+        onSharePng={() => void handleShareSummaryPng()}
+        onBack={onBack}
+        onRematch={onRematch}
+      />
     );
   }
 
@@ -732,7 +734,7 @@ const LocalMatchGame: React.FC<LocalMatchGameProps> = ({ legsToWin: initialLegsT
             
             {(() => {
               const lastThrow = pendingLegWinner === 1 ? player1.allThrows[player1.allThrows.length - 1] : player2.allThrows[player2.allThrows.length - 1];
-              const possibleArrowCounts = getPossibleArrowCounts(lastThrow || 0);
+              const possibleArrowCounts = getPossibleCheckoutDartCounts(lastThrow || 0);
               
               return (
                 <div className="space-y-3">
@@ -780,7 +782,7 @@ const LocalMatchGame: React.FC<LocalMatchGameProps> = ({ legsToWin: initialLegsT
             
             {(() => {
               const lastThrow = pendingMatchWinner === 1 ? player1.allThrows[player1.allThrows.length - 1] : player2.allThrows[player2.allThrows.length - 1];
-              const possibleArrowCounts = getPossibleArrowCounts(lastThrow || 0);
+              const possibleArrowCounts = getPossibleCheckoutDartCounts(lastThrow || 0);
               
               return (
                 <div className="space-y-3">

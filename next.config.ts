@@ -4,6 +4,8 @@ import createNextIntlPlugin from 'next-intl/plugin';
 const withNextIntl = createNextIntlPlugin();
 
 const nextConfig: NextConfig = {
+  // Traced production server bundle for smaller Docker images (see Dockerfile).
+  output: 'standalone',
   serverExternalPackages: ['mongoose'],
   images: {
     remotePatterns: [

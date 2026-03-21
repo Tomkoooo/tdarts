@@ -3,7 +3,7 @@ import { ClubService } from '@/database/services/club.service';
 import { TournamentService } from '@/database/services/tournament.service';
 import { buildLocaleAlternates, getBaseUrl, localePath } from '@/lib/seo';
 
-export const dynamic = 'force-dynamic';
+/** ISR: refresh sitemap periodically; avoid conflicting with force-dynamic. */
 export const revalidate = 86400; // 24 hours
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -41,6 +41,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: 'monthly' as const,
       priority: 0.6,
     }),
+    createLocalizedEntry('/map', {
+      lastModified: new Date(),
+      changeFrequency: 'weekly' as const,
+      priority: 0.55,
+    }),
   ];
 
   // Dynamic club pages
@@ -51,13 +56,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     clubPages = clubs.map((club: { _id: string; updatedAt?: Date }) => createLocalizedEntry(`/clubs/${club._id}`, {
       lastModified: club.updatedAt || new Date(),
       changeFrequency: 'weekly' as const,
-      priority: 0.7,
+      priority: 0.8,
     }));
   } catch (error) {
     console.error('Error fetching clubs for sitemap:', error);
   }
 
-  // Dynamic tournament pages
+  // Dynamic tournament pages (main public URL only; /live and /tv omitted to avoid duplicate canonical noise)
   let tournamentPages: MetadataRoute.Sitemap = [];
   try {
     const tournaments = await TournamentService.getAllTournaments();

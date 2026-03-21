@@ -253,6 +253,26 @@ export async function cancelKnockoutAction(input: { code: string }) {
   return run(input);
 }
 
+export async function cancelGroupsAction(input: { code: string }) {
+  const run = withTelemetry(
+    'tournaments.groups.cancel',
+    async (payload: { code: string }) => {
+      const { code } = codeSchema.parse(payload);
+      await TournamentService.cancelGroups(code);
+      revalidateTournamentTags(code);
+      revalidateTag('search', 'max');
+      revalidateTag('home:tournaments', 'max');
+      return { success: true };
+    },
+    {
+      method: 'ACTION',
+      metadata: { feature: 'tournaments', actionName: 'cancelGroups' },
+      resolveStatus: resolveGuardAwareStatus,
+    }
+  );
+  return run(input);
+}
+
 const updateTournamentSchema = z.object({
   code: z.string().min(1),
   settings: z.record(z.any()),

@@ -2,19 +2,24 @@ import React, { ReactNode } from "react";
 import { Metadata } from "next";
 import { TournamentService } from "@/database/services/tournament.service";
 import { TournamentDocument } from "@/interface/tournament.interface";
-import { ClubDocument } from "@/interface/club.interface";
 import { buildLocaleAlternates, getBaseUrl } from "@/lib/seo";
+import {
+  type ClubOgLike,
+  ogImageDimensionsForPath,
+  pickTournamentOgImagePath,
+  toAbsoluteImageUrl,
+} from "@/lib/og-image";
 
 interface LayoutProps {
   children: ReactNode;
   params: Promise<{ code: string }>;
 }
 
-// Helper to build absolute URL for images
-function getAbsoluteUrl(path: string, base: string): string {
-  if (!path) return "";
-  if (path.startsWith("http")) return path;
-  return `${base}${path}`;
+function asClubOgLike(clubId: unknown): ClubOgLike | undefined {
+  if (clubId && typeof clubId === 'object' && ('logo' in clubId || 'landingPage' in clubId)) {
+    return clubId as ClubOgLike;
+  }
+  return undefined;
 }
 
 export async function generateMetadata({
@@ -24,7 +29,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   let tournament: TournamentDocument | null = null;
   const { code, locale } = await params;
-  const baseUrl = getBaseUrl();
+  const baseUrl = getBaseUrl().replace(/\/$/, "");
   const tournamentPath = `/tournaments/${code}`;
   const localeAlternates = buildLocaleAlternates(tournamentPath);
   const ogLocale = locale === 'hu' ? 'hu_HU' : locale === 'de' ? 'de_DE' : 'en_US';
@@ -37,19 +42,25 @@ export async function generateMetadata({
   }
   if (!tournament) return {};
 
-  const club = tournament.clubId as unknown as ClubDocument | undefined;
+  const clubOg = asClubOgLike(tournament.clubId);
+  const clubDoc =
+    tournament.clubId && typeof tournament.clubId === 'object'
+      ? (tournament.clubId as { name?: string; address?: string; location?: string })
+      : undefined;
   const t = tournament.tournamentSettings || {};
   const name = t.name || "Darts Verseny";
+  const organizerName = clubDoc?.name || "";
   const description =
     t.description ||
-    `Részletek a(z) ${name} darts versenyről. Szervező: ${club?.name || ""}.`;
-  
-  const image = t.coverImage || club?.logo || "/images/tournament-default-cover.jpg";
-  const imageUrl = getAbsoluteUrl(image, baseUrl);
+    `Részletek a(z) ${name} darts versenyről. Szervező: ${organizerName}.`;
+
+  const imagePath = pickTournamentOgImagePath(t, clubOg);
+  const imageUrl = toAbsoluteImageUrl(imagePath, baseUrl);
+  const { width: ogW, height: ogH } = ogImageDimensionsForPath(imagePath);
 
   const startDate = t.startDate ? new Date(t.startDate).toISOString() : undefined;
   const endDate = t.endDate ? new Date(t.endDate).toISOString() : undefined;
-  const location = club?.address || club?.location || "Magyarország";
+  const location = clubDoc?.address || clubDoc?.location || "Magyarország";
   const canonicalUrl = `${baseUrl}/${locale}${tournamentPath}`;
 
   return {
@@ -73,8 +84,8 @@ export async function generateMetadata({
       images: [
         {
           url: imageUrl,
-          width: 1200,
-          height: 630,
+          width: ogW,
+          height: ogH,
           alt: name,
         },
       ],
@@ -94,7 +105,7 @@ export async function generateMetadata({
       ...(startDate && { "og:start_date": startDate }),
       ...(endDate && { "og:end_date": endDate }),
       "og:location": location,
-      "og:club": club?.name || "",
+      "og:club": organizerName,
       "og:tournament:code": code,
     },
   };

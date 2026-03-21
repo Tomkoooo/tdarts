@@ -94,7 +94,7 @@ export function useTournamentRealtimeRefresh(
     return () => document.removeEventListener("visibilitychange", handleVisibility);
   }, [scheduleResync]);
 
-  const { lastEvent } = useRealTimeUpdates({
+  const { lastEvent, isConnected, sessionExpired } = useRealTimeUpdates({
     tournamentId,
     enabled: isRealtimeEnabled,
   });
@@ -140,4 +140,6 @@ export function useTournamentRealtimeRefresh(
       }
     };
   }, []);
+
+  return { isConnected, sessionExpired, isRealtimeEnabled };
 }

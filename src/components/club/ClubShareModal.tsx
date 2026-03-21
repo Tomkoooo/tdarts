@@ -8,7 +8,9 @@ import { AppModal } from '@/components/modal/AppModal'
 import { DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
+import type { SupportedLocale } from '@/lib/seo'
+import { buildClubLoginRedirectShareLink, buildClubPublicShareLink } from '@/lib/club-share-links'
 
 interface ClubShareModalProps {
   isOpen: boolean
@@ -19,6 +21,7 @@ interface ClubShareModalProps {
 
 export default function ClubShareModal({ isOpen, onClose, clubCode, clubName }: ClubShareModalProps) {
   const t = useTranslations('Club.share_modal')
+  const locale = useLocale() as SupportedLocale
   const [shareType, setShareType] = useState<'public' | 'auth'>('public')
   const [baseUrl, setBaseUrl] = useState('')
 
@@ -31,9 +34,9 @@ export default function ClubShareModal({ isOpen, onClose, clubCode, clubName }: 
   const generateQRCodeData = () => {
     if (!baseUrl) return ''
     if (shareType === 'auth') {
-      return `${baseUrl}/auth/login?redirect=${encodeURIComponent(`/clubs/${clubCode}?page=tournaments`)}`
+      return buildClubLoginRedirectShareLink(baseUrl, locale, clubCode)
     }
-    return `${baseUrl}/clubs/${clubCode}?page=tournaments`
+    return buildClubPublicShareLink(baseUrl, locale, clubCode)
   }
 
   const handleCopyLink = () => {

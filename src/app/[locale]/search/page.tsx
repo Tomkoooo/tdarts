@@ -9,7 +9,6 @@ import { TournamentList } from "@/components/search/TournamentList"
 import { PlayerLeaderboard } from "@/components/search/PlayerLeaderboard"
 import { ClubList } from "@/components/search/ClubList"
 import { LeagueList } from "@/components/search/LeagueList"
-import { FloatingSearchMenu } from "@/components/search/FloatingSearchMenu"
 import { Input } from "@/components/ui/Input"
 import { IconSearch, IconLoader2 } from "@tabler/icons-react"
 import type { SearchFilters } from "@/database/services/search.service"
@@ -48,7 +47,6 @@ export default function SearchPage() {
     const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "global")
     const [query, setQuery] = useState(searchParams.get("q") || "")
     const [debouncedQuery] = useDebounce(query, 500)
-    const [isScrolled, setIsScrolled] = useState(false)
     const [headerHeight, setHeaderHeight] = useState(112)
     const headerRef = useRef<HTMLDivElement | null>(null)
     
@@ -92,14 +90,6 @@ export default function SearchPage() {
         }
     }, [debouncedQuery, pathname, router, searchParams])
     
-    useEffect(() => {
-        const handleScroll = () => {
-            setIsScrolled(window.scrollY > 200)
-        }
-        window.addEventListener('scroll', handleScroll)
-        return () => window.removeEventListener('scroll', handleScroll)
-    }, [])
-
     useEffect(() => {
         if (!headerRef.current) return
         const element = headerRef.current
@@ -260,11 +250,6 @@ export default function SearchPage() {
         setFilters(prev => ({ ...prev, page: 1 }))
     }
 
-    const clearQuery = useCallback(() => {
-        setQuery("")
-        updateUrl({ q: undefined, page: 1 })
-    }, [updateUrl])
-
     const loadMore = () => {
         const newPage = pagination.page + 1
         setFilters(prev => ({ ...prev, page: newPage }))
@@ -273,21 +258,6 @@ export default function SearchPage() {
 
     return (
         <div className="min-h-screen bg-background">
-            <FloatingSearchMenu
-                isVisible={isScrolled}
-                query={query}
-                onQueryChange={handleSearch}
-                activeTab={activeTab}
-                onTabChange={handleTabChange}
-                counts={counts}
-                isLoading={isLoading}
-                filters={filters}
-                onFilterChange={handleFilterChange}
-                cities={metadata.cities || []}
-                hasActiveQuery={!!debouncedQuery}
-                onClearQuery={clearQuery}
-            />
-
             <div ref={headerRef} className="z-40 sticky top-0 border-b border-border/70 bg-card/75 backdrop-blur-xl">
                 <div className="container mx-auto px-4 py-4 space-y-4">
                     <div className="flex gap-3 w-full justify-center">

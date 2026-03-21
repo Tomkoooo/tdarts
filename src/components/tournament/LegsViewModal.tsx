@@ -1,6 +1,7 @@
 "use client"
 
-import React, { useEffect, useState } from "react"
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import toast from "react-hot-toast"
 import { useFeatureFlag } from "@/hooks/useFeatureFlag"
 import { getMatchByIdClientAction, getMatchLegsClientAction } from "@/features/tournaments/actions/tournamentRoster.action"
 import MatchStatisticsCharts from "./MatchStatisticsCharts"
@@ -11,14 +12,21 @@ import { cn } from "@/lib/utils"
 import {
   IconArrowLeft,
   IconCircleCheck,
+  IconDownload,
   IconLoader2,
   IconTarget,
   IconSparkles,
   IconAlertTriangle,
   IconLock,
+  IconShare,
 } from "@tabler/icons-react"
 import { useTranslations } from "next-intl"
 import { SmartAvatar } from "@/components/ui/smart-avatar"
+import MatchRecapSheet from "@/components/match/MatchRecapSheet"
+import {
+  tournamentLegsToRecapModel,
+  type TournamentLegForRecap,
+} from "@/components/match/matchRecapMappers"
 
 type Throw = {
   score: number
@@ -72,14 +80,16 @@ interface LegsViewModalProps {
 }
 
 const LegsViewModal: React.FC<LegsViewModalProps> = ({ isOpen, onClose, match: initialMatch, onBackToMatches }) => {
-  const tTour = useTranslations("Tournament")
-  const t = (key: string, values?: any) => tTour(`legs_modal.${key}`, values)
+  const t = useTranslations("Tournament.legs_modal")
+  const tLegs = useTranslations("Tournament.legs")
   const [match, setMatch] = useState<Match | null>(initialMatch)
   const [legs, setLegs] = useState<Leg[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
   const [showDetailedStats, setShowDetailedStats] = useState(false)
   const [clubId, setClubId] = useState<string | undefined>(undefined)
+  const [exportBusy, setExportBusy] = useState(false)
+  const recapExportRef = useRef<HTMLDivElement>(null)
 
   const { isEnabled: isDetailedStatsEnabled, isLoading: isFeatureFlagLoading } = useFeatureFlag("detailedStatistics", clubId)
 
@@ -266,6 +276,84 @@ const LegsViewModal: React.FC<LegsViewModalProps> = ({ isOpen, onClose, match: i
 
   const matchStats = getMatchPulseStats()
 
+  const legStartScore = Number(
+    (match as any)?.startingScore ?? (match as any)?.tournamentSettings?.startingScore ?? 501,
+  )
+
+  const recapModel = useMemo(() => {
+    if (!legs.length) return null
+    return tournamentLegsToRecapModel(
+      legs as unknown as TournamentLegForRecap[],
+      {
+        brandLine: "tDarts",
+        titleLine: `${playerOneName} vs ${playerTwoName}`,
+        scoreLine: `${player1Wins} - ${player2Wins}`,
+      },
+      playerOneName,
+      playerTwoName,
+      playerOneId,
+      playerTwoId,
+      legStartScore,
+    )
+  }, [
+    legs,
+    playerOneName,
+    playerTwoName,
+    playerOneId,
+    playerTwoId,
+    player1Wins,
+    player2Wins,
+    legStartScore,
+  ])
+
+  const captureRecapPngBlob = useCallback(async (): Promise<Blob | null> => {
+    if (!recapExportRef.current) return null
+    const { toBlob } = await import("html-to-image")
+    return toBlob(recapExportRef.current, { pixelRatio: 2, cacheBust: true })
+  }, [])
+
+  const handleDownloadRecapPng = useCallback(async () => {
+    setExportBusy(true)
+    try {
+      const blob = await captureRecapPngBlob()
+      if (!blob) throw new Error("no blob")
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.href = url
+      a.download = `tdarts-match-${match?._id ?? Date.now()}.png`
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch {
+      toast.error(t("export_error"))
+    } finally {
+      setExportBusy(false)
+    }
+  }, [captureRecapPngBlob, match?._id, t])
+
+  const handleShareRecapPng = useCallback(async () => {
+    if (typeof navigator === "undefined" || !navigator.share) {
+      toast.error(t("share_unsupported"))
+      return
+    }
+    setExportBusy(true)
+    try {
+      const blob = await captureRecapPngBlob()
+      if (!blob) throw new Error("no blob")
+      const file = new File([blob], "tdarts-match.png", { type: "image/png" })
+      if (typeof navigator.canShare === "function" && !navigator.canShare({ files: [file] })) {
+        toast.error(t("share_unsupported"))
+        return
+      }
+      await navigator.share({ files: [file], title: "tDarts" })
+    } catch (err: unknown) {
+      const name = err instanceof Error ? err.name : ""
+      if (name === "AbortError") return
+      toast.error(t("export_error"))
+    } finally {
+      setExportBusy(false)
+    }
+  }, [captureRecapPngBlob, t])
+
   if (!match) return null
 
   return (
@@ -278,14 +366,14 @@ const LegsViewModal: React.FC<LegsViewModalProps> = ({ isOpen, onClose, match: i
           <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-accent/5 rounded-full blur-[100px] pointer-events-none -z-10"></div>
 
           {/* Header Section */}
-          <header className="mb-10 flex flex-col xl:flex-row justify-between items-start xl:items-end gap-6">
-            <div>
+          <header className="mb-10 flex flex-col gap-6 xl:flex-row xl:items-center xl:justify-between">
+            <div className="min-w-0 xl:pr-6">
               <h1 className="font-headline text-3xl sm:text-4xl font-extrabold tracking-tight mb-2 uppercase">{t('title') || 'Match Analysis'}</h1>
               <p className="text-muted-foreground font-medium tracking-wide uppercase text-xs">
                 {t("leg_by_leg_detail") || "Leg-by-leg detail"}
               </p>
             </div>
-            <div className="flex flex-wrap gap-4">
+            <div className="flex w-full flex-wrap items-center justify-end gap-3 sm:gap-4 xl:w-auto xl:max-w-[min(100%,36rem)] xl:shrink-0">
               {onBackToMatches && (
                 <Button variant="outline" onClick={onBackToMatches} className="bg-card text-foreground font-label border-border hover:bg-muted/60 transition-all shadow-sm">
                   <IconArrowLeft className="h-4 w-4 mr-2" />
@@ -303,6 +391,26 @@ const LegsViewModal: React.FC<LegsViewModalProps> = ({ isOpen, onClose, match: i
                   {showDetailedStats ? (t('hide_charts') || 'Hide Charts') : (t('show_charts') || 'Részletes grafikonok')}
                 </Button>
               )}
+              <Button
+                type="button"
+                variant="secondary"
+                className="font-label gap-2 shadow-sm"
+                disabled={exportBusy || loading || !!error || !recapModel}
+                onClick={() => void handleDownloadRecapPng()}
+              >
+                <IconDownload className="h-4 w-4" />
+                {tLegs("export_image")}
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                className="font-label gap-2 shadow-sm"
+                disabled={exportBusy || loading || !!error || !recapModel}
+                onClick={() => void handleShareRecapPng()}
+              >
+                <IconShare className="h-4 w-4" />
+                {tLegs("share")}
+              </Button>
             </div>
           </header>
 
@@ -604,6 +712,14 @@ const LegsViewModal: React.FC<LegsViewModalProps> = ({ isOpen, onClose, match: i
               </div>
             )
           )}
+          {recapModel ? (
+            <div
+              className="pointer-events-none fixed -left-[9999px] top-0 z-0 w-[min(880px,100vw)] bg-background p-2"
+              aria-hidden
+            >
+              <MatchRecapSheet exportRef={recapExportRef} model={recapModel} />
+            </div>
+          ) : null}
         </div>
       </DialogContent>
     </Dialog>

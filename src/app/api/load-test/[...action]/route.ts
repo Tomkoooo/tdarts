@@ -6,6 +6,7 @@ import { TournamentService } from '@/database/services/tournament.service';
 import { PlayerService } from '@/database/services/player.service';
 import { MatchService } from '@/database/services/match.service';
 import { MatchModel } from '@/database/models/match.model';
+import { isLoadTestEndpointsAllowedInCurrentEnvironment } from '@/lib/load-test-environment';
 
 type Params = { params: Promise<{ action: string[] }> };
 
@@ -67,6 +68,16 @@ const listMatchesSchema = z.object({
 });
 
 function assertLoadTestAccess(request: NextRequest) {
+  if (!isLoadTestEndpointsAllowedInCurrentEnvironment()) {
+    return NextResponse.json(
+      {
+        error:
+          'Load test endpoints are disabled in production. Set ALLOW_LOAD_TEST_ENDPOINTS=true only on intentional load-test/staging hosts.',
+      },
+      { status: 403 }
+    );
+  }
+
   if (process.env.LOAD_TEST_MODE !== 'true') {
     return NextResponse.json({ error: 'Load test mode is disabled' }, { status: 403 });
   }
@@ -79,7 +90,7 @@ function assertLoadTestAccess(request: NextRequest) {
   if (!providedSecret) {
     return NextResponse.json({ error: 'Missing x-load-test-secret header' }, { status: 403 });
   }
-  if (providedSecret !== configuredSecret) {
+  if (providedSecret.length !== configuredSecret.length || providedSecret !== configuredSecret) {
     return NextResponse.json({ error: 'Invalid x-load-test-secret header' }, { status: 403 });
   }
 

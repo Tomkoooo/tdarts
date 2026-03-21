@@ -1449,7 +1449,18 @@
       "műveletek": "műveletek",
       "nincs_találat_a": "nincs találat a",
       "státusz": "státusz",
-      "title": "title"
+      "title": "title",
+      "admin_actions": "Admin actions",
+      "soft_delete": "Mark deleted",
+      "restore": "Restore",
+      "purge": "Delete permanently",
+      "purge_dialog_title": "Permanently delete tournament",
+      "purge_dialog_desc": "This removes the tournament and its matches from the database. Type the exact tournament name to confirm.",
+      "purge_name_label": "Tournament name",
+      "purge_confirm": "Delete forever",
+      "soft_delete_confirm": "Mark this tournament as deleted? It will be hidden from normal listings.",
+      "restore_confirm": "Restore this tournament?",
+      "cancel": "Cancel"
     },
     "users": {
       "admin": "Admin",
@@ -2102,6 +2113,7 @@
       "btn_generate_groups": "Generating groups",
       "btn_generate_knockout": "Generating a straight drop",
       "btn_cancel_knockout": "Revocation of straight elimination",
+      "btn_cancel_groups": "Cancel groups",
       "btn_finish": "Completion of exercise",
       "alert_player_count_title": "Incorrect number of players",
       "alert_player_count_desc": "A minimum of {min} and a maximum of {max} players are required per group.",
@@ -2180,6 +2192,23 @@
         "cancelling": "Withdrawal...",
         "executing": "Executing...",
         "error": "It was not possible to undo the outright elimination."
+      },
+      "cancel_groups_dialog": {
+        "title": "Cancel groups",
+        "description_step1": "First confirmation: you are about to cancel the group stage. Continue to final confirmation?",
+        "description_step2": "Final confirmation: a 20-second safety window will start. During this window you can Undo or Skip now.",
+        "step2_title": "High-impact action",
+        "step2_desc": "All group matches will be deleted, group assignments cleared, boards reset, and the tournament returned to pending so you can add players and generate groups again.",
+        "pending_title": "Group cancel scheduled",
+        "pending_desc": "Cancellation runs in {seconds}s. You can still undo before it executes.",
+        "btn_continue": "Continue",
+        "btn_back": "Back",
+        "btn_confirm_schedule": "Schedule with 20s undo window",
+        "btn_undo": "Undo",
+        "btn_skip_now": "Skip now (execute immediately)",
+        "cancelling": "Cancelling...",
+        "executing": "Executing...",
+        "error": "Could not cancel groups."
       },
       "third_place_dialog": {
         "title": "3. choosing a place",
@@ -2352,7 +2381,15 @@
       "pts": "point",
       "avg": "Average",
       "max": "Max",
-      "close": "Closure"
+      "close": "Closure",
+      "export_error": "Could not create the image.",
+      "share_unsupported": "Sharing is not supported in this browser.",
+      "recap_subtitle": "Leg-by-leg visits",
+      "highest_checkout": "Highest checkout"
+    },
+    "legs": {
+      "share": "Share",
+      "export_image": "Save image"
     },
     "live_viewer": {
       "back": "Back",
@@ -2570,11 +2607,17 @@
         "admin": "Admin"
       },
       "header": {
+        "hosted_by_label": "Hosted by",
         "tournament_code": "Gym code: {code}",
         "refresh": "Update",
         "boards_writer": "Tables / Writing program",
         "tv_view": "TV",
-        "share": "Sharing"
+        "share": "Sharing",
+        "live_open": "Live",
+        "sse_connected": "Live updates: connected",
+        "sse_offline": "Live updates: reconnecting…",
+        "sse_expired": "Live updates: session ended",
+        "sse_na": "Live updates: off"
       },
       "loading": "Loading exercise...",
       "error": {
@@ -3032,6 +3075,10 @@
     "club_search": "Search for a club"
   },
   "Club": {
+    "seo": {
+      "description_fallback": "{clubName} — darts club on tDarts. Browse tournaments, members, and leagues.",
+      "description_fallback_with_place": "{clubName} — darts club in {place} on tDarts. Browse tournaments, members, and leagues."
+    },
     "layout": {
       "summary": "Overview",
       "players": "Players",
@@ -3852,6 +3899,23 @@
     "nyíl": "dart",
     "nyíl_lehetséges": "dart(s) possible",
     "rematch": "Rematch",
+    "local": {
+      "export_png": "Save image",
+      "share": "Share",
+      "throws": "Visits",
+      "scores_100_plus": "100+",
+      "scores_140_plus": "140+",
+      "first_nine_avg": "First 9 avg",
+      "share_unsupported": "Sharing is not supported in this browser.",
+      "export_error": "Could not create the image.",
+      "finish_subtitle": "Leg-by-leg visits",
+      "leg_winner": "Leg winner",
+      "remaining_short": "Left",
+      "darts_abbr": "darts",
+      "no_legs_recorded": "No leg log was stored for this match.",
+      "best_leg_darts": "Best leg (darts)",
+      "worst_leg_darts": "Worst leg (darts)"
+    },
     "sco": "SCO...",
     "scolia_access_token": "Scolia access token",
     "scolia_autoscoring": "Scolia auto-scoring",
@@ -3918,6 +3982,12 @@
       "nextPlaying": "You are currently playing on {board}",
       "nextScoring": "You are currently scoring on {board}",
       "nextPending": "Your next assignment is on {board}",
+      "nextPendingPlaying": "Your next match is on {board} (you are playing)",
+      "nextPendingScoring": "Your next assignment is on {board} (you are scoring)",
+      "nextPendingUnknown": "Your next board assignment is on {board}",
+      "nextMatchVsWarning": "Next match vs {opponent}",
+      "nextScoringReminder": "You are assigned as scorer for this board — stay ready.",
+      "landingPage": "About tDarts",
       "nextUnknown": "No upcoming board assignment yet"
     },
     "stats": {

@@ -6,6 +6,17 @@ describe("shell-routing", () => {
       expect(shouldHideNavbar("/board/abc123")).toBe(true);
     });
 
+    it("hides navbar on /board when localgame query is true", () => {
+      const params = new URLSearchParams("localgame=true");
+      expect(shouldHideNavbar("/board", params)).toBe(true);
+      expect(shouldHideNavbar("/board/", params)).toBe(true);
+    });
+
+    it("does not hide navbar on /board without localgame", () => {
+      expect(shouldHideNavbar("/board")).toBe(false);
+      expect(shouldHideNavbar("/board", new URLSearchParams(""))).toBe(false);
+    });
+
     it("hides navbar on tournament tv route", () => {
       expect(shouldHideNavbar("/tournaments/ABC/tv")).toBe(true);
       expect(shouldHideNavbar("/tournaments/ABC/tv/slides")).toBe(true);

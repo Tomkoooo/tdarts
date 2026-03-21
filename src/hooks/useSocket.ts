@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, useState } from 'react';
 import { socket, initializeSocket } from '@/lib/socket';
 import { useSocketFeature } from './useFeatureFlag';
 
@@ -12,6 +12,7 @@ interface UseSocketOptions {
 
 export const useSocket = ({ tournamentId, clubId, matchId }: UseSocketOptions = {}) => {
   const { isSocketEnabled, isLoading, error } = useSocketFeature(clubId);
+  const [socketConnected, setSocketConnected] = useState(false);
   const isConnected = useRef(false);
   const hasJoinedRooms = useRef(false);
   const joinedRooms = useRef<Set<string>>(new Set());
@@ -29,6 +30,25 @@ export const useSocket = ({ tournamentId, clubId, matchId }: UseSocketOptions = 
     } else {
       console.log(`Socket not enabled or not connected, skipping emit: ${event}`);
     }
+  }, [shouldEnableSocket]);
+
+  useEffect(() => {
+    if (!shouldEnableSocket) {
+      setSocketConnected(false);
+      return;
+    }
+    const syncConnected = () => {
+      setSocketConnected(socket.connected);
+    };
+    socket.on('connect', syncConnected);
+    socket.on('disconnect', syncConnected);
+    socket.io.on('reconnect', syncConnected);
+    syncConnected();
+    return () => {
+      socket.off('connect', syncConnected);
+      socket.off('disconnect', syncConnected);
+      socket.io.off('reconnect', syncConnected);
+    };
   }, [shouldEnableSocket]);
 
   useEffect(() => {
@@ -242,7 +262,7 @@ export const useSocket = ({ tournamentId, clubId, matchId }: UseSocketOptions = 
 
   return {
     socket,
-    isConnected: shouldEnableSocket && socket.connected,
+    isConnected: shouldEnableSocket && socketConnected,
     isLoading,
     error,
     emit,

@@ -4,6 +4,7 @@ import { AuthService } from '@/database/services/auth.service';
 import { AuthorizationService } from '@/database/services/authorization.service';
 import { ClubModel } from '@/database/models/club.model';
 import { TournamentModel } from '@/database/models/tournament.model';
+import { MatchModel } from '@/database/models/match.model';
 import { LeagueModel } from '@/database/models/league.model';
 import { UserModel } from '@/database/models/user.model';
 import { PlayerModel } from '@/database/models/player.model';
@@ -451,6 +452,64 @@ export async function adminTournamentsListAction(params: QueryParams) {
     });
   } catch (error: any) {
     return failure(error?.message || 'Failed to load tournaments', 500);
+  }
+}
+
+export async function adminTournamentSoftDeleteAction(params: QueryParams) {
+  try {
+    const guard = await assertGlobalAdmin();
+    if ('error' in guard) return guard.error;
+    await connectMongo();
+    const code = String(params.tournamentId || '').trim();
+    if (!code) return failure('tournamentId required', 400);
+    const doc = await TournamentModel.findOne({ tournamentId: code });
+    if (!doc) return failure('Tournament not found', 404);
+    doc.isDeleted = true;
+    doc.isActive = false;
+    await doc.save();
+    return success({ ok: true });
+  } catch (error: any) {
+    return failure(error?.message || 'Soft delete failed', 500);
+  }
+}
+
+export async function adminTournamentRestoreAction(params: QueryParams) {
+  try {
+    const guard = await assertGlobalAdmin();
+    if ('error' in guard) return guard.error;
+    await connectMongo();
+    const code = String(params.tournamentId || '').trim();
+    if (!code) return failure('tournamentId required', 400);
+    const doc = await TournamentModel.findOne({ tournamentId: code });
+    if (!doc) return failure('Tournament not found', 404);
+    doc.isDeleted = false;
+    await doc.save();
+    return success({ ok: true });
+  } catch (error: any) {
+    return failure(error?.message || 'Restore failed', 500);
+  }
+}
+
+export async function adminTournamentPurgeAction(params: QueryParams) {
+  try {
+    const guard = await assertGlobalAdmin();
+    if ('error' in guard) return guard.error;
+    await connectMongo();
+    const code = String(params.tournamentId || '').trim();
+    const confirmationName = String(params.confirmationName || '').trim();
+    if (!code) return failure('tournamentId required', 400);
+    const doc = await TournamentModel.findOne({ tournamentId: code });
+    if (!doc) return failure('Tournament not found', 404);
+    const expected = String(doc.tournamentSettings?.name || '').trim();
+    if (!expected || confirmationName !== expected) {
+      return failure('Type the exact tournament name to confirm permanent deletion', 400);
+    }
+    const refId = doc._id;
+    await MatchModel.deleteMany({ tournamentRef: refId });
+    await TournamentModel.deleteOne({ _id: refId });
+    return success({ ok: true });
+  } catch (error: any) {
+    return failure(error?.message || 'Purge failed', 500);
   }
 }
 

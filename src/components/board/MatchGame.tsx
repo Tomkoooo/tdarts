@@ -68,6 +68,8 @@ interface Player {
 
 interface MatchGameProps {
   match: Match;
+  /** Tournament id string (same as live page / join-tournament); required for socket room routing. */
+  tournamentCode: string;
   onBack: () => void;
   onMatchFinished?: () => void;
   clubId?: string;
@@ -77,7 +79,7 @@ interface MatchGameProps {
   };
 }
 
-const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, clubId, scoliaConfig }) => {
+const MatchGame: React.FC<MatchGameProps> = ({ match, tournamentCode, onBack, onMatchFinished, clubId, scoliaConfig }) => {
   const t = useTranslations("Board");
   // Helper to format full names as initials + last name (e.g., "D. S. Erika")
   const formatName = (fullName: string) => {
@@ -224,10 +226,9 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
       player2Name: match.player2.playerId.name
     });
     
-    const tournamentCode = window.location.pathname.split('/')[2];
     socket.emit('match-started', {
       matchId: match._id,
-      tournamentCode: tournamentCode,
+      tournamentCode,
       matchData: {
         player1: match.player1,
         player2: match.player2,
@@ -235,7 +236,7 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
         legsToWin: legsToWin
       }
     });
-  }, [isConnected, match._id]);
+  }, [isConnected, match._id, tournamentCode, socket]);
 
   // Initialize game state from localStorage or database
   useEffect(() => {
@@ -415,7 +416,7 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
             score: score,
             remainingScore: newScore,
             legNumber: currentLeg,
-            tournamentCode: window.location.pathname.split('/')[2]
+            tournamentCode
           });
         }
       } else {
@@ -439,7 +440,7 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
             score: score,
             remainingScore: newScore,
             legNumber: currentLeg,
-            tournamentCode: window.location.pathname.split('/')[2]
+            tournamentCode
           });
         }
       }
@@ -492,7 +493,7 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
       socket.emit('undo-throw', {
         matchId: match._id,
         playerId: playerWhoJustThrew === 1 ? match.player1.playerId._id : match.player2.playerId._id,
-        tournamentCode: window.location.pathname.split('/')[2]
+        tournamentCode
       });
       }
     }
@@ -693,7 +694,7 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
         isCheckout: true,
         remainingScore: 0,
         legNumber: currentLeg,
-        tournamentCode: window.location.pathname.split('/')[2],
+        tournamentCode,
         arrowCount: arrowCount
       });
     }
@@ -735,7 +736,7 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
           matchId: match._id,
           legNumber: currentLeg,
           winnerId: pendingLegWinner === 1 ? match.player1.playerId._id : match.player2.playerId._id,
-          tournamentCode: window.location.pathname.split('/')[2]
+          tournamentCode
         });
       }
 
@@ -813,7 +814,7 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
     if (isConnected) {
       socket.emit('match-complete', { 
         matchId: match._id,
-        tournamentCode: window.location.pathname.split('/')[2]
+        tournamentCode
       });
     }
 

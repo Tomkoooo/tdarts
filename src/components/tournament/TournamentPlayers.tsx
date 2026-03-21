@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useMemo, useState } from "react"
+import React, { useCallback, useMemo, useState } from "react"
 import dynamic from "next/dynamic"
 import Link from "next/link"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
@@ -171,6 +171,17 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
   const [isModeratorRegistration, setIsModeratorRegistration] = useState(false)
 
   const code = tournament?.tournamentId
+
+  const fetchTournamentHeadToHead = useCallback(() => {
+    if (!code || !headToHeadTarget?.id) {
+      return Promise.resolve({ success: false as const, error: "Missing code or opponent" })
+    }
+    return getTournamentHeadToHeadClientAction({
+      code,
+      opponentId: headToHeadTarget.id,
+    })
+  }, [code, headToHeadTarget?.id])
+
   const participationMode = tournament?.tournamentSettings?.participationMode || 'individual'
   const router = useRouter()
   const pathname = usePathname()
@@ -1276,12 +1287,7 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
         <HeadToHeadModal
           isOpen={Boolean(headToHeadTarget)}
           onClose={() => setHeadToHeadTarget(null)}
-          fetchData={() =>
-            getTournamentHeadToHeadClientAction({
-              code,
-              opponentId: headToHeadTarget.id,
-            })
-          }
+          fetchData={fetchTournamentHeadToHead}
         />
       )}
 

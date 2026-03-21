@@ -170,7 +170,7 @@ export function AdminLayoutClient({ children, user }: AdminLayoutClientProps) {
         <main className="flex-1 overflow-y-auto">
           <div className="border-b border-border/70 bg-card/40 backdrop-blur supports-backdrop-filter:bg-card/30">
             <div className="container mx-auto flex max-w-[1600px] items-center justify-end px-4 py-3 lg:px-8">
-              <Link href="/landing" className="inline-flex">
+              <Link href="/home" className="inline-flex">
                 <Button variant="outline" size="sm" className="gap-2">
                   <IconHome className="h-4 w-4" />
                   {t("back_to_home")}

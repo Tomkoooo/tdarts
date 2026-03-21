@@ -13,8 +13,17 @@ export interface HomeTournament {
   losses?: number
   legsWon?: number
   legsLost?: number
-  nextMatchType?: "playing" | "scoring" | "pending" | "unknown"
+  nextMatchType?:
+    | "playing"
+    | "scoring"
+    | "pendingPlaying"
+    | "pendingScoring"
+    | "pendingUnknown"
+    | "pending"
+    | "unknown"
   nextMatchBoard?: number | null
+  /** Opponent display name when the user is a player in the next/ongoing match */
+  nextMatchOpponentName?: string | null
 }
 
 export interface HomeMetrics {

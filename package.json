@@ -1,6 +1,6 @@
 {
   "name": "tDarts",
-  "version": "beta2.3.5",
+  "version": "beta3.0.1",
   "private": true,
   "license": "CC BY-NC-SA 4.0",
   "scripts": {
@@ -65,6 +65,7 @@
     "date-fns": "^4.1.0",
     "dotenv": "^17.2.0",
     "framer-motion": "^12.12.1",
+    "html-to-image": "^1.11.13",
     "install": "^0.13.0",
     "jest": "^29.7.0",
     "jsonwebtoken": "^9.0.2",

@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import { getUserTournamentsAction } from "@/features/tournaments/actions/getUserTournaments.action"
+import { isLocalCalendarDayToday } from "@/lib/local-calendar-date"
 
 interface QuickTournamentLink {
   code: string
@@ -22,18 +23,6 @@ const ONGOING_STATUS_PARTS = [
 function isOngoingStatus(status?: string): boolean {
   const normalized = (status || "").toLowerCase()
   return ONGOING_STATUS_PARTS.some((part) => normalized.includes(part))
-}
-
-function isTodayDate(dateValue?: string | Date | null): boolean {
-  if (!dateValue) return false
-  const date = new Date(dateValue)
-  if (Number.isNaN(date.getTime())) return false
-  const today = new Date()
-  return (
-    date.getFullYear() === today.getFullYear() &&
-    date.getMonth() === today.getMonth() &&
-    date.getDate() === today.getDate()
-  )
 }
 
 export function useOngoingTournamentQuickLink(userId?: string) {
@@ -63,11 +52,14 @@ export function useOngoingTournamentQuickLinkWithOptions(
           return
         }
         const tournaments = Array.isArray(result.data) ? result.data : []
-        const todayTournament = tournaments.find((item: any) =>
-          isTodayDate(item?.tournamentSettings?.startDate || item?.startDate)
+        // Only quick-link to tournaments that are both "ongoing" in status AND on the client's local calendar start day,
+        // so hosts who forgot to close a tournament do not trap users on stale events.
+        const startDate = (item: any) =>
+          item?.tournamentSettings?.startDate ?? item?.startDate ?? item?.date
+        const quickTarget = tournaments.find(
+          (item: any) =>
+            isOngoingStatus(item?.status) && isLocalCalendarDayToday(startDate(item))
         )
-        const ongoing = tournaments.find((item: any) => isOngoingStatus(item?.status))
-        const quickTarget = todayTournament || ongoing
         if (!cancelled) {
           setOngoingTournament(
             quickTarget

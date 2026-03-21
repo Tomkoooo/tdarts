@@ -953,6 +953,7 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
   if (selectedMatch) {
     return (
       <MatchGame 
+        tournamentCode={tournamentId}
         match={{
           ...selectedMatch,
           legsToWin: selectedMatch.legsToWin || legsToWin

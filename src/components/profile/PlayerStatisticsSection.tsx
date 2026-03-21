@@ -683,7 +683,7 @@ export function PlayerStatisticsSection({
                 ) : topOpponentsByWinRate.length === 0 ? (
                   <div className="p-8 text-center text-muted-foreground/50 border-dashed border border-muted/20 m-6 rounded-xl"><p className="text-xs">{t.headToHeadNoTopOpponents || "Nincsenek elérhető ellenfelek"}</p></div>
                 ) : (
-                  <div className="max-h-[360px] overflow-y-auto pr-1 p-4 grid grid-cols-1 md:grid-cols-2 gap-3 custom-scrollbar">
+                  <div className="max-h-[min(480px,72dvh)] md:max-h-[360px] overflow-y-auto pr-1 p-4 grid grid-cols-1 md:grid-cols-2 gap-3 custom-scrollbar">
                     {topOpponentsByWinRate.map((entry) => (
                       <button
                         key={entry.opponent._id}
@@ -912,7 +912,7 @@ export function PlayerStatisticsSection({
                         {t.headToHeadNoMatches || "Nincsenek közös meccsek"}
                       </div>
                     ) : (
-                      <div className="max-h-[385px] overflow-y-auto w-full custom-scrollbar">
+                      <div className="max-h-[min(500px,70dvh)] md:max-h-[385px] overflow-y-auto w-full custom-scrollbar">
                         {headToHead.matches.map((match) => {
                           const isWin = match.playerA.legsWon > match.playerB.legsWon;
                           const isDraw = match.playerA.legsWon === match.playerB.legsWon;
@@ -1401,8 +1401,8 @@ export function PlayerStatisticsSection({
                         <IconSword size={16} className="text-primary" />
                         {t.recentMatches || "Legutóbbi Meccsek"}
                     </h3>
-                    <div className="space-y-2">
-                        {playerStats.matchHistory.map((match: any) => (
+                    <div className="max-h-[500px] space-y-2 overflow-y-auto pr-2 custom-scrollbar">
+                        {(playerStats.matchHistory as any[]).slice(0, 10).map((match: any) => (
                             <div key={match._id} className="flex items-center justify-between p-3 bg-card border border-muted/10 rounded-lg hover:border-primary/20 transition-all">
                                 <div className="flex items-center gap-3">
                                     <div className={cn("w-2 h-2 rounded-full", match.won ? "bg-emerald-500" : "bg-rose-500")} />

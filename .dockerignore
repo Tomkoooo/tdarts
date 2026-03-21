@@ -19,3 +19,16 @@ temp
 .env
 .env.*
 !.env.example
+
+# shrink build context (faster docker build, smaller send to daemon)
+docs
+scripts
+src/tests
+src/features/tests
+playwright-report
+test-results
+**/*.test.ts
+**/*.test.tsx
+**/*.spec.ts
+**/*.spec.tsx
+patch_h2h*.js

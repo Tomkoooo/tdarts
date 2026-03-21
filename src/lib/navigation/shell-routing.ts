@@ -1,17 +1,31 @@
+/** Optional query string (e.g. from `useSearchParams()`) for route-specific shell rules. */
+export type ShellSearchParams = { get(name: string): string | null } | null | undefined;
+
 /**
  * Global nav should be hidden only on:
  * - board* pages (immersive gameplay)
+ * - standalone /board with ?localgame=true (local match; URL drives shell so layout re-renders)
  * - tournament tv pages (immersive display)
  * - admin pages (they have their own admin navigation/layout)
  */
-export function shouldHideNavbar(path: string): boolean {
+export function shouldHideNavbar(
+  path: string,
+  searchParams?: ShellSearchParams,
+): boolean {
   const normalized = path.startsWith("/") ? path : `/${path}`;
   const trimmed = normalized.replace(/\/$/, "") || "/";
   const isBoardSubRoute = trimmed.startsWith("/board/");
+  const isBoardLocalGame =
+    trimmed === "/board" && searchParams?.get("localgame") === "true";
   const isAdminSubRoute = trimmed === "/admin" || trimmed.startsWith("/admin/");
   // Strict segment match: /tournaments/:code/tv (and optional trailing sub-routes)
   const isTournamentTvRoute = /^\/tournaments\/[^/]+\/tv(?:\/.*)?$/.test(trimmed);
-  return isBoardSubRoute || isAdminSubRoute || isTournamentTvRoute;
+  return (
+    isBoardSubRoute ||
+    isBoardLocalGame ||
+    isAdminSubRoute ||
+    isTournamentTvRoute
+  );
 }
 
 const FOOTER_EXACT = ["/", "/landing", "/how-it-works", "/home", "/myclub"] as const;

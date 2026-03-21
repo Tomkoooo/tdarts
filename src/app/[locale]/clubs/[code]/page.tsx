@@ -1,10 +1,16 @@
 import { ClubService } from "@/database/services/club.service";
+import { ClubJsonLd } from "@/components/club/ClubJsonLd";
+import type { SupportedLocale } from "@/lib/seo";
 import ClubDetailClientPage, { type ClubInitialDataLevel } from "./ClubDetailClientPage";
 
 type ClubPageProps = {
-  params: Promise<{ code: string }>;
+  params: Promise<{ locale: string; code: string }>;
   searchParams: Promise<{ page?: string; league?: string }>;
 };
+
+function toSupportedLocale(locale: string): SupportedLocale {
+  return locale === "en" || locale === "de" ? locale : "hu";
+}
 
 function resolveDefaultPage(page?: string): "summary" | "players" | "tournaments" | "leagues" | "settings" {
   switch (page) {
@@ -19,7 +25,8 @@ function resolveDefaultPage(page?: string): "summary" | "players" | "tournaments
 }
 
 export default async function ClubDetailPage({ params, searchParams }: ClubPageProps) {
-  const [{ code }, search] = await Promise.all([params, searchParams]);
+  const [{ locale, code }, search] = await Promise.all([params, searchParams]);
+  const uiLocale = toSupportedLocale(locale);
   const defaultPage = resolveDefaultPage(search.page);
   const initialDetailLevel: ClubInitialDataLevel = "summary";
   const requestId = `club-page-${code}-${Date.now().toString(36)}`;
@@ -31,16 +38,25 @@ export default async function ClubDetailPage({ params, searchParams }: ClubPageP
     const club = await ClubService.getClubSummary(code, requestId);
 
     return (
-      <ClubDetailClientPage
-        code={code}
-        initialClub={club}
-        initialUserRole="none"
-        initialPosts={[]}
-        initialPostsTotal={0}
-        defaultPage={defaultPage}
-        initialLeagueId={search.league ?? null}
-        initialDetailLevel={initialDetailLevel}
-      />
+      <>
+        <ClubJsonLd
+          locale={uiLocale}
+          clubId={code}
+          name={club.name}
+          description={club.description}
+          location={club.location ?? club.address}
+        />
+        <ClubDetailClientPage
+          code={code}
+          initialClub={club}
+          initialUserRole="none"
+          initialPosts={[]}
+          initialPostsTotal={0}
+          defaultPage={defaultPage}
+          initialLeagueId={search.league ?? null}
+          initialDetailLevel={initialDetailLevel}
+        />
+      </>
     );
   } catch {
     return (

@@ -346,9 +346,15 @@ export const useDartGame = ({
         });
     }, []);
 
-    const startNextLeg = useCallback(() => {
+    const startNextLeg = useCallback((completedLegCheckoutDarts: number = 3) => {
         setGameState(prev => {
             const winnerId = prev.winner === 'player1' ? 1 : 2;
+            const checkout =
+                typeof completedLegCheckoutDarts === "number" &&
+                completedLegCheckoutDarts >= 1 &&
+                completedLegCheckoutDarts <= 3
+                    ? completedLegCheckoutDarts
+                    : 3;
             const p1Legs = prev.player1.legsWon + (winnerId === 1 ? 1 : 0);
             const p2Legs = prev.player2.legsWon + (winnerId === 2 ? 1 : 0);
             
@@ -398,6 +404,7 @@ export const useDartGame = ({
                         player1Score: prev.player1.allThrows.reduce((a,b)=>a+b,0),
                         player2Score: prev.player2.allThrows.reduce((a,b)=>a+b,0),
                         winner: winnerId,
+                        checkoutDarts: checkout,
                         createdAt: new Date()
                     }
                 ]

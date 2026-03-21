@@ -14,7 +14,10 @@ import {
   IconBuilding,
   IconClock,
   IconTarget,
-  IconShield
+  IconShield,
+  IconDotsVertical,
+  IconTrash,
+  IconRotateClockwise,
 } from "@tabler/icons-react"
 import toast from "react-hot-toast"
 import DailyChart from "@/components/admin/DailyChart"
@@ -32,6 +35,21 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Label } from "@/components/ui/Label"
 import { cn } from "@/lib/utils"
 import Pagination from "@/components/common/Pagination"
 import { adminChartsActions, adminTournamentsActions } from "@/features/admin/actions/adminDomains.action"
@@ -92,6 +110,9 @@ export default function AdminTournamentsPage() {
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [paginationTotal, setPaginationTotal] = useState(0)
+  const [purgeTarget, setPurgeTarget] = useState<AdminTournament | null>(null)
+  const [purgeName, setPurgeName] = useState("")
+  const [purgeLoading, setPurgeLoading] = useState(false)
   const loadTournamentsDailyChart = useCallback(
     () => adminChartsActions.tournamentsDaily(),
     []
@@ -131,6 +152,57 @@ export default function AdminTournamentsPage() {
       toast.error(tCommon("hiba_történt_az"))
     } finally {
       setLoading(false)
+    }
+  }
+
+  const reloadList = () => fetchTournaments(page, searchTerm, statusFilter, verifiedFilter, sandboxFilter)
+
+  const handleSoftDelete = async (tor: AdminTournament) => {
+    if (!window.confirm(t("soft_delete_confirm"))) return
+    const res = (await adminTournamentsActions.softDelete({ tournamentId: tor.tournamentId })) as {
+      ok?: boolean
+      data?: { message?: string; error?: string }
+    }
+    if (!res.ok) {
+      toast.error(res.data?.message || res.data?.error || tCommon("hiba_történt_az"))
+      return
+    }
+    toast.success("OK")
+    void reloadList()
+  }
+
+  const handleRestore = async (tor: AdminTournament) => {
+    if (!window.confirm(t("restore_confirm"))) return
+    const res = (await adminTournamentsActions.restore({ tournamentId: tor.tournamentId })) as {
+      ok?: boolean
+      data?: { message?: string; error?: string }
+    }
+    if (!res.ok) {
+      toast.error(res.data?.message || res.data?.error || tCommon("hiba_történt_az"))
+      return
+    }
+    toast.success("OK")
+    void reloadList()
+  }
+
+  const handlePurge = async () => {
+    if (!purgeTarget) return
+    setPurgeLoading(true)
+    try {
+      const res = (await adminTournamentsActions.purge({
+        tournamentId: purgeTarget.tournamentId,
+        confirmationName: purgeName.trim(),
+      })) as { ok?: boolean; data?: { message?: string; error?: string } }
+      if (!res.ok) {
+        toast.error(res.data?.message || res.data?.error || tCommon("hiba_történt_az"))
+        return
+      }
+      toast.success("OK")
+      setPurgeTarget(null)
+      setPurgeName("")
+      void reloadList()
+    } finally {
+      setPurgeLoading(false)
     }
   }
 
@@ -353,12 +425,51 @@ export default function AdminTournamentsPage() {
                         </div>
                       </TableCell>
                       <TableCell className="text-right">
-                         <div className="flex justify-end">
+                         <div className="flex justify-end gap-1">
                             <Link href={`/tournaments/${tournament.tournamentId}`} target="_blank">
                               <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary">
                                 <IconExternalLink className="size-4" />
                               </Button>
                             </Link>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="icon"
+                                  className="h-8 w-8"
+                                  aria-label={t("admin_actions")}
+                                >
+                                  <IconDotsVertical className="size-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="w-52">
+                                {!tournament.isDeleted ? (
+                                  <DropdownMenuItem
+                                    className="gap-2 text-destructive focus:text-destructive"
+                                    onClick={() => void handleSoftDelete(tournament)}
+                                  >
+                                    <IconTrash className="size-4" />
+                                    {t("soft_delete")}
+                                  </DropdownMenuItem>
+                                ) : (
+                                  <DropdownMenuItem className="gap-2" onClick={() => void handleRestore(tournament)}>
+                                    <IconRotateClockwise className="size-4" />
+                                    {t("restore")}
+                                  </DropdownMenuItem>
+                                )}
+                                <DropdownMenuItem
+                                  className="gap-2 text-destructive focus:text-destructive"
+                                  onClick={() => {
+                                    setPurgeTarget(tournament)
+                                    setPurgeName("")
+                                  }}
+                                >
+                                  <IconTrash className="size-4" />
+                                  {t("purge")}
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
                          </div>
                       </TableCell>
                     </TableRow>
@@ -386,7 +497,51 @@ export default function AdminTournamentsPage() {
             )}
         </div>
       </Card>
-      
+      <Dialog
+        open={Boolean(purgeTarget)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setPurgeTarget(null)
+            setPurgeName("")
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t("purge_dialog_title")}</DialogTitle>
+            <DialogDescription>{t("purge_dialog_desc")}</DialogDescription>
+          </DialogHeader>
+          {purgeTarget ? (
+            <div className="space-y-2 py-2">
+              <Label htmlFor="purge-confirm-name">{t("purge_name_label")}</Label>
+              <Input
+                id="purge-confirm-name"
+                value={purgeName}
+                onChange={(e) => setPurgeName(e.target.value)}
+                placeholder={purgeTarget.name}
+                autoComplete="off"
+              />
+            </div>
+          ) : null}
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button type="button" variant="outline" onClick={() => setPurgeTarget(null)}>
+              {t("cancel")}
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              disabled={
+                purgeLoading ||
+                !purgeTarget ||
+                purgeName.trim() !== (purgeTarget.name || "").trim()
+              }
+              onClick={() => void handlePurge()}
+            >
+              {purgeLoading ? "…" : t("purge_confirm")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

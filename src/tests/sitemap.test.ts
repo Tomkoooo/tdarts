@@ -19,6 +19,15 @@ describe('sitemap', () => {
     jest.clearAllMocks();
   });
 
+  it('includes map page urls', async () => {
+    (ClubService.getAllClubs as jest.Mock).mockResolvedValue([]);
+    (TournamentService.getAllTournaments as jest.Mock).mockResolvedValue([]);
+
+    const entries = await sitemap();
+    const urls = entries.map((entry) => entry.url);
+    expect(urls.some((url) => url.includes('/map'))).toBe(true);
+  });
+
   it('includes active club urls', async () => {
     (ClubService.getAllClubs as jest.Mock).mockResolvedValue([
       { _id: 'club123', updatedAt: new Date('2026-01-01') },

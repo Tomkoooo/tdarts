@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withApiTelemetry } from '@/lib/api-telemetry';
 import { ensureAdmin } from '@/lib/admin-auth';
 import { StressRunService } from '@/database/services/stress-run.service';
+import { assertStressRunAdminSecret } from '@/lib/stress-run-admin-secret';
 
 type HostMetricsBody = {
   secondFromStart: number;
@@ -17,6 +18,9 @@ async function __POST(
 ) {
   const admin = await ensureAdmin(request);
   if ('response' in admin) return admin.response;
+
+  const secretDenied = assertStressRunAdminSecret(request);
+  if (secretDenied) return secretDenied;
 
   const body = (await request.json()) as HostMetricsBody;
   const { id } = await params;

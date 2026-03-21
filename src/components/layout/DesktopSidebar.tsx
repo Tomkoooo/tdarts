@@ -84,8 +84,10 @@ export const DesktopSidebar: React.FC<DesktopSidebarProps> = ({
     ? (maybeLocale as SupportedLocale)
     : DEFAULT_LOCALE;
 
-  const navItems = React.useMemo<NavItem[]>(
-    () => [
+  const hideBoardNav = normalizedPath.startsWith("/tournaments/");
+
+  const navItems = React.useMemo<NavItem[]>(() => {
+    const core: NavItem[] = [
       {
         href: "/",
         icon: IconHome,
@@ -102,19 +104,24 @@ export const DesktopSidebar: React.FC<DesktopSidebarProps> = ({
         href: "/search",
         icon: IconSearch,
         label: t("search"),
-        match: (path, params) => path === "/search" && params.get("tab") !== "clubs" && params.get("tab") !== "tournaments",
+        match: (path, params) =>
+          path === "/search" && params.get("tab") !== "clubs" && params.get("tab") !== "tournaments",
       },
-      { href: "/board", icon: IconTargetArrow, label: t("board") },
+    ];
+    if (!hideBoardNav) {
+      core.push({ href: "/board", icon: IconTargetArrow, label: t("board") });
+    }
+    core.push(
       { href: "/how-it-works", icon: IconInfoCircle, label: t("how_it_works") },
       {
         href: "/profile",
         icon: IconUser,
         label: t("profile"),
       },
-      { href: "/myclub", icon: IconDart, label: t("my_club") },
-    ],
-    [t]
-  );
+      { href: "/myclub", icon: IconDart, label: t("my_club") }
+    );
+    return core;
+  }, [t, hideBoardNav]);
 
   const languageOptions = React.useMemo(
     () => [

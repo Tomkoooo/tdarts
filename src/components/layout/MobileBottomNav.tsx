@@ -52,6 +52,7 @@ export const MobileBottomNav: React.FC = () => {
     ? (maybeLocale as SupportedLocale)
     : DEFAULT_LOCALE;
   const isClubRoute = normalizedPath.startsWith("/clubs");
+  const hideBoardNav = normalizedPath.startsWith("/tournaments/");
   const hooksEnabled = !isClubRoute || allowDeferredHooks;
   const { unreadCount } = useUnreadTickets({ enabled: Boolean(user?._id) && hooksEnabled, deferMs: isClubRoute ? 1200 : 0 });
   const { ongoingTournament } = useOngoingTournamentQuickLinkWithOptions(user?._id, {
@@ -70,95 +71,98 @@ export const MobileBottomNav: React.FC = () => {
     return () => window.clearTimeout(timer);
   }, [isClubRoute]);
 
-  const navItems = React.useMemo<NavItem[]>(
-    () =>
-      user
-        ? [
-            {
-              id: "home",
-              href: "/",
-              icon: IconHome,
-              label: t("home"),
-              match: (path) => path === "/" || path === "/home" || path === "/landing",
-            },
-            {
-              id: "tournaments",
-              href: "/search",
-              icon: IconSearch,
-              label: t("tournaments"),
-              match: (path) => path === "/search",
-            },
-            {
-              id: "board",
-              href: ongoingTournament?.code ? `/tournaments/${ongoingTournament.code}` : "/board",
-              icon: hasQuickTournament ? IconTrophy : IconDeviceDesktop,
-              label: hasQuickTournament ? t("active_tournament") : t("board"),
-              match: (path) => path.startsWith("/board") || path.startsWith("/tournaments"),
-            },
-            {
-              id: "profile",
-              href: "/profile",
-              icon: IconUser,
-              label: t("profile"),
-            },
-            {
-              id: "myclub",
-              href: "/myclub",
-              icon: IconUsersGroup,
-              label: t("my_club"),
-              match: (path) => path.startsWith("/myclub") || path.startsWith("/clubs"),
-            },
-            ...(isGlobalAdmin
-              ? [
-                  {
-                    id: "admin",
-                    href: "/admin",
-                    icon: IconBolt,
-                    label: t("admin"),
-                    match: (path: string) => path.startsWith("/admin"),
-                  },
-                ]
-              : []),
-          ]
-        : [
-            {
-              id: "home",
-              href: "/",
-              icon: IconHome,
-              label: t("home"),
-              match: (path) => path === "/" || path === "/landing",
-            },
-            {
-              id: "search",
-              href: "/search",
-              icon: IconSearch,
-              label: t("search"),
-              match: (path) => path === "/search",
-            },
-            {
-              id: "board",
-              href: "/board",
-              icon: IconDeviceDesktop,
-              label: t("board"),
-              match: (path) => path.startsWith("/board"),
-            },
-            {
-              id: "login",
-              href: "/auth/login",
-              icon: IconUser,
-              label: t("login"),
-              match: (path) => path.startsWith("/auth/login"),
-            },
-            {
-              id: "register",
-              href: "/auth/register",
-              icon: IconUsersGroup,
-              label: t("register"),
-              match: (path) => path.startsWith("/auth/register"),
-            },
-          ],
-    [user, isGlobalAdmin, hasQuickTournament, ongoingTournament?.code, t]
-  );
+  const navItems = React.useMemo<NavItem[]>(() => {
+    const boardItemLoggedIn: NavItem = {
+      id: "board",
+      href: ongoingTournament?.code ? `/tournaments/${ongoingTournament.code}` : "/board",
+      icon: hasQuickTournament ? IconTrophy : IconDeviceDesktop,
+      label: hasQuickTournament ? t("active_tournament") : t("board"),
+      match: (path) => path.startsWith("/board") || path.startsWith("/tournaments"),
+    };
+    const boardItemGuest: NavItem = {
+      id: "board",
+      href: "/board",
+      icon: IconDeviceDesktop,
+      label: t("board"),
+      match: (path) => path.startsWith("/board"),
+    };
+
+    if (user) {
+      return [
+        {
+          id: "home",
+          href: "/",
+          icon: IconHome,
+          label: t("home"),
+          match: (path) => path === "/" || path === "/home" || path === "/landing",
+        },
+        {
+          id: "search",
+          href: "/search",
+          icon: IconSearch,
+          label: t("search"),
+          match: (path) => path === "/search",
+        },
+        ...(hideBoardNav ? [] : [boardItemLoggedIn]),
+        {
+          id: "profile",
+          href: "/profile",
+          icon: IconUser,
+          label: t("profile"),
+        },
+        {
+          id: "myclub",
+          href: "/myclub",
+          icon: IconUsersGroup,
+          label: t("my_club"),
+          match: (path) => path.startsWith("/myclub") || path.startsWith("/clubs"),
+        },
+        ...(isGlobalAdmin
+          ? [
+              {
+                id: "admin",
+                href: "/admin",
+                icon: IconBolt,
+                label: t("admin"),
+                match: (path: string) => path.startsWith("/admin"),
+              },
+            ]
+          : []),
+      ];
+    }
+
+    return [
+      {
+        id: "home",
+        href: "/",
+        icon: IconHome,
+        label: t("home"),
+        match: (path) => path === "/" || path === "/landing",
+      },
+      {
+        id: "search",
+        href: "/search",
+        icon: IconSearch,
+        label: t("search"),
+        match: (path) => path === "/search",
+      },
+      ...(hideBoardNav ? [] : [boardItemGuest]),
+      {
+        id: "login",
+        href: "/auth/login",
+        icon: IconUser,
+        label: t("login"),
+        match: (path) => path.startsWith("/auth/login"),
+      },
+      {
+        id: "register",
+        href: "/auth/register",
+        icon: IconUsersGroup,
+        label: t("register"),
+        match: (path) => path.startsWith("/auth/register"),
+      },
+    ];
+  }, [user, isGlobalAdmin, hasQuickTournament, ongoingTournament?.code, t, hideBoardNav]);
 
   const isActive = (item: NavItem): boolean => {
     if (item.match) return item.match(normalizedPath, searchParams);
@@ -176,10 +180,6 @@ export const MobileBottomNav: React.FC = () => {
 
   const bubbleStyle = {
     left: `calc(${slotPercent * activeIndex}% + ${slotPercent / 2}% - 1.75rem)`,
-  };
-
-  const notchStyle = {
-    left: `calc(${slotPercent * activeIndex}% + ${slotPercent / 2}% - 2.5rem)`,
   };
 
   const languageOptions = React.useMemo(
@@ -242,15 +242,11 @@ export const MobileBottomNav: React.FC = () => {
           className={cn(
             "relative h-[4.35rem] rounded-[1.15rem] border border-border/70",
             "bg-linear-to-b from-card/90 to-card/70 backdrop-blur-xl",
-            "shadow-[0_8px_26px_rgba(0,0,0,0.32)]"
+            "shadow-sm"
           )}
         >
           <span
-            className="pointer-events-none absolute -top-4 h-8 w-20 rounded-b-[999px] border-b border-border/60 bg-card/95 transition-all duration-500 ease-out"
-            style={notchStyle}
-          />
-          <span
-            className="pointer-events-none absolute -top-6 h-14 w-14 rounded-full border-2 border-primary/35 bg-primary text-primary-foreground shadow-[0_10px_22px_rgba(146,34,16,0.45)] transition-all duration-500 ease-out"
+            className="pointer-events-none absolute -top-6 h-14 w-14 rounded-full border-2 border-primary/35 bg-primary text-primary-foreground shadow-[0_12px_28px_rgba(146,34,16,0.5)] ring-2 ring-primary/20 transition-all duration-500 ease-out"
             style={bubbleStyle}
           />
 
