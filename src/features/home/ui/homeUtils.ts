@@ -39,7 +39,16 @@ export function getActiveOrNextTournament(tournaments: HomeTournament[]): HomeTo
   const oneDayAgo = new Date(now.getTime() - MS_IN_DAY)
   const active = tournaments.find((item) => {
     const status = (item.status || "").toLowerCase()
-    if (!(status.includes("active") || status.includes("live") || status.includes("ongoing") || status.includes("in_progress"))) {
+    if (
+      !(
+        status.includes("active") ||
+        status.includes("live") ||
+        status.includes("ongoing") ||
+        status.includes("in_progress") ||
+        status.includes("group-stage") ||
+        status.includes("knockout")
+      )
+    ) {
       return false
     }
     const date = parseTournamentDate(item.date)

@@ -4,6 +4,7 @@ import { ensureAdmin } from '@/lib/admin-auth';
 import { StressLoadRunner } from '@/lib/stress-load-runner';
 import { StressRunService } from '@/database/services/stress-run.service';
 import { ErrorService } from '@/database/services/error.service';
+import { assertStressRunAdminSecret } from '@/lib/stress-run-admin-secret';
 
 async function __POST(
   request: NextRequest,
@@ -11,6 +12,9 @@ async function __POST(
 ) {
   const admin = await ensureAdmin(request);
   if ('response' in admin) return admin.response;
+
+  const secretDenied = assertStressRunAdminSecret(request);
+  if (secretDenied) return secretDenied;
 
   const { id } = await params;
   const stopped = await StressLoadRunner.stop(id);

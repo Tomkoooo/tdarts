@@ -18,6 +18,7 @@ import { IconChevronDown, IconEye, IconEdit } from '@tabler/icons-react';
 import { coerceNumericValue } from '@/lib/number-input';
 import { moveTournamentPlayerInGroupAction } from '@/features/tournaments/actions/manageTournament.action';
 import { finishBoardMatchAction } from '@/features/board/actions/boardPage.action';
+import { getGroupTableStats } from '@/lib/tournament-player-group-stats';
 
 interface Player {
   playerId: {
@@ -90,6 +91,7 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
   const [selectedMatchForLegs, setSelectedMatchForLegs] = useState<Match | null>(null);
 
   const isAdminOrModerator = userClubRole === 'admin' || userClubRole === 'moderator';
+  const tournamentStatus = tournament?.tournamentSettings?.status;
   const playersByGroup = useMemo(() => {
     const grouped = new Map<string, any[]>();
     const allPlayers = Array.isArray(tournament?.tournamentPlayers)
@@ -109,7 +111,7 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
       );
     });
     return grouped;
-  }, [tournament?.tournamentPlayers]);
+  }, [tournament?.tournamentPlayers, tournament?.tournamentSettings?.status]);
 
   const toggleGroup = (groupId: string) => {
     const newExpanded = new Set(expandedGroups);
@@ -295,7 +297,7 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
                           {player.playerReference?.name || tTour('groups.table.unknown')}
                         </span>
                         <span className="text-xs text-muted-foreground ml-auto">
-                          {(player.stats?.matchesWon || 0) * 2}p
+                          {getGroupTableStats(player, tournamentStatus).matchesWon * 2}p
                         </span>
                       </div>
                     </div>
@@ -331,8 +333,8 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
                         </TableHeader>
                         <TableBody>
                           {groupPlayers.map((player: any, index: number) => {
-                            const stats = player.stats || {};
-                            const legDifference = (stats.legsWon || 0) - (stats.legsLost || 0);
+                            const stats = getGroupTableStats(player, tournamentStatus);
+                            const legDifference = stats.legsWon - stats.legsLost;
                             
                             return (
                               <TableRow key={player._id}>
@@ -390,7 +392,7 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
                                   {legDifference > 0 ? '+' : ''}{legDifference}
                                 </TableCell>
                                 <TableCell className="text-center">
-                                  {stats.avg ? stats.avg.toFixed(1) : (stats.average ? stats.average.toFixed(1) : '0.0')}
+                                  {stats.avg ? stats.avg.toFixed(1) : '0.0'}
                                 </TableCell>
                                 <TableCell className="text-center">
                                   {typeof stats.firstNineAvg === 'number' ? Number(stats.firstNineAvg).toFixed(1) : '0.0'}

@@ -2,9 +2,11 @@ import React, { ReactNode } from "react";
 import { Metadata } from "next";
 import { cache } from "react";
 import { unstable_cache } from "next/cache";
+import { getTranslations } from "next-intl/server";
 import { ClubService } from "@/database/services/club.service";
 import "./layout.css";
-import { buildLocaleAlternates, getBaseUrl } from "@/lib/seo";
+import { buildLocaleAlternates, getBaseUrl, type SupportedLocale } from "@/lib/seo";
+import { ogImageDimensionsForPath, pickClubOgImagePath, toAbsoluteImageUrl } from "@/lib/og-image";
 
 interface LayoutProps {
   children: ReactNode;
@@ -19,20 +21,15 @@ const getClubMetadataThemeCached = cache(
   )
 );
 
-// Helper to build absolute URL for images
-function getAbsoluteUrl(path: string): string {
-  if (!path) return "";
-  if (path.startsWith("http")) return path;
-  return `${process.env.NEXT_PUBLIC_BASE_URL || "https://tdarts.hu"}${path}`;
-}
-
 export async function generateMetadata({
   params,
 }: {
   params: Promise<{ code: string; locale: string }>;
 }): Promise<Metadata> {
   const { code, locale } = await params;
-  const baseUrl = getBaseUrl();
+  const baseUrl = getBaseUrl().replace(/\/$/, "");
+  const uiLocale: SupportedLocale = locale === "en" || locale === "de" ? locale : "hu";
+  const tSeo = await getTranslations({ locale: uiLocale, namespace: "Club.seo" });
   const clubPath = `/clubs/${code}`;
   const localeAlternates = buildLocaleAlternates(clubPath);
   const ogLocale = locale === 'hu' ? 'hu_HU' : locale === 'de' ? 'de_DE' : 'en_US';
@@ -41,23 +38,29 @@ export async function generateMetadata({
     const club = await getClubMetadataThemeCached(code);
     
     const name = club.name || "Darts Klub";
-    const title = club.landingPage?.seo?.title || name;
-    const description = club.landingPage?.seo?.description || club.description || `Részletek a(z) ${name} darts klubról.`;
-    const commonKeywords = [name, club.location, 'darts', 'tornák', 'klub'].filter(Boolean);
+    const primaryTitle = club.landingPage?.seo?.title || name;
+    const brandSuffix = "tDarts";
+    const pageTitle = `${primaryTitle} | ${brandSuffix}`;
+    const place = club.location || club.address;
+    const description =
+      club.landingPage?.seo?.description ||
+      club.description ||
+      (place
+        ? tSeo("description_fallback_with_place", { clubName: name, place })
+        : tSeo("description_fallback", { clubName: name }));
+    const commonKeywords = [name, club.location, "darts", "tDarts", "tornák", "klub"].filter(Boolean);
     const keywords = club.landingPage?.seo?.keywords || commonKeywords.join(', ');
     
-    const image = club.landingPage?.coverImage || club.landingPage?.logo || club.logo || "/images/club-default-cover.jpg";
-    const imageUrl = getAbsoluteUrl(image);
+    const imagePath = pickClubOgImagePath(club);
+    const imageUrl = toAbsoluteImageUrl(imagePath, baseUrl);
+    const { width: ogW, height: ogH } = ogImageDimensionsForPath(imagePath);
 
     const location = club.address || club.location || "Magyarország";
     const canonicalUrl = `${baseUrl}/${locale}${clubPath}`;
     const memberCount = club.membersCount || 0;
 
     return {
-      title: {
-        default: title,
-        template: `%s | ${title}`
-      },
+      title: pageTitle,
       description,
       keywords,
       metadataBase: new URL(baseUrl),
@@ -71,16 +74,16 @@ export async function generateMetadata({
         },
       },
       openGraph: {
-        title,
+        title: pageTitle,
         description,
         url: canonicalUrl,
         type: "website",
         images: [
           {
             url: imageUrl,
-            width: 1200,
-            height: 630,
-            alt: title,
+            width: ogW,
+            height: ogH,
+            alt: primaryTitle,
           },
         ],
         siteName: "tDarts",
@@ -88,7 +91,7 @@ export async function generateMetadata({
       },
       twitter: {
         card: "summary_large_image",
-        title,
+        title: pageTitle,
         description,
         images: [imageUrl],
       },

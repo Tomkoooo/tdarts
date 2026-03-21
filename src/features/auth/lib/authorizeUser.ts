@@ -5,6 +5,7 @@ import { AuthService } from '@/database/services/auth.service';
 import { AuthorizationService } from '@/database/services/authorization.service';
 import { AuthorizationError } from '@/middleware/errorHandle';
 import { GuardResult } from '@/shared/lib/telemetry/types';
+import { isLoadTestEndpointsAllowedInCurrentEnvironment } from '@/lib/load-test-environment';
 
 export type AuthorizedSession = {
   userId: string;
@@ -43,13 +44,23 @@ const authorizeFromCookiesCached = cache(async (): Promise<GuardResult<Authorize
 });
 
 export async function authorizeUserResult(options?: AuthorizeUserOptions): Promise<GuardResult<AuthorizedSession>> {
-  if (process.env.LOAD_TEST_MODE === 'true' && process.env.LOAD_TEST_USER_ID) {
+  if (
+    isLoadTestEndpointsAllowedInCurrentEnvironment() &&
+    process.env.LOAD_TEST_MODE === 'true' &&
+    process.env.LOAD_TEST_USER_ID
+  ) {
     if (!options?.request) {
       return { ok: true, data: { userId: process.env.LOAD_TEST_USER_ID } };
     }
 
     const loadTestSecret = options.request.headers.get('x-load-test-secret');
-    if (loadTestSecret && loadTestSecret === process.env.LOAD_TEST_SECRET) {
+    const configured = process.env.LOAD_TEST_SECRET;
+    if (
+      loadTestSecret &&
+      configured &&
+      loadTestSecret.length === configured.length &&
+      loadTestSecret === configured
+    ) {
       return { ok: true, data: { userId: process.env.LOAD_TEST_USER_ID } };
     }
   }

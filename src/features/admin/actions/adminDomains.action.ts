@@ -39,6 +39,9 @@ import {
   adminTodosStatsAction,
   adminTodosUpdateAction,
   adminTournamentsListAction,
+  adminTournamentSoftDeleteAction,
+  adminTournamentRestoreAction,
+  adminTournamentPurgeAction,
   adminUsersDeactivateAction,
   adminUsersListAction,
   adminUsersSendEmailAction,
@@ -72,6 +75,9 @@ export const adminClubsActions = {
 
 export const adminTournamentsActions = {
   list: call(adminTournamentsListAction),
+  softDelete: call(adminTournamentSoftDeleteAction),
+  restore: call(adminTournamentRestoreAction),
+  purge: call(adminTournamentPurgeAction),
 };
 
 export const adminLeaguesActions = {

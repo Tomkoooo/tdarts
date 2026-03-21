@@ -45,60 +45,42 @@ export class TournamentGroupService {
         return { boards, availablePlayers };
     }
 
-    static async createManualGroup(tournamentCode: string, requesterId: string, params: {
-        boardNumber: number;
-        // Player document ids
-        playerIds: string[];
-    }): Promise<{
-        groupId: string;
-        matchIds: string[];
-    }> {
-        await connectMongo();
-        const tournament = await TournamentModel.findOne({ tournamentId: tournamentCode });
-        if (!tournament) {
-            throw new BadRequestError('Tournament not found');
-        }
-
-        // Check authorization
-        const isAuthorized = await AuthorizationService.checkAdminOrModerator(requesterId, tournament.clubId.toString());
-        if (!isAuthorized) {
-            throw new BadRequestError('Only club admins or moderators can create manual groups');
-        }
-
+    /**
+     * Mutates the given tournament document in memory: adds one group, creates match docs, assigns players.
+     * Does not save. Caller must load once, call this zero or more times, then save once (batch path).
+     */
+    private static async appendManualGroupToTournament(
+        tournament: any,
+        params: { boardNumber: number; playerIds: string[] }
+    ): Promise<{ groupId: string; matchIds: string[] }> {
         const { boardNumber, playerIds } = params;
         if (!Array.isArray(playerIds) || playerIds.length === 0) {
             throw new BadRequestError('playerIds are required');
         }
         if (playerIds.length < 3) {
-             throw new BadRequestError('Players per group must be at least 3');
+            throw new BadRequestError('Players per group must be at least 3');
         }
-        // Ensure board belongs to this tournament and is active
         const board = tournament.boards.find((b: any) => b.boardNumber === boardNumber && b.isActive);
         if (!board) {
             throw new BadRequestError('Board not available for this tournament');
         }
-        // Ensure no existing group already uses this board
         const boardAlreadyUsed = (tournament.groups || []).some((g: any) => g.board === boardNumber);
         if (boardAlreadyUsed) {
             throw new BadRequestError('This board already has a group');
         }
-        // Validate players exist in tournament, checked-in, and not assigned
+
         const selectedPlayers: TournamentPlayerDocument[] = [];
-        
         for (const playerId of playerIds) {
-            // Find tournament player by playerReference (player document _id)
-            const tp = tournament.tournamentPlayers.find((p: TournamentPlayerDocument) => p.playerReference?.toString() === playerId);
+            const tp = tournament.tournamentPlayers.find(
+                (p: TournamentPlayerDocument) => p.playerReference?.toString() === playerId
+            );
             if (!tp) throw new BadRequestError(`Player ${playerId} not found in tournament`);
             if (tp.status !== 'checked-in') throw new BadRequestError(`Player ${playerId} is not checked-in`);
-            // Temporarily disable groupId check
-            // if (tp.groupId) throw new BadRequestError(`Player ${playerId} already assigned to a group`);
             selectedPlayers.push(tp);
         }
-        
-        // Create group
+
         const newGroupId = new mongoose.Types.ObjectId();
-        
-        // Update tournament players with group assignment and reset standings/stats
+
         for (const tp of selectedPlayers) {
             (tp as any).groupId = newGroupId;
             (tp as any).groupOrdinalNumber = selectedPlayers.indexOf(tp);
@@ -113,15 +95,14 @@ export class TournamentGroupService {
                 (tp as any).stats.highestCheckout = 0;
             }
         }
-        
+
         const group: { _id: mongoose.Types.ObjectId; board: number; matches: mongoose.Types.ObjectId[] } = {
             _id: newGroupId,
             board: boardNumber,
-            matches: []
+            matches: [],
         };
-        // Push group to tournament
         (tournament.groups as any) = [...(tournament.groups || []), group as any];
-        // Generate matches with roundRobin
+
         const rrMatches = roundRobin(playerIds.length);
         if (!rrMatches || rrMatches.length === 0) {
             throw new BadRequestError(`Round-robin generation failed for ${playerIds.length} players.`);
@@ -145,16 +126,36 @@ export class TournamentGroupService {
             });
             createdMatchIds.push(matchDoc._id);
         }
-        // Attach matches to the group in tournament
+
         const groupIndex = (tournament.groups as any[]).findIndex((g: any) => g._id.toString() === newGroupId.toString());
         if (groupIndex !== -1) {
             (tournament.groups as any[])[groupIndex].matches = createdMatchIds as any;
         }
-        // Note: Board status update is handled by createManualGroups to avoid overwriting
-        // Set status to group-stage
+
         tournament.tournamentSettings.status = 'group-stage';
-        await tournament.save();
+
         return { groupId: newGroupId.toString(), matchIds: createdMatchIds.map((id) => id.toString()) };
+    }
+
+    static async createManualGroup(
+        tournamentCode: string,
+        requesterId: string,
+        params: { boardNumber: number; playerIds: string[] }
+    ): Promise<{ groupId: string; matchIds: string[] }> {
+        await connectMongo();
+        const tournament = await TournamentModel.findOne({ tournamentId: tournamentCode });
+        if (!tournament) {
+            throw new BadRequestError('Tournament not found');
+        }
+
+        const isAuthorized = await AuthorizationService.checkAdminOrModerator(requesterId, tournament.clubId.toString());
+        if (!isAuthorized) {
+            throw new BadRequestError('Only club admins or moderators can create manual groups');
+        }
+
+        const result = await this.appendManualGroupToTournament(tournament, params);
+        await tournament.save();
+        return result;
     }
 
     static async createManualGroups(
@@ -168,7 +169,6 @@ export class TournamentGroupService {
             throw new BadRequestError('Tournament not found');
         }
 
-        // Check authorization
         const isAuthorized = await AuthorizationService.checkAdminOrModerator(requesterId, tournament.clubId.toString());
         if (!isAuthorized) {
             throw new BadRequestError('Only club admins or moderators can create manual groups');
@@ -177,22 +177,26 @@ export class TournamentGroupService {
         if (!Array.isArray(groups) || groups.length === 0) {
             throw new BadRequestError('No groups provided');
         }
-        
-        // Create all groups first without updating board status
+
+        const boardNumbers = groups.map((g) => g.boardNumber);
+        if (new Set(boardNumbers).size !== boardNumbers.length) {
+            throw new BadRequestError('Duplicate board numbers in group request');
+        }
+
         const results: Array<{ boardNumber: number; groupId: string; matchIds: string[] }> = [];
-        const boardFirstMatches = new Map<number, string>(); // Track first match for each board
-        
+        const boardFirstMatches = new Map<number, string>();
+
         for (const g of groups) {
-            const res = await this.createManualGroup(tournamentCode, requesterId, { boardNumber: g.boardNumber, playerIds: g.playerIds });
+            const res = await this.appendManualGroupToTournament(tournament, {
+                boardNumber: g.boardNumber,
+                playerIds: g.playerIds,
+            });
             results.push({ boardNumber: g.boardNumber, ...res });
-            
-            // Track the first match for each board
             if (res.matchIds.length > 0) {
                 boardFirstMatches.set(g.boardNumber, res.matchIds[0]);
             }
         }
-        
-        // Update board status only with the first match for each board
+
         for (const [boardNumber, firstMatchId] of boardFirstMatches) {
             const boardIndex = tournament.boards.findIndex((b: any) => b.boardNumber === boardNumber);
             if (boardIndex !== -1) {
@@ -201,9 +205,9 @@ export class TournamentGroupService {
                 tournament.boards[boardIndex].currentMatch = undefined;
             }
         }
-        
+
         await tournament.save();
-        
+
         return results;
     }
 

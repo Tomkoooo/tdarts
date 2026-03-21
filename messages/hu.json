@@ -1241,7 +1241,18 @@
       "műveletek": "műveletek",
       "nincs_találat_a": "nincs találat a",
       "státusz": "státusz",
-      "title": "title"
+      "title": "title",
+      "admin_actions": "Admin műveletek",
+      "soft_delete": "Töröltnek jelölés",
+      "restore": "Visszaállítás",
+      "purge": "Végleges törlés",
+      "purge_dialog_title": "Torna végleges törlése",
+      "purge_dialog_desc": "Eltávolítja a tornát és a meccseit az adatbázisból. A megerősítéshez írd be pontosan a torna nevét.",
+      "purge_name_label": "Torna neve",
+      "purge_confirm": "Végleges törlés",
+      "soft_delete_confirm": "Töröltnek jelöled ezt a tornát? A normál listákból elrejtjük.",
+      "restore_confirm": "Visszaállítod ezt a tornát?",
+      "cancel": "Mégse"
     },
     "users": {
       "admin": "Admin",
@@ -1894,6 +1905,7 @@
       "btn_generate_groups": "Csoportok generálása",
       "btn_generate_knockout": "Egyenes kiesés generálása",
       "btn_cancel_knockout": "Egyenes kiesés visszavonása",
+      "btn_cancel_groups": "Csoportok visszavonása",
       "btn_finish": "Torna befejezése",
       "alert_player_count_title": "Nem megfelelő játékosszám",
       "alert_player_count_desc": "Minimum {min} és maximum {max} játékos szükséges csoportonként.",
@@ -1972,6 +1984,23 @@
         "cancelling": "Visszavonás...",
         "executing": "Végrehajtás...",
         "error": "Nem sikerült visszavonni az egyenes kiesést."
+      },
+      "cancel_groups_dialog": {
+        "title": "Csoportok visszavonása",
+        "description_step1": "Első megerősítés: a csoportkörmérkőzés visszavonására készülsz. Tovább a végső megerősítéshez?",
+        "description_step2": "Végső megerősítés: 20 másodperces biztonsági ablak indul. Ezalatt visszavonhatod (Undo), vagy azonnal futtathatod (Skip now).",
+        "step2_title": "Nagy hatású művelet",
+        "step2_desc": "A végrehajtás után a csoportmeccsek törlődnek, a csoportkiosztások törlődnek, a táblák visszaállnak, a torna pedig függőben státuszra kerül, hogy új játékosokat adhass hozzá és újra generálhasd a csoportokat.",
+        "pending_title": "Csoportvisszavonás ütemezve",
+        "pending_desc": "A visszavonás {seconds} mp múlva lefut. Addig még visszavonhatod.",
+        "btn_continue": "Tovább",
+        "btn_back": "Vissza",
+        "btn_confirm_schedule": "Ütemezés 20 mp-es visszavonási ablakkal",
+        "btn_undo": "Undo",
+        "btn_skip_now": "Skip now (futtatás most)",
+        "cancelling": "Visszavonás...",
+        "executing": "Végrehajtás...",
+        "error": "Nem sikerült visszavonni a csoportokat."
       },
       "third_place_dialog": {
         "title": "3. hely kiválasztása",
@@ -2144,7 +2173,15 @@
       "pts": "pont",
       "avg": "Átlag",
       "max": "Max",
-      "close": "Bezárás"
+      "close": "Bezárás",
+      "export_error": "Nem sikerült elkészíteni a képet.",
+      "share_unsupported": "A megosztás nem támogatott ebben a böngészőben.",
+      "recap_subtitle": "Legek és körök",
+      "highest_checkout": "Legnagyobb kiszálló"
+    },
+    "legs": {
+      "share": "Megosztás",
+      "export_image": "Kép mentése"
     },
     "live_viewer": {
       "back": "Vissza",
@@ -2362,11 +2399,17 @@
         "admin": "Admin"
       },
       "header": {
+        "hosted_by_label": "Szervező klub",
         "tournament_code": "Torna kód: {code}",
         "refresh": "Frissítés",
         "boards_writer": "Táblák / Író program",
         "tv_view": "TV",
-        "share": "Megosztás"
+        "share": "Megosztás",
+        "live_open": "Élő",
+        "sse_connected": "Élő frissítés: kapcsolódva",
+        "sse_offline": "Élő frissítés: újracsatlakozás…",
+        "sse_expired": "Élő frissítés: munkamenet lejárt",
+        "sse_na": "Élő frissítés: ki"
       },
       "loading": "Torna betöltése...",
       "error": {
@@ -2910,6 +2953,10 @@
     "club_search": "Klub keresése"
   },
   "Club": {
+    "seo": {
+      "description_fallback": "{clubName} — darts klub a tDarts-on. Versenyek, tagok és ligák egy helyen.",
+      "description_fallback_with_place": "{clubName} — darts klub ({place}) a tDarts-on. Versenyek, tagok és ligák egy helyen."
+    },
     "layout": {
       "summary": "Áttekintés",
       "players": "Játékosok",
@@ -3730,6 +3777,23 @@
     "nyíl": "nyíl",
     "nyíl_lehetséges": "nyíl lehetséges",
     "rematch": "Visszavágó",
+    "local": {
+      "export_png": "Kép mentése",
+      "share": "Megosztás",
+      "throws": "Körök",
+      "scores_100_plus": "100+",
+      "scores_140_plus": "140+",
+      "first_nine_avg": "Első 9 átlag",
+      "share_unsupported": "A megosztás nem támogatott ebben a böngészőben.",
+      "export_error": "Nem sikerült elkészíteni a képet.",
+      "finish_subtitle": "Legek és körök",
+      "leg_winner": "Leg győztese",
+      "remaining_short": "Maradt",
+      "darts_abbr": "nyíl",
+      "no_legs_recorded": "Ehhez a meccshez nem került leg-napló a memóriába.",
+      "best_leg_darts": "Legjobb leg (nyíl)",
+      "worst_leg_darts": "Legrosszabb leg (nyíl)"
+    },
     "sco": "SCO...",
     "scolia_access_token": "Scolia Access Token",
     "scolia_autoscoring": "Scolia Auto-scoring",
@@ -3796,6 +3860,12 @@
       "nextPlaying": "Jelenleg játszol: {board}",
       "nextScoring": "Jelenleg számolsz: {board}",
       "nextPending": "Következő feladatod: {board}",
+      "nextPendingPlaying": "Következő meccs: {board} (játszol)",
+      "nextPendingScoring": "Következő feladat: {board} (számolsz)",
+      "nextPendingUnknown": "Következő tábla: {board}",
+      "nextMatchVsWarning": "Következő meccs: {opponent} ellen",
+      "nextScoringReminder": "Számlálóként vagy beírva ehhez a táblához — legyél kész.",
+      "landingPage": "A tDarts bemutatója",
       "nextUnknown": "Még nincs következő tábla hozzárendelés"
     },
     "stats": {

@@ -5,6 +5,7 @@ import EditTournamentModal from './EditTournamentModal';
 import { toast } from 'react-hot-toast';
 import { useTranslations } from 'next-intl';
 import { buildTournamentInvoiceDownloadUrl } from '@/features/tournaments/lib/readFlowPolicy';
+import { shouldShowTournamentLiveTvLinks } from '@/lib/local-calendar-date';
 
 interface TournamentInfoProps {
   tournament: any;
@@ -118,12 +119,15 @@ const TournamentInfo = ({ tournament, onRefetch, userRole, userId }: TournamentI
           <IconUserPlus className="w-5 h-5" />
           {t('register')}
         </Link>
-        {tournament.status !== 'finished' && tournament.status !== 'pending' && (
+        {shouldShowTournamentLiveTvLinks(
+          tournament.tournamentSettings?.status ?? tournament.status,
+          tournament.tournamentSettings?.startDate
+        ) ? (
           <Link href={`/tournaments/${tournament.tournamentId}/live`} target="_blank" className="btn btn-primary btn-md flex items-center gap-2">
             <IconScreenShare className="w-5 h-5" />
             {t('live')}
           </Link>
-        )}
+        ) : null}
         
         {/* Invoice Download Button for Admins */}
         {canEdit && tournament.invoiceId && (

@@ -4,8 +4,10 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import dynamic from "next/dynamic";
 import { useTranslations } from "next-intl";
 import { useParams, useSearchParams } from "next/navigation";
-import { IconEdit, IconRefresh, IconShare2 } from "@tabler/icons-react";
+import { IconDeviceTv, IconEdit, IconRefresh, IconShare2, IconScreenShare } from "@tabler/icons-react";
 import { useUserContext } from "@/hooks/useUser";
+import { Link } from "@/i18n/routing";
+import { shouldShowTournamentLiveTvLinks } from "@/lib/local-calendar-date";
 import { reopenTournamentAction } from "@/features/tournaments/actions/reopenTournament.action";
 import { useTournamentPageData } from "@/features/tournament/hooks/useTournamentPageData";
 import { useTournamentRealtimeRefresh } from "@/features/tournament/hooks/useTournamentRealtimeRefresh";
@@ -120,18 +122,30 @@ const TournamentPageClient: React.FC<TournamentPageClientProps> = ({
     resyncFullData,
   } = useTournamentPageData(code, user, t("error.retry"), initialData, initialSections);
 
-  useTournamentRealtimeRefresh(
-    tournament,
-    typeof code === "string" ? code : undefined,
-    applySseDelta,
-    resyncLiteData,
-    resyncFullData
-  );
+  const { isConnected: sseConnected, sessionExpired: sseSessionExpired, isRealtimeEnabled: sseEnabled } =
+    useTournamentRealtimeRefresh(
+      tournament,
+      typeof code === "string" ? code : undefined,
+      applySseDelta,
+      resyncLiteData,
+      resyncFullData
+    );
 
   const [tournamentShareModal, setTournamentShareModal] = useState(false);
   const [isReopening, setIsReopening] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("overview");
+
+  const hostedClub = useMemo(() => {
+    const c = tournament?.clubId;
+    if (c && typeof c === "object" && c !== null && "_id" in c) {
+      const rec = c as { _id?: unknown; name?: string };
+      const id = rec._id != null ? String(rec._id) : "";
+      const n = rec.name?.trim();
+      if (id && n) return { id, name: n };
+    }
+    return null;
+  }, [tournament?.clubId]);
   const lastFetchedAtRef = useRef<Record<TournamentSectionView, number>>({
     overview: Date.now(),
     players: 0,
@@ -221,13 +235,11 @@ const TournamentPageClient: React.FC<TournamentPageClientProps> = ({
     })();
   }, [activeTab, fetchAll, getViewForTab]);
 
-  const handleRefetch = useCallback(() => {
+  const handleRefetch = useCallback(async () => {
     const view = getViewForTab(activeTab);
-    void (async () => {
-      await fetchAll(view, { bypassCache: true });
-      lastFetchedAtRef.current[view] = Date.now();
-      invalidatedSectionsRef.current.delete(view);
-    })();
+    await fetchAll(view, { bypassCache: true });
+    lastFetchedAtRef.current[view] = Date.now();
+    invalidatedSectionsRef.current.delete(view);
   }, [activeTab, fetchAll, getViewForTab]);
 
   const handleTournamentRefresh = useCallback(
@@ -290,9 +302,29 @@ const TournamentPageClient: React.FC<TournamentPageClientProps> = ({
     typeof tournament?.tournamentId === "string" ? tournament.tournamentId : "";
   const tournamentCode = typeof code === "string" ? code : code?.[0] ?? "";
   const tournamentIdentifier = tournamentId || tournamentCode;
-  const showLive = ["group-stage", "knockout"].includes(
-    tournament?.tournamentSettings?.status || ""
+  const showLiveTvLinks = useMemo(
+    () =>
+      shouldShowTournamentLiveTvLinks(
+        tournament?.tournamentSettings?.status,
+        tournament?.tournamentSettings?.startDate
+      ),
+    [tournament?.tournamentSettings?.status, tournament?.tournamentSettings?.startDate]
   );
+
+  const sseBadgeLabel = useMemo(() => {
+    if (!sseEnabled) return t("header.sse_na");
+    if (sseSessionExpired) return t("header.sse_expired");
+    if (sseConnected) return t("header.sse_connected");
+    return t("header.sse_offline");
+  }, [sseConnected, sseEnabled, sseSessionExpired, t]);
+
+  const sseBadgeClass = useMemo(() => {
+    if (!sseEnabled) return "border-border/60 bg-muted/30 text-muted-foreground";
+    if (sseSessionExpired) return "border-warning/40 bg-warning/15 text-warning";
+    if (sseConnected) return "border-emerald-500/40 bg-emerald-500/15 text-emerald-700 dark:text-emerald-400";
+    return "border-destructive/40 bg-destructive/10 text-destructive";
+  }, [sseConnected, sseEnabled, sseSessionExpired]);
+
   const canManageTournament = userClubRole === "admin" || userClubRole === "moderator";
 
   if (loading && !tournament) {
@@ -372,10 +404,27 @@ const TournamentPageClient: React.FC<TournamentPageClientProps> = ({
               <span className="rounded-full border border-border/60 bg-muted/20 px-2.5 py-1 text-[11px] text-muted-foreground">
                 {t("header.tournament_code", { code: tournament.tournamentId })}
               </span>
+              <span
+                className={`rounded-full border px-2.5 py-1 text-[11px] font-medium ${sseBadgeClass}`}
+                title={sseBadgeLabel}
+              >
+                {sseBadgeLabel}
+              </span>
             </div>
             <h1 className="text-2xl font-bold leading-tight text-foreground md:text-4xl">
               {tournament.tournamentSettings?.name || t("tabs.overview")}
             </h1>
+            {hostedClub ? (
+              <p className="text-sm text-muted-foreground">
+                <span className="mr-1">{t("header.hosted_by_label")}</span>
+                <Link
+                  href={`/clubs/${hostedClub.id}`}
+                  className="font-medium text-primary hover:underline"
+                >
+                  {hostedClub.name}
+                </Link>
+              </p>
+            ) : null}
             <p className="max-w-3xl text-sm leading-relaxed text-muted-foreground md:text-base">
               {statusInfo.description}
             </p>
@@ -385,6 +434,22 @@ const TournamentPageClient: React.FC<TournamentPageClientProps> = ({
                   <IconEdit className="h-4 w-4" />
                   {t("tabs.overview")}
                 </Button>
+              ) : null}
+              {showLiveTvLinks && tournamentCode ? (
+                <>
+                  <Button asChild size="sm" className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90">
+                    <Link href={`/tournaments/${tournamentCode}/live`} target="_blank" rel="noopener noreferrer">
+                      <IconScreenShare className="h-4 w-4" />
+                      {t("header.live_open")}
+                    </Link>
+                  </Button>
+                  <Button asChild size="sm" className="gap-2 bg-sky-600 text-white hover:bg-sky-600/90">
+                    <Link href={`/tournaments/${tournamentCode}/tv`} target="_blank" rel="noopener noreferrer">
+                      <IconDeviceTv className="h-4 w-4" />
+                      {t("header.tv_view")}
+                    </Link>
+                  </Button>
+                </>
               ) : null}
               <Button variant="secondary" size="sm" onClick={handleRefetch} className="gap-2">
                 <IconRefresh className="h-4 w-4" />
@@ -416,8 +481,12 @@ const TournamentPageClient: React.FC<TournamentPageClientProps> = ({
               userClubRole={userClubRole}
               format={tournament?.tournamentSettings?.format}
               scorerHref={tournamentIdentifier ? `/board/${tournamentIdentifier}` : undefined}
-              liveHref={tournamentIdentifier ? `/tournaments/${tournamentIdentifier}/live` : undefined}
-              liveEnabled={showLive}
+              liveHref={
+                showLiveTvLinks && tournamentIdentifier
+                  ? `/tournaments/${tournamentIdentifier}/live`
+                  : undefined
+              }
+              liveEnabled={showLiveTvLinks}
             />
 
             <TabsContent value="overview" className="mt-0 space-y-4">

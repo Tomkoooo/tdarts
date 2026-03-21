@@ -14,17 +14,11 @@ import { ImageWithSkeleton } from "@/components/ui/image-with-skeleton"
 import PostDetailModal from "@/components/club/PostDetailModal"
 import { Club } from "@/interface/club.interface"
 import { differenceInDays, format } from "date-fns"
-import { useTranslations } from "next-intl"
+import { useLocale, useTranslations } from "next-intl"
 import { useRouter } from "@/i18n/routing"
-import { stripLocalePrefix } from "@/lib/seo"
-
-// ... imports
+import { stripLocalePrefix, type SupportedLocale } from "@/lib/seo"
+import { buildClubLoginRedirectShareLink } from "@/lib/club-share-links"
 import ClubGallerySection from "@/components/club/ClubGallerySection"
-
-// ... inside the component JSX (replacing lines 179-190)
-
-
-
 
 interface ClubSummarySectionProps {
   club: Club
@@ -156,7 +150,7 @@ export default function ClubSummarySection({
   }, 0)
 
   const handleCopyLink = () => {
-    const loginLink = `${window.location.origin}/auth/login?redirect=${encodeURIComponent(`/clubs/${code}?page=tournaments`)}`
+    const loginLink = buildClubLoginRedirectShareLink(window.location.origin, locale, code)
     navigator.clipboard.writeText(loginLink)
     toast.success(t('toast.link_copied'))
   }
@@ -172,9 +166,9 @@ export default function ClubSummarySection({
         <CardContent className="p-6">
           <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
             <div className="flex-1">
-              <h2 className="text-3xl md:text-4xl font-bold text-primary mb-2">
+              <h1 className="text-3xl md:text-4xl font-bold text-primary mb-2">
                 {club.name}
-              </h2>
+              </h1>
               <div className="flex flex-col gap-2 mt-4">
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <IconMapPin className="h-4 w-4 shrink-0" />

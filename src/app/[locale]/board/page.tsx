@@ -1,8 +1,8 @@
 "use client"
 import { useTranslations } from "next-intl";
 
-import React, { useState } from "react";
-import { useRouter } from "next/navigation";
+import React, { useState, useEffect, useCallback } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
@@ -26,6 +26,28 @@ const BoardPage: React.FC = () => {
   const [localMatchId, setLocalMatchId] = useState<string>("");
   const [isOnline, setIsOnline] = React.useState(true);
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  const setLocalGameQuery = useCallback(
+    (active: boolean) => {
+      const params = new URLSearchParams(searchParams.toString());
+      if (active) {
+        params.set("localgame", "true");
+      } else {
+        params.delete("localgame");
+      }
+      const qs = params.toString();
+      router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+    },
+    [pathname, router, searchParams],
+  );
+
+  useEffect(() => {
+    if (searchParams.get("localgame") !== "true") return;
+    if (localMatchActive) return;
+    setLocalGameQuery(false);
+  }, [localMatchActive, searchParams, setLocalGameQuery]);
 
   React.useEffect(() => {
     setIsOnline(navigator.onLine);
@@ -88,6 +110,7 @@ const BoardPage: React.FC = () => {
 
   const handleStartLocalMatch = () => {
     const matchId = `local_${Date.now()}`;
+    setLocalGameQuery(true);
     setLocalMatchId(matchId);
     setLocalMatchActive(true);
     setShowLocalMatchSetup(false);
@@ -107,7 +130,10 @@ const BoardPage: React.FC = () => {
         key={localMatchId}
         legsToWin={localMatchLegsToWin}
         startingScore={localMatchStartingScore}
-        onBack={() => setLocalMatchActive(false)}
+        onBack={() => {
+          setLocalGameQuery(false);
+          setLocalMatchActive(false);
+        }}
         onRematch={handleRematch}
       />
     );

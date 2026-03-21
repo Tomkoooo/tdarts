@@ -16,7 +16,7 @@ interface EditTournamentModalProps {
   onClose: () => void;
   tournament: any;
   userId: string;
-  onTournamentUpdated: () => void;
+  onTournamentUpdated: () => void | Promise<void>;
 }
 
 export default function EditTournamentModal({
@@ -141,7 +141,7 @@ export default function EditTournamentModal({
         throw new Error(msg);
       }
 
-      onTournamentUpdated();
+      await Promise.resolve(onTournamentUpdated());
       onClose();
     } catch (err: any) {
       setError(err.message || 'Hiba történt a torna frissítése során');

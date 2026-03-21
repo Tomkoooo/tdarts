@@ -1,4 +1,5 @@
-import { getBaseUrl } from './seo';
+import { getBaseUrl, localePath, type SupportedLocale } from './seo';
+import { pickClubOgImagePath, toAbsoluteImageUrl } from './og-image';
 
 interface ClubSeoInput {
   _id?: string | { toString(): string };
@@ -16,18 +17,19 @@ interface ClubSeoInput {
   logo?: string;
 }
 
-export const buildClubMetadataValues = (club: ClubSeoInput) => {
+export const buildClubMetadataValues = (club: ClubSeoInput, locale: SupportedLocale = 'hu') => {
+  const base = getBaseUrl().replace(/\/$/, '');
   const name = club.name || 'Darts Klub';
   const title = club.landingPage?.seo?.title || name;
   const description =
     club.landingPage?.seo?.description || club.description || `Részletek a(z) ${name} darts klubról.`;
   const commonKeywords = [name, club.location, 'darts', 'tornák', 'klub'].filter(Boolean);
   const keywords = club.landingPage?.seo?.keywords || commonKeywords.join(', ');
-  const image = club.landingPage?.coverImage || club.landingPage?.logo || club.logo || '/images/club-default-cover.jpg';
-  const imageUrl = image.startsWith('http') ? image : `${getBaseUrl()}${image}`;
+  const imagePath = pickClubOgImagePath(club);
+  const imageUrl = toAbsoluteImageUrl(imagePath, base);
   const location = club.address || club.location || 'Magyarország';
   const clubId = (typeof club._id === 'string' ? club._id : club._id?.toString()) || club.code;
-  const canonicalUrl = `${getBaseUrl()}/clubs/${clubId}`;
+  const canonicalUrl = `${base}${localePath(`/clubs/${clubId}`, locale)}`;
   const memberCount = club.members?.length || 0;
 
   return { name, title, description, keywords, imageUrl, location, canonicalUrl, memberCount };

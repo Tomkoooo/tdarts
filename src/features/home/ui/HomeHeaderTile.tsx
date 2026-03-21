@@ -1,6 +1,6 @@
 "use client"
 
-import Link from "next/link"
+import { Link } from "@/i18n/routing"
 import {
   IconAlertTriangle,
   IconArrowRight,
@@ -39,7 +39,13 @@ export default function HomeHeaderTile({
   const daysUntil = getDaysUntil(activeOrNextTournament?.date)
   const hasTournament = Boolean(activeOrNextTournament?._id)
   const status = (activeOrNextTournament?.status || "").toLowerCase()
-  const isActive = status.includes("active") || status.includes("live") || status.includes("ongoing") || status.includes("in_progress")
+  const isActive =
+    status.includes("active") ||
+    status.includes("live") ||
+    status.includes("ongoing") ||
+    status.includes("in_progress") ||
+    status.includes("group-stage") ||
+    status.includes("knockout")
   const isStarted =
     isActive || status.includes("group-stage") || status.includes("knockout")
 
@@ -48,13 +54,23 @@ export default function HomeHeaderTile({
       ? t("header.boardNumber", { number: activeOrNextTournament.nextMatchBoard })
       : t("header.boardTbd")
 
-    if (activeOrNextTournament?.nextMatchType === "playing") {
+    const mt = activeOrNextTournament?.nextMatchType
+    if (mt === "playing") {
       return t("header.nextPlaying", { board: boardLabel })
     }
-    if (activeOrNextTournament?.nextMatchType === "scoring") {
+    if (mt === "scoring") {
       return t("header.nextScoring", { board: boardLabel })
     }
-    if (activeOrNextTournament?.nextMatchType === "pending") {
+    if (mt === "pendingPlaying") {
+      return t("header.nextPendingPlaying", { board: boardLabel })
+    }
+    if (mt === "pendingScoring") {
+      return t("header.nextPendingScoring", { board: boardLabel })
+    }
+    if (mt === "pendingUnknown") {
+      return t("header.nextPendingUnknown", { board: boardLabel })
+    }
+    if (mt === "pending") {
       return t("header.nextPending", { board: boardLabel })
     }
     return t("header.nextUnknown")
@@ -143,6 +159,23 @@ export default function HomeHeaderTile({
                     </p>
                   </div>
                   <p className="text-xs font-medium text-accent">{getNextMatchLabel()}</p>
+                  {(activeOrNextTournament?.nextMatchType === "playing" ||
+                    activeOrNextTournament?.nextMatchType === "pendingPlaying") &&
+                  activeOrNextTournament?.nextMatchOpponentName ? (
+                    <p className="rounded-md border border-amber-500/45 bg-amber-500/15 px-2 py-1.5 text-xs font-semibold text-amber-950 dark:text-amber-100">
+                      <IconAlertTriangle className="mb-0.5 mr-1 inline h-3.5 w-3.5" aria-hidden />
+                      {t("header.nextMatchVsWarning", {
+                        opponent: activeOrNextTournament.nextMatchOpponentName,
+                      })}
+                    </p>
+                  ) : null}
+                  {activeOrNextTournament?.nextMatchType === "scoring" ||
+                  activeOrNextTournament?.nextMatchType === "pendingScoring" ? (
+                    <p className="rounded-md border border-amber-500/45 bg-amber-500/15 px-2 py-1.5 text-xs font-semibold text-amber-950 dark:text-amber-100">
+                      <IconAlertTriangle className="mb-0.5 mr-1 inline h-3.5 w-3.5" aria-hidden />
+                      {t("header.nextScoringReminder")}
+                    </p>
+                  ) : null}
                 </div>
               )}
               {isActive ? (
@@ -174,6 +207,9 @@ export default function HomeHeaderTile({
       )}
 
       <div className="relative mt-4 flex flex-wrap gap-2">
+        <Button asChild className="md:hidden" variant="outline" size="sm">
+          <Link href="/landing">{t("header.landingPage")}</Link>
+        </Button>
         <Button asChild>
           <Link href="/search?tab=tournaments">{t("joinTournament")}</Link>
         </Button>

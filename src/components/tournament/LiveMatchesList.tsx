@@ -108,9 +108,11 @@ const LiveMatchesList: React.FC<LiveMatchesListProps> = ({ tournamentCode, onMat
                     </div>
                     <div className={cn(
                       "text-2xl font-bold font-mono my-1",
-                      match.player1Remaining <= 100 ? "text-primary" : "text-foreground"
+                      typeof match.player1Remaining === "number" && match.player1Remaining <= 100
+                        ? "text-primary"
+                        : "text-foreground"
                     )}>
-                      {match.player1Remaining}
+                      {typeof match.player1Remaining === "number" ? match.player1Remaining : "—"}
                     </div>
                     <div className="text-xs font-medium text-muted-foreground bg-muted/50 rounded-full px-2 py-0.5 inline-block">
                       {match.player1LegsWon ?? 0} {t("leg_2aku")}</div>
@@ -128,9 +130,11 @@ const LiveMatchesList: React.FC<LiveMatchesListProps> = ({ tournamentCode, onMat
                     </div>
                     <div className={cn(
                       "text-2xl font-bold font-mono my-1",
-                      match.player2Remaining <= 100 ? "text-primary" : "text-foreground"
+                      typeof match.player2Remaining === "number" && match.player2Remaining <= 100
+                        ? "text-primary"
+                        : "text-foreground"
                     )}>
-                      {match.player2Remaining}
+                      {typeof match.player2Remaining === "number" ? match.player2Remaining : "—"}
                     </div>
                     <div className="text-xs font-medium text-muted-foreground bg-muted/50 rounded-full px-2 py-0.5 inline-block">
                       {match.player2LegsWon ?? 0} {t("leg_2aku")}</div>

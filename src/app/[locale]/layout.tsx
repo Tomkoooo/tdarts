@@ -13,13 +13,16 @@ import { notFound } from "next/navigation";
 import { routing } from "@/i18n/routing";
 import { Metadata } from "next";
 import { buildLocaleAlternates, getBaseUrl } from "@/lib/seo";
+import { DEFAULT_OG_PATH, ogImageDimensionsForPath, toAbsoluteImageUrl } from "@/lib/og-image";
 import { getUserTimeZone } from "@/lib/date-time";
 import { loadLocaleMessages } from "@/i18n/messages";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: 'Metadata' });
-  const baseUrl = getBaseUrl();
+  const baseUrl = getBaseUrl().replace(/\/$/, "");
+  const defaultOgUrl = toAbsoluteImageUrl(DEFAULT_OG_PATH, baseUrl);
+  const defaultOgDims = ogImageDimensionsForPath(DEFAULT_OG_PATH);
   const localeAlternates = buildLocaleAlternates('/');
   const ogLocale = locale === 'hu' ? 'hu_HU' : locale === 'de' ? 'de_DE' : 'en_US';
 
@@ -93,9 +96,9 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
       description: t('description'),
       images: [
         {
-          url: `${baseUrl}/og-image.png`,
-          width: 1200,
-          height: 630,
+          url: defaultOgUrl,
+          width: defaultOgDims.width,
+          height: defaultOgDims.height,
           alt: t('og_title'),
         },
       ],
@@ -104,7 +107,7 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
       card: "summary_large_image",
       title: t('og_title'),
       description: t('twitter_description'),
-      images: [`${baseUrl}/og-image.png`],
+      images: [defaultOgUrl],
       creator: "@tdarts",
     },
     verification: {

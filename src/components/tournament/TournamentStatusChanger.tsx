@@ -7,6 +7,7 @@ import {
   Tournament,
 } from "@/interface/tournament.interface"
 import {
+  cancelGroupsAction,
   cancelKnockoutAction,
   createManualGroupsAction,
   finishTournamentAction,
@@ -39,6 +40,7 @@ type PendingAction =
   | "generate-knockout"
   | "finish"
   | "cancel-knockout"
+  | "cancel-groups"
   | "manual-groups"
   | null
 
@@ -60,16 +62,25 @@ export default function TournamentStatusChanger({
   const [isManualGroupsDialogOpen, setIsManualGroupsDialogOpen] = useState(false)
   const [isKnockoutDialogOpen, setIsKnockoutDialogOpen] = useState(false)
   const [isCancelKnockoutDialogOpen, setIsCancelKnockoutDialogOpen] = useState(false)
+  const [isCancelGroupsDialogOpen, setIsCancelGroupsDialogOpen] = useState(false)
   const [isThirdPlaceDialogOpen, setIsThirdPlaceDialogOpen] = useState(false)
   const [selectedThirdPlaceId, setSelectedThirdPlaceId] = useState<string | null>(null)
   const [cancelKnockoutConfirmStep, setCancelKnockoutConfirmStep] = useState<1 | 2>(1)
+  const [cancelGroupsConfirmStep, setCancelGroupsConfirmStep] = useState<1 | 2>(1)
   const [isPendingKnockoutCancel, setIsPendingKnockoutCancel] = useState(false)
+  const [isPendingGroupsCancel, setIsPendingGroupsCancel] = useState(false)
   const [knockoutCancelCountdown, setKnockoutCancelCountdown] = useState(20)
+  const [groupsCancelCountdown, setGroupsCancelCountdown] = useState(20)
   const [isExecutingPendingCancel, setIsExecutingPendingCancel] = useState(false)
+  const [isExecutingPendingGroupsCancel, setIsExecutingPendingGroupsCancel] = useState(false)
   const [finalConfirmCountdown, setFinalConfirmCountdown] = useState(0)
+  const [finalConfirmGroupsCountdown, setFinalConfirmGroupsCountdown] = useState(0)
   const countdownIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const groupsCountdownIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const countdownFinishedRef = useRef(false)
+  const groupsCountdownFinishedRef = useRef(false)
   const finalConfirmIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const groupsFinalConfirmIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const [knockoutMode, setKnockoutMode] = useState<KnockoutMode>("automatic")
   const [groupsMode, setGroupsMode] = useState<GroupsMode>("automatic")
@@ -300,6 +311,24 @@ export default function TournamentStatusChanger({
     })
   }
 
+  const handleCancelGroups = () => {
+    handleApiRequest("cancel-groups", async () => {
+      if (!tournamentCode) {
+        throw new Error(tTour("status_changer.cancel_groups_dialog.error"))
+      }
+      const response = await cancelGroupsAction({ code: tournamentCode })
+      if (!response || typeof response !== "object" || ("ok" in response && response.ok === false)) {
+        throw new Error(tTour("status_changer.cancel_groups_dialog.error"))
+      }
+      setIsCancelGroupsDialogOpen(false)
+      setCancelGroupsConfirmStep(1)
+      setIsPendingGroupsCancel(false)
+      setGroupsCancelCountdown(20)
+      setIsExecutingPendingGroupsCancel(false)
+      groupsCountdownFinishedRef.current = false
+    })
+  }
+
   const clearKnockoutCancelTimer = useCallback(() => {
     if (countdownIntervalRef.current) {
       clearInterval(countdownIntervalRef.current)
@@ -311,6 +340,20 @@ export default function TournamentStatusChanger({
     if (finalConfirmIntervalRef.current) {
       clearInterval(finalConfirmIntervalRef.current)
       finalConfirmIntervalRef.current = null
+    }
+  }, [])
+
+  const clearGroupsCancelTimer = useCallback(() => {
+    if (groupsCountdownIntervalRef.current) {
+      clearInterval(groupsCountdownIntervalRef.current)
+      groupsCountdownIntervalRef.current = null
+    }
+  }, [])
+
+  const clearGroupsFinalConfirmTimer = useCallback(() => {
+    if (groupsFinalConfirmIntervalRef.current) {
+      clearInterval(groupsFinalConfirmIntervalRef.current)
+      groupsFinalConfirmIntervalRef.current = null
     }
   }, [])
 
@@ -350,12 +393,57 @@ export default function TournamentStatusChanger({
     setIsExecutingPendingCancel(false)
   }, [clearKnockoutCancelTimer])
 
+  const startPendingGroupsCancel = useCallback(() => {
+    clearGroupsCancelTimer()
+    groupsCountdownFinishedRef.current = false
+    setGroupsCancelCountdown(20)
+    setIsPendingGroupsCancel(true)
+    setIsExecutingPendingGroupsCancel(false)
+    setIsCancelGroupsDialogOpen(false)
+    setCancelGroupsConfirmStep(1)
+
+    groupsCountdownIntervalRef.current = setInterval(() => {
+      setGroupsCancelCountdown((prev) => {
+        if (prev <= 1) {
+          clearGroupsCancelTimer()
+          groupsCountdownFinishedRef.current = true
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
+  }, [clearGroupsCancelTimer])
+
+  const executePendingGroupsCancel = useCallback(() => {
+    if (isExecutingPendingGroupsCancel || action === "cancel-groups") return
+    setIsExecutingPendingGroupsCancel(true)
+    clearGroupsCancelTimer()
+    handleCancelGroups()
+  }, [isExecutingPendingGroupsCancel, action, clearGroupsCancelTimer])
+
+  const undoPendingGroupsCancel = useCallback(() => {
+    clearGroupsCancelTimer()
+    groupsCountdownFinishedRef.current = false
+    setIsPendingGroupsCancel(false)
+    setGroupsCancelCountdown(20)
+    setIsExecutingPendingGroupsCancel(false)
+  }, [clearGroupsCancelTimer])
+
   const handleCancelKnockoutDialogChange = (open: boolean) => {
     setIsCancelKnockoutDialogOpen(open)
     if (!open) {
       setCancelKnockoutConfirmStep(1)
       setFinalConfirmCountdown(0)
       clearFinalConfirmTimer()
+    }
+  }
+
+  const handleCancelGroupsDialogChange = (open: boolean) => {
+    setIsCancelGroupsDialogOpen(open)
+    if (!open) {
+      setCancelGroupsConfirmStep(1)
+      setFinalConfirmGroupsCountdown(0)
+      clearGroupsFinalConfirmTimer()
     }
   }
 
@@ -372,11 +460,36 @@ export default function TournamentStatusChanger({
   }, [isPendingKnockoutCancel, knockoutCancelCountdown, isExecutingPendingCancel, action, executePendingKnockoutCancel])
 
   useEffect(() => {
+    if (
+      isPendingGroupsCancel &&
+      groupsCancelCountdown === 0 &&
+      !isExecutingPendingGroupsCancel &&
+      action !== "cancel-groups" &&
+      groupsCountdownFinishedRef.current
+    ) {
+      executePendingGroupsCancel()
+    }
+  }, [
+    isPendingGroupsCancel,
+    groupsCancelCountdown,
+    isExecutingPendingGroupsCancel,
+    action,
+    executePendingGroupsCancel,
+  ])
+
+  useEffect(() => {
     return () => {
       clearKnockoutCancelTimer()
       clearFinalConfirmTimer()
+      clearGroupsCancelTimer()
+      clearGroupsFinalConfirmTimer()
     }
-  }, [clearKnockoutCancelTimer, clearFinalConfirmTimer])
+  }, [
+    clearKnockoutCancelTimer,
+    clearFinalConfirmTimer,
+    clearGroupsCancelTimer,
+    clearGroupsFinalConfirmTimer,
+  ])
 
   useEffect(() => {
     if (isCancelKnockoutDialogOpen && cancelKnockoutConfirmStep === 2) {
@@ -397,6 +510,26 @@ export default function TournamentStatusChanger({
     setFinalConfirmCountdown(0)
     clearFinalConfirmTimer()
   }, [isCancelKnockoutDialogOpen, cancelKnockoutConfirmStep, clearFinalConfirmTimer])
+
+  useEffect(() => {
+    if (isCancelGroupsDialogOpen && cancelGroupsConfirmStep === 2) {
+      clearGroupsFinalConfirmTimer()
+      setFinalConfirmGroupsCountdown(3)
+      groupsFinalConfirmIntervalRef.current = setInterval(() => {
+        setFinalConfirmGroupsCountdown((prev) => {
+          if (prev <= 1) {
+            clearGroupsFinalConfirmTimer()
+            return 0
+          }
+          return prev - 1
+        })
+      }, 1000)
+      return
+    }
+
+    setFinalConfirmGroupsCountdown(0)
+    clearGroupsFinalConfirmTimer()
+  }, [isCancelGroupsDialogOpen, cancelGroupsConfirmStep, clearGroupsFinalConfirmTimer])
 
   const handleTogglePlayer = (playerId: string, checked: boolean) => {
     if (!selectedBoard) return
@@ -497,6 +630,21 @@ export default function TournamentStatusChanger({
                 </Button>
               )}
 
+            {showGroupsControls &&
+              tournamentStatus === "group-stage" &&
+              (tournamentFormat === "group" || tournamentFormat === "group_knockout") && (
+                <Button
+                  variant="outline"
+                  className="flex-1 min-w-[200px]"
+                  onClick={() => {
+                    resetError()
+                    setIsCancelGroupsDialogOpen(true)
+                  }}
+                >
+                  {tTour("status_changer.btn_cancel_groups")}
+                </Button>
+              )}
+
             {showKnockoutControls &&
               ((tournamentStatus === "group-stage" &&
               (tournamentFormat === "knockout" || tournamentFormat === "group_knockout")) ||
@@ -582,6 +730,35 @@ export default function TournamentStatusChanger({
                     {isExecutingPendingCancel || action === "cancel-knockout"
                       ? tTour('status_changer.cancel_knockout_dialog.executing')
                       : tTour('status_changer.cancel_knockout_dialog.btn_skip_now')}
+                  </Button>
+                </div>
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {showGroupsControls && isPendingGroupsCancel && (
+            <Alert variant="warning">
+              <AlertTitle>{tTour("status_changer.cancel_groups_dialog.pending_title")}</AlertTitle>
+              <AlertDescription className="space-y-3">
+                <p>
+                  {tTour("status_changer.cancel_groups_dialog.pending_desc", { seconds: groupsCancelCountdown })}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={undoPendingGroupsCancel}
+                    disabled={isExecutingPendingGroupsCancel || action === "cancel-groups"}
+                  >
+                    {tTour("status_changer.cancel_groups_dialog.btn_undo")}
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    onClick={executePendingGroupsCancel}
+                    disabled={isExecutingPendingGroupsCancel || action === "cancel-groups"}
+                  >
+                    {isExecutingPendingGroupsCancel || action === "cancel-groups"
+                      ? tTour("status_changer.cancel_groups_dialog.executing")
+                      : tTour("status_changer.cancel_groups_dialog.btn_skip_now")}
                   </Button>
                 </div>
               </AlertDescription>
@@ -965,6 +1142,66 @@ export default function TournamentStatusChanger({
                     `${tTour('status_changer.cancel_knockout_dialog.btn_confirm_schedule')} (${finalConfirmCountdown}s)`
                   ) : (
                     tTour('status_changer.cancel_knockout_dialog.btn_confirm_schedule')
+                  )}
+                </Button>
+              </>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isCancelGroupsDialogOpen} onOpenChange={handleCancelGroupsDialogChange}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{tTour("status_changer.cancel_groups_dialog.title")}</DialogTitle>
+            <DialogDescription>
+              {cancelGroupsConfirmStep === 1
+                ? tTour("status_changer.cancel_groups_dialog.description_step1")
+                : tTour("status_changer.cancel_groups_dialog.description_step2")}
+            </DialogDescription>
+          </DialogHeader>
+
+          {cancelGroupsConfirmStep === 2 && (
+            <Alert variant="destructive">
+              <AlertTitle>{tTour("status_changer.cancel_groups_dialog.step2_title")}</AlertTitle>
+              <AlertDescription>
+                {tTour("status_changer.cancel_groups_dialog.step2_desc")}
+              </AlertDescription>
+            </Alert>
+          )}
+
+          <DialogFooter className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-between">
+            {cancelGroupsConfirmStep === 1 ? (
+              <Button
+                variant="destructive"
+                onClick={() => setCancelGroupsConfirmStep(2)}
+                disabled={action === "cancel-groups"}
+              >
+                {tTour("status_changer.cancel_groups_dialog.btn_continue")}
+              </Button>
+            ) : (
+              <>
+                <Button
+                  variant="outline"
+                  onClick={() => setCancelGroupsConfirmStep(1)}
+                  disabled={action === "cancel-groups"}
+                >
+                  {tTour("status_changer.cancel_groups_dialog.btn_back")}
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={startPendingGroupsCancel}
+                  disabled={action === "cancel-groups" || finalConfirmGroupsCountdown > 0}
+                >
+                  {action === "cancel-groups" ? (
+                    <span className="flex items-center gap-2">
+                      <LoadingSpinner size="sm" />
+                      {tTour("status_changer.cancel_groups_dialog.cancelling")}
+                    </span>
+                  ) : finalConfirmGroupsCountdown > 0 ? (
+                    `${tTour("status_changer.cancel_groups_dialog.btn_confirm_schedule")} (${finalConfirmGroupsCountdown}s)`
+                  ) : (
+                    tTour("status_changer.cancel_groups_dialog.btn_confirm_schedule")
                   )}
                 </Button>
               </>

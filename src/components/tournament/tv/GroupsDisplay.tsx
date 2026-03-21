@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card"
 import { IconTarget } from "@tabler/icons-react"
 import { useTranslations } from "next-intl"
+import { getGroupTableStats } from "@/lib/tournament-player-group-stats"
 
 interface GroupsDisplayProps {
   tournament: any
@@ -216,9 +217,9 @@ export default function GroupsDisplay({ tournament }: GroupsDisplayProps) {
                   {/* Players - always visible, better spacing */}
                   <div className="flex-1 space-y-2">{/* Increased spacing from mb-1 to space-y-2 */}
                     {groupPlayers.map((player: any, index: number) => {
-                      const stats = player.stats || {}
-                      const points = (stats.matchesWon || 0) * 2
-                      const legs = stats.legsWon || 0
+                      const stats = getGroupTableStats(player, tournamentStatus)
+                      const points = stats.matchesWon * 2
+                      const legs = stats.legsWon
                       return (
                         <div 
                           key={player._id} 

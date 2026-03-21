@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ResponsiveContainer, LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, Legend } from "recharts";
+import { startStressRunAction, stopStressRunAction } from "@/features/admin/actions/stressRunsServer.action";
 
 type EndpointProfile = "session_full_match" | "session_safe_match";
 type RunStatus = "queued" | "running" | "completed" | "stopped" | "failed";
@@ -278,18 +279,23 @@ export default function StressAdminDashboard() {
 
     try {
       setRunningAction(true);
-      const response = await axios.post("/api/admin/stress-runs/start", {
+      const result = await startStressRunAction({
         ...form,
         tournamentCode: form.tournamentCode.trim().toUpperCase(),
         baseUrl: form.baseUrl.trim(),
       });
-      const newRunId = response.data?.runId as string;
-      setRunContext(response.data?.runContext || null);
+      if (!result.ok) {
+        toast.error(result.error || "Failed to start stress run.");
+        return;
+      }
+      const payload = result.data as { runId?: string; runContext?: RunContext };
+      const newRunId = payload?.runId as string;
+      setRunContext(payload?.runContext || null);
       toast.success("Stress run started.");
       await refreshRuns();
       if (newRunId) setActiveRunId(newRunId);
     } catch (error: any) {
-      toast.error(error?.response?.data?.error || "Failed to start stress run.");
+      toast.error(error?.message || "Failed to start stress run.");
     } finally {
       setRunningAction(false);
     }
@@ -299,10 +305,14 @@ export default function StressAdminDashboard() {
     if (!activeRun?._id) return;
     try {
       setRunningAction(true);
-      await axios.post(`/api/admin/stress-runs/${activeRun._id}/stop`);
+      const result = await stopStressRunAction(activeRun._id);
+      if (!result.ok) {
+        toast.error(result.error || "Failed to stop run.");
+        return;
+      }
       toast.success("Stop requested.");
     } catch (error: any) {
-      toast.error(error?.response?.data?.error || "Failed to stop run.");
+      toast.error(error?.message || "Failed to stop run.");
     } finally {
       setRunningAction(false);
     }

@@ -16,6 +16,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { shouldShowTournamentLiveTvLinks } from "@/lib/local-calendar-date";
 
 interface TournamentHeaderActionsProps {
   tournament: any;
@@ -40,9 +41,10 @@ export function TournamentHeaderActions({
     typeof tournament?.tournamentId === "string"
       ? tournament.tournamentId
       : undefined;
-  const status = tournament?.tournamentSettings?.status;
-  const showLive =
-    status === "group-stage" || status === "knockout";
+  const showLiveTvLinks = shouldShowTournamentLiveTvLinks(
+    tournament?.tournamentSettings?.status,
+    tournament?.tournamentSettings?.startDate
+  );
   const tournamentCode = typeof code === "string" ? code : code?.[0] ?? "";
 
   return (
@@ -67,7 +69,7 @@ export function TournamentHeaderActions({
               {boardsWriterLabel}
             </Link>
           </Button>
-          {showLive && (
+          {showLiveTvLinks ? (
             <Button asChild variant="secondary" size="sm" className="gap-2">
               <Link
                 href={`/tournaments/${tournamentId}/live`}
@@ -78,7 +80,7 @@ export function TournamentHeaderActions({
                 {liveLabel}
               </Link>
             </Button>
-          )}
+          ) : null}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm" className="gap-2 bg-card/80">
@@ -87,6 +89,7 @@ export function TournamentHeaderActions({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-52">
+              {showLiveTvLinks ? (
               <DropdownMenuItem asChild>
                 <Link
                   href={`/tournaments/${tournamentCode}/tv`}
@@ -98,6 +101,7 @@ export function TournamentHeaderActions({
                   {tvViewLabel}
                 </Link>
               </DropdownMenuItem>
+              ) : null}
               <DropdownMenuItem asChild>
                 <Link
                   href={`/board/${tournamentId}`}

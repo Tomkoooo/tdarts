@@ -4,11 +4,15 @@ import { ensureAdmin } from '@/lib/admin-auth';
 import { StressRunService, StressRunRequestConfig } from '@/database/services/stress-run.service';
 import { StressLoadRunner } from '@/lib/stress-load-runner';
 import { ErrorService } from '@/database/services/error.service';
+import { assertStressRunAdminSecret } from '@/lib/stress-run-admin-secret';
 
 async function __POST(request: NextRequest) {
   try {
     const admin = await ensureAdmin(request);
     if ('response' in admin) return admin.response;
+
+    const secretDenied = assertStressRunAdminSecret(request);
+    if (secretDenied) return secretDenied;
 
     const body = (await request.json()) as StressRunRequestConfig;
     const config = StressRunService.resolveConfig(body);

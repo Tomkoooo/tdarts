@@ -9,20 +9,81 @@ export interface LiveFeedMatch {
   player1: { _id?: string; name?: string };
   player2: { _id?: string; name?: string };
   currentLeg: number;
-  player1Remaining: number;
-  player2Remaining: number;
+  /** Remaining score; before first throw of the leg equals starting score (501 / tournament). */
+  player1Remaining?: number;
+  player2Remaining?: number;
   status: string;
   player1LegsWon?: number;
   player2LegsWon?: number;
   lastUpdate?: string;
 }
 
-const normalizeMatch = (match: any): LiveFeedMatch => ({
+function normalizeMatchId(id: unknown): string {
+  return String(id ?? "");
+}
+
+/** Until the first throw of the current leg, UI shows starting score; after throws, use socket remainings. */
+function remainingsFromSocketMatchState(state: any): {
+  player1Remaining: number;
+  player2Remaining: number;
+} {
+  const starting = Number(state?.startingScore ?? 501);
+  const cur = state?.currentLegData;
+  const p1Raw = cur?.player1Remaining;
+  const p2Raw = cur?.player2Remaining;
+  const p1Throws = Array.isArray(cur?.player1Throws) ? cur.player1Throws.length : 0;
+  const p2Throws = Array.isArray(cur?.player2Throws) ? cur.player2Throws.length : 0;
+  const hasThrow = p1Throws > 0 || p2Throws > 0;
+
+  if (!hasThrow) {
+    return { player1Remaining: starting, player2Remaining: starting };
+  }
+
+  return {
+    player1Remaining: p1Raw != null ? Number(p1Raw) : starting,
+    player2Remaining: p2Raw != null ? Number(p2Raw) : starting,
+  };
+}
+
+function liveFeedMatchFromSocketState(matchId: string, state: any): LiveFeedMatch {
+  const p1Legs = Number(state?.player1LegsWon ?? 0);
+  const p2Legs = Number(state?.player2LegsWon ?? 0);
+  const cur = state?.currentLegData;
+  const { player1Remaining, player2Remaining } = remainingsFromSocketMatchState(state);
+  return {
+    _id: matchId,
+    status: "ongoing",
+    currentLeg: Number(state?.currentLeg ?? p1Legs + p2Legs + 1),
+    player1Remaining,
+    player2Remaining,
+    player1: {
+      _id: cur?.player1Id != null ? String(cur.player1Id) : undefined,
+      name: state?.player1Name || "Player 1",
+    },
+    player2: {
+      _id: cur?.player2Id != null ? String(cur.player2Id) : undefined,
+      name: state?.player2Name || "Player 2",
+    },
+    player1LegsWon: p1Legs,
+    player2LegsWon: p2Legs,
+    lastUpdate: new Date().toISOString(),
+  };
+}
+
+const normalizeMatch = (match: any): LiveFeedMatch => {
+  const startingDefault = Number(match?.startingScore ?? 501);
+  return {
   _id: String(match?._id || ""),
   status: match?.status || "ongoing",
   currentLeg: Number(match?.currentLeg ?? 1),
-  player1Remaining: Number(match?.player1Remaining ?? 501),
-  player2Remaining: Number(match?.player2Remaining ?? 501),
+  player1Remaining:
+    match?.player1Remaining !== undefined && match?.player1Remaining !== null
+      ? Number(match.player1Remaining)
+      : startingDefault,
+  player2Remaining:
+    match?.player2Remaining !== undefined && match?.player2Remaining !== null
+      ? Number(match.player2Remaining)
+      : startingDefault,
   player1: {
     _id: match?.player1?.playerId?._id || match?.player1?._id,
     name: match?.player1?.playerId?.name || match?.player1?.name || "Player 1",
@@ -34,7 +95,8 @@ const normalizeMatch = (match: any): LiveFeedMatch => ({
   player1LegsWon: Number(match?.player1?.legsWon ?? match?.player1LegsWon ?? 0),
   player2LegsWon: Number(match?.player2?.legsWon ?? match?.player2LegsWon ?? 0),
   lastUpdate: match?.lastUpdate || new Date().toISOString(),
-});
+};
+};
 
 const mergeMatch = (prev: LiveFeedMatch, incoming: Partial<LiveFeedMatch>): LiveFeedMatch => ({
   ...prev,
@@ -94,11 +156,21 @@ export function useLiveMatchesFeed(tournamentCode: string) {
   }, [isConnected, isPageVisible, refresh]);
 
   useEffect(() => {
+    let refreshTimer: ReturnType<typeof setTimeout> | null = null;
+    const scheduleRefresh = () => {
+      if (refreshTimer) clearTimeout(refreshTimer);
+      refreshTimer = setTimeout(() => {
+        void refresh();
+      }, 350);
+    };
+
     const onMatchStarted = (data: { matchId: string; matchData?: any }) => {
-      const fallback = normalizeMatch({ _id: data.matchId, status: "ongoing" });
-      const normalized = data.matchData ? normalizeMatch({ ...data.matchData, _id: data.matchId }) : fallback;
+      const id = normalizeMatchId(data?.matchId);
+      if (!id) return;
+      const fallback = normalizeMatch({ _id: id, status: "ongoing" });
+      const normalized = data.matchData ? normalizeMatch({ ...data.matchData, _id: id }) : fallback;
       setMatches((prev) => {
-        const index = prev.findIndex((m) => m._id === normalized._id);
+        const index = prev.findIndex((m) => normalizeMatchId(m._id) === id);
         if (index === -1) return [...prev, normalized];
         const next = [...prev];
         next[index] = mergeMatch(prev[index], normalized);
@@ -107,30 +179,42 @@ export function useLiveMatchesFeed(tournamentCode: string) {
     };
 
     const onMatchFinished = (data: { matchId: string }) => {
-      setMatches((prev) => prev.filter((m) => m._id !== data.matchId));
+      const id = normalizeMatchId(data?.matchId);
+      if (!id) return;
+      setMatches((prev) => prev.filter((m) => normalizeMatchId(m._id) !== id));
     };
 
     const onMatchUpdate = (data: { matchId: string; state?: any }) => {
-      setMatches((prev) =>
-        prev.map((match) => {
-          if (match._id !== data.matchId) return match;
-          return mergeMatch(match, {
+      const id = normalizeMatchId(data?.matchId);
+      if (!id) return;
+
+      setMatches((prev) => {
+        const index = prev.findIndex((m) => normalizeMatchId(m._id) === id);
+        if (index === -1) {
+          scheduleRefresh();
+          const fromState = liveFeedMatchFromSocketState(id, data.state);
+          return [...prev, fromState];
+        }
+        return prev.map((m) => {
+          if (normalizeMatchId(m._id) !== id) return m;
+          const rem = remainingsFromSocketMatchState(data.state);
+          return mergeMatch(m, {
             currentLeg: data.state?.currentLeg,
-            player1Remaining: data.state?.currentLegData?.player1Remaining,
-            player2Remaining: data.state?.currentLegData?.player2Remaining,
+            player1Remaining: rem.player1Remaining,
+            player2Remaining: rem.player2Remaining,
             player1LegsWon: data.state?.player1LegsWon,
             player2LegsWon: data.state?.player2LegsWon,
+            player1: {
+              _id: m.player1?._id,
+              name: data.state?.player1Name ?? m.player1?.name,
+            },
+            player2: {
+              _id: m.player2?._id,
+              name: data.state?.player2Name ?? m.player2?.name,
+            },
           });
-        })
-      );
-    };
-
-    let refreshTimer: ReturnType<typeof setTimeout> | null = null;
-    const scheduleRefresh = () => {
-      if (refreshTimer) clearTimeout(refreshTimer);
-      refreshTimer = setTimeout(() => {
-        void refresh();
-      }, 350);
+        });
+      });
     };
 
     const onLegComplete = () => {

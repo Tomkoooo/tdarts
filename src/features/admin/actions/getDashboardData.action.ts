@@ -13,6 +13,10 @@ import { withTelemetry } from '@/shared/lib/withTelemetry';
 import { resolveGuardAwareStatus } from '@/shared/lib/guards/result';
 import { serializeForClient } from '@/shared/lib/serializeForClient';
 import { connectMongo } from '@/lib/mongoose';
+import {
+  adminOperationalErrorFilter,
+  adminRecentActivityExcludeNoiseFilter,
+} from '@/features/admin/lib/operationalAdminLogFilters';
 
 type CountWindow = { total: number; month: number; prevMonth: number; day: number };
 
@@ -64,16 +68,22 @@ export async function getAdminDashboardDataAction() {
       ]);
 
       const [errorsTotal, errorsMonth, errorsPrevMonth, errorsDay] = await Promise.all([
-        LogModel.countDocuments({ level: 'error' }),
-        LogModel.countDocuments({ level: 'error', timestamp: { $gte: startOfMonth(new Date()) } }),
+        LogModel.countDocuments(adminOperationalErrorFilter),
         LogModel.countDocuments({
-          level: 'error',
+          ...adminOperationalErrorFilter,
+          timestamp: { $gte: startOfMonth(new Date()) },
+        }),
+        LogModel.countDocuments({
+          ...adminOperationalErrorFilter,
           timestamp: {
             $gte: startOfMonth(subMonths(new Date(), 1)),
             $lte: endOfMonth(subMonths(new Date(), 1)),
           },
         }),
-        LogModel.countDocuments({ level: 'error', timestamp: { $gte: subDays(new Date(), 1) } }),
+        LogModel.countDocuments({
+          ...adminOperationalErrorFilter,
+          timestamp: { $gte: subDays(new Date(), 1) },
+        }),
       ]);
 
       const months = Array.from({ length: 6 }, (_, i) => subMonths(new Date(), 5 - i));
@@ -92,7 +102,7 @@ export async function getAdminDashboardDataAction() {
         rows.map((row) => ({ month: row.month, value: row.tournaments })),
       ]);
 
-      const recentLogs = await LogModel.find({})
+      const recentLogs = await LogModel.find(adminRecentActivityExcludeNoiseFilter)
         .sort({ timestamp: -1 })
         .limit(12)
         .select('message category timestamp')

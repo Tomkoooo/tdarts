@@ -57,6 +57,10 @@ function toHomeTournament(item: any): HomeTournament {
     legsLost: toSafeNumber(item?.legsLost),
     nextMatchType: item?.nextMatchType || "unknown",
     nextMatchBoard: typeof item?.nextMatchBoard === "number" ? item.nextMatchBoard : null,
+    nextMatchOpponentName:
+      typeof item?.nextMatchOpponentName === "string" && item.nextMatchOpponentName.trim()
+        ? item.nextMatchOpponentName.trim()
+        : null,
   };
 }
 
