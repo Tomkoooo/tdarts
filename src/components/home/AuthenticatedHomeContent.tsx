@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useRef, useState } from "react"
 import { useUserContext } from "@/hooks/useUser"
+import { useProfileCompletenessToast } from "@/hooks/useProfileCompletenessToast"
 import AnnouncementToast from "@/components/common/AnnouncementToast"
 import { useUnreadTickets, UnreadTicketToast } from "@/hooks/useUnreadTickets"
 import {
@@ -59,6 +60,7 @@ export default function AuthenticatedHomeContent({
   serverProfilePicture,
 }: AuthenticatedHomeContentProps) {
   const { user } = useUserContext()
+  useProfileCompletenessToast()
   const [announcements, setAnnouncements] = useState<Announcement[]>(initialData.announcements || [])
   const [closedAnnouncements, setClosedAnnouncements] = useState<Set<string>>(new Set())
   const { unreadCount, loading: unreadLoading } = useUnreadTickets({ enabled: Boolean(user?._id) })

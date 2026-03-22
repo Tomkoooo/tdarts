@@ -1,7 +1,9 @@
+import { cookies } from "next/headers";
 import AuthenticatedHomeContent, {
   type HomeInitialData,
 } from "@/components/home/AuthenticatedHomeContent";
 import { getUserTournamentsAction } from "@/features/tournaments/actions/getUserTournaments.action";
+import { getUserTimeZone } from "@/lib/date-time";
 import { getPlayerStatsAction } from "@/features/profile/actions/getPlayerStats.action";
 import { getLeagueHistoryAction } from "@/features/profile/actions/getLeagueHistory.action";
 import { getActiveAnnouncementsAction } from "@/features/announcements/actions/getActiveAnnouncements.action";
@@ -101,12 +103,26 @@ function toHomeMetrics(statsData: any): HomeMetrics {
   };
 }
 
+function resolveHomeTournamentTimeZone(cookieValue: string | undefined): string {
+  if (cookieValue) {
+    try {
+      return decodeURIComponent(cookieValue);
+    } catch {
+      /* fall through */
+    }
+  }
+  return getUserTimeZone();
+}
+
 export default async function HomeServerShell({
   locale,
   serverUserName,
   serverUsername,
   serverProfilePicture,
 }: HomeServerShellProps) {
+  const cookieStore = await cookies();
+  const homeTournamentTimeZone = resolveHomeTournamentTimeZone(cookieStore.get("user-timezone")?.value);
+
   const [
     tournamentsRes,
     statsRes,
@@ -114,7 +130,7 @@ export default async function HomeServerShell({
     featureRes,
     announcementsRes,
   ] = await Promise.allSettled([
-    getUserTournamentsAction({ limit: 20 }),
+    getUserTournamentsAction({ limit: 50, timeZone: homeTournamentTimeZone }),
     getPlayerStatsAction(),
     getLeagueHistoryAction(),
     checkFeatureFlagAction({ feature: "ADVANCED_STATISTICS" }),

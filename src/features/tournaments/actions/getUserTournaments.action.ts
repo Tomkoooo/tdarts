@@ -13,9 +13,14 @@ import { MatchModel } from '@/database/models/match.model';
 import { serializeForClient } from '@/shared/lib/serializeForClient';
 import mongoose from 'mongoose';
 import { unstable_cache } from 'next/cache';
+import { getDayBoundsInTimeZone } from '@/lib/date-time';
+
+const HOME_FINISHED_LOOKBACK_MS = 120 * 24 * 60 * 60 * 1000;
 
 const schema = z.object({
-  limit: z.number().int().positive().max(20).optional(),
+  limit: z.number().int().positive().max(60).optional(),
+  /** IANA zone for "start of today" when matching `startDate >= today` (e.g. from `user-timezone` cookie). */
+  timeZone: z.string().min(1).max(120).optional(),
 });
 
 export async function getUserTournamentsAction(input: z.infer<typeof schema> = {}) {
@@ -32,6 +37,10 @@ export async function getUserTournamentsAction(input: z.infer<typeof schema> = {
 
       const userId = authResult.data.userId;
       const limit = parsed.data.limit ?? 5;
+      const timeZone = parsed.data.timeZone || 'UTC';
+      const { dayStartUtc: todayStart } = getDayBoundsInTimeZone(timeZone);
+      const recentFinishedCutoff = new Date(todayStart.getTime() - HOME_FINISHED_LOOKBACK_MS);
+
       const fetchHomeTournaments = async () => {
         await connectMongo();
         const player = await PlayerService.findPlayerByUserId(userId);
@@ -39,8 +48,6 @@ export async function getUserTournamentsAction(input: z.infer<typeof schema> = {
           return [];
         }
 
-        const todayStart = new Date();
-        todayStart.setHours(0, 0, 0, 0);
         const playerObjectId = new mongoose.Types.ObjectId(player._id.toString());
         const pairShellPlayers = await PlayerModel.find({ members: playerObjectId })
           .select('_id')
@@ -68,9 +75,19 @@ export async function getUserTournamentsAction(input: z.infer<typeof schema> = {
                       'started',
                       'group-stage',
                       'knockout',
-                      'finished',
                     ],
                   },
+                },
+                {
+                  'tournamentSettings.status': 'finished',
+                  'tournamentSettings.startDate': { $gte: recentFinishedCutoff },
+                },
+                {
+                  'tournamentSettings.status': 'pending',
+                  $or: [
+                    { 'tournamentSettings.startDate': { $exists: false } },
+                    { 'tournamentSettings.startDate': null },
+                  ],
                 },
               ],
             },
@@ -205,7 +222,7 @@ export async function getUserTournamentsAction(input: z.infer<typeof schema> = {
 
       const cacheEnabled = process.env.HOME_CACHE_ENABLED !== 'false';
       const data = cacheEnabled
-        ? await unstable_cache(fetchHomeTournaments, [`home-user-tournaments:${userId}:${limit}`], {
+        ? await unstable_cache(fetchHomeTournaments, [`home-user-tournaments:${userId}:${limit}:${timeZone}`], {
             revalidate: 15,
             tags: ['home:tournaments', `home:tournaments:${userId}`],
           })()

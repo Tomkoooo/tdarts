@@ -10,6 +10,13 @@ import { useUserContext } from "@/hooks/useUser";
 const DISMISS_KEY = "profileCompletenessToastDismissedUntil";
 const DISMISS_MS = 1000 * 60 * 60 * 6; // 6 hours
 
+/** Strip `/[locale]` prefix so checks match `next-intl` paths (`/hu/home` → `/home`). */
+function pathWithoutLocale(pathname: string): string {
+  const trimmed = pathname.replace(/\/$/, "") || "/";
+  const stripped = trimmed.replace(/^\/(hu|en|de)(?=\/|$)/i, "");
+  return stripped === "" ? "/" : stripped.startsWith("/") ? stripped : `/${stripped}`;
+}
+
 interface UserClubCompleteness {
   _id: string;
   name: string;
@@ -35,9 +42,10 @@ export const useProfileCompletenessToast = () => {
   useEffect(() => {
     const showCompletenessToast = async () => {
       if (!user) return;
-      const isRootPage = pathname === "/";
-      const isProfilePage = pathname?.startsWith("/profile");
-      if (!isRootPage && !isProfilePage) return;
+      const p = pathname ? pathWithoutLocale(pathname) : "";
+      const isHomePage = p === "/home" || p === "/";
+      const isProfilePage = p.startsWith("/profile");
+      if (!isHomePage && !isProfilePage) return;
       if (shouldSkipToast()) return;
 
       const missingUserCountry = !user.country;

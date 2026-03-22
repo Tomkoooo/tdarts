@@ -1,4 +1,5 @@
 import { connectMongo } from '@/lib/mongoose';
+import { UserModel } from '@/database/models/user.model';
 import { PlayerModel } from '@/database/models/player.model';
 import { MatchModel } from '@/database/models/match.model';
 import { TournamentModel } from '@/database/models/tournament.model';
@@ -209,10 +210,24 @@ export async function getProfilePlayerStats(userId: string): Promise<ProfilePlay
 
   const tournamentHistory = (player.tournamentHistory || []) as unknown[];
 
+  const userDoc = await UserModel.findById(userId).select('country profilePicture').lean();
+  const userCountry =
+    userDoc && userDoc.country != null && String(userDoc.country).trim() !== ''
+      ? String(userDoc.country).trim()
+      : '';
+  const userPic =
+    userDoc && userDoc.profilePicture != null && String(userDoc.profilePicture).trim() !== ''
+      ? String(userDoc.profilePicture).trim()
+      : '';
+
   const profileIssues: ProfileCompletenessIssue[] = [];
   const pic = (player as { profilePicture?: string | null }).profilePicture;
-  if (pic == null || String(pic).trim() === '') profileIssues.push('photo');
-  if (player.country == null || String(player.country).trim() === '') profileIssues.push('country');
+  const playerPicTrim = pic == null || String(pic).trim() === '' ? '' : String(pic).trim();
+  const playerCountryTrim =
+    player.country == null || String(player.country).trim() === '' ? '' : String(player.country).trim();
+
+  if (!playerPicTrim && !userPic) profileIssues.push('photo');
+  if (!playerCountryTrim && !userCountry) profileIssues.push('country');
 
   return serializeForClient({
     hasPlayer: true,

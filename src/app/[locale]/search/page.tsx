@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback, useRef } from "react"
+import { useState, useEffect, useCallback, useRef, type CSSProperties, type ChangeEvent } from "react"
 import { useSearchParams, useRouter, usePathname } from "next/navigation"
 import { useDebounce } from "use-debounce"
 import { SearchTabs } from "@/components/search/SearchTabs"
@@ -10,7 +10,7 @@ import { PlayerLeaderboard } from "@/components/search/PlayerLeaderboard"
 import { ClubList } from "@/components/search/ClubList"
 import { LeagueList } from "@/components/search/LeagueList"
 import { Input } from "@/components/ui/Input"
-import { IconSearch, IconLoader2 } from "@tabler/icons-react"
+import { IconSearch, IconLoader2, IconFilter } from "@tabler/icons-react"
 import type { SearchFilters } from "@/database/services/search.service"
 import { Button } from "@/components/ui/Button"
 import { Link } from "@/i18n/routing"
@@ -20,6 +20,7 @@ import { useTranslations } from "next-intl"
 import { getUserTimeZone } from "@/lib/date-time"
 import { searchAction } from "@/features/search/actions/search.action"
 import { Skeleton } from "@/components/ui/skeleton"
+import { cn } from "@/lib/utils"
 
 interface TabCounts {
     global: number;
@@ -42,6 +43,7 @@ export default function SearchPage() {
     const router = useRouter()
     const pathname = usePathname()
     const t = useTranslations('Search')
+    const tFloat = useTranslations('Search.floating_filters')
     const userTimeZone = getUserTimeZone()
 
     const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "global")
@@ -49,6 +51,8 @@ export default function SearchPage() {
     const [debouncedQuery] = useDebounce(query, 500)
     const [headerHeight, setHeaderHeight] = useState(112)
     const headerRef = useRef<HTMLDivElement | null>(null)
+    const filterSectionRef = useRef<HTMLDivElement | null>(null)
+    const [showFiltersFab, setShowFiltersFab] = useState(false)
     
     const parseFiltersFromUrl = useCallback((): SearchFilters => ({
         status: searchParams.get("status") || undefined,
@@ -201,6 +205,45 @@ export default function SearchPage() {
         fetchData()
     }, [debouncedQuery, activeTab, filters, userTimeZone])
 
+    useEffect(() => {
+        if (typeof document === "undefined") return
+        document.documentElement.style.setProperty("--search-sticky-offset", `${headerHeight}px`)
+    }, [headerHeight])
+
+    useEffect(() => {
+        if (activeTab === "map") {
+            setShowFiltersFab(false)
+            return
+        }
+        const updateFab = () => {
+            const el = filterSectionRef.current
+            if (!el) {
+                setShowFiltersFab(false)
+                return
+            }
+            const bottom = el.getBoundingClientRect().bottom
+            setShowFiltersFab(bottom < headerHeight + 24)
+        }
+        updateFab()
+        window.addEventListener("scroll", updateFab, { passive: true })
+        window.addEventListener("resize", updateFab)
+        const tId = window.setTimeout(updateFab, 350)
+        return () => {
+            window.removeEventListener("scroll", updateFab)
+            window.removeEventListener("resize", updateFab)
+            window.clearTimeout(tId)
+        }
+    }, [
+        activeTab,
+        headerHeight,
+        isLoading,
+        debouncedQuery,
+        groupedResults.tournaments.length,
+        groupedResults.players.length,
+        metadata.cities.length,
+        results.length,
+    ])
+
     const handleTabChange = (tab: string) => {
         setActiveTab(tab)
         setResults([])
@@ -260,7 +303,7 @@ export default function SearchPage() {
         updateUrl({ [urlKey]: value, page: 1 })
     }
 
-    const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleSearch = (e: ChangeEvent<HTMLInputElement>) => {
         setQuery(e.target.value)
         setResults([])
         setFilters(prev => ({ ...prev, page: 1 }))
@@ -273,7 +316,10 @@ export default function SearchPage() {
     }
 
     return (
-        <div className="min-h-screen bg-background">
+        <div
+            className="min-h-screen bg-background"
+            style={{ ["--search-sticky-offset" as string]: `${headerHeight}px` } as CSSProperties}
+        >
             <div ref={headerRef} className="z-40 sticky top-0 border-b border-border/70 bg-card/75 backdrop-blur-xl">
                 <div className="container mx-auto px-4 py-4 space-y-4">
                     <div className="flex gap-3 w-full justify-center">
@@ -321,6 +367,7 @@ export default function SearchPage() {
                     onFilterChange={handleFilterChange}
                     cities={metadata.cities || []}
                     hasActiveQuery={!!debouncedQuery}
+                    sectionRef={filterSectionRef}
                 />
 
                 <div className="min-h-[400px]">
@@ -415,6 +462,26 @@ export default function SearchPage() {
                     )}
                 </div>
             </main>
+
+            {showFiltersFab && activeTab !== "map" ? (
+                <Button
+                    type="button"
+                    variant="default"
+                    size="lg"
+                    className={cn(
+                        "fixed z-[45] h-12 gap-0 rounded-full px-4 shadow-lg ring-2 ring-background/80",
+                        "md:bottom-6 md:right-6",
+                        "max-md:right-4 max-md:bottom-[max(6.85rem,calc(env(safe-area-inset-bottom)+6rem))]"
+                    )}
+                    aria-label={tFloat("scroll_to_filters")}
+                    onClick={() =>
+                        filterSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
+                    }
+                >
+                    <IconFilter className="mr-2 h-5 w-5 shrink-0" aria-hidden />
+                    <span className="text-sm font-semibold">{tFloat("short_label")}</span>
+                </Button>
+            ) : null}
         </div>
     )
 }

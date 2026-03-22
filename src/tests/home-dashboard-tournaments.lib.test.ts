@@ -1,4 +1,7 @@
-import { filterUserHomeTournamentsForDashboard } from "@/features/home/ui/homeUtils";
+import {
+  filterUserHomeTournamentsForDashboard,
+  getActiveOrNextTournament,
+} from "@/features/home/ui/homeUtils";
 import type { HomeTournament } from "@/features/home/ui/types";
 
 describe("filterUserHomeTournamentsForDashboard", () => {
@@ -30,5 +33,17 @@ describe("filterUserHomeTournamentsForDashboard", () => {
     expect(ids.has("c")).toBe(false);
     expect(ids.has("d")).toBe(false);
     expect(ids.has("e")).toBe(true);
+  });
+
+  it("getActiveOrNextTournament uses filtered list and returns next pending upcoming when nothing active", () => {
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date(2025, 2, 21, 15, 0, 0));
+
+    const base: Omit<HomeTournament, "date" | "status" | "_id"> = { name: "T", code: "c" };
+    const tomorrow = new Date(2025, 2, 22, 10, 0, 0).toISOString();
+    const rows: HomeTournament[] = [{ ...base, _id: "next", date: tomorrow, status: "pending" }];
+
+    const next = getActiveOrNextTournament(rows);
+    expect(next?._id).toBe("next");
   });
 });

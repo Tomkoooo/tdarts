@@ -1,5 +1,6 @@
 'use server';
 
+import { revalidateTag } from 'next/cache';
 import { z } from 'zod';
 import { authorizeUserResult } from '@/features/auth/lib/authorizeUser';
 import { ProfileService } from '@/database/services/profile.service';
@@ -50,6 +51,9 @@ export async function updateProfileAction(updates: UpdateProfileInput) {
       }
 
       const user = await ProfileService.updateProfile(authResult.data.userId, rest);
+      const uid = authResult.data.userId;
+      revalidateTag('home:stats', 'max');
+      revalidateTag(`home:stats:${uid}`, 'max');
       return {
         success: true,
         message: 'Profile updated successfully',

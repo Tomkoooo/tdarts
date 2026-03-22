@@ -172,6 +172,7 @@
     "all_tournaments": "Összes Torna",
     "upcoming_tournaments": "Közelgő Tornák",
     "no_results": "Nincs találat a keresési feltételeknek megfelelően.",
+    "noResults": "Nincs találat a keresési feltételeknek megfelelően.",
     "back_to_portal": "Vissza a portál oldalra",
     "load_more": "További találatok betöltése",
     "loading": "Betöltés...",
@@ -187,6 +188,27 @@
       "map": "Térkép"
     },
     "filters": {
+      "filterLabel": "Szűrők",
+      "activeFilters": "{count} aktív",
+      "clear": "Törlés",
+      "timeLabel": "Időpont",
+      "upcoming": "Közelgő",
+      "past": "Múltbeli",
+      "all": "Összes",
+      "seasonLabel": "Szezon",
+      "currentSeason": "Jelenlegi szezon",
+      "typeLabel": "Típus",
+      "typeAll": "Minden típus",
+      "typeAmateur": "Amatőr",
+      "typeOpen": "Nyílt",
+      "countryLabel": "Ország",
+      "countries": {
+        "hu": "Magyarország",
+        "de": "Németország",
+        "at": "Ausztria",
+        "sk": "Szlovákia",
+        "ro": "Románia"
+      },
       "startDate_label": "Kezdés (dátum)",
       "startDate_any": "Bármikor",
       "startDate_yesterday": "Tegnap",
@@ -224,7 +246,15 @@
       "verification_label": "Hitelesítés",
       "verified_showing": "Hitelesített megjelenítése",
       "verified_only": "Csak hitelesített",
-      "clear_filters_title": "Szűrők törlése"
+      "clear_filters_title": "Szűrők törlése",
+      "player_mode_label": "Játékos típus",
+      "player_mode_all": "Összes",
+      "player_mode_individual": "Egyéni",
+      "player_mode_pair": "Páros"
+    },
+    "floating_filters": {
+      "scroll_to_filters": "Ugrás a szűrőkhöz",
+      "short_label": "Szűrők"
     },
     "quick_filters": {
       "upcoming": "Közelgő",
@@ -325,31 +355,7 @@
       "status_active": "Aktív szezon",
       "status_closed": "Lezárt",
       "details": "Részletek"
-    },
-    "filters": {
-      "all": "Összes",
-      "countryLabel": "Ország",
-      "currentSeason": "Aktuális szezon",
-      "filterLabel": "Szűrők",
-      "seasonLabel": "Szezon",
-      "timeLabel": "Dátum",
-      "typeAll": "Összes típus",
-      "typeAmateur": "Amatőr",
-      "typeLabel": "Típus",
-      "typeOpen": "Nyílt",
-      "upcoming": "Közelgő",
-      "past": "Korábbi",
-      "clear": "Törlés",
-      "activeFilters": "{count} aktív",
-      "countries": {
-        "hu": "Magyarország",
-        "de": "Németország",
-        "at": "Ausztria",
-        "sk": "Szlovákia",
-        "ro": "Románia"
-      }
-    },
-    "noResults": "There are no results matching your search criteria."
+    }
   },
   "Profile": {
     "loading_data": "Felhasználói adatok betöltése...",
@@ -3932,8 +3938,7 @@
       "nextScoringReminder": "Számlálóként vagy beírva ehhez a táblához — legyél kész.",
       "landingPage": "A tDarts bemutatója",
       "nextUnknown": "Még nincs következő tábla hozzárendelés",
-      "profileIncompleteBanner": "Egészítsd ki a játékos profilodat ({count} hiányzik)",
-      "notificationsIncludingProfile": "{count} értesítésed van (profil is)"
+      "profileIncompleteWarning": "A profilod hiányos ({count} hiányzik)"
     },
     "stats": {
       "matches": "Lejátszott meccsek",

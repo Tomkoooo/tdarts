@@ -207,22 +207,43 @@ export default function HomeHeaderTile({
         </div>
       </div>
 
-      {!loading && notificationCount > 0 && (
+      {!loading && profileIssueCount > 0 ? (
+        onNotificationWarningClick ? (
+          <button
+            type="button"
+            onClick={onNotificationWarningClick}
+            className={`relative flex w-full items-center gap-2 rounded-xl border border-warning/40 bg-warning/20 px-3 py-2 text-left text-xs font-semibold text-warning-foreground ${
+              notificationCount > profileIssueCount ? "mt-2" : "mt-3"
+            }`}
+          >
+            <IconAlertTriangle className="h-4 w-4 shrink-0" aria-hidden />
+            <span className="min-w-0">{t("header.profileIncompleteWarning", { count: profileIssueCount })}</span>
+          </button>
+        ) : (
+          <Link
+            href="/profile?tab=details"
+            className={`relative flex w-full items-center gap-2 rounded-xl border border-warning/40 bg-warning/20 px-3 py-2 text-left text-xs font-semibold text-warning-foreground ${
+              notificationCount > profileIssueCount ? "mt-2" : "mt-3"
+            }`}
+          >
+            <IconAlertTriangle className="h-4 w-4 shrink-0" aria-hidden />
+            <span className="min-w-0">{t("header.profileIncompleteWarning", { count: profileIssueCount })}</span>
+          </Link>
+        )
+      ) : null}
+
+      {!loading && notificationCount > profileIssueCount ? (
         <button
           type="button"
           onClick={onNotificationWarningClick}
-          className="relative mt-3 flex w-full items-center gap-2 rounded-xl border border-warning/40 bg-warning/20 px-3 py-2 text-left text-xs font-semibold text-warning-foreground"
+          className={`relative flex w-full items-center gap-2 rounded-xl border border-warning/40 bg-warning/20 px-3 py-2 text-left text-xs font-semibold text-warning-foreground ${
+            profileIssueCount > 0 ? "mt-2" : "mt-3"
+          }`}
         >
           <IconAlertTriangle className="h-4 w-4 shrink-0" />
-          <span className="min-w-0">
-            {profileIssueCount > 0 && notificationCount === profileIssueCount
-              ? t("header.profileIncompleteBanner", { count: profileIssueCount })
-              : profileIssueCount > 0
-                ? t("header.notificationsIncludingProfile", { count: notificationCount })
-                : t("header.notificationsWarning", { count: notificationCount })}
-          </span>
+          <span className="min-w-0">{t("header.notificationsWarning", { count: notificationCount - profileIssueCount })}</span>
         </button>
-      )}
+      ) : null}
 
       <div className="relative mt-4 flex flex-wrap gap-2">
         <Button asChild className="md:hidden" variant="outline" size="sm">

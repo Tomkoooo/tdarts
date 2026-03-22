@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "NEXT_PUBLIC_ENABLE_SOCKET=true next dev",
     "build": "next build",
-    "start": "NODE_ENV=production next start",
+    "start": "NODE_ENV=production node server.js || NODE_ENV=production next start",
     "lint": "eslint . && node scripts/check-api-telemetry-coverage.js",
     "test": "jest --runInBand src/tests/auth.service.test.ts src/tests/club.service.test.ts src/tests/profile.service.test.ts src/tests/oac-mmr.service.test.ts src/tests/tournament-paywall.test.ts src/tests/simple-tournament-lifecycle.test.ts",
     "test:qa:unit": "jest --runInBand --forceExit src/tests/*.action.test.ts src/tests/*.lib.test.ts src/tests/withTelemetry.guard-failure.test.ts src/tests/withRouteTelemetry.test.ts src/tests/eligibility.paid-override.test.ts src/tests/create-player.action.guard.test.ts",

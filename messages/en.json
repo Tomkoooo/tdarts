@@ -168,12 +168,14 @@
   "Search": {
     "placeholder": "Search tournaments, clubs, or players...",
     "oac_toggle": "OAC Results",
-    "resultsTitle": "Search Results",
-    "allTournaments": "All Tournaments",
-    "upcomingTournaments": "Upcoming Tournaments",
+    "results_title": "Search Results",
+    "all_tournaments": "All tournaments",
+    "upcoming_tournaments": "Upcoming tournaments",
+    "no_results": "There are no results matching your search criteria.",
     "noResults": "There are no results matching your search criteria.",
-    "backToPortal": "Back to the portal page",
-    "loadMore": "Load more results",
+    "back_to_portal": "Back to portal",
+    "load_more": "Load more results",
+    "loading": "Loading...",
     "tabs": {
       "global": "All",
       "tournaments": "Tournaments",
@@ -183,7 +185,9 @@
       "map": "Map"
     },
     "filters": {
-      "popularCities": "Popular cities",
+      "filterLabel": "Filters",
+      "activeFilters": "{count} active",
+      "clear": "Clear",
       "timeLabel": "Date",
       "upcoming": "Upcoming",
       "past": "Past",
@@ -191,13 +195,10 @@
       "seasonLabel": "Season",
       "currentSeason": "Current Season",
       "typeLabel": "Type",
+      "typeAll": "All types",
       "typeAmateur": "Amateur",
       "typeOpen": "Open",
       "countryLabel": "Country",
-      "filterLabel": "Filters",
-      "typeAll": "All types",
-      "clear": "Clear",
-      "activeFilters": "{count} active",
       "countries": {
         "hu": "Hungary",
         "de": "Germany",
@@ -214,16 +215,40 @@
       "startDate_from": "From",
       "startDate_to": "To"
     },
-    "all_tournaments": "Összes Torna",
-    "back_to_portal": "Vissza a portál oldalra",
+    "filter_bar": {
+      "popular_cities": "Popular cities",
+      "time_label": "When",
+      "upcoming": "Upcoming",
+      "all": "All",
+      "season_label": "Season",
+      "select_year": "Select year",
+      "current_season": "Current season",
+      "year_season": "{year} season",
+      "type_label": "Type",
+      "type_all": "All",
+      "type_amateur": "Amateur",
+      "type_open": "Open",
+      "country_label": "Country",
+      "country_placeholder": "Choose country",
+      "country_all": "All countries",
+      "verification_label": "Verification",
+      "verified_showing": "Showing verified",
+      "verified_only": "Verified only",
+      "clear_filters_title": "Clear filters",
+      "player_mode_label": "Player type",
+      "player_mode_all": "All",
+      "player_mode_individual": "Singles",
+      "player_mode_pair": "Pairs"
+    },
+    "floating_filters": {
+      "scroll_to_filters": "Jump to filters",
+      "short_label": "Filters"
+    },
     "club_list": {
       "member_count": "{count} tag",
       "no_clubs": "Nincsenek klubok",
       "tournament_count": "Verseny",
       "view_profile": "Adatlap"
-    },
-    "filter_bar": {
-      "all": "Összes"
     },
     "filters_panel": {
       "clear": "Törlés",
@@ -4045,8 +4070,7 @@
       "nextScoringReminder": "You are assigned as scorer for this board — stay ready.",
       "landingPage": "About tDarts",
       "nextUnknown": "No upcoming board assignment yet",
-      "profileIncompleteBanner": "Complete your player profile ({count} missing)",
-      "notificationsIncludingProfile": "You have {count} notifications (including profile)"
+      "profileIncompleteWarning": "Your profile is incomplete ({count} missing)"
     },
     "stats": {
       "matches": "Matches Played",

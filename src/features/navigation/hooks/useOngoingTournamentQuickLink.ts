@@ -4,6 +4,7 @@ import * as React from "react"
 import { getUserTournamentsAction } from "@/features/tournaments/actions/getUserTournaments.action"
 import { filterUserHomeTournamentsForDashboard } from "@/features/home/ui/homeUtils"
 import { isLocalCalendarDayToday } from "@/lib/local-calendar-date"
+import { getUserTimeZone } from "@/lib/date-time"
 
 interface QuickTournamentLink {
   code: string
@@ -48,7 +49,7 @@ export function useOngoingTournamentQuickLinkWithOptions(
 
     const loadOngoingTournament = async () => {
       try {
-        const result = await getUserTournamentsAction({ limit: 10 })
+        const result = await getUserTournamentsAction({ limit: 10, timeZone: getUserTimeZone() })
         if (!result || typeof result !== "object" || !("success" in result) || !result.success) {
           return
         }

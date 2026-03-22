@@ -499,6 +499,7 @@
     "all_tournaments": "Alle Turniere",
     "upcoming_tournaments": "Kommende Turniere",
     "no_results": "Es gibt keine Ergebnisse, die Ihren Suchkriterien entsprechen.",
+    "noResults": "Es gibt keine Ergebnisse, die Ihren Suchkriterien entsprechen.",
     "back_to_portal": "Zurück zur Portalseite",
     "load_more": "Weitere Ergebnisse werden geladen",
     "loading": "Laden...",
@@ -514,6 +515,27 @@
       "map": "Karte"
     },
     "filters": {
+      "filterLabel": "Filter",
+      "activeFilters": "{count} aktiv",
+      "clear": "Löschen",
+      "timeLabel": "Datum",
+      "upcoming": "Demnächst",
+      "past": "Vergangen",
+      "all": "Alle",
+      "seasonLabel": "Saison",
+      "currentSeason": "Aktuelle Saison",
+      "typeLabel": "Typ",
+      "typeAll": "Alle Typen",
+      "typeAmateur": "Amateur",
+      "typeOpen": "Offen",
+      "countryLabel": "Land",
+      "countries": {
+        "hu": "Ungarn",
+        "de": "Deutschland",
+        "at": "Österreich",
+        "sk": "Slowakei",
+        "ro": "Rumänien"
+      },
       "startDate_label": "Startdatum",
       "startDate_any": "Beliebig",
       "startDate_yesterday": "Gestern",
@@ -551,7 +573,15 @@
       "verification_label": "Authentifizierung",
       "verified_showing": "Anzeige authentifiziert",
       "verified_only": "Gerade authentifiziert",
-      "clear_filters_title": "Filter löschen"
+      "clear_filters_title": "Filter löschen",
+      "player_mode_label": "Spielertyp",
+      "player_mode_all": "Alle",
+      "player_mode_individual": "Einzel",
+      "player_mode_pair": "Doppel"
+    },
+    "floating_filters": {
+      "scroll_to_filters": "Zu den Filtern springen",
+      "short_label": "Filter"
     },
     "quick_filters": {
       "upcoming": "Demnächst",
@@ -652,31 +682,7 @@
       "status_active": "Aktive Saison",
       "status_closed": "Geschlossen",
       "details": "Einzelheiten"
-    },
-    "filters": {
-      "all": "Alle",
-      "countryLabel": "Land",
-      "currentSeason": "Aktuelle Saison",
-      "filterLabel": "Filter",
-      "seasonLabel": "Saison",
-      "timeLabel": "Datum",
-      "typeAll": "Alle Typen",
-      "typeAmateur": "Amateur",
-      "typeLabel": "Typ",
-      "typeOpen": "Offen",
-      "upcoming": "Bevorstehend",
-      "past": "Vergangen",
-      "clear": "Zurücksetzen",
-      "activeFilters": "{count} aktiv",
-      "countries": {
-        "hu": "Ungarn",
-        "de": "Deutschland",
-        "at": "Österreich",
-        "sk": "Slowakei",
-        "ro": "Rumänien"
-      }
-    },
-    "noResults": "There are no results matching your search criteria."
+    }
   },
   "Metadata": {
     "title": "tDarts – Abzugssystem für Darts-Turniere",
@@ -3889,8 +3895,7 @@
       "nextScoringReminder": "Du bist als Schreiber für diesen Tisch eingeteilt — bleib bereit.",
       "landingPage": "Über tDarts",
       "nextUnknown": "Noch keine nächste Board-Zuweisung",
-      "profileIncompleteBanner": "Spielerprofil vervollständigen ({count} fehlt)",
-      "notificationsIncludingProfile": "Du hast {count} Benachrichtigungen (inkl. Profil)"
+      "profileIncompleteWarning": "Profil unvollständig ({count} fehlt)"
     },
     "stats": {
       "matches": "Gespielte Matches",
