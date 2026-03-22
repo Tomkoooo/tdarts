@@ -92,7 +92,11 @@ const LegsViewModal: React.FC<LegsViewModalProps> = ({ isOpen, onClose, match: i
   const [exportBusy, setExportBusy] = useState(false)
   const recapExportRef = useRef<HTMLDivElement>(null)
 
-  const { isEnabled: isDetailedStatsEnabled, isLoading: isFeatureFlagLoading } = useFeatureFlag("detailedStatistics", clubId)
+  const {
+    isEnabled: isDetailedStatsEnabled,
+    isLoading: isFeatureFlagLoading,
+    denialReason: detailedStatsDenialReason,
+  } = useFeatureFlag("detailedStatistics", clubId)
 
   useEffect(() => {
     setMatch(initialMatch)

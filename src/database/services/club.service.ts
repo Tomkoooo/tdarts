@@ -8,12 +8,22 @@ import { PlayerModel } from '@/database/models/player.model';
 import { TournamentModel } from '@/database/models/tournament.model';
 import { AuthorizationService } from './authorization.service';
 import { GeocodingService } from './geocoding.service';
+import { clubHasCorrectAddress, clubHasGeoLocationSynced } from '@/lib/club-location-completeness';
+import type { StructuredLocation } from '@/interface/location.interface';
 
 //TODO a klubba és a tornákra ezentúl nem a user collectionből vesszük fel az emberekt.
 //Hanem egy köztes kapcsoló Player collectionbe rakjuk és hogyha regisztrált akkor kap egy userRefet
 //Viszont így is úgy is felvesszük a nevét, és a statisztikák minden esetben itt lesznek tárolva
 //Frontendről  elsz egy kereső ami innen és a user collectionből keres embereket és ha tornához 
 //vagy klubbhoz rendeljük őket akkor igazából a player collectionbe kerülnek fevételre és a klubbon is oda fog tartozni a referencia kivéve az admin és modoknál.
+
+export type ManagedClubLocationCompletenessRow = {
+  _id: string;
+  name: string;
+  role: 'admin' | 'moderator';
+  hasCorrectAddress: boolean;
+  geoLocationSynced: boolean;
+};
 
 export class ClubService {
   private static readonly MANUAL_GEOCODE_COOLDOWN_MS = 24 * 60 * 60 * 1000;
@@ -765,6 +775,56 @@ export class ClubService {
                            (playerId && club.members.includes(playerId)) ? 'member' :
                            await AuthorizationService.checkAdminOnly(userId, club._id.toString()) ? 'admin' : 'none';
     return { clubs, userRoleInClub };
+  }
+
+  /**
+   * Admin/moderator clubs with venue address + map geocode completeness (for dashboard prompts).
+   */
+  static async listManagedClubsLocationCompleteness(
+    userId: string,
+    requestId?: string,
+  ): Promise<ManagedClubLocationCompletenessRow[]> {
+    const startedAt = Date.now();
+    await connectMongo();
+
+    const userObjectId = new Types.ObjectId(userId);
+    const clubs = await ClubModel.find({
+      $or: [{ admin: userObjectId }, { moderators: userObjectId }],
+    })
+      .select('_id name admin moderators location address structuredLocation')
+      .lean();
+
+    const rows: ManagedClubLocationCompletenessRow[] = [];
+    for (const club of clubs) {
+      const c = club as {
+        _id: Types.ObjectId;
+        name?: string;
+        admin?: Types.ObjectId[];
+        moderators?: Types.ObjectId[];
+        location?: string;
+        address?: string;
+        structuredLocation?: unknown;
+      };
+      const isAdmin = Array.isArray(c.admin) && c.admin.some((id) => id.equals(userObjectId));
+      const isModerator =
+        Array.isArray(c.moderators) && c.moderators.some((id) => id.equals(userObjectId));
+      if (!isAdmin && !isModerator) continue;
+
+      const sl = c.structuredLocation as StructuredLocation | undefined;
+      rows.push({
+        _id: String(c._id),
+        name: c.name || '',
+        role: isAdmin ? 'admin' : 'moderator',
+        hasCorrectAddress: clubHasCorrectAddress(sl, c.location, c.address),
+        geoLocationSynced: clubHasGeoLocationSynced(sl),
+      });
+    }
+
+    this.logTiming('listManagedClubsLocationCompleteness', startedAt, requestId, {
+      userId,
+      count: String(rows.length),
+    });
+    return rows;
   }
 
   static async getUserRoleInClub(userId: string, clubId: string, requestId?: string): Promise<string> {
