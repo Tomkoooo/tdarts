@@ -15,12 +15,17 @@ function getMMRTier(mmr: number): { name: string; color: string } {
   return { name: 'Kezdő', color: 'text-base-content' };
 }
 
+export type ProfileCompletenessIssue = 'photo' | 'country';
+
 export type ProfilePlayerStatsResult = {
   hasPlayer: boolean;
+  /** Shown on home dashboard when the user should fill in profile fields */
+  profileCompleteness?: { issues: ProfileCompletenessIssue[]; count: number };
   player?: {
     _id: string;
     name: string;
     country?: string | null;
+    profilePicture?: string | null;
     stats: Record<string, unknown>;
     mmrTier: { name: string; color: string };
     globalRank: number | null;
@@ -58,7 +63,7 @@ export async function getProfilePlayerStats(userId: string): Promise<ProfilePlay
 
   const player = await PlayerService.findPlayerByUserId(userId);
   if (!player) {
-    return { hasPlayer: false };
+    return { hasPlayer: false, profileCompleteness: { issues: [], count: 0 } };
   }
 
   const playerId = player._id.toString();
@@ -204,12 +209,19 @@ export async function getProfilePlayerStats(userId: string): Promise<ProfilePlay
 
   const tournamentHistory = (player.tournamentHistory || []) as unknown[];
 
+  const profileIssues: ProfileCompletenessIssue[] = [];
+  const pic = (player as { profilePicture?: string | null }).profilePicture;
+  if (pic == null || String(pic).trim() === '') profileIssues.push('photo');
+  if (player.country == null || String(player.country).trim() === '') profileIssues.push('country');
+
   return serializeForClient({
     hasPlayer: true,
+    profileCompleteness: { issues: profileIssues, count: profileIssues.length },
     player: {
       _id: player._id.toString(),
       name: player.name,
       country: player.country ?? null,
+      profilePicture: pic ?? null,
       stats: stats as Record<string, unknown>,
       mmrTier,
       globalRank,

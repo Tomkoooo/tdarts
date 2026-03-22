@@ -2,44 +2,30 @@
 
 import { unstable_cache } from 'next/cache';
 import { SearchService } from '@/database/services/search.service';
-import type { SearchFilters } from '@/database/services/search.service';
 import { withTelemetry } from '@/shared/lib/withTelemetry';
 import { getUserTimeZone } from '@/lib/date-time';
 import { serializeForClient } from '@/shared/lib/serializeForClient';
 import { perfFlags } from '@/features/performance/lib/perfFlags';
+import type { SearchActionInput, SearchActionResult } from '@/features/search/lib/searchActionTypes';
+import { applyTournamentStartDateForSearch, getSearchActionCacheKey } from '@/features/search/lib/searchActionHelpers';
 
-export type SearchActionInput = {
-  query: string;
-  tab: string;
-  filters: SearchFilters & { page?: number; timeZone?: string };
-  includeCounts?: boolean;
-  includeMetadata?: boolean;
-};
-
-export type SearchActionResult = {
-  results: any[];
-  counts?: { global: number; tournaments: number; players: number; clubs: number; leagues: number };
-  groupedResults?: { tournaments: any[]; players: any[]; clubs: any[]; leagues: any[] };
-  metadata?: { cities: { city: string; count: number }[] };
-  pagination?: { total: number; page: number; limit: number; totalPages?: number };
-};
+export type { SearchActionInput, SearchActionResult } from '@/features/search/lib/searchActionTypes';
 
 async function executeSearch(params: SearchActionInput) {
   const { query, tab, filters, includeCounts = false, includeMetadata = false } = params;
   const timeZone = filters.timeZone || getUserTimeZone();
-  const searchFilters: SearchFilters = {
+  const searchFilters = applyTournamentStartDateForSearch({
     ...filters,
     timeZone,
     page: filters.page || 1,
     limit: filters.limit || 10,
-  };
+  });
 
   const isFirstPage = (searchFilters.page || 1) === 1;
 
   let results: any[] = [];
   let total = 0;
   let counts: SearchActionResult['counts'];
-  let metadata: SearchActionResult['metadata'];
   let groupedResults: SearchActionResult['groupedResults'];
 
   const countsPromise =
@@ -91,7 +77,7 @@ async function executeSearch(params: SearchActionInput) {
     metadataPromise,
   ]);
   counts = counts || resolvedCounts;
-  metadata = resolvedMetadata;
+  const metadata = resolvedMetadata;
 
   const page = searchFilters.page || 1;
   const limit = searchFilters.limit || 10;
@@ -106,30 +92,6 @@ async function executeSearch(params: SearchActionInput) {
   };
 }
 
-function searchCacheKey(input: SearchActionInput): string[] {
-  const { query, tab, filters, includeCounts, includeMetadata } = input;
-  return [
-    'search',
-    tab,
-    query || '',
-    String(filters.page || 1),
-    String(filters.limit || 10),
-    filters.status || '',
-    filters.type || '',
-    filters.city || '',
-    String(!!filters.isVerified),
-    String(!!filters.isOac),
-    String(!!includeCounts),
-    String(!!includeMetadata),
-    filters.country || '',
-    filters.playerMode || '',
-    filters.rankingType || '',
-    filters.tournamentType || '',
-    String(filters.year || ''),
-    filters.timeZone || '',
-  ];
-}
-
 export async function searchAction(input: SearchActionInput): Promise<SearchActionResult> {
   const run = withTelemetry(
     'search.search',
@@ -141,7 +103,7 @@ export async function searchAction(input: SearchActionInput): Promise<SearchActi
           ? await executeSearch(params)
           : await unstable_cache(
               () => executeSearch(params),
-              searchCacheKey(params),
+              getSearchActionCacheKey(params),
               { tags: ['search'], revalidate: 60 }
             )();
       return serializeForClient(data) as SearchActionResult;

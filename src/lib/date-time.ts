@@ -161,3 +161,73 @@ export function getDayBoundsInTimeZone(
   const nextDayStartUtc = getUtcInstantForZonedDateTime(nextYear, nextMonth, nextDay, 0, 0, 0, 0, timeZone);
   return { dayStartUtc, nextDayStartUtc };
 }
+
+/** Calendar day bounds in `timeZone` for a `YYYY-MM-DD` key (half-open: [dayStartUtc, nextDayStartUtc)). */
+export function getZonedCalendarDayBoundsUtc(
+  dateKey: string,
+  timeZone: string
+): { dayStartUtc: Date; nextDayStartUtc: Date } | null {
+  const [year, month, day] = dateKey.split("-").map((part) => Number(part));
+  if (!year || !month || !day) return null;
+  const dayStartUtc = getUtcInstantForZonedDateTime(year, month, day, 0, 0, 0, 0, timeZone);
+  const nextKey = addDaysToDateKey(dateKey, 1);
+  if (!nextKey) return null;
+  const [ny, nm, nd] = nextKey.split("-").map((part) => Number(part));
+  if (!ny || !nm || !nd) return null;
+  const nextDayStartUtc = getUtcInstantForZonedDateTime(ny, nm, nd, 0, 0, 0, 0, timeZone);
+  return { dayStartUtc, nextDayStartUtc };
+}
+
+export type TournamentStartDatePresetId = "yesterday" | "last7" | "last30";
+
+const ROLLING_PRESET_DAYS: Record<"last7" | "last30", number> = {
+  last7: 7,
+  last30: 30,
+};
+
+/**
+ * Half-open UTC range for tournament startDate queries: [dateFromInclusive, dateToExclusive).
+ * Presets use calendar days in `timeZone` (yesterday = previous local day; last7/last30 include today).
+ */
+export function getTournamentStartDateRangeFromPreset(
+  preset: TournamentStartDatePresetId,
+  timeZone: string,
+  reference: Date = new Date()
+): { dateFromInclusive: Date; dateToExclusive: Date } | null {
+  const todayKey = getLocalDateKey(reference, timeZone);
+  if (!todayKey) return null;
+
+  if (preset === "yesterday") {
+    const yKey = addDaysToDateKey(todayKey, -1);
+    if (!yKey) return null;
+    const b = getZonedCalendarDayBoundsUtc(yKey, timeZone);
+    if (!b) return null;
+    return { dateFromInclusive: b.dayStartUtc, dateToExclusive: b.nextDayStartUtc };
+  }
+
+  const span = ROLLING_PRESET_DAYS[preset];
+  const startKey = addDaysToDateKey(todayKey, -(span - 1));
+  if (!startKey) return null;
+  const startBounds = getZonedCalendarDayBoundsUtc(startKey, timeZone);
+  const endBounds = getZonedCalendarDayBoundsUtc(todayKey, timeZone);
+  if (!startBounds || !endBounds) return null;
+  return { dateFromInclusive: startBounds.dayStartUtc, dateToExclusive: endBounds.nextDayStartUtc };
+}
+
+/** Inclusive custom range on calendar days in `timeZone` → half-open UTC instant range for queries. */
+export function getTournamentStartDateRangeFromCustomKeys(
+  fromKey: string,
+  toKey: string,
+  timeZone: string
+): { dateFromInclusive: Date; dateToExclusive: Date } | null {
+  const fromBounds = getZonedCalendarDayBoundsUtc(fromKey, timeZone);
+  const toBounds = getZonedCalendarDayBoundsUtc(toKey, timeZone);
+  if (!fromBounds || !toBounds) return null;
+  let start = fromBounds.dayStartUtc;
+  let endExclusive = toBounds.nextDayStartUtc;
+  if (start.getTime() > endExclusive.getTime()) {
+    start = toBounds.dayStartUtc;
+    endExclusive = fromBounds.nextDayStartUtc;
+  }
+  return { dateFromInclusive: start, dateToExclusive: endExclusive };
+}

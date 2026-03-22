@@ -14,6 +14,7 @@ import {
   adminFeedbackListAction,
   adminFeedbackMarkReadAction,
   adminFeedbackReplyAction,
+  adminFeedbackUnreadCountAction,
   adminFeedbackUpdateAction,
   adminLeaguesAddPlayerAction,
   adminLeaguesCreateForClubAction,
@@ -114,6 +115,7 @@ export const adminFeedbackActions = {
   delete: call(adminFeedbackDeleteAction),
   markRead: call(adminFeedbackMarkReadAction),
   reply: call(adminFeedbackReplyAction),
+  unreadCount: call(adminFeedbackUnreadCountAction),
 };
 
 export const adminTodosActions = {

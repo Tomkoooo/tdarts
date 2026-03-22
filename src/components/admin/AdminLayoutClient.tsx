@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, ReactNode, useMemo } from "react";
+import { useState, ReactNode, useMemo, useEffect } from "react";
 import { Link, usePathname } from "@/i18n/routing";
+import { adminFeedbackActions } from "@/features/admin/actions/adminDomains.action";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
 import { useTranslations } from "next-intl";
@@ -38,10 +39,12 @@ function SidebarContent({
   isCollapsed = false,
   onNavigate,
   onToggleCollapse,
+  feedbackUnreadCount = 0,
 }: {
   isCollapsed?: boolean;
   onNavigate?: () => void;
   onToggleCollapse?: () => void;
+  feedbackUnreadCount?: number;
 }) {
   const pathname = usePathname();
   const t = useTranslations("Admin.layout");
@@ -70,13 +73,20 @@ function SidebarContent({
         {sidebarItems.map((item) => {
           const Icon = item.icon;
           const isActive = pathname === item.href;
+          const isFeedback = item.href === "/admin/feedback";
+          const showUnread = isFeedback && feedbackUnreadCount > 0;
           return (
             <Link
               key={item.href}
               href={item.href}
               onClick={onNavigate}
+              aria-label={
+                showUnread && isCollapsed
+                  ? t("sidebar.feedback_unread_aria", { count: feedbackUnreadCount })
+                  : undefined
+              }
               className={cn(
-                "flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition-all duration-200 border",
+                "relative flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition-all duration-200 border",
                 "hover:bg-muted hover:text-foreground hover:scale-[1.02] hover:shadow-sm",
                 "active:scale-[0.98]",
                 isActive
@@ -86,7 +96,28 @@ function SidebarContent({
               )}
             >
               <Icon className="h-5 w-5 shrink-0" />
-              {!isCollapsed && <span className="truncate">{t(item.title)}</span>}
+              {!isCollapsed && (
+                <>
+                  <span className="truncate">{t(item.title)}</span>
+                  {showUnread && (
+                    <span
+                      className={cn(
+                        "ml-auto shrink-0 min-w-5 rounded-full px-1.5 py-0.5 text-center text-[10px] font-bold leading-none",
+                        isActive ? "bg-primary-foreground/20 text-primary-foreground" : "bg-destructive text-destructive-foreground"
+                      )}
+                      aria-label={t("sidebar.feedback_unread_aria", { count: feedbackUnreadCount })}
+                    >
+                      {feedbackUnreadCount > 99 ? "99+" : feedbackUnreadCount}
+                    </span>
+                  )}
+                </>
+              )}
+              {isCollapsed && showUnread && (
+                <span
+                  className="absolute right-2 top-2 h-2 w-2 rounded-full bg-destructive"
+                  aria-hidden
+                />
+              )}
             </Link>
           );
         })}
@@ -119,9 +150,28 @@ function SidebarContent({
 
 export function AdminLayoutClient({ children, user }: AdminLayoutClientProps) {
   const t = useTranslations("Admin.layout");
+  const pathname = usePathname();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [feedbackUnreadCount, setFeedbackUnreadCount] = useState(0);
   const { isOpen: isCommandOpen, setIsOpen: setCommandOpen } = useCommandPalette();
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await adminFeedbackActions.unreadCount();
+        if (cancelled || !res?.ok) return;
+        const data = res.data as { success?: boolean; count?: number };
+        if (data?.success) setFeedbackUnreadCount(Number(data.count ?? 0));
+      } catch {
+        /* ignore */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [pathname]);
 
   return (
     <>
@@ -137,7 +187,11 @@ export function AdminLayoutClient({ children, user }: AdminLayoutClientProps) {
         >
           <div className="h-4" />
           <div className="flex-1 overflow-y-auto py-4">
-            <SidebarContent isCollapsed={isCollapsed} onToggleCollapse={() => setIsCollapsed(!isCollapsed)} />
+            <SidebarContent
+              isCollapsed={isCollapsed}
+              onToggleCollapse={() => setIsCollapsed(!isCollapsed)}
+              feedbackUnreadCount={feedbackUnreadCount}
+            />
           </div>
         </aside>
 
@@ -161,7 +215,10 @@ export function AdminLayoutClient({ children, user }: AdminLayoutClientProps) {
                 </div>
               </div>
               <div className="flex-1 overflow-y-auto py-4">
-                <SidebarContent onNavigate={() => setIsMobileOpen(false)} />
+                <SidebarContent
+                  onNavigate={() => setIsMobileOpen(false)}
+                  feedbackUnreadCount={feedbackUnreadCount}
+                />
               </div>
             </div>
           </SheetContent>

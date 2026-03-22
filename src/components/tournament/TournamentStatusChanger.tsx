@@ -245,13 +245,36 @@ export default function TournamentStatusChanger({
     const semiFinalRound = tournament.knockout[tournament.knockout.length - 2]
     const losers: Array<{ _id: string; name: string }> = []
 
+    const playerSlotId = (slot: unknown): string | undefined => {
+      if (slot == null) return undefined
+      if (typeof slot === "string") return slot
+      const o = slot as { _id?: unknown; playerId?: unknown }
+      if (o._id != null) return String(o._id)
+      if (o.playerId != null) {
+        const p = o.playerId as { _id?: unknown }
+        if (p && typeof p === "object" && "_id" in p && p._id != null) return String(p._id)
+        return String(o.playerId)
+      }
+      return undefined
+    }
+
+    const winnerIdStr = (ref: any): string | undefined => {
+      const w = ref?.winnerId
+      if (w == null) return undefined
+      if (typeof w === "object" && w !== null && "_id" in w) return String((w as { _id: unknown })._id)
+      return String(w)
+    }
+
     semiFinalRound.matches.forEach((match: any) => {
       const matchRef = match.matchReference
+      const winnerId = winnerIdStr(matchRef)
+      const p1Id = playerSlotId(match.player1)
+      const p2Id = playerSlotId(match.player2)
+      const semisDone =
+        matchRef.status === "finished" || (!matchRef.status && Boolean(winnerId))
+
       // Ensure match is finished and has both players (not a bye)
-      if (matchRef && matchRef.winnerId && match.player1 && match.player2) {
-        const winnerId = matchRef.winnerId.toString()
-        const p1Id = (match.player1 as any)._id?.toString() || match.player1?.toString()
-        const p2Id = (match.player2 as any)._id?.toString() || match.player2?.toString()
+      if (matchRef && winnerId && p1Id && p2Id && semisDone) {
         const loserId = p1Id === winnerId ? p2Id : p1Id
 
         const player = tournament.tournamentPlayers.find((tp) => {
@@ -269,7 +292,7 @@ export default function TournamentStatusChanger({
     })
 
     return losers
-  }, [tournament])
+  }, [tournament, tTour])
 
   const handleFinishTournament = (thirdPlaceId?: string) => {
     // If not already showing the third place dialog and we have semi-final losers

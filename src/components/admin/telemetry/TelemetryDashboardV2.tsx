@@ -162,7 +162,8 @@ export default function TelemetryDashboardV2() {
         adminTelemetryActions.routes({ ...params, page: "1", limit: "25", sortBy: "traffic", sortDir: "desc" }),
       ]);
       setOverview(o.data?.data || null);
-      setTrends(t.data?.data?.points || []);
+      const trendPayload = t.data?.data as { points?: unknown[]; granularity?: string; timeZone?: string; bucketCount?: number; window?: { start?: string; end?: string } } | undefined;
+      setTrends(Array.isArray(trendPayload?.points) ? trendPayload.points : []);
       setIncidents(i.data?.data || null);
       setEntities(r.data?.data || []);
       setImportedSnapshot(null);
@@ -261,13 +262,20 @@ export default function TelemetryDashboardV2() {
     try {
       const params = buildParams({ range, granularity, source, method, search, customStart, customEnd });
       const res = await adminTelemetryActions.export(params);
+      const pack = res.data as {
+        filters?: Record<string, string>;
+        overview?: unknown;
+        incidents?: unknown;
+        routes?: unknown;
+        trends?: unknown;
+      } | undefined;
       const payload = {
         exportedAt: new Date().toISOString(),
-        filters: params,
-        overview: res.data?.overview,
-        incidents: res.data?.incidents,
-        routes: res.data?.routes,
-        trends: { data: { points: trends } },
+        filters: pack?.filters ?? params,
+        overview: pack?.overview,
+        incidents: pack?.incidents,
+        routes: pack?.routes,
+        trends: pack?.trends,
       };
       const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json;charset=utf-8" });
       const url = window.URL.createObjectURL(blob);
@@ -388,11 +396,13 @@ export default function TelemetryDashboardV2() {
               </SelectContent>
             </Select>
             <Select value={granularity} onValueChange={(v) => setGranularity(v as TelemetryGranularity)}>
-              <SelectTrigger><SelectValue placeholder="Granularity" /></SelectTrigger>
+              <SelectTrigger className="min-w-[9rem]">
+                <SelectValue placeholder="Time resolution" />
+              </SelectTrigger>
               <SelectContent>
-                <SelectItem value="minute">minute</SelectItem>
-                <SelectItem value="hour">hour</SelectItem>
-                <SelectItem value="day">day</SelectItem>
+                <SelectItem value="minute">per minute</SelectItem>
+                <SelectItem value="hour">per hour</SelectItem>
+                <SelectItem value="day">per day</SelectItem>
               </SelectContent>
             </Select>
             <Select value={source} onValueChange={(v) => setSource(v as TelemetrySource)}>
@@ -426,6 +436,12 @@ export default function TelemetryDashboardV2() {
               <Input type="datetime-local" value={customEnd} onChange={(e) => setCustomEnd(e.target.value)} />
             </div>
           )}
+          <p className="text-xs text-muted-foreground">
+            Time resolution applies to the trend charts and JSON export. Use a <span className="font-medium text-foreground">custom</span> range for a narrow
+            window, then <span className="font-medium text-foreground">per minute</span> or <span className="font-medium text-foreground">per hour</span> to
+            inspect that interval. Export snapshot includes overview, routes, incidents, and trend series for the same filters (use{" "}
+            <span className="font-medium text-foreground">Apply filters</span> before exporting).
+          </p>
           <div className="flex flex-wrap gap-2">
             <Button variant="secondary" onClick={exportSnapshot}>Export snapshot JSON</Button>
             <Button variant="secondary" onClick={exportErrorsCsv}>Export error logs CSV</Button>
@@ -484,12 +500,19 @@ export default function TelemetryDashboardV2() {
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
         <div className="rounded-xl border border-border bg-card p-4">
-          <h3 className="mb-2 text-sm font-semibold">System trends</h3>
+          <h3 className="mb-1 text-sm font-semibold">System trends</h3>
+          <p className="mb-2 text-xs text-muted-foreground">
+            Buckets: <span className="font-medium text-foreground">{granularity}</span>
+            {activeOverview?.window?.start && activeOverview?.window?.end
+              ? ` · ${String(activeOverview.window.start).slice(0, 19)} → ${String(activeOverview.window.end).slice(0, 19)}`
+              : null}
+            {chartData.length > 0 ? ` · ${chartData.length} points` : null}
+          </p>
           <div className="h-72">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="label" minTickGap={20} />
+                <XAxis dataKey="label" minTickGap={granularity === "minute" ? 6 : granularity === "hour" ? 14 : 20} />
                 <YAxis yAxisId="left" />
                 <YAxis yAxisId="right" orientation="right" />
                 <Tooltip
@@ -510,12 +533,13 @@ export default function TelemetryDashboardV2() {
           </div>
         </div>
         <div className="rounded-xl border border-border bg-card p-4">
-          <h3 className="mb-2 text-sm font-semibold">Page-load trends (RUM)</h3>
+          <h3 className="mb-1 text-sm font-semibold">Page-load trends (RUM)</h3>
+          <p className="mb-2 text-xs text-muted-foreground">Same time buckets as system trends ({granularity}).</p>
           <div className="h-72">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="label" minTickGap={20} />
+                <XAxis dataKey="label" minTickGap={granularity === "minute" ? 6 : granularity === "hour" ? 14 : 20} />
                 <YAxis />
                 <Tooltip
                   {...tooltipTheme}

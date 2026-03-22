@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import { getUserTournamentsAction } from "@/features/tournaments/actions/getUserTournaments.action"
+import { filterUserHomeTournamentsForDashboard } from "@/features/home/ui/homeUtils"
 import { isLocalCalendarDayToday } from "@/lib/local-calendar-date"
 
 interface QuickTournamentLink {
@@ -51,7 +52,8 @@ export function useOngoingTournamentQuickLinkWithOptions(
         if (!result || typeof result !== "object" || !("success" in result) || !result.success) {
           return
         }
-        const tournaments = Array.isArray(result.data) ? result.data : []
+        const raw = Array.isArray(result.data) ? result.data : []
+        const tournaments = filterUserHomeTournamentsForDashboard(raw)
         // Only quick-link to tournaments that are both "ongoing" in status AND on the client's local calendar start day,
         // so hosts who forgot to close a tournament do not trap users on stale events.
         const startDate = (item: any) =>

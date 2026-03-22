@@ -9,7 +9,12 @@ import PlayerSearch from '../club/PlayerSearch';
 import { Link } from '@/i18n/routing';
 import { useTranslations } from 'next-intl';
 import { checkFeatureFlagAction } from '@/features/feature-flags/actions/checkFeatureFlags.action';
-import { isGuardFailureResult } from '@/shared/lib/guards/result';
+import {
+  guardFailureToFeatureFlagDenial,
+  isGuardFailureResult,
+  type FeatureFlagDenialReason,
+} from '@/shared/lib/guards/result';
+import { FeatureFlagAccessCallout } from '@/components/feature-flags/FeatureFlagAccessCallout';
 import { adminLeaguesActions } from '@/features/admin/actions/adminDomains.action';
 
 interface League {
@@ -65,6 +70,7 @@ export default function LeagueManager({ clubId, onLeagueSelect }: LeagueManagerP
     requiresSubscription: boolean;
     subscriptionModel?: string;
   }>({ accessible: false, requiresSubscription: true });
+  const [featureFlagDenial, setFeatureFlagDenial] = useState<FeatureFlagDenialReason | null>(null);
 
   const {
     register,
@@ -87,10 +93,12 @@ export default function LeagueManager({ clubId, onLeagueSelect }: LeagueManagerP
   const fetchLeagues = async () => {
     try {
       setLoading(true);
-      
+      setFeatureFlagDenial(null);
+
       // Feature flag ellenőrzés
       const featureFlagResponse = await checkFeatureFlagAction({ feature: 'leagueSystem', clubId });
       if (isGuardFailureResult(featureFlagResponse)) {
+        setFeatureFlagDenial(guardFailureToFeatureFlagDenial(featureFlagResponse) ?? 'feature_disabled');
         setLeagueSystemAccess({
           accessible: false,
           requiresSubscription: false,
@@ -98,6 +106,7 @@ export default function LeagueManager({ clubId, onLeagueSelect }: LeagueManagerP
         });
         return;
       }
+      setFeatureFlagDenial(null);
       const requiresSubscription = featureFlagResponse.subscriptionModelEnabled && !featureFlagResponse.enabled;
       setLeagueSystemAccess({
         accessible: featureFlagResponse.enabled,
@@ -213,6 +222,22 @@ export default function LeagueManager({ clubId, onLeagueSelect }: LeagueManagerP
       <div className="admin-glass-card">
         <div className="flex items-center justify-center h-32">
           <div className="loading loading-spinner loading-lg"></div>
+        </div>
+      </div>
+    );
+  }
+
+  if (featureFlagDenial) {
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <h2 className="text-2xl font-bold text-base-content flex items-center gap-2">
+            <IconTrophy className="w-6 h-6" />
+            {t('title')}
+          </h2>
+        </div>
+        <div className="admin-glass-card py-10 px-4">
+          <FeatureFlagAccessCallout reason={featureFlagDenial} />
         </div>
       </div>
     );

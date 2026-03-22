@@ -5,8 +5,8 @@ import { TournamentService } from '@/database/services/tournament.service';
 import { authorizeUserResult } from '@/shared/lib/guards';
 import { withTelemetry } from '@/shared/lib/withTelemetry';
 import { resolveGuardAwareStatus } from '@/shared/lib/guards/result';
-import { UserModel } from '@/database/models/user.model';
 import { connectMongo } from '@/lib/mongoose';
+import { AuthorizationService } from '@/database/services/authorization.service';
 import { BadRequestError } from '@/middleware/errorHandle';
 import { serializeForClient } from '@/shared/lib/serializeForClient';
 import { revalidateTag } from 'next/cache';
@@ -28,13 +28,13 @@ export async function reopenTournamentAction(input: z.infer<typeof schema>) {
       if (!authResult.ok) return authResult;
 
       await connectMongo();
-      const user = await UserModel.findById(authResult.data.userId).select('isAdmin');
-      if (!user?.isAdmin) {
+      const isGlobalAdmin = await AuthorizationService.isGlobalAdmin(authResult.data.userId);
+      if (!isGlobalAdmin) {
         return {
           ok: false as const,
           code: 'UNAUTHORIZED' as const,
           status: 403 as const,
-          message: 'Only super admins can reopen tournaments',
+          message: 'Only global admins can reopen tournaments',
         };
       }
 

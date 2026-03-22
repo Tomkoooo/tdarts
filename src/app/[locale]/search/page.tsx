@@ -61,6 +61,9 @@ export default function SearchPage() {
         rankingType: (searchParams.get("rankingType") as "oacMmr" | "leaguePoints") || undefined,
         playerMode: (searchParams.get("playerMode") as "all" | "individual" | "pair") || undefined,
         country: searchParams.get("country") || undefined,
+        startDatePreset: searchParams.get("startDatePreset") || undefined,
+        dateFromKey: searchParams.get("dateFrom") || undefined,
+        dateToKey: searchParams.get("dateTo") || undefined,
         page: Number(searchParams.get("page")) || 1,
     }), [searchParams])
 
@@ -225,6 +228,9 @@ export default function SearchPage() {
             params.delete('playerMode');
             params.delete('country');
             params.delete('page');
+            params.delete('startDatePreset');
+            params.delete('dateFrom');
+            params.delete('dateTo');
             router.replace(`${pathname}?${params.toString()}`, { scroll: false });
         } else {
             setFilters(prev => ({ ...prev, page: 1 }))
@@ -235,8 +241,18 @@ export default function SearchPage() {
     const handleFilterChange = (key: string, value: any) => {
         setResults([])
         if (key === 'multiple' && value && typeof value === 'object') {
-            setFilters(prev => ({ ...prev, ...value, page: 1 }))
-            updateUrl({ ...value, page: 1 })
+            const next = { ...value, page: 1 } as Record<string, unknown>
+            setFilters(prev => ({ ...prev, ...next }))
+            const urlParams: Record<string, string | number | undefined> = { ...next }
+            if ('dateFromKey' in value) {
+                urlParams.dateFrom = value.dateFromKey as string | undefined
+                delete (urlParams as any).dateFromKey
+            }
+            if ('dateToKey' in value) {
+                urlParams.dateTo = value.dateToKey as string | undefined
+                delete (urlParams as any).dateToKey
+            }
+            updateUrl(urlParams)
             return
         }
         setFilters(prev => ({ ...prev, [key]: value, page: 1 })) 

@@ -982,6 +982,17 @@ export async function adminFeedbackMarkReadAction(id: string) {
   }
 }
 
+export async function adminFeedbackUnreadCountAction() {
+  try {
+    const guard = await assertGlobalAdmin();
+    if ('error' in guard) return guard.error;
+    const count = await FeedbackService.getUnreadFeedbackCountForAdmin();
+    return success({ success: true, count });
+  } catch (error: any) {
+    return failure(error?.message || 'Failed to load unread feedback count', 500);
+  }
+}
+
 export async function adminFeedbackReplyAction(id: string, content: string) {
   try {
     const guard = await assertGlobalAdmin();
@@ -1158,6 +1169,33 @@ function buildTelemetryMatch(params: QueryParams) {
   if (source && source !== 'all') match.source = source;
   if (search) match.routeKey = { $regex: escapeRegex(search), $options: 'i' };
   return { match, startDate, endDate };
+}
+
+function formatTelemetryTrendLabel(date: Date, timeZone: string, unit: 'minute' | 'hour' | 'day'): string {
+  if (unit === 'day') {
+    return date.toLocaleString('hu-HU', { timeZone, year: 'numeric', month: 'short', day: 'numeric' });
+  }
+  if (unit === 'hour') {
+    return date.toLocaleString('hu-HU', {
+      timeZone,
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    });
+  }
+  return date.toLocaleString('hu-HU', {
+    timeZone,
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  });
 }
 
 function calcDirection(current: number, baseline: number): 'up' | 'down' | 'flat' {
@@ -1378,7 +1416,7 @@ export async function adminTelemetryTrendsAction(params: QueryParams) {
     const guard = await assertGlobalAdmin();
     if ('error' in guard) return guard.error;
     await connectMongo();
-    const { match } = buildTelemetryMatch(params);
+    const { match, startDate, endDate } = buildTelemetryMatch(params);
     const granularity = String(params.granularity || 'hour');
     const tz = String(params.tz || 'UTC');
     const unit = granularity === 'day' ? 'day' : granularity === 'minute' ? 'minute' : 'hour';
@@ -1427,9 +1465,10 @@ export async function adminTelemetryTrendsAction(params: QueryParams) {
       const responseBytes = Number(row.responseBytes || 0);
       const totalBytes = requestBytes + responseBytes;
       const intervalSeconds = unit === 'minute' ? 60 : unit === 'hour' ? 3600 : 86400;
+      const bucketDate = new Date(row._id);
       return {
-        bucketAt: new Date(row._id).toISOString(),
-        label: new Date(row._id).toLocaleString('hu-HU', { hour12: false }),
+        bucketAt: bucketDate.toISOString(),
+        label: formatTelemetryTrendLabel(bucketDate, tz, unit),
         calls,
         errors,
         timeouts: Number(row.timeouts || 0),
@@ -1453,7 +1492,18 @@ export async function adminTelemetryTrendsAction(params: QueryParams) {
       };
     });
 
-    return success({ data: { points } });
+    return success({
+      data: {
+        points,
+        granularity: unit,
+        timeZone: tz,
+        bucketCount: points.length,
+        window: {
+          start: startDate.toISOString(),
+          end: endDate.toISOString(),
+        },
+      },
+    });
   } catch (error: any) {
     return failure(error?.message || 'Failed to load telemetry trends', 500);
   }
@@ -1465,14 +1515,25 @@ export async function adminTelemetryIncidentsAction(params: QueryParams) {
     if ('error' in guard) return guard.error;
     await connectMongo();
     const { startDate, endDate } = resolveDateRange(params);
+    const search = String(params.search || '').trim();
+    const routeKeyFilter = params.routeKey ? String(params.routeKey) : undefined;
+    const errorQuery: Record<string, unknown> = {
+      occurredAt: { $gte: startDate, $lte: endDate },
+      ...(params.method && String(params.method).toUpperCase() !== 'ALL' ? { method: String(params.method).toUpperCase() } : {}),
+      ...(routeKeyFilter ? { routeKey: routeKeyFilter } : {}),
+      ...(search && !routeKeyFilter ? { routeKey: { $regex: escapeRegex(search), $options: 'i' } } : {}),
+      ...(params.source && String(params.source) !== 'all' ? { sourceType: String(params.source) } : {}),
+    };
+    const anomalyQuery: Record<string, unknown> = {
+      isActive: true,
+      ...(search ? { routeKey: { $regex: escapeRegex(search), $options: 'i' } } : {}),
+      ...(params.method && String(params.method).toUpperCase() !== 'ALL' ? { method: String(params.method).toUpperCase() } : {}),
+      ...(routeKeyFilter ? { routeKey: routeKeyFilter } : {}),
+      ...(params.source && String(params.source) !== 'all' ? { sourceType: String(params.source) } : {}),
+    };
     const [anomalies, errors] = await Promise.all([
-      ApiRouteAnomalyModel.find({ isActive: true }).sort({ ratio: -1, lastObservedAt: -1 }).limit(100),
-      ApiRequestErrorEventModel.find({
-        occurredAt: { $gte: startDate, $lte: endDate },
-        ...(params.method && String(params.method).toUpperCase() !== 'ALL' ? { method: String(params.method).toUpperCase() } : {}),
-        ...(params.routeKey ? { routeKey: String(params.routeKey) } : {}),
-        ...(params.source && String(params.source) !== 'all' ? { sourceType: String(params.source) } : {}),
-      })
+      ApiRouteAnomalyModel.find(anomalyQuery).sort({ ratio: -1, lastObservedAt: -1 }).limit(100),
+      ApiRequestErrorEventModel.find(errorQuery)
         .sort({ occurredAt: -1 })
         .limit(200),
     ]);
@@ -1882,14 +1943,16 @@ export async function adminTelemetryExportAction(params: QueryParams) {
   try {
     const guard = await assertGlobalAdmin();
     if ('error' in guard) return guard.error;
-    const [overview, incidents, routes] = await Promise.all([
+    const [overview, incidents, routes, trends] = await Promise.all([
       adminTelemetryOverviewAction(params),
       adminTelemetryIncidentsAction(params),
-      adminTelemetryRoutesAction({ ...params, page: 1, limit: 200 }),
+      adminTelemetryRoutesAction({ ...params, page: 1, limit: 500 }),
+      adminTelemetryTrendsAction(params),
     ]);
     const overviewData = (overview as any)?.data ?? null;
     const incidentsData = (incidents as any)?.data ?? null;
     const routesData = (routes as any)?.data ?? null;
+    const trendsData = (trends as any)?.data ?? null;
 
     return success({
       success: true,
@@ -1899,6 +1962,7 @@ export async function adminTelemetryExportAction(params: QueryParams) {
       overview: overviewData,
       incidents: incidentsData,
       routes: routesData,
+      trends: trendsData,
     });
   } catch (error: any) {
     return failure(error?.message || 'Failed to export telemetry snapshot', 500);

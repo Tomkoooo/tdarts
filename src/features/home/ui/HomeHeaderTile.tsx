@@ -16,12 +16,15 @@ import { GlassmorphismCard } from "@/components/ui/glassmorphism-card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { HomeTournament } from "@/features/home/ui/types"
 import { formatTournamentDate, getDaysUntil } from "@/features/home/ui/homeUtils"
+import { TournamentFormatBadges } from "@/components/tournament/TournamentFormatBadges"
 
 interface HomeHeaderTileProps {
   firstName: string
   profilePicture?: string
   activeOrNextTournament: HomeTournament | null
   notificationCount?: number
+  /** Shown as extra warning + counted in notification total */
+  profileIssueCount?: number
   onNotificationWarningClick?: () => void
   loading?: boolean
 }
@@ -31,6 +34,7 @@ export default function HomeHeaderTile({
   profilePicture,
   activeOrNextTournament,
   notificationCount = 0,
+  profileIssueCount = 0,
   onNotificationWarningClick,
   loading = false,
 }: HomeHeaderTileProps) {
@@ -118,6 +122,14 @@ export default function HomeHeaderTile({
                 <IconCalendarEvent className="h-3.5 w-3.5" />
                 {formatTournamentDate(activeOrNextTournament?.date, locale)}
               </p>
+              {(activeOrNextTournament?.tournamentType || activeOrNextTournament?.participationMode) && (
+                <div className="mt-2">
+                  <TournamentFormatBadges
+                    type={activeOrNextTournament?.tournamentType}
+                    participationMode={activeOrNextTournament?.participationMode}
+                  />
+                </div>
+              )}
               <div className="mt-2 grid grid-cols-2 gap-2">
                 <div className="rounded-md border border-border/50 bg-background/40 px-2 py-1">
                   <p className="flex items-center gap-1 text-[10px] text-muted-foreground">
@@ -199,10 +211,16 @@ export default function HomeHeaderTile({
         <button
           type="button"
           onClick={onNotificationWarningClick}
-          className="relative mt-3 flex items-center gap-2 rounded-xl border border-warning/40 bg-warning/20 px-3 py-2 text-xs font-semibold text-warning-foreground"
+          className="relative mt-3 flex w-full items-center gap-2 rounded-xl border border-warning/40 bg-warning/20 px-3 py-2 text-left text-xs font-semibold text-warning-foreground"
         >
-          <IconAlertTriangle className="h-4 w-4" />
-          {t("header.notificationsWarning", { count: notificationCount })}
+          <IconAlertTriangle className="h-4 w-4 shrink-0" />
+          <span className="min-w-0">
+            {profileIssueCount > 0 && notificationCount === profileIssueCount
+              ? t("header.profileIncompleteBanner", { count: profileIssueCount })
+              : profileIssueCount > 0
+                ? t("header.notificationsIncludingProfile", { count: notificationCount })
+                : t("header.notificationsWarning", { count: notificationCount })}
+          </span>
         </button>
       )}
 

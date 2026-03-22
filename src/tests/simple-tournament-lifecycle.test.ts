@@ -58,7 +58,7 @@ const setupTestData = async () => {
     username: 'lifecycle_test',
     name: 'Lifecycle Test User',
     isVerified: true,
-    isAdmin: false
+    isAdmin: true,
   });
 
   testClub = await ClubModel.create({

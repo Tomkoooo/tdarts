@@ -229,6 +229,11 @@ export class FeedbackService {
     return FeedbackModel.countDocuments({ userId, isReadByUser: false });
   }
 
+  static async getUnreadFeedbackCountForAdmin(): Promise<number> {
+    await connectMongo();
+    return FeedbackModel.countDocuments({ isReadByAdmin: false });
+  }
+
   static async addMessage(
     feedbackId: string, 
     messageData: { sender?: string, content: string, isInternal?: boolean, attachment?: string },

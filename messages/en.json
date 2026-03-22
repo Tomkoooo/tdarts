@@ -204,7 +204,15 @@
         "at": "Austria",
         "sk": "Slovakia",
         "ro": "Romania"
-      }
+      },
+      "startDate_label": "Start date",
+      "startDate_any": "Any time",
+      "startDate_yesterday": "Yesterday",
+      "startDate_last7": "Last 7 days",
+      "startDate_last30": "Last 30 days",
+      "startDate_custom": "Custom range",
+      "startDate_from": "From",
+      "startDate_to": "To"
     },
     "all_tournaments": "Összes Torna",
     "back_to_portal": "Vissza a portál oldalra",
@@ -478,6 +486,28 @@
       "title": "My feedback (Tickets)",
       "new_ticket": "New error ticket",
       "new_ticket_desc": "Do you have a question or comment? Write to us!",
+      "unread_badge": "New",
+      "detail": {
+        "read_receipt_label": "Read status",
+        "read_user_sent_support_seen": "Support has read your latest message.",
+        "read_user_sent_support_unseen": "Support has not read your latest message yet.",
+        "read_support_sent_user_seen": "You have seen the latest reply from support.",
+        "read_support_sent_user_unseen": "You have an unread reply from support.",
+        "no_messages": "There are no messages in this ticket yet",
+        "system_sender": "System",
+        "reply_placeholder": "Write a message...",
+        "send_btn": "Send",
+        "closed_ticket": "This ticket is closed. You cannot send more replies.",
+        "status_pending": "Pending",
+        "status_in_progress": "In progress",
+        "status_resolved": "Resolved",
+        "status_rejected": "Rejected",
+        "status_closed": "Closed",
+        "toast_empty": "The message cannot be empty",
+        "toast_closed": "This ticket is already closed",
+        "toast_reply_sent": "Reply sent",
+        "toast_reply_error": "An error occurred while sending the message"
+      },
       "status": {
         "open": "Open",
         "replied": "A reply has been received",
@@ -923,7 +953,8 @@
         "settings": "Settings",
         "telemetry": "Telemetry",
         "collapse": "Folding",
-        "title": "tDarts Admin"
+        "title": "tDarts Admin",
+        "feedback_unread_aria": "{count} unread feedback threads"
       },
       "status": {
         "checking": "Admin permission check...",
@@ -1233,7 +1264,25 @@
           "priority": "Priority",
           "save_status": "Save status",
           "reply_placeholder": "Write a message...",
-          "send_btn": "Sending"
+          "send_btn": "Send",
+          "read_receipt_label": "Read status",
+          "read_user_sent_support_seen": "Support has read your latest message.",
+          "read_user_sent_support_unseen": "Support has not read your latest message yet.",
+          "read_support_sent_user_seen": "You have seen the latest reply from support.",
+          "read_support_sent_user_unseen": "You have an unread reply from support.",
+          "read_admin_user_sent_you_seen": "You have seen the user's latest message.",
+          "read_admin_user_sent_you_unseen": "Open this thread to mark the user's message as seen.",
+          "read_admin_you_sent_user_seen": "The user has read your latest message.",
+          "read_admin_you_sent_user_unseen": "The user has not read your latest message yet.",
+          "status_pending": "Pending",
+          "status_in_progress": "In progress",
+          "status_resolved": "Resolved",
+          "status_rejected": "Rejected",
+          "status_closed": "Closed",
+          "priority_low": "Low",
+          "priority_medium": "Medium",
+          "priority_high": "High",
+          "priority_critical": "Critical"
         },
         "toasts": {
           "empty_message": "The message cannot be empty",
@@ -1826,6 +1875,13 @@
     }
   },
   "Tournament": {
+    "badges": {
+      "amateur": "Amateur",
+      "open": "Open",
+      "individual": "Singles",
+      "pair": "Pairs",
+      "team": "Teams"
+    },
     "players": {
       "title": "Players",
       "add_player": "Add player",
@@ -3988,7 +4044,9 @@
       "nextMatchVsWarning": "Next match vs {opponent}",
       "nextScoringReminder": "You are assigned as scorer for this board — stay ready.",
       "landingPage": "About tDarts",
-      "nextUnknown": "No upcoming board assignment yet"
+      "nextUnknown": "No upcoming board assignment yet",
+      "profileIncompleteBanner": "Complete your player profile ({count} missing)",
+      "notificationsIncludingProfile": "You have {count} notifications (including profile)"
     },
     "stats": {
       "matches": "Matches Played",
@@ -3999,7 +4057,9 @@
     },
     "calendar": {
       "title": "Upcoming Calendar",
-      "export": "Export to calendar"
+      "export": "Export to calendar",
+      "playerCount": "{current} / {max} players",
+      "entryFeeLabel": "Entry fee"
     },
     "notifications": {
       "title": "Notification Center",
@@ -4011,7 +4071,9 @@
       "tournamentReminders": "Upcoming tournament reminders",
       "reminderCount": "{count} tournaments in the next 7 days",
       "spotAvailability": "Tournament spot availability",
-      "spotHint": "{count} availability alerts"
+      "spotHint": "{count} availability alerts",
+      "profileIncomplete": "Profile incomplete",
+      "profileIncompleteHint": "{count} detail(s) missing — add photo or country in your profile"
     },
     "currentTournament": {
       "title": "Current Tournament Overview",
@@ -4038,6 +4100,13 @@
       "openBoard": "Open Live Board",
       "myClub": "Go to My Club"
     }
+  },
+  "FeatureFlags": {
+    "login_title": "Sign in to access this feature",
+    "login_description": "We could not verify your session (for example in an in-app browser). Sign in to use this feature.",
+    "login_cta": "Log in",
+    "disabled_title": "This feature is not available",
+    "disabled_description": "This feature is turned off for this club, or your account cannot access it in this context."
   },
   "Carousel": {
     "experience": "Kiváló Felhasználói Élmény",

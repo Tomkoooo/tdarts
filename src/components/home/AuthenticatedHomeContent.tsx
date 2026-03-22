@@ -10,12 +10,18 @@ import {
   HomeNotifications,
   HomeLeagueStanding,
   HomeTournament,
+  HomeProfileCompletenessIssue,
   LeagueStandingsTile,
   NotificationCenterTile,
   QuickStatsTileGrid,
   UpcomingCalendarTile,
 } from "@/features/home/ui"
-import { getActiveOrNextTournament, getDaysUntil, getUpcomingTournaments } from "@/features/home/ui/homeUtils"
+import {
+  filterUserHomeTournamentsForDashboard,
+  getActiveOrNextTournament,
+  getDaysUntil,
+  getUpcomingTournaments,
+} from "@/features/home/ui/homeUtils"
 
 interface Announcement {
   _id: string
@@ -36,6 +42,7 @@ export interface HomeInitialData {
   leagueStandings: HomeLeagueStanding[]
   metrics: HomeMetrics
   advancedStatsEnabled: boolean
+  profileCompleteness: { issues: HomeProfileCompletenessIssue[]; count: number }
 }
 
 interface AuthenticatedHomeContentProps {
@@ -57,7 +64,10 @@ export default function AuthenticatedHomeContent({
   const { unreadCount, loading: unreadLoading } = useUnreadTickets({ enabled: Boolean(user?._id) })
   const [ticketToastDismissed, setTicketToastDismissed] = useState(false)
   const [metrics] = useState<HomeMetrics>(initialData.metrics)
-  const [upcomingTournaments] = useState<HomeTournament[]>(initialData.tournaments || [])
+  const homeTournaments = useMemo(
+    () => filterUserHomeTournamentsForDashboard(initialData.tournaments || []),
+    [initialData.tournaments]
+  )
   const [leagueStandings] = useState<HomeLeagueStanding[]>(initialData.leagueStandings || [])
   const [advancedStatsEnabled] = useState(Boolean(initialData.advancedStatsEnabled))
   const [highlightUnreadNotifications, setHighlightUnreadNotifications] = useState(false)
@@ -94,12 +104,12 @@ export default function AuthenticatedHomeContent({
   }
 
   const activeOrNextTournament = useMemo(
-    () => getActiveOrNextTournament(upcomingTournaments),
-    [upcomingTournaments]
+    () => getActiveOrNextTournament(homeTournaments),
+    [homeTournaments]
   )
   const upcomingOnly = useMemo(
-    () => getUpcomingTournaments(upcomingTournaments),
-    [upcomingTournaments]
+    () => getUpcomingTournaments(homeTournaments),
+    [homeTournaments]
   )
   const reminderCount = useMemo(
     () =>
@@ -109,16 +119,22 @@ export default function AuthenticatedHomeContent({
       }).length,
     [upcomingOnly]
   )
+  const profileIssueCount = initialData.profileCompleteness?.count ?? 0
   const notifications: HomeNotifications = useMemo(
     () => ({
       unreadTickets: unreadCount,
       reminderCount,
       spotAvailabilityCount: 0,
+      profileIssueCount,
     }),
-    [unreadCount, reminderCount]
+    [unreadCount, reminderCount, profileIssueCount]
   )
   const totalNotifications = useMemo(
-    () => notifications.unreadTickets + notifications.reminderCount + notifications.spotAvailabilityCount,
+    () =>
+      notifications.unreadTickets +
+      notifications.reminderCount +
+      notifications.spotAvailabilityCount +
+      notifications.profileIssueCount,
     [notifications]
   )
   const firstName = useMemo(
@@ -148,6 +164,7 @@ export default function AuthenticatedHomeContent({
           profilePicture={user?.profilePicture || serverProfilePicture}
           activeOrNextTournament={activeOrNextTournament}
           notificationCount={totalNotifications}
+          profileIssueCount={profileIssueCount}
           onNotificationWarningClick={handleNotificationWarningClick}
           loading={dashboardLoading}
         />
@@ -160,7 +177,7 @@ export default function AuthenticatedHomeContent({
 
         <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
           <div className="space-y-4 xl:col-span-2">
-            <UpcomingCalendarTile tournaments={upcomingTournaments} loading={dashboardLoading} />
+            <UpcomingCalendarTile tournaments={homeTournaments} loading={dashboardLoading} />
           </div>
           <div className="space-y-4">
             <LeagueStandingsTile standings={leagueStandings} loading={dashboardLoading} />

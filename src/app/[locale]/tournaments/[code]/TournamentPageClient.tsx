@@ -22,6 +22,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TournamentStatTile } from "@/features/tournament/components/TournamentStatTile";
+import { TournamentFormatBadges } from "@/components/tournament/TournamentFormatBadges";
 
 const TournamentPlayers = dynamic(
   () => import("@/components/tournament/TournamentPlayers")
@@ -45,6 +46,8 @@ type TournamentPageClientProps = {
 };
 
 type TournamentSectionView = "overview" | "players" | "boards" | "groups" | "bracket";
+/** Includes full summary payload (groups + knockout + boards) for admin / finish flows. */
+type TournamentFetchView = TournamentSectionView | "full";
 const SECTION_FRESHNESS_MS = 8_000;
 
 const getStatusMeta = (t: (key: string) => string) => ({
@@ -146,25 +149,21 @@ const TournamentPageClient: React.FC<TournamentPageClientProps> = ({
     }
     return null;
   }, [tournament?.clubId]);
-  const lastFetchedAtRef = useRef<Record<TournamentSectionView, number>>({
+  const lastFetchedAtRef = useRef<Record<TournamentFetchView, number>>({
     overview: Date.now(),
     players: 0,
     boards: 0,
     groups: 0,
     bracket: 0,
+    full: 0,
   });
-  const invalidatedSectionsRef = useRef<Set<TournamentSectionView>>(new Set());
+  const invalidatedSectionsRef = useRef<Set<TournamentFetchView>>(new Set());
   const previousTournamentStateRef = useRef<{ status: string; groupCount: number; knockoutRounds: number } | null>(null);
-  const getViewForTab = useCallback(
-    (tab: string): TournamentSectionView =>
-      tab === "players" ||
-      tab === "boards" ||
-      tab === "groups" ||
-      tab === "bracket"
-        ? tab
-        : "overview",
-    []
-  );
+  const getViewForTab = useCallback((tab: string): TournamentFetchView => {
+    if (tab === "admin") return "full";
+    if (tab === "players" || tab === "boards" || tab === "groups" || tab === "bracket") return tab;
+    return "overview";
+  }, []);
 
   useEffect(() => {
     const tabParam = searchParams.get("tab");
@@ -181,6 +180,7 @@ const TournamentPageClient: React.FC<TournamentPageClientProps> = ({
       boards: initialSections?.boards ? now : 0,
       groups: initialSections?.groups ? now : 0,
       bracket: initialSections?.bracket ? now : 0,
+      full: 0,
     };
     invalidatedSectionsRef.current.clear();
     previousTournamentStateRef.current = null;
@@ -200,11 +200,15 @@ const TournamentPageClient: React.FC<TournamentPageClientProps> = ({
 
       if (enteredGroupStage || groupStructureChanged) {
         invalidatedSectionsRef.current.add("groups");
+        invalidatedSectionsRef.current.add("full");
         lastFetchedAtRef.current.groups = 0;
+        lastFetchedAtRef.current.full = 0;
       }
       if (enteredKnockout || knockoutStructureChanged) {
         invalidatedSectionsRef.current.add("bracket");
+        invalidatedSectionsRef.current.add("full");
         lastFetchedAtRef.current.bracket = 0;
+        lastFetchedAtRef.current.full = 0;
       }
     }
 
@@ -218,7 +222,9 @@ const TournamentPageClient: React.FC<TournamentPageClientProps> = ({
     const view = getViewForTab(activeTab);
     const now = Date.now();
     const lastFetchedAt = lastFetchedAtRef.current[view];
-    const isInvalidated = invalidatedSectionsRef.current.has(view);
+    const isInvalidated =
+      invalidatedSectionsRef.current.has(view) ||
+      (view === "full" && invalidatedSectionsRef.current.has("bracket"));
     const isStale = now - lastFetchedAt >= SECTION_FRESHNESS_MS;
     const shouldFetch = lastFetchedAt === 0 || isInvalidated || isStale;
     if (!shouldFetch) {
@@ -227,8 +233,14 @@ const TournamentPageClient: React.FC<TournamentPageClientProps> = ({
     void (async () => {
       try {
         await fetchAll(view, { bypassCache: true });
-        lastFetchedAtRef.current[view] = Date.now();
+        const ts = Date.now();
+        lastFetchedAtRef.current[view] = ts;
         invalidatedSectionsRef.current.delete(view);
+        if (view === "full") {
+          invalidatedSectionsRef.current.delete("bracket");
+          lastFetchedAtRef.current.bracket = ts;
+          lastFetchedAtRef.current.groups = ts;
+        }
       } catch (error) {
         console.error("Tab hydration failed:", error);
       }
@@ -238,16 +250,28 @@ const TournamentPageClient: React.FC<TournamentPageClientProps> = ({
   const handleRefetch = useCallback(async () => {
     const view = getViewForTab(activeTab);
     await fetchAll(view, { bypassCache: true });
-    lastFetchedAtRef.current[view] = Date.now();
+    const ts = Date.now();
+    lastFetchedAtRef.current[view] = ts;
     invalidatedSectionsRef.current.delete(view);
+    if (view === "full") {
+      invalidatedSectionsRef.current.delete("bracket");
+      lastFetchedAtRef.current.bracket = ts;
+      lastFetchedAtRef.current.groups = ts;
+    }
   }, [activeTab, fetchAll, getViewForTab]);
 
   const handleTournamentRefresh = useCallback(
     async (options?: { bypassCache?: boolean }) => {
       const view = getViewForTab(activeTab);
       await fetchAll(view, { bypassCache: options?.bypassCache ?? true });
-      lastFetchedAtRef.current[view] = Date.now();
+      const ts = Date.now();
+      lastFetchedAtRef.current[view] = ts;
       invalidatedSectionsRef.current.delete(view);
+      if (view === "full") {
+        invalidatedSectionsRef.current.delete("bracket");
+        lastFetchedAtRef.current.bracket = ts;
+        lastFetchedAtRef.current.groups = ts;
+      }
     },
     [activeTab, fetchAll, getViewForTab]
   );
@@ -410,6 +434,11 @@ const TournamentPageClient: React.FC<TournamentPageClientProps> = ({
               >
                 {sseBadgeLabel}
               </span>
+              <TournamentFormatBadges
+                type={tournament?.tournamentSettings?.type}
+                participationMode={tournament?.tournamentSettings?.participationMode}
+                size="md"
+              />
             </div>
             <h1 className="text-2xl font-bold leading-tight text-foreground md:text-4xl">
               {tournament.tournamentSettings?.name || t("tabs.overview")}

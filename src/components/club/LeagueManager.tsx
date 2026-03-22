@@ -12,10 +12,8 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { Badge } from '@/components/ui/Badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { cn } from '@/lib/utils';
-import { checkFeatureFlagAction } from '@/features/feature-flags/actions/checkFeatureFlags.action';
-import { isGuardFailureResult } from '@/shared/lib/guards/result';
 import { getClubLeaguesAction } from '@/features/clubs/actions/getClubLeagues.action';
-import { getClubAction } from '@/features/clubs/actions/getClub.action';
+import { getPublicClubLeagueManagementMetaAction } from '@/features/clubs/actions/getPublicClubLeagueManagementMeta.action';
 import { deleteLeagueAction } from '@/features/leagues/actions/manageLeague.action';
 
 interface LeagueManagerProps {
@@ -34,30 +32,69 @@ export default function LeagueManager({ clubId, userRole, autoOpenLeagueId }: Le
   const [selectedLeague, setSelectedLeague] = useState<League | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [clubSubscription, setClubSubscription] = useState<string>('free');
-  const [featureEnabled, setFeatureEnabled] = useState<boolean>(false);
-  const [subscriptionModelEnabled, setSubscriptionModelEnabled] = useState<boolean>(true);
+  /** Product gate for create/manage only — never used to hide public league reads */
+  const [managementEnabled, setManagementEnabled] = useState(false);
+
+  const subscriptionProductEnabled = process.env.NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED !== 'false';
 
   const canManageLeagues = userRole === 'admin' || userRole === 'moderator';
   const canCreateLeagues =
     canManageLeagues &&
-    featureEnabled &&
-    (!subscriptionModelEnabled || clubSubscription !== 'free');
+    managementEnabled &&
+    (!subscriptionProductEnabled || clubSubscription !== 'free');
 
   useEffect(() => {
-    const initializeComponent = async () => {
-      const enabled = await checkFeatureEnabled();
-      setFeatureEnabled(enabled);
+    const load = async () => {
+      setLoading(true);
+      try {
+        const leaguePromise = (async () => {
+          try {
+            const data = await getClubLeaguesAction({ clubId, includeInactive: true });
+            const leagueItems = (data as { leagues?: League[] })?.leagues || [];
+            setLeagues(leagueItems);
 
-      if (enabled) {
-        fetchLeagues();
-        fetchClubSubscription();
-      } else {
+            if (autoOpenLeagueId && leagueItems.length > 0) {
+              const leagueToOpen = leagueItems.find((league: League) => league._id === autoOpenLeagueId);
+              if (leagueToOpen) {
+                setSelectedLeague(leagueToOpen);
+                setShowDetailModal(true);
+              }
+            }
+          } catch (err) {
+            setError(t("error_loading_leagues_ri2b"));
+            showErrorToast(t("hiba_a_ligák"), {
+              context: 'Liga lista betöltése',
+              error: err instanceof Error ? err.message : 'Ismeretlen hiba',
+            });
+            console.error('Error fetching leagues:', err);
+          }
+        })();
+
+        const metaPromise =
+          canManageLeagues
+            ? (async () => {
+                try {
+                  const meta = await getPublicClubLeagueManagementMetaAction({ clubId });
+                  setClubSubscription(meta.subscriptionModel);
+                  setManagementEnabled(meta.managementEnabled);
+                } catch (err) {
+                  showErrorToast(t("hiba_a_klub"), {
+                    context: 'Liga kezelési jogosultság betöltése',
+                    error: err instanceof Error ? err.message : 'Ismeretlen hiba',
+                  });
+                  console.error('Error fetching league management meta:', err);
+                }
+              })()
+            : Promise.resolve();
+
+        await Promise.all([leaguePromise, metaPromise]);
+      } finally {
         setLoading(false);
       }
     };
 
-    initializeComponent();
-  }, [clubId, autoOpenLeagueId]);
+    void load();
+  }, [clubId, autoOpenLeagueId, canManageLeagues]);
 
   const fetchLeagues = async () => {
     try {
@@ -67,11 +104,11 @@ export default function LeagueManager({ clubId, userRole, autoOpenLeagueId }: Le
       setLeagues(leagueItems);
 
       if (autoOpenLeagueId && leagueItems.length > 0) {
-          const leagueToOpen = leagueItems.find((league: League) => league._id === autoOpenLeagueId);
-          if (leagueToOpen) {
-            setSelectedLeague(leagueToOpen);
-            setShowDetailModal(true);
-          }
+        const leagueToOpen = leagueItems.find((league: League) => league._id === autoOpenLeagueId);
+        if (leagueToOpen) {
+          setSelectedLeague(leagueToOpen);
+          setShowDetailModal(true);
+        }
       }
     } catch (err) {
       setError(t("error_loading_leagues_ri2b"));
@@ -85,40 +122,8 @@ export default function LeagueManager({ clubId, userRole, autoOpenLeagueId }: Le
     }
   };
 
-  const fetchClubSubscription = async () => {
-    try {
-      const clubData = await getClubAction({ clubId });
-      const subscription = (clubData as { subscriptionModel?: string })?.subscriptionModel || 'free';
-      setClubSubscription(subscription);
-    } catch (err) {
-      showErrorToast(t("hiba_a_klub"), {
-        context: 'Klub előfizetés betöltése',
-        error: err instanceof Error ? err.message : 'Ismeretlen hiba',
-      });
-      console.error('Error fetching club subscription:', err);
-    }
-  };
-
-  const checkFeatureEnabled = async () => {
-    try {
-      const data = await checkFeatureFlagAction({ feature: 'leagues', clubId });
-      if (isGuardFailureResult(data)) {
-        return false;
-      }
-      setSubscriptionModelEnabled(data.subscriptionModelEnabled !== false);
-      return data.enabled;
-    } catch (err) {
-      showErrorToast(t("hiba_a_funkció"), {
-        context: 'Feature flag ellenőrzése',
-        error: err instanceof Error ? err.message : 'Ismeretlen hiba',
-      });
-      console.error('Error checking feature flag:', err);
-      return false;
-    }
-  };
-
   const handleLeagueCreated = () => {
-    fetchLeagues();
+    void fetchLeagues();
   };
 
   const handleViewLeague = (league: League) => {
@@ -134,7 +139,7 @@ export default function LeagueManager({ clubId, userRole, autoOpenLeagueId }: Le
       const response = await deleteLeagueAction({ clubId, leagueId });
       if (response && typeof response === 'object' && 'success' in response && response.success) {
         showSuccessToast(t("liga_sikeresen_törölve"));
-        fetchLeagues();
+        void fetchLeagues();
       } else {
         setError('Failed to delete league');
         showErrorToast('Hiba a liga törlése során', {
@@ -200,7 +205,7 @@ export default function LeagueManager({ clubId, userRole, autoOpenLeagueId }: Le
           <Button onClick={() => setShowCreateModal(true)} className="gap-2">
             <IconPlus className="h-4 w-4" />
             {t("új_liga")}</Button>
-        ) : canManageLeagues && clubSubscription === 'free' && process.env.NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED !== 'false' ? (
+        ) : canManageLeagues && clubSubscription === 'free' && subscriptionProductEnabled ? (
           <Button asChild variant="outline" className="gap-2">
             <Link href="/#pricing" title={t("prémium_előfizetés_szükséges")}>
               <IconPlus className="h-4 w-4" />

@@ -1,5 +1,8 @@
 "use client"
 
+export type HomeTournamentType = "amateur" | "open"
+export type HomeParticipationMode = "individual" | "pair" | "team"
+
 export interface HomeTournament {
   _id: string
   name: string
@@ -9,6 +12,10 @@ export interface HomeTournament {
   currentPlayers?: number
   maxPlayers?: number
   entryFee?: number
+  /** Amateur vs open */
+  tournamentType?: HomeTournamentType
+  /** Singles / pairs / teams */
+  participationMode?: HomeParticipationMode
   wins?: number
   losses?: number
   legsWon?: number
@@ -33,10 +40,14 @@ export interface HomeMetrics {
   currentRanking: number | null
 }
 
+export type HomeProfileCompletenessIssue = "photo" | "country"
+
 export interface HomeNotifications {
   unreadTickets: number
   reminderCount: number
   spotAvailabilityCount: number
+  /** Missing profile photo / country — same items as notification list */
+  profileIssueCount: number
 }
 
 export interface HomeLeagueStanding {

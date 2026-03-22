@@ -5,7 +5,7 @@ import { BadRequestError } from '@/middleware/errorHandle';
 import { PlayerModel } from '../models/player.model';
 import { TournamentPlayerDocument } from '@/interface/tournament.interface';
 
-import mongoose from 'mongoose';
+import mongoose, { type ClientSession } from 'mongoose';
 import { MatchModel } from '../models/match.model';
 import { AuthorizationService } from './authorization.service';
 import { SubscriptionService } from './subscription.service';
@@ -6772,202 +6772,327 @@ export class TournamentService {
     }
 
     /**
-     * Reopen a finished tournament (Super Admin only)
-     * This will:
-     * - Change tournament status from 'finished' back to 'active' or 'group-stage' or 'knockout'
-     * - Reset final positions to null
-     * - Clear player statistics (won/lost matches, final position, etc.)
-     * - Keep all match data and leg data intact
+     * Revert one Player document using the stored tournamentHistory row for this tournament code
+     * (matches what finishTournament appended). Returns true if a row was removed and stats adjusted.
+     */
+    private static applyPlayerDocumentReopenFromHistory(player: any, tournamentCode: string): boolean {
+        if (!player?.tournamentHistory?.length) {
+            return false;
+        }
+        const idx = player.tournamentHistory.findIndex((th: any) => th.tournamentId === tournamentCode);
+        if (idx === -1) {
+            return false;
+        }
+
+        const th = player.tournamentHistory[idx];
+        const histStats = th.stats || {};
+        const matchesWon = Number(histStats.matchesWon || 0);
+        const matchesLost = Number(histStats.matchesLost || 0);
+        const legsWon = Number(histStats.legsWon || 0);
+        const legsLost = Number(histStats.legsLost || 0);
+        const oneEighties = Number(histStats.oneEightiesCount || 0);
+        const deltaMmr = Number(th.mmrChange ?? 0);
+        const deltaOac = Number(th.oacMmrChange ?? 0);
+
+        player.tournamentHistory.splice(idx, 1);
+
+        if (!player.stats) {
+            return true;
+        }
+
+        player.stats.tournamentsPlayed = Math.max(0, (player.stats.tournamentsPlayed || 0) - 1);
+        player.stats.matchesPlayed = Math.max(0, (player.stats.matchesPlayed || 0) - matchesWon - matchesLost);
+        player.stats.totalMatchesWon = Math.max(0, (player.stats.totalMatchesWon || 0) - matchesWon);
+        player.stats.totalMatchesLost = Math.max(0, (player.stats.totalMatchesLost || 0) - matchesLost);
+        player.stats.legsWon = Math.max(0, (player.stats.legsWon || 0) - legsWon);
+        player.stats.legsLost = Math.max(0, (player.stats.legsLost || 0) - legsLost);
+        player.stats.totalLegsWon = Math.max(0, (player.stats.totalLegsWon || 0) - legsWon);
+        player.stats.totalLegsLost = Math.max(0, (player.stats.totalLegsLost || 0) - legsLost);
+        player.stats.total180s = Math.max(0, (player.stats.total180s || 0) - oneEighties);
+        player.stats.oneEightiesCount = Math.max(0, (player.stats.oneEightiesCount || 0) - oneEighties);
+
+        const currentMmr = player.stats.mmr ?? MMRService.getInitialMMR();
+        player.stats.mmr = Math.max(0, Math.ceil(currentMmr - deltaMmr));
+
+        const currentOac = player.stats.oacMmr ?? OacMmrService.BASE_OAC_MMR;
+        player.stats.oacMmr = Math.max(0, Math.ceil(currentOac - deltaOac));
+
+        const remaining = player.tournamentHistory || [];
+        if (remaining.length > 0) {
+            const posSum = remaining.reduce((sum: number, h: any) => sum + Number(h.position || 0), 0);
+            player.stats.averagePosition = posSum / remaining.length;
+            const bestPos = Math.min(...remaining.map((h: any) => Number(h.position ?? 999)));
+            player.stats.bestPosition = bestPos < 999 ? bestPos : 999;
+            player.stats.highestCheckout = Math.max(
+                ...remaining.map((h: any) => Number(h.stats?.highestCheckout || 0)),
+                0,
+            );
+        } else {
+            player.stats.averagePosition = 0;
+            player.stats.bestPosition = 999;
+            player.stats.highestCheckout = 0;
+        }
+
+        return true;
+    }
+
+    /** Clear finish-time embedded fields on a tournament subdocument (pre-finish shape). */
+    private static resetTournamentPlayerEmbedsAfterReopen(tp: any): void {
+        tp.matchesWon = 0;
+        tp.matchesLost = 0;
+        tp.legsWon = 0;
+        tp.legsLost = 0;
+        tp.finalPosition = null;
+        tp.tournamentStanding = null;
+        tp.eliminationRound = null;
+        tp.eliminationText = null;
+        tp.eliminatedIn = undefined;
+        tp.avg = null;
+        tp.total180s = 0;
+        tp.highestCheckout = null;
+        tp.totalCheckouts = 0;
+        tp.totalDartsThrown = 0;
+        tp.groupStanding = null;
+        tp.stats = {
+            matchesWon: 0,
+            matchesLost: 0,
+            legsWon: 0,
+            legsLost: 0,
+            avg: 0,
+            firstNineAvg: 0,
+            oneEightiesCount: 0,
+            highestCheckout: 0,
+        };
+        tp.groupStats = {
+            matchesWon: 0,
+            matchesLost: 0,
+            legsWon: 0,
+            legsLost: 0,
+            avg: 0,
+            firstNineAvg: 0,
+            oneEightiesCount: 0,
+            highestCheckout: 0,
+        };
+        tp.finalStats = {
+            average: 0,
+            firstNineAvg: 0,
+            checkoutRate: 0,
+            legsWon: 0,
+            legsPlayed: 0,
+            matchesWon: 0,
+            matchesPlayed: 0,
+            highestCheckout: 0,
+            oneEighties: 0,
+        };
+        if (tp.status === 'winner' || tp.status === 'eliminated') {
+            tp.status = 'checked-in';
+        }
+    }
+
+    /** Standalone Mongo (e.g. default MongoMemoryServer) does not support multi-document transactions. */
+    private static isMongoTransactionsUnsupportedError(error: unknown): boolean {
+        const e = error as { code?: number; codeName?: string; message?: string };
+        if (e?.code === 20 || e?.codeName === 'IllegalOperation') {
+            return true;
+        }
+        const msg = e?.message ?? '';
+        return (
+            msg.includes('Transaction numbers are only allowed on a replica set') ||
+            msg.includes('replica set member or mongos')
+        );
+    }
+
+    /**
+     * Core reopen mutations. When `session` is set, all writes participate in the caller's transaction.
+     */
+    private static async reopenTournamentWithOptionalSession(
+        tournamentCode: string,
+        requesterId: string,
+        session?: ClientSession,
+    ): Promise<TournamentDocument> {
+        const sess = session;
+        let tournamentQuery = TournamentModel.findOne({ tournamentId: tournamentCode });
+        if (sess) {
+            tournamentQuery = tournamentQuery.session(sess);
+        }
+        const tournament = await tournamentQuery;
+        if (!tournament) {
+            throw new Error('Torna nem található');
+        }
+        if (tournament.tournamentSettings?.status !== 'finished') {
+            throw new Error('A torna nincs befejezve');
+        }
+
+        let newStatus: string;
+        if (tournament.tournamentSettings?.format === 'group') {
+            newStatus = 'group-stage';
+        } else if (tournament.tournamentSettings?.format === 'knockout') {
+            newStatus = 'knockout';
+        } else if (tournament.tournamentSettings?.format === 'group_knockout') {
+            newStatus = 'knockout';
+        } else {
+            newStatus = 'active';
+        }
+
+        const { LeagueService } = await import('./league.service');
+        await LeagueService.detachTournamentFromLeagueAsSuperAdmin(
+            tournament._id.toString(),
+            requesterId,
+            sess ? { session: sess } : {},
+        );
+
+        tournament.tournamentSettings.status = newStatus;
+        tournament.tournamentSettings.finishedAt = undefined;
+        (tournament as any).league = undefined;
+
+        const code = tournament.tournamentId;
+        const mutatedPlayers = new Map<string, any>();
+
+        if (!tournament.isSandbox && tournament.tournamentPlayers?.length) {
+            const playerObjectIds: mongoose.Types.ObjectId[] = [];
+            for (const tp of tournament.tournamentPlayers) {
+                const ref = tp.playerReference as any;
+                const rawId = ref?._id ?? ref;
+                if (rawId) {
+                    playerObjectIds.push(new mongoose.Types.ObjectId(rawId));
+                }
+            }
+            const uniqueIds = [...new Map(playerObjectIds.map((id) => [id.toString(), id])).values()];
+            let playersQuery = PlayerModel.find({ _id: { $in: uniqueIds } });
+            if (sess) {
+                playersQuery = playersQuery.session(sess);
+            }
+            const playerDocs = uniqueIds.length > 0 ? await playersQuery : [];
+            const byId = new Map(playerDocs.map((p) => [p._id.toString(), p]));
+
+            for (const tp of tournament.tournamentPlayers) {
+                const ref = tp.playerReference as any;
+                const rawId = ref?._id ?? ref;
+                if (!rawId) continue;
+                const pid = String(rawId);
+                const player = byId.get(pid);
+                if (!player) continue;
+                const changed = this.applyPlayerDocumentReopenFromHistory(player, code);
+                if (changed) {
+                    mutatedPlayers.set(pid, player);
+                }
+            }
+
+            if (mutatedPlayers.size > 0) {
+                const seasonalAveragesByPlayer = await this.recalculateCurrentSeasonAveragesBulk(
+                    Array.from(mutatedPlayers.keys()),
+                );
+                for (const [playerId, player] of mutatedPlayers.entries()) {
+                    const seasonAverages = seasonalAveragesByPlayer.get(playerId) || { avg: 0, firstNineAvg: 0 };
+                    player.stats.avg = seasonAverages.avg;
+                    player.stats.firstNineAvg = seasonAverages.firstNineAvg;
+                }
+
+                const bulkOpts: mongoose.mongo.BulkWriteOptions = { ordered: false };
+                if (sess) {
+                    bulkOpts.session = sess;
+                }
+                await PlayerModel.bulkWrite(
+                    Array.from(mutatedPlayers.values()).map((player) => ({
+                        updateOne: {
+                            filter: { _id: player._id },
+                            update: {
+                                $set: {
+                                    stats: player.stats,
+                                    tournamentHistory: player.tournamentHistory,
+                                },
+                            },
+                        },
+                    })),
+                    bulkOpts,
+                );
+            }
+        }
+
+        for (const tp of tournament.tournamentPlayers || []) {
+            this.resetTournamentPlayerEmbedsAfterReopen(tp);
+        }
+
+        if (tournament.groups && tournament.groups.length > 0) {
+            tournament.groups.forEach((group: any) => {
+                if (group.standings && group.standings.length > 0) {
+                    group.standings.forEach((standing: any) => {
+                        standing.matchesPlayed = 0;
+                        standing.matchesWon = 0;
+                        standing.matchesLost = 0;
+                        standing.legsWon = 0;
+                        standing.legsLost = 0;
+                        standing.legDifference = 0;
+                        standing.points = 0;
+                        standing.average = null;
+                        standing.total180s = 0;
+                        standing.highestCheckout = null;
+                    });
+                }
+            });
+        }
+
+        if (sess) {
+            await tournament.save({ session: sess });
+        } else {
+            await tournament.save();
+        }
+
+        return tournament;
+    }
+
+    /**
+     * Reopen a finished tournament (global admin only)
+     * - Detaches tournament from any league and clears league points for it
+     * - Reverts Player global stats / MMR / oacMmr / tournamentHistory using stored history row
+     * - Clears embedded tournamentPlayers finish data; keeps matches/legs
      */
     static async reopenTournament(tournamentCode: string, requesterId: string): Promise<TournamentDocument> {
         try {
-            // Get tournament
-            const tournament = await TournamentModel.findOne({ tournamentId: tournamentCode });
-            if (!tournament) {
-                throw new Error('Torna nem található');
+            await connectMongo();
+            const isGlobalAdmin = await AuthorizationService.isGlobalAdmin(requesterId);
+            if (!isGlobalAdmin) {
+                throw new Error('Csak globális admin nyithatja újra a tornát');
             }
 
-            // Check if tournament is actually finished
-            if (tournament.tournamentSettings?.status !== 'finished') {
-                throw new Error('A torna nincs befejezve');
-            }
+            let resultTournament: TournamentDocument | null = null;
+            const session = await mongoose.startSession();
 
-            // Determine what status to set back to based on tournament format and current state
-            let newStatus: string;
-            
-            if (tournament.tournamentSettings?.format === 'group') {
-                // Pure group tournament -> group-stage
-                newStatus = 'group-stage';
-            } else if (tournament.tournamentSettings?.format === 'knockout') {
-                // Pure knockout tournament -> knockout
-                newStatus = 'knockout';
-            } else if (tournament.tournamentSettings?.format === 'group_knockout') {
-                // Group + knockout tournament -> knockout (since groups are already finished)
-                newStatus = 'knockout';
-            } else {
-                // Default to active
-                newStatus = 'active';
-            }
-
-            // Update tournament settings
-            tournament.tournamentSettings.status = newStatus;
-            tournament.tournamentSettings.finishedAt = undefined;
-
-            // Reset all tournament players' statistics and subtract from Player collection
-            if (tournament.tournamentPlayers && tournament.tournamentPlayers.length > 0) {
-                const mutatedPlayers = new Map<string, any>();
-                for (const tournamentPlayer of tournament.tournamentPlayers) {
-                    // Reset tournament player statistics
-                    tournamentPlayer.matchesWon = 0;
-                    tournamentPlayer.matchesLost = 0;
-                    tournamentPlayer.legsWon = 0;
-                    tournamentPlayer.legsLost = 0;
-                    
-                    // Reset tournament statistics
-                    tournamentPlayer.finalPosition = null;
-                    tournamentPlayer.eliminationRound = null;
-                    tournamentPlayer.eliminationText = null;
-                    tournamentPlayer.avg = null;
-                    tournamentPlayer.total180s = 0;
-                    tournamentPlayer.highestCheckout = null;
-                    tournamentPlayer.totalCheckouts = 0;
-                    tournamentPlayer.totalDartsThrown = 0;
-                    
-                    // Reset group standings if applicable
-                    if (tournamentPlayer.groupStanding !== undefined) {
-                        tournamentPlayer.groupStanding = null;
+            try {
+                try {
+                    await session.withTransaction(async () => {
+                        resultTournament = await this.reopenTournamentWithOptionalSession(
+                            tournamentCode,
+                            requesterId,
+                            session,
+                        );
+                    });
+                } catch (txnError: unknown) {
+                    if (!this.isMongoTransactionsUnsupportedError(txnError)) {
+                        throw txnError;
                     }
-
-                    // Subtract tournament statistics from Player collection and remove from tournament history
-                    try {
-                        const playerId = tournamentPlayer.playerReference?._id || tournamentPlayer.playerReference;
-                        if (playerId) {
-                            const player = await PlayerModel.findById(playerId);
-                            if (player) {
-                                // Find tournament in history to get MMR change
-                                const tournamentHistoryIndex = player.tournamentHistory?.findIndex(
-                                    (th: any) => th.tournamentId === tournament.tournamentId
-                                );
-                                
-                                let mmrChange = 0;
-                                if (tournamentHistoryIndex !== undefined && tournamentHistoryIndex !== -1 && player.tournamentHistory) {
-                                    
-                                    // Remove tournament from history
-                                    mmrChange = player.tournamentHistory[tournamentHistoryIndex].mmrChange
-                                    player.tournamentHistory.splice(tournamentHistoryIndex, 1);
-                                    console.log(`Removed tournament ${tournament.tournamentId} from player ${playerId} history`);
-                                }
-                                
-                                // Subtract tournament statistics from player's global statistics
-                                if (player.stats) {
-                                    // Subtract tournaments played
-                                    player.stats.tournamentsPlayed = Math.max(0, (player.stats.tournamentsPlayed || 0) - 1);
-                                    
-                                    // Subtract match statistics
-                                    player.stats.matchesPlayed = Math.max(0, (player.stats.matchesPlayed || 0) - (tournamentPlayer.matchesWon || 0) - (tournamentPlayer.matchesLost || 0));
-                                    player.stats.totalMatchesWon = Math.max(0, (player.stats.totalMatchesWon || 0) - (tournamentPlayer.matchesWon || 0));
-                                    player.stats.totalMatchesLost = Math.max(0, (player.stats.totalMatchesLost || 0) - (tournamentPlayer.matchesLost || 0));
-                                    
-                                    // Subtract leg statistics
-                                    player.stats.legsWon = Math.max(0, (player.stats.legsWon || 0) - (tournamentPlayer.legsWon || 0));
-                                    player.stats.legsLost = Math.max(0, (player.stats.legsLost || 0) - (tournamentPlayer.legsLost || 0));
-                                    player.stats.totalLegsWon = Math.max(0, (player.stats.totalLegsWon || 0) - (tournamentPlayer.legsWon || 0));
-                                    player.stats.totalLegsLost = Math.max(0, (player.stats.totalLegsLost || 0) - (tournamentPlayer.legsLost || 0));
-                                    
-                                    // Subtract other statistics
-                                    player.stats.total180s = Math.max(0, (player.stats.total180s || 0) - (tournamentPlayer.total180s || 0));
-                                    player.stats.oneEightiesCount = Math.max(0, (player.stats.oneEightiesCount || 0) - (tournamentPlayer.total180s || 0));
-                                    
-                                    // Subtract MMR change
-                                    player.stats.mmr = Math.max(0, (player.stats.mmr || 800) + (mmrChange*-1));
-                                    
-                                    // Recalculate average from remaining tournament history
-                                    if (player.tournamentHistory && player.tournamentHistory.length > 0) {
-                                        const totalAvg = player.tournamentHistory.reduce((sum: number, th: any) => {
-                                            return sum + (th.stats?.averagePosition || 0);
-                                        }, 0);
-                                        player.stats.averagePosition = totalAvg / player.tournamentHistory.length;
-                                        
-                                        // Recalculate best position
-                                        const bestPos = Math.min(...player.tournamentHistory.map((th: any) => th.position || 999));
-                                        player.stats.bestPosition = bestPos < 999 ? bestPos : 999;
-                                        
-                                        // Recalculate highest checkout from tournament history
-                                        const maxCheckout = Math.max(...player.tournamentHistory.map((th: any) => th.stats?.highestCheckout || 0), 0);
-                                        player.stats.highestCheckout = maxCheckout;
-                                    } else {
-                                        // No tournaments left, reset to defaults
-                                        player.stats.averagePosition = 0;
-                                        player.stats.bestPosition = 999;
-                                        player.stats.highestCheckout = 0;
-                                    }
-                                    
-                                }
-                                mutatedPlayers.set(playerId.toString(), player);
-                                console.log(`Subtracted tournament statistics from player ${playerId}, removed from history, adjusted MMR by ${mmrChange}`);
-                            }
-                        }
-                    } catch (playerError) {
-                        console.error(`Error updating player ${tournamentPlayer.playerReference?._id || tournamentPlayer.playerReference} statistics:`, playerError);
-                        // Continue with other players even if one fails
-                    }
-                }
-
-                if (mutatedPlayers.size > 0) {
-                    const seasonalAveragesByPlayer = await this.recalculateCurrentSeasonAveragesBulk(
-                        Array.from(mutatedPlayers.keys()),
+                    console.warn(
+                        'reopenTournament: transactions not supported on this MongoDB deployment; running without transaction',
                     );
-
-                    for (const [playerId, player] of mutatedPlayers.entries()) {
-                        const seasonAverages = seasonalAveragesByPlayer.get(playerId) || { avg: 0, firstNineAvg: 0 };
-                        player.stats.avg = seasonAverages.avg;
-                        player.stats.firstNineAvg = seasonAverages.firstNineAvg;
-                    }
-
-                    await PlayerModel.bulkWrite(
-                        Array.from(mutatedPlayers.values()).map((player) => ({
-                            updateOne: {
-                                filter: { _id: player._id },
-                                update: {
-                                    $set: {
-                                        stats: player.stats,
-                                        tournamentHistory: player.tournamentHistory,
-                                    },
-                                },
-                            },
-                        })),
-                        { ordered: false },
+                    resultTournament = await this.reopenTournamentWithOptionalSession(
+                        tournamentCode,
+                        requesterId,
+                        undefined,
                     );
                 }
+            } finally {
+                await session.endSession();
             }
 
-            // Reset group standings if tournament has groups
-            if (tournament.groups && tournament.groups.length > 0) {
-                tournament.groups.forEach((group: any) => {
-                    if (group.standings && group.standings.length > 0) {
-                        group.standings.forEach((standing: any) => {
-                            standing.matchesPlayed = 0;
-                            standing.matchesWon = 0;
-                            standing.matchesLost = 0;
-                            standing.legsWon = 0;
-                            standing.legsLost = 0;
-                            standing.legDifference = 0;
-                            standing.points = 0;
-                            standing.average = null;
-                            standing.total180s = 0;
-                            standing.highestCheckout = null;
-                        });
-                    }
-                });
+            if (!resultTournament) {
+                throw new Error('A torna újranyitása nem hajtódott végre');
             }
 
-            // Save tournament
-            await tournament.save();
+            console.log(
+                `Tournament ${tournamentCode} reopened by global admin ${requesterId}. Status is now '${resultTournament.tournamentSettings?.status}'`,
+            );
 
-            console.log(`Tournament ${tournamentCode} reopened by super admin ${requesterId}. Status changed from 'finished' to '${newStatus}'`);
-
-            return tournament;
-
+            return resultTournament;
         } catch (error: any) {
             console.error('Error reopening tournament:', error);
             throw new Error(`Hiba történt a torna újranyitása során: ${error.message}`);

@@ -50,6 +50,13 @@ import {
   adminPlayersActions,
   adminUsersActions,
 } from "@/features/admin/actions/adminDomains.action"
+import {
+  ConfirmModal,
+  EditHonorsModal,
+  EditPlayerNameModal,
+  SetPasswordModal,
+  type PlayerHonorForm,
+} from "@/components/admin/users/AdminUserActionModals"
 // import Pagination from "@/components/common/Pagination" // Replaced with custom or shadcn pagination below
 
 interface AdminUser {
@@ -93,6 +100,12 @@ export default function AdminUsersPage() {
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [paginationTotal, setPaginationTotal] = useState(0)
+
+  const [passwordModalUser, setPasswordModalUser] = useState<AdminUser | null>(null)
+  const [nameModalUser, setNameModalUser] = useState<AdminUser | null>(null)
+  const [honorsModalUser, setHonorsModalUser] = useState<AdminUser | null>(null)
+  const [deactivateConfirmUser, setDeactivateConfirmUser] = useState<AdminUser | null>(null)
+  const [resetEmailConfirmUser, setResetEmailConfirmUser] = useState<AdminUser | null>(null)
 
   // Debounced Search
   useEffect(() => {
@@ -138,13 +151,13 @@ export default function AdminUsersPage() {
   }
 
   const deactivateUser = async (userId: string) => {
-    if (!window.confirm("Biztosan deaktiválja ezt a felhasználót?")) return
     try {
       await adminUsersActions.deactivate(userId)
       fetchUsers(page, searchTerm, roleFilter)
       toast.success(t("felhasználó_deaktiválva"))
     } catch {
       toast.error(t("hiba_történt_a_29"))
+      throw new Error("deactivate failed")
     }
   }
 
@@ -158,72 +171,53 @@ export default function AdminUsersPage() {
     }
   }
 
-  const setUserPassword = async (user: AdminUser) => {
-    const newPassword = window.prompt(`Adj meg új jelszót a felhasználóhoz (${user.email})`)
-    if (!newPassword) return
-    if (newPassword.length < 8) {
-      toast.error("A jelszónak legalább 8 karakteresnek kell lennie")
-      return
-    }
-
+  const applyNewPassword = async (user: AdminUser, newPassword: string) => {
     try {
       await adminUsersActions.setPassword(user._id, newPassword)
       toast.success("Jelszó sikeresen frissítve")
     } catch (error: any) {
       toast.error(error?.response?.data?.error || "Jelszó frissítése sikertelen")
+      throw error
     }
   }
 
-  const sendResetPassword = async (user: AdminUser) => {
-    if (!window.confirm(`Reset jelszó email küldése ennek a felhasználónak?\n${user.email}`)) return
-
+  const sendResetPasswordConfirmed = async (user: AdminUser) => {
     try {
       await adminUsersActions.sendReset(user._id)
       toast.success("Reset email elküldve")
     } catch (error: any) {
       toast.error(error?.response?.data?.error || "Reset email küldése sikertelen")
+      throw error
     }
   }
 
-  const editPlayerName = async (user: AdminUser) => {
+  const savePlayerName = async (user: AdminUser, newName: string) => {
     if (!user.playerProfile?._id) {
       toast.error("Ehhez a felhasználóhoz nem található játékos profil")
-      return
+      throw new Error("no player profile")
     }
-
-    const newName = window.prompt("Új játékos profil név", user.playerProfile.name || user.name)
-    if (!newName || newName.trim().length < 2) return
-
     try {
-      await adminPlayersActions.updateProfile(user.playerProfile._id, { name: newName.trim() })
+      await adminPlayersActions.updateProfile(user.playerProfile._id, { name: newName })
       fetchUsers(page, searchTerm, roleFilter)
       toast.success("Játékos profil név frissítve")
     } catch (error: any) {
       toast.error(error?.response?.data?.error || "Játékos név frissítése sikertelen")
+      throw error
     }
   }
 
-  const editPlayerHonors = async (user: AdminUser) => {
+  const savePlayerHonors = async (user: AdminUser, honors: PlayerHonorForm[]) => {
     if (!user.playerProfile?._id) {
       toast.error("Ehhez a felhasználóhoz nem található játékos profil")
-      return
+      throw new Error("no player profile")
     }
-
-    const currentHonors = user.playerProfile.honors || []
-    const input = window.prompt(
-      "Honors szerkesztése JSON-ben (title, year, type, description?).",
-      JSON.stringify(currentHonors, null, 2)
-    )
-
-    if (input === null) return
-
     try {
-      const parsedHonors = JSON.parse(input)
-      await adminPlayersActions.updateProfile(user.playerProfile._id, { honors: parsedHonors })
+      await adminPlayersActions.updateProfile(user.playerProfile._id, { honors })
       fetchUsers(page, searchTerm, roleFilter)
       toast.success("Játékos honors frissítve")
     } catch (error: any) {
-      toast.error(error?.response?.data?.error || "Hibás JSON vagy mentési hiba")
+      toast.error(error?.response?.data?.error || "Mentési hiba")
+      throw error
     }
   }
 
@@ -403,24 +397,40 @@ export default function AdminUsersPage() {
                             <IconCheck className="size-4 mr-2" />
                             {user.isVerified ? "Email megerősítés visszavonása" : "Email manuális megerősítése"}
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => setUserPassword(user)}>
+                          <DropdownMenuItem onClick={() => setPasswordModalUser(user)}>
                             <IconLock className="size-4 mr-2" />
                             Jelszó közvetlen beállítása
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => sendResetPassword(user)}>
+                          <DropdownMenuItem onClick={() => setResetEmailConfirmUser(user)}>
                             <IconSend className="size-4 mr-2" />
                             Jelszó reset email küldése
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem onClick={() => editPlayerName(user)}>
+                          <DropdownMenuItem
+                            onClick={() => {
+                              if (!user.playerProfile?._id) {
+                                toast.error("Ehhez a felhasználóhoz nem található játékos profil")
+                                return
+                              }
+                              setNameModalUser(user)
+                            }}
+                          >
                             <IconUser className="size-4 mr-2" />
                             Játékos profil név szerkesztése
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => editPlayerHonors(user)}>
+                          <DropdownMenuItem
+                            onClick={() => {
+                              if (!user.playerProfile?._id) {
+                                toast.error("Ehhez a felhasználóhoz nem található játékos profil")
+                                return
+                              }
+                              setHonorsModalUser(user)
+                            }}
+                          >
                             <IconCrown className="size-4 mr-2" />
                             Játékos honors szerkesztése
                           </DropdownMenuItem>
-                          <DropdownMenuItem className="text-destructive focus:bg-destructive/10 focus:text-destructive" onClick={() => deactivateUser(user._id)}>
+                          <DropdownMenuItem className="text-destructive focus:bg-destructive/10 focus:text-destructive" onClick={() => setDeactivateConfirmUser(user)}>
                             <IconTrash className="size-4 mr-2" />
                             {t("fiók_felfüggesztése")}</DropdownMenuItem>
                         </DropdownMenuContent>
@@ -465,6 +475,76 @@ export default function AdminUsersPage() {
            onSend={sendEmail} 
          />
       )}
+
+      {passwordModalUser && (
+        <SetPasswordModal
+          user={passwordModalUser}
+          open
+          onOpenChange={(open) => {
+            if (!open) setPasswordModalUser(null)
+          }}
+          onSubmit={async (pw) => applyNewPassword(passwordModalUser, pw)}
+        />
+      )}
+
+      {nameModalUser && (
+        <EditPlayerNameModal
+          user={nameModalUser}
+          open
+          onOpenChange={(open) => {
+            if (!open) setNameModalUser(null)
+          }}
+          onSubmit={async (name) => savePlayerName(nameModalUser, name)}
+        />
+      )}
+
+      {honorsModalUser && (
+        <EditHonorsModal
+          user={honorsModalUser}
+          open
+          onOpenChange={(open) => {
+            if (!open) setHonorsModalUser(null)
+          }}
+          onSubmit={async (honors) => savePlayerHonors(honorsModalUser, honors)}
+        />
+      )}
+
+      <ConfirmModal
+        open={!!deactivateConfirmUser}
+        onOpenChange={(open) => {
+          if (!open) setDeactivateConfirmUser(null)
+        }}
+        title="Fiók felfüggesztése"
+        description={
+          deactivateConfirmUser
+            ? `Biztosan deaktiválja ezt a felhasználót?\n${deactivateConfirmUser.email}`
+            : ""
+        }
+        confirmLabel="Deaktiválás"
+        destructive
+        onConfirm={async () => {
+          if (!deactivateConfirmUser) return
+          await deactivateUser(deactivateConfirmUser._id)
+        }}
+      />
+
+      <ConfirmModal
+        open={!!resetEmailConfirmUser}
+        onOpenChange={(open) => {
+          if (!open) setResetEmailConfirmUser(null)
+        }}
+        title="Jelszó visszaállító email"
+        description={
+          resetEmailConfirmUser
+            ? `Reset jelszó email küldése ennek a címre?\n${resetEmailConfirmUser.email}`
+            : ""
+        }
+        confirmLabel="Email küldése"
+        onConfirm={async () => {
+          if (!resetEmailConfirmUser) return
+          await sendResetPasswordConfirmed(resetEmailConfirmUser)
+        }}
+      />
     </div>
   )
 }

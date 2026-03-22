@@ -1,13 +1,14 @@
 "use client"
 
 import Link from "next/link"
-import { IconCalendarEvent, IconDownload, IconExternalLink } from "@tabler/icons-react"
-import { useLocale, useTranslations } from "next-intl"
+import { IconCalendarEvent, IconCoin, IconDownload, IconExternalLink, IconUsers } from "@tabler/icons-react"
+import { useFormatter, useLocale, useTranslations } from "next-intl"
 import { Button } from "@/components/ui/Button"
 import { GlassmorphismCard } from "@/components/ui/glassmorphism-card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { HomeTournament } from "@/features/home/ui/types"
 import { formatTournamentDate, getUpcomingTournaments, parseTournamentDate } from "@/features/home/ui/homeUtils"
+import { TournamentFormatBadges } from "@/components/tournament/TournamentFormatBadges"
 
 interface UpcomingCalendarTileProps {
   tournaments: HomeTournament[]
@@ -51,6 +52,7 @@ function buildIcsFile(tournaments: HomeTournament[]): string {
 export default function UpcomingCalendarTile({ tournaments, loading }: UpcomingCalendarTileProps) {
   const t = useTranslations("HomeDashboard")
   const locale = useLocale()
+  const format = useFormatter()
   const upcomingTournaments = getUpcomingTournaments(tournaments)
 
   const handleExport = () => {
@@ -91,11 +93,28 @@ export default function UpcomingCalendarTile({ tournaments, loading }: UpcomingC
               href={`/tournaments/${tor.code}`}
               className="flex items-center justify-between rounded-xl border border-border/60 bg-background/50 p-3 transition-colors hover:bg-muted/40"
             >
-              <div className="min-w-0">
+              <div className="min-w-0 flex-1">
                 <p className="truncate font-medium">{tor.name}</p>
                 <p className="flex items-center gap-1 text-xs text-muted-foreground">
-                  <IconCalendarEvent className="h-3.5 w-3.5" />
+                  <IconCalendarEvent className="h-3.5 w-3.5 shrink-0" />
                   {formatTournamentDate(tor.date, locale)}
+                </p>
+                <div className="mt-1.5">
+                  <TournamentFormatBadges type={tor.tournamentType} participationMode={tor.participationMode} />
+                </div>
+                <p className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] text-muted-foreground">
+                  <span className="inline-flex items-center gap-1">
+                    <IconUsers className="h-3 w-3 shrink-0" />
+                    {t("calendar.playerCount", {
+                      current: tor.currentPlayers ?? 0,
+                      max: tor.maxPlayers ?? 0,
+                    })}
+                  </span>
+                  <span className="inline-flex items-center gap-1">
+                    <IconCoin className="h-3 w-3 shrink-0" />
+                    {t("calendar.entryFeeLabel")}:{" "}
+                    {format.number(Number(tor.entryFee ?? 0), { style: "currency", currency: "HUF" })}
+                  </span>
                 </p>
               </div>
               <IconExternalLink className="h-4 w-4 text-muted-foreground" />

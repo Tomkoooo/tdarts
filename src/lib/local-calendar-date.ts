@@ -9,12 +9,34 @@ export function isSameLocalCalendarDay(a: Date, b: Date): boolean {
   );
 }
 
+function startOfLocalCalendarDay(d: Date): Date {
+  const x = new Date(d.getTime());
+  x.setHours(0, 0, 0, 0);
+  return x;
+}
+
 /** True if `dateValue` falls on today's local calendar date. */
 export function isLocalCalendarDayToday(dateValue?: string | Date | null): boolean {
   if (!dateValue) return false;
   const d = new Date(dateValue);
   if (Number.isNaN(d.getTime())) return false;
   return isSameLocalCalendarDay(d, new Date());
+}
+
+/** Local calendar day is strictly after today's local calendar day. */
+export function isStrictlyAfterLocalCalendarToday(dateValue?: string | Date | null): boolean {
+  if (!dateValue) return false;
+  const d = new Date(dateValue);
+  if (Number.isNaN(d.getTime())) return false;
+  return startOfLocalCalendarDay(d).getTime() > startOfLocalCalendarDay(new Date()).getTime();
+}
+
+/** Local calendar day is today or a future day (end-inclusive of today). */
+export function isOnOrAfterLocalCalendarToday(dateValue?: string | Date | null): boolean {
+  if (!dateValue) return false;
+  const d = new Date(dateValue);
+  if (Number.isNaN(d.getTime())) return false;
+  return startOfLocalCalendarDay(d).getTime() >= startOfLocalCalendarDay(new Date()).getTime();
 }
 
 /**

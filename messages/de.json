@@ -477,6 +477,13 @@
       "backToLogin": "Zurück zur Anmeldung"
     }
   },
+  "FeatureFlags": {
+    "login_title": "Melden Sie sich an, um diese Funktion zu nutzen",
+    "login_description": "Ihre Sitzung konnte nicht geprüft werden (z. B. im In-App-Browser). Melden Sie sich an, um diese Funktion zu nutzen.",
+    "login_cta": "Anmelden",
+    "disabled_title": "Diese Funktion ist nicht verfügbar",
+    "disabled_description": "Diese Funktion ist für diesen Verein deaktiviert, oder Ihr Konto hat in diesem Kontext keinen Zugriff."
+  },
   "Carousel": {
     "management": "Weltklasse-Wettbewerbsmanagement",
     "targeting": "Präzise Zielverfolgung",
@@ -505,6 +512,16 @@
       "clubs": "Vereine",
       "leagues": "Ligen",
       "map": "Karte"
+    },
+    "filters": {
+      "startDate_label": "Startdatum",
+      "startDate_any": "Beliebig",
+      "startDate_yesterday": "Gestern",
+      "startDate_last7": "Letzte 7 Tage",
+      "startDate_last30": "Letzte 30 Tage",
+      "startDate_custom": "Eigener Zeitraum",
+      "startDate_from": "Von",
+      "startDate_to": "Bis"
     },
     "filter_bar": {
       "popular_cities": "Beliebte Städte",
@@ -685,6 +702,13 @@
     "club_search": "Suche nach einem Verein"
   },
   "Tournament": {
+    "badges": {
+      "amateur": "Amateur",
+      "open": "Open",
+      "individual": "Einzel",
+      "pair": "Paare",
+      "team": "Teams"
+    },
     "players": {
       "title": "Spieler",
       "add_player": "Spieler hinzufügen",
@@ -2473,7 +2497,8 @@
         "settings": "Einstellungen",
         "telemetry": "Telemetrie",
         "collapse": "Falten",
-        "title": "tDarts-Administrator"
+        "title": "tDarts-Administrator",
+        "feedback_unread_aria": "{count} ungelesene Feedback-Themen"
       },
       "status": {
         "checking": "Überprüfung der Administratorberechtigungen...",
@@ -2783,7 +2808,25 @@
           "priority": "Priorität",
           "save_status": "Status speichern",
           "reply_placeholder": "Nachricht schreiben...",
-          "send_btn": "Senden"
+          "send_btn": "Senden",
+          "read_receipt_label": "Gelesen-Status",
+          "read_user_sent_support_seen": "Der Support hat Ihre letzte Nachricht gelesen.",
+          "read_user_sent_support_unseen": "Der Support hat Ihre letzte Nachricht noch nicht gelesen.",
+          "read_support_sent_user_seen": "Sie haben die letzte Antwort des Supports gesehen.",
+          "read_support_sent_user_unseen": "Ungelesene Antwort vom Support.",
+          "read_admin_user_sent_you_seen": "Sie haben die letzte Nachricht des Nutzers gesehen.",
+          "read_admin_user_sent_you_unseen": "Öffnen Sie dieses Gespräch, um die Nutzernachricht als gelesen zu markieren.",
+          "read_admin_you_sent_user_seen": "Der Nutzer hat Ihre letzte Nachricht gelesen.",
+          "read_admin_you_sent_user_unseen": "Der Nutzer hat Ihre letzte Nachricht noch nicht gelesen.",
+          "status_pending": "Ausstehend",
+          "status_in_progress": "In Bearbeitung",
+          "status_resolved": "Gelöst",
+          "status_rejected": "Abgelehnt",
+          "status_closed": "Geschlossen",
+          "priority_low": "Niedrig",
+          "priority_medium": "Mittel",
+          "priority_high": "Hoch",
+          "priority_critical": "Kritisch"
         },
         "toasts": {
           "empty_message": "Die Nachricht darf nicht leer sein",
@@ -3520,6 +3563,28 @@
       "title": "Mein Feedback (Tickets)",
       "new_ticket": "Neues Fehlerticket",
       "new_ticket_desc": "Haben Sie eine Frage oder einen Kommentar? Schreiben Sie uns!",
+      "unread_badge": "Neu",
+      "detail": {
+        "read_receipt_label": "Gelesen-Status",
+        "read_user_sent_support_seen": "Der Support hat Ihre letzte Nachricht gelesen.",
+        "read_user_sent_support_unseen": "Der Support hat Ihre letzte Nachricht noch nicht gelesen.",
+        "read_support_sent_user_seen": "Sie haben die letzte Antwort des Supports gesehen.",
+        "read_support_sent_user_unseen": "Ungelesene Antwort vom Support.",
+        "no_messages": "Dieses Ticket enthält noch keine Nachrichten",
+        "system_sender": "System",
+        "reply_placeholder": "Nachricht schreiben...",
+        "send_btn": "Senden",
+        "closed_ticket": "Dieses Ticket ist geschlossen. Weitere Antworten sind nicht möglich.",
+        "status_pending": "Ausstehend",
+        "status_in_progress": "In Bearbeitung",
+        "status_resolved": "Gelöst",
+        "status_rejected": "Abgelehnt",
+        "status_closed": "Geschlossen",
+        "toast_empty": "Die Nachricht darf nicht leer sein",
+        "toast_closed": "Dieses Ticket ist bereits geschlossen",
+        "toast_reply_sent": "Antwort gesendet",
+        "toast_reply_error": "Beim Senden der Nachricht ist ein Fehler aufgetreten"
+      },
       "status": {
         "open": "Offen",
         "replied": "Eine Antwort ist eingegangen",
@@ -3823,7 +3888,9 @@
       "nextMatchVsWarning": "Nächstes Match gegen {opponent}",
       "nextScoringReminder": "Du bist als Schreiber für diesen Tisch eingeteilt — bleib bereit.",
       "landingPage": "Über tDarts",
-      "nextUnknown": "Noch keine nächste Board-Zuweisung"
+      "nextUnknown": "Noch keine nächste Board-Zuweisung",
+      "profileIncompleteBanner": "Spielerprofil vervollständigen ({count} fehlt)",
+      "notificationsIncludingProfile": "Du hast {count} Benachrichtigungen (inkl. Profil)"
     },
     "stats": {
       "matches": "Gespielte Matches",
@@ -3834,7 +3901,9 @@
     },
     "calendar": {
       "title": "Kommender Kalender",
-      "export": "In Kalender exportieren"
+      "export": "In Kalender exportieren",
+      "playerCount": "{current} / {max} Spieler",
+      "entryFeeLabel": "Startgeld"
     },
     "notifications": {
       "title": "Benachrichtigungscenter",
@@ -3846,7 +3915,9 @@
       "tournamentReminders": "Turniererinnerungen",
       "reminderCount": "{count} Turniere in den nächsten 7 Tagen",
       "spotAvailability": "Freie Turnierplätze",
-      "spotHint": "{count} Verfügbarkeitsmeldungen"
+      "spotHint": "{count} Verfügbarkeitsmeldungen",
+      "profileIncomplete": "Profil unvollständig",
+      "profileIncompleteHint": "{count} Angabe(n) fehlen — Foto oder Land im Profil ergänzen"
     },
     "currentTournament": {
       "title": "Aktuelle Turnierübersicht",

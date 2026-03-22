@@ -9,6 +9,7 @@ import { checkFeatureFlagAction } from "@/features/feature-flags/actions/checkFe
 import type {
   HomeLeagueStanding,
   HomeMetrics,
+  HomeProfileCompletenessIssue,
   HomeTournament,
 } from "@/features/home/ui";
 
@@ -61,6 +62,13 @@ function toHomeTournament(item: any): HomeTournament {
       typeof item?.nextMatchOpponentName === "string" && item.nextMatchOpponentName.trim()
         ? item.nextMatchOpponentName.trim()
         : null,
+    tournamentType: item?.tournamentType === "open" ? "open" : item?.tournamentType === "amateur" ? "amateur" : undefined,
+    participationMode:
+      item?.participationMode === "pair" || item?.participationMode === "team"
+        ? item.participationMode
+        : item?.participationMode === "individual"
+          ? "individual"
+          : undefined,
   };
 }
 
@@ -106,7 +114,7 @@ export default async function HomeServerShell({
     featureRes,
     announcementsRes,
   ] = await Promise.allSettled([
-    getUserTournamentsAction({ limit: 5 }),
+    getUserTournamentsAction({ limit: 20 }),
     getPlayerStatsAction(),
     getLeagueHistoryAction(),
     checkFeatureFlagAction({ feature: "ADVANCED_STATISTICS" }),
@@ -124,6 +132,7 @@ export default async function HomeServerShell({
     leagueStandings: [],
     announcements: [],
     advancedStatsEnabled: false,
+    profileCompleteness: { issues: [] as HomeProfileCompletenessIssue[], count: 0 },
   };
 
   if (
@@ -144,7 +153,15 @@ export default async function HomeServerShell({
     "success" in statsRes.value &&
     (statsRes.value as any).success
   ) {
-    initialData.metrics = toHomeMetrics((statsRes.value as any).data);
+    const statsPayload = (statsRes.value as any).data;
+    initialData.metrics = toHomeMetrics(statsPayload);
+    const pc = statsPayload?.profileCompleteness;
+    if (pc && typeof pc === "object" && Array.isArray(pc.issues)) {
+      initialData.profileCompleteness = {
+        issues: pc.issues.filter((x: unknown) => x === "photo" || x === "country") as HomeProfileCompletenessIssue[],
+        count: typeof pc.count === "number" ? pc.count : pc.issues.length,
+      };
+    }
   }
 
   if (

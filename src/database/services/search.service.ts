@@ -8,7 +8,9 @@ export interface SearchFilters {
     type?: 'players' | 'tournaments' | 'clubs' | 'leagues' | 'global' | 'all';
     status?: string;
     format?: string;
+    /** Inclusive lower bound for tournamentSettings.startDate */
     dateFrom?: Date;
+    /** Upper bound: exclusive ($lt) when set from startDate presets; inclusive legacy use discouraged */
     dateTo?: Date;
     minPlayers?: number;
     maxPlayers?: number;
@@ -25,6 +27,12 @@ export interface SearchFilters {
     playerMode?: 'all' | 'individual' | 'pair';
     country?: string;
     timeZone?: string;
+    /** URL preset: yesterday | last7 | last30 | custom | cleared when unset */
+    startDatePreset?: string;
+    /** YYYY-MM-DD inclusive start for custom preset (calendar day in user timeZone) */
+    dateFromKey?: string;
+    /** YYYY-MM-DD inclusive end for custom preset */
+    dateToKey?: string;
 }
 
 
@@ -487,6 +495,16 @@ export class SearchService {
         return { results: formattedResults, total };
     }
 
+    private static coerceSearchDate(value: unknown): Date | null {
+        if (value == null || value === '') return null;
+        if (value instanceof Date && !Number.isNaN(value.getTime())) return value;
+        if (typeof value === 'string' || typeof value === 'number') {
+            const d = new Date(value);
+            return Number.isNaN(d.getTime()) ? null : d;
+        }
+        return null;
+    }
+
     private static buildTournamentPipeline(query: string, filters: SearchFilters, countOnly: boolean = false): any[] {
         const pipeline: any[] = [];
 
@@ -554,7 +572,11 @@ export class SearchService {
             });
         }
 
-        if (filters.status === 'upcoming' || !filters.status) {
+        const startDateFrom = this.coerceSearchDate(filters.dateFrom);
+        const startDateToExclusive = this.coerceSearchDate(filters.dateTo);
+        const hasStartDateRange = Boolean(startDateFrom || startDateToExclusive);
+
+        if ((filters.status === 'upcoming' || !filters.status) && !hasStartDateRange) {
             const timeZone = filters.timeZone || getUserTimeZone();
             const { dayStartUtc, nextDayStartUtc } = getDayBoundsInTimeZone(timeZone);
             andConditions.push({
@@ -571,6 +593,13 @@ export class SearchService {
             });
         }
 
+        if (startDateFrom || startDateToExclusive) {
+            const range: Record<string, Date> = {};
+            if (startDateFrom) range.$gte = startDateFrom;
+            if (startDateToExclusive) range.$lt = startDateToExclusive;
+            andConditions.push({ 'tournamentSettings.startDate': range });
+        }
+
         if (filters.city) {
             matchStage.city = new RegExp(filters.city, 'i');
         }
@@ -579,6 +608,9 @@ export class SearchService {
         }
         if (filters.isVerified || filters.isOac) {
             matchStage.verified = true;
+        }
+        if (filters.status === 'finished') {
+            matchStage['tournamentSettings.status'] = 'finished';
         }
         if (andConditions.length > 0) {
             matchStage.$and = andConditions;
@@ -646,7 +678,9 @@ export class SearchService {
         if (countOnly) {
             pipeline.push({ $count: 'total' });
         } else {
-            pipeline.push({ $sort: { 'tournamentSettings.startDate': 1 } });
+            const isUpcomingOrDefault = filters.status === 'upcoming' || !filters.status;
+            const sortAsc = isUpcomingOrDefault && !hasStartDateRange;
+            pipeline.push({ $sort: { 'tournamentSettings.startDate': sortAsc ? 1 : -1 } });
         }
 
         return pipeline;

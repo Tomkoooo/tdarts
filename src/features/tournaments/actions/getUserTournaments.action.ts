@@ -8,6 +8,7 @@ import { BadRequestError } from '@/middleware/errorHandle';
 import { connectMongo } from '@/lib/mongoose';
 import { PlayerService } from '@/database/services/player.service';
 import { TournamentModel } from '@/database/models/tournament.model';
+import { PlayerModel } from '@/database/models/player.model';
 import { MatchModel } from '@/database/models/match.model';
 import { serializeForClient } from '@/shared/lib/serializeForClient';
 import mongoose from 'mongoose';
@@ -41,12 +42,19 @@ export async function getUserTournamentsAction(input: z.infer<typeof schema> = {
         const todayStart = new Date();
         todayStart.setHours(0, 0, 0, 0);
         const playerObjectId = new mongoose.Types.ObjectId(player._id.toString());
+        const pairShellPlayers = await PlayerModel.find({ members: playerObjectId })
+          .select('_id')
+          .lean();
+        const participationPlayerIds: mongoose.Types.ObjectId[] = [
+          playerObjectId,
+          ...pairShellPlayers.map((p) => p._id as mongoose.Types.ObjectId),
+        ];
         const tournaments = await TournamentModel.aggregate([
           {
             $match: {
               isDeleted: { $ne: true },
               isArchived: { $ne: true },
-              'tournamentPlayers.playerReference': playerObjectId,
+              'tournamentPlayers.playerReference': { $in: participationPlayerIds },
               $or: [
                 { 'tournamentSettings.startDate': { $gte: todayStart } },
                 {
@@ -77,6 +85,8 @@ export async function getUserTournamentsAction(input: z.infer<typeof schema> = {
                 status: '$tournamentSettings.status',
                 maxPlayers: '$tournamentSettings.maxPlayers',
                 entryFee: '$tournamentSettings.entryFee',
+                type: '$tournamentSettings.type',
+                participationMode: '$tournamentSettings.participationMode',
               },
               currentPlayers: { $size: '$tournamentPlayers' },
               playerEntry: {
@@ -86,7 +96,7 @@ export async function getUserTournamentsAction(input: z.infer<typeof schema> = {
                       input: '$tournamentPlayers',
                       as: 'entry',
                       cond: {
-                        $eq: ['$$entry.playerReference', playerObjectId],
+                        $in: ['$$entry.playerReference', participationPlayerIds],
                       },
                     },
                   },
@@ -105,9 +115,9 @@ export async function getUserTournamentsAction(input: z.infer<typeof schema> = {
               tournamentRef: { $in: tournamentIds },
               status: { $in: ['pending', 'ongoing'] },
               $or: [
-                { 'player1.playerId': playerObjectId },
-                { 'player2.playerId': playerObjectId },
-                { scorer: playerObjectId },
+                { 'player1.playerId': { $in: participationPlayerIds } },
+                { 'player2.playerId': { $in: participationPlayerIds } },
+                { scorer: { $in: participationPlayerIds } },
               ],
             })
               .select('tournamentRef status boardReference player1.playerId player2.playerId scorer createdAt')
@@ -117,7 +127,7 @@ export async function getUserTournamentsAction(input: z.infer<typeof schema> = {
               .lean()
           : [];
 
-        const pidStr = String(playerObjectId);
+        const pidSet = new Set(participationPlayerIds.map((id) => String(id)));
 
         const slotPlayerId = (slot: any): string => {
           const ref = slot?.playerId;
@@ -134,13 +144,12 @@ export async function getUserTournamentsAction(input: z.infer<typeof schema> = {
             (match: any) => String(match.tournamentRef) === String(item._id) && match.status === 'pending'
           );
           const nextRelevantMatch = ongoingMatch || pendingMatch || null;
-          const isScorer = Boolean(
-            nextRelevantMatch?.scorer && String(nextRelevantMatch.scorer) === pidStr
-          );
+          const scorerId = nextRelevantMatch?.scorer ? String(nextRelevantMatch.scorer) : '';
+          const isScorer = Boolean(scorerId && pidSet.has(scorerId));
           const p1Id = slotPlayerId(nextRelevantMatch?.player1);
           const p2Id = slotPlayerId(nextRelevantMatch?.player2);
-          const isP1 = Boolean(p1Id && p1Id === pidStr);
-          const isP2 = Boolean(p2Id && p2Id === pidStr);
+          const isP1 = Boolean(p1Id && pidSet.has(p1Id));
+          const isP2 = Boolean(p2Id && pidSet.has(p2Id));
 
           let nextMatchType:
             | 'playing'
@@ -168,15 +177,21 @@ export async function getUserTournamentsAction(input: z.infer<typeof schema> = {
             }
           }
 
+          const ts = item.tournamentSettings || {};
           return {
             _id: String(item._id),
-            name: item.tournamentSettings?.name || 'Tournament',
+            name: ts.name || 'Tournament',
             code: item.tournamentId || '',
-            date: item.tournamentSettings?.startDate || null,
-            status: item.tournamentSettings?.status || 'pending',
+            date: ts.startDate || null,
+            status: ts.status || 'pending',
             currentPlayers: Number(item.currentPlayers || 0),
-            maxPlayers: Number(item.tournamentSettings?.maxPlayers || 0),
-            entryFee: Number(item.tournamentSettings?.entryFee || 0),
+            maxPlayers: Number(ts.maxPlayers || 0),
+            entryFee: Number(ts.entryFee || 0),
+            tournamentType: ts.type === 'open' ? 'open' : 'amateur',
+            participationMode:
+              ts.participationMode === 'pair' || ts.participationMode === 'team'
+                ? ts.participationMode
+                : 'individual',
             wins: Number(playerEntry?.stats?.matchesWon ?? 0),
             losses: Number(playerEntry?.stats?.matchesLost ?? 0),
             legsWon: Number(playerEntry?.stats?.legsWon ?? 0),

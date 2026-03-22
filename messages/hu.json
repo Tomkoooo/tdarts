@@ -186,6 +186,16 @@
       "leagues": "Ligák",
       "map": "Térkép"
     },
+    "filters": {
+      "startDate_label": "Kezdés (dátum)",
+      "startDate_any": "Bármikor",
+      "startDate_yesterday": "Tegnap",
+      "startDate_last7": "Elmúlt 7 nap",
+      "startDate_last30": "Elmúlt 30 nap",
+      "startDate_custom": "Egyéni időszak",
+      "startDate_from": "Mettől",
+      "startDate_to": "Meddig"
+    },
     "filter_bar": {
       "popular_cities": "Népszerű városok",
       "time_label": "Időpont",
@@ -486,6 +496,28 @@
       "title": "Visszajelzéseim (Tickets)",
       "new_ticket": "Új hibajegy",
       "new_ticket_desc": "Kérdésed vagy észrevételed van? Írj nekünk!",
+      "unread_badge": "Új",
+      "detail": {
+        "read_receipt_label": "Olvasottság",
+        "read_user_sent_support_seen": "A támogatás elolvasta az utolsó üzenetedet.",
+        "read_user_sent_support_unseen": "A támogatás még nem olvasta el az utolsó üzenetedet.",
+        "read_support_sent_user_seen": "Láttad a támogatás legutóbbi válaszát.",
+        "read_support_sent_user_unseen": "Olvasatlan válasz érkezett a támogatástól.",
+        "no_messages": "Még nincs üzenet ebben a ticketben",
+        "system_sender": "Rendszer",
+        "reply_placeholder": "Írj egy üzenetet...",
+        "send_btn": "Küldés",
+        "closed_ticket": "Ez a ticket le van zárva. További válaszokat nem lehet küldeni.",
+        "status_pending": "Függőben",
+        "status_in_progress": "Folyamatban",
+        "status_resolved": "Megoldva",
+        "status_rejected": "Elutasítva",
+        "status_closed": "Lezárva",
+        "toast_empty": "Az üzenet nem lehet üres",
+        "toast_closed": "Ez a ticket már le van zárva",
+        "toast_reply_sent": "Válasz elküldve",
+        "toast_reply_error": "Hiba történt az üzenet küldése során"
+      },
       "status": {
         "open": "Nyitott",
         "replied": "Válasz érkezett",
@@ -726,7 +758,8 @@
         "settings": "Beállítások",
         "telemetry": "Telemetria",
         "collapse": "Összecsukás",
-        "title": "tDarts Admin"
+        "title": "tDarts Admin",
+        "feedback_unread_aria": "{count} olvasatlan visszajelzés"
       },
       "status": {
         "checking": "Admin jogosultság ellenőrzése...",
@@ -1025,7 +1058,25 @@
           "priority": "Prioritás",
           "save_status": "Státusz mentése",
           "reply_placeholder": "Írj egy üzenetet...",
-          "send_btn": "Küldés"
+          "send_btn": "Küldés",
+          "read_receipt_label": "Olvasottság",
+          "read_user_sent_support_seen": "A támogatás elolvasta az utolsó üzenetedet.",
+          "read_user_sent_support_unseen": "A támogatás még nem olvasta el az utolsó üzenetedet.",
+          "read_support_sent_user_seen": "Láttad a támogatás legutóbbi válaszát.",
+          "read_support_sent_user_unseen": "Olvasatlan válasz érkezett a támogatástól.",
+          "read_admin_user_sent_you_seen": "Láttad a felhasználó legutóbbi üzenetét.",
+          "read_admin_user_sent_you_unseen": "Nyisd meg ezt a beszélgetést, hogy olvasottnak jelöld a felhasználó üzenetét.",
+          "read_admin_you_sent_user_seen": "A felhasználó elolvasta a legutóbbi válaszodat.",
+          "read_admin_you_sent_user_unseen": "A felhasználó még nem olvasta el a legutóbbi válaszodat.",
+          "status_pending": "Függőben",
+          "status_in_progress": "Folyamatban",
+          "status_resolved": "Megoldva",
+          "status_rejected": "Elutasítva",
+          "status_closed": "Lezárva",
+          "priority_low": "Alacsony",
+          "priority_medium": "Közepes",
+          "priority_high": "Magas",
+          "priority_critical": "Kritikus"
         },
         "toasts": {
           "empty_message": "Az üzenet nem lehet üres",
@@ -1618,6 +1669,13 @@
     }
   },
   "Tournament": {
+    "badges": {
+      "amateur": "Amatőr",
+      "open": "Open",
+      "individual": "Egyéni",
+      "pair": "Páros",
+      "team": "Csapat"
+    },
     "players": {
       "title": "Játékosok",
       "add_player": "Játékos hozzáadása",
@@ -2921,6 +2979,13 @@
     "hiba_történt_20": "Hiba történt",
     "nem_sikerült_betölteni_8": "Nem sikerült betölteni az élő oldalt"
   },
+  "FeatureFlags": {
+    "login_title": "Jelentkezz be a funkció eléréséhez",
+    "login_description": "Nem tudtuk ellenőrizni a munkamenetedet (például beépített böngészőben). Jelentkezz be a funkció használatához.",
+    "login_cta": "Bejelentkezés",
+    "disabled_title": "A funkció nem érhető el",
+    "disabled_description": "Ez a funkció ki van kapcsolva ehhez a klubhoz, vagy a fiókod ebben a helyzetben nem fér hozzá."
+  },
   "Carousel": {
     "management": "Világszínvonalú Versenykezelés",
     "targeting": "Precíz Célkövetés",
@@ -3866,7 +3931,9 @@
       "nextMatchVsWarning": "Következő meccs: {opponent} ellen",
       "nextScoringReminder": "Számlálóként vagy beírva ehhez a táblához — legyél kész.",
       "landingPage": "A tDarts bemutatója",
-      "nextUnknown": "Még nincs következő tábla hozzárendelés"
+      "nextUnknown": "Még nincs következő tábla hozzárendelés",
+      "profileIncompleteBanner": "Egészítsd ki a játékos profilodat ({count} hiányzik)",
+      "notificationsIncludingProfile": "{count} értesítésed van (profil is)"
     },
     "stats": {
       "matches": "Lejátszott meccsek",
@@ -3877,7 +3944,9 @@
     },
     "calendar": {
       "title": "Közelgő naptár",
-      "export": "Exportálás naptárba"
+      "export": "Exportálás naptárba",
+      "playerCount": "{current} / {max} játékos",
+      "entryFeeLabel": "Nevezési díj"
     },
     "notifications": {
       "title": "Értesítési központ",
@@ -3889,7 +3958,9 @@
       "tournamentReminders": "Közelgő torna emlékeztetők",
       "reminderCount": "{count} torna a következő 7 napban",
       "spotAvailability": "Felszabaduló helyek",
-      "spotHint": "{count} elérhető hely értesítés"
+      "spotHint": "{count} elérhető hely értesítés",
+      "profileIncomplete": "Hiányos profil",
+      "profileIncompleteHint": "{count} adat hiányzik — tölts fel képet vagy add meg az országot a profilban"
     },
     "currentTournament": {
       "title": "Aktuális torna áttekintés",

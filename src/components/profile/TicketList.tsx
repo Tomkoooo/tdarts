@@ -14,6 +14,7 @@ interface Ticket {
   priority: 'low' | 'medium' | 'high'
   createdAt: string
   updatedAt: string
+  isReadByUser?: boolean
 }
 
 interface TicketListProps {
@@ -29,6 +30,15 @@ export function TicketList({
 }: TicketListProps) {
   const t = useTranslations("Profile.tickets")
   const locale = useLocale()
+
+  const sortedTickets = React.useMemo(() => {
+    const list = [...tickets]
+    list.sort((a, b) => {
+      const unread = (t: Ticket) => (t.isReadByUser === false ? 1 : 0)
+      return unread(b) - unread(a)
+    })
+    return list
+  }, [tickets])
 
   const getStatusBadge = (status: Ticket['status']) => {
     switch (status) {
@@ -81,8 +91,8 @@ export function TicketList({
       </CardHeader>
       <CardContent>
         <div className="space-y-3">
-          {tickets.length > 0 ? (
-            tickets.map((ticket) => (
+          {sortedTickets.length > 0 ? (
+            sortedTickets.map((ticket) => (
               <div
                 key={ticket.id}
                 onClick={() => onSelectTicket(ticket.id)}
@@ -90,7 +100,15 @@ export function TicketList({
               >
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                   <div className="space-y-1">
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 flex-wrap">
+                      {ticket.isReadByUser === false && (
+                        <span className="flex items-center gap-1.5 shrink-0">
+                          <span className="h-2 w-2 rounded-full bg-accent animate-pulse" aria-hidden />
+                          <span className="rounded-full bg-accent/20 px-1.5 py-0.5 text-[10px] font-medium text-accent">
+                            {t("unread_badge")}
+                          </span>
+                        </span>
+                      )}
                       <h4 className="font-bold text-primary-foreground group-hover:text-primary transition-colors">
                         {ticket.subject}
                       </h4>
@@ -100,7 +118,11 @@ export function TicketList({
                       <span>{t("id_prefix")}: {ticket.id}</span>
                       <span>•</span>
                       <span>
-                        {t("updated_at", { date: new Date(ticket.updatedAt).toLocaleDateString(locale === 'hu' ? 'hu-HU' : 'en-US') })}
+                        {t("updated_at", {
+                          date: new Date(ticket.updatedAt).toLocaleDateString(
+                            locale === "hu" ? "hu-HU" : locale === "de" ? "de-DE" : "en-US"
+                          ),
+                        })}
                       </span>
                     </div>
                   </div>

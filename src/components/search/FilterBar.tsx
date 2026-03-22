@@ -1,5 +1,7 @@
+import { useTranslations } from "next-intl"
 import { Button } from "@/components/ui/Button"
 import { Label } from "@/components/ui/Label"
+import { Input } from "@/components/ui/Input"
 import { Checkbox } from "@/components/ui/checkbox"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { CityChips } from "./CityChips"
@@ -26,7 +28,7 @@ interface FilterBarProps {
 }
 
 export function FilterBar({ activeTab, filters, onFilterChange, cities, hasActiveQuery, onClearQuery }: FilterBarProps) {
-    // Removed: if (activeTab === 'players') return null;
+    const t = useTranslations("Search.filters")
 
     const currentYear = new Date().getFullYear();
     const years = Array.from({ length: currentYear - 2023 }, (_, i) => currentYear - i); // [2025, 2024] etc.
@@ -61,7 +63,19 @@ export function FilterBar({ activeTab, filters, onFilterChange, cities, hasActiv
                                 <Label className="text-sm font-semibold">Időpont</Label>
                                 <RadioGroup 
                                     value={filters.status === 'all' ? 'all' : 'upcoming'} 
-                                    onValueChange={(val) => onFilterChange('status', val)}
+                                    onValueChange={(val) => {
+                                        if (val === 'upcoming') {
+                                            onFilterChange('multiple', {
+                                                status: 'upcoming',
+                                                startDatePreset: undefined,
+                                                dateFromKey: undefined,
+                                                dateToKey: undefined,
+                                                page: 1,
+                                            })
+                                        } else {
+                                            onFilterChange('status', val)
+                                        }
+                                    }}
                                     className="flex gap-4"
                                 >
                                     <div className="flex items-center space-x-2">
@@ -74,6 +88,95 @@ export function FilterBar({ activeTab, filters, onFilterChange, cities, hasActiv
                                     </div>
                                 </RadioGroup>
                             </div>
+                        )}
+
+                        {activeTab === 'tournaments' && (
+                            <>
+                                <Separator orientation="vertical" className="hidden md:block h-10" />
+                                <div className="flex flex-col gap-2 min-w-[200px]">
+                                    <Label className="text-sm font-semibold">{t("startDate_label")}</Label>
+                                    <Select
+                                        value={filters.startDatePreset || "any"}
+                                        onValueChange={(val) => {
+                                            if (val === "any") {
+                                                onFilterChange("multiple", {
+                                                    startDatePreset: undefined,
+                                                    dateFromKey: undefined,
+                                                    dateToKey: undefined,
+                                                    page: 1,
+                                                })
+                                                return
+                                            }
+                                            if (val === "custom") {
+                                                onFilterChange("multiple", {
+                                                    status: "all",
+                                                    startDatePreset: "custom",
+                                                    dateFromKey: filters.dateFromKey,
+                                                    dateToKey: filters.dateToKey,
+                                                    page: 1,
+                                                })
+                                                return
+                                            }
+                                            onFilterChange("multiple", {
+                                                status: "all",
+                                                startDatePreset: val,
+                                                dateFromKey: undefined,
+                                                dateToKey: undefined,
+                                                page: 1,
+                                            })
+                                        }}
+                                    >
+                                        <SelectTrigger className="w-[220px]">
+                                            <SelectValue placeholder={t("startDate_any")} />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="any">{t("startDate_any")}</SelectItem>
+                                            <SelectItem value="yesterday">{t("startDate_yesterday")}</SelectItem>
+                                            <SelectItem value="last7">{t("startDate_last7")}</SelectItem>
+                                            <SelectItem value="last30">{t("startDate_last30")}</SelectItem>
+                                            <SelectItem value="custom">{t("startDate_custom")}</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    {filters.startDatePreset === "custom" && (
+                                        <div className="flex flex-wrap gap-3 items-end pt-1">
+                                            <div className="flex flex-col gap-1">
+                                                <Label className="text-xs text-muted-foreground">{t("startDate_from")}</Label>
+                                                <Input
+                                                    type="date"
+                                                    className="w-[150px]"
+                                                    value={filters.dateFromKey || ""}
+                                                    onChange={(e) =>
+                                                        onFilterChange("multiple", {
+                                                            status: "all",
+                                                            startDatePreset: "custom",
+                                                            dateFromKey: e.target.value || undefined,
+                                                            dateToKey: filters.dateToKey,
+                                                            page: 1,
+                                                        })
+                                                    }
+                                                />
+                                            </div>
+                                            <div className="flex flex-col gap-1">
+                                                <Label className="text-xs text-muted-foreground">{t("startDate_to")}</Label>
+                                                <Input
+                                                    type="date"
+                                                    className="w-[150px]"
+                                                    value={filters.dateToKey || ""}
+                                                    onChange={(e) =>
+                                                        onFilterChange("multiple", {
+                                                            status: "all",
+                                                            startDatePreset: "custom",
+                                                            dateFromKey: filters.dateFromKey,
+                                                            dateToKey: e.target.value || undefined,
+                                                            page: 1,
+                                                        })
+                                                    }
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </>
                         )}
 
                         {/* Player Year Filter */}
@@ -204,7 +307,7 @@ export function FilterBar({ activeTab, filters, onFilterChange, cities, hasActiv
                     </div>
 
                     {/* Clear Filters Button */}
-                    {(filters.status === 'all' || filters.tournamentType || filters.isVerified || filters.city || filters.year || filters.playerMode || filters.country || hasActiveQuery) && (
+                    {(filters.status === 'all' || filters.tournamentType || filters.isVerified || filters.city || filters.year || filters.playerMode || filters.country || filters.startDatePreset || filters.dateFromKey || filters.dateToKey || hasActiveQuery) && (
                          <Button 
                             variant="ghost" 
                             size="icon" 
@@ -217,6 +320,9 @@ export function FilterBar({ activeTab, filters, onFilterChange, cities, hasActiv
                                     year: undefined,
                                     playerMode: undefined,
                                     country: undefined,
+                                    startDatePreset: undefined,
+                                    dateFromKey: undefined,
+                                    dateToKey: undefined,
                                     page: 1
                                 });
                                 if (onClearQuery) onClearQuery();

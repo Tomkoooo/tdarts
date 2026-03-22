@@ -88,5 +88,7 @@ PlayerSchema.index({ 'stats.oacMmr': -1, name: 1 });
 PlayerSchema.index({ country: 1, 'stats.oacMmr': -1, name: 1 });
 PlayerSchema.index({ userRef: 1 }, { sparse: true });
 PlayerSchema.index({ name: 1, userRef: 1 });
+/** Pair/team shells: find tournaments where the user's individual player is a member */
+PlayerSchema.index({ members: 1 }, { sparse: true });
 
 export const PlayerModel = mongoose.models.Player || mongoose.model<PlayerDocument>("Player", PlayerSchema);

@@ -55,13 +55,18 @@ export function ProfilePageClient() {
   const [tickets, setTickets] = React.useState<any[]>([]);
   const [ticketToastDismissed, setTicketToastDismissed] = React.useState(false);
   const { unreadCount, refresh: refreshUnreadCount } = useUnreadTickets({ enabled: Boolean(userId) });
+  const ticketFromUrl = searchParams.get("ticket");
 
   React.useEffect(() => {
+    if (ticketFromUrl) {
+      setActiveTab("tickets");
+      return;
+    }
     const tab = searchParams.get("tab");
     if (tab === "stats" || tab === "tickets" || tab === "details") {
       setActiveTab(tab);
     }
-  }, [searchParams]);
+  }, [searchParams, ticketFromUrl]);
 
   React.useEffect(() => {
     const dismissed = localStorage.getItem("ticketToastDismissed");
@@ -91,6 +96,15 @@ export function ProfilePageClient() {
       void loadTickets();
     }
   }, [activeTab, tickets.length, userId]);
+
+  React.useEffect(() => {
+    if (!userId || activeTab !== "tickets" || !ticketFromUrl) return;
+    if (tickets.length === 0) return;
+    const match = tickets.find(
+      (x: any) => x.id === ticketFromUrl || String(x._id) === ticketFromUrl
+    );
+    if (match) setSelectedTicket(match);
+  }, [userId, activeTab, ticketFromUrl, tickets]);
 
   const loadPlayerStats = async () => {
     if (!userId) return;
@@ -314,7 +328,14 @@ export function ProfilePageClient() {
           (selectedTicket ? (
             <TicketDetail
               ticket={selectedTicket}
-              onBack={() => setSelectedTicket(null)}
+              onBack={() => {
+                setSelectedTicket(null);
+                const url = new URL(window.location.href);
+                if (url.searchParams.has("ticket")) {
+                  url.searchParams.delete("ticket");
+                  window.history.replaceState({}, "", url);
+                }
+              }}
               onUpdate={() => {
                 refreshUnreadCount();
                 loadTickets();

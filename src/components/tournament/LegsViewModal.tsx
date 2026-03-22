@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import toast from "react-hot-toast"
 import { useFeatureFlag } from "@/hooks/useFeatureFlag"
+import { FeatureFlagAccessCallout } from "@/components/feature-flags/FeatureFlagAccessCallout"
 import { getMatchByIdClientAction, getMatchLegsClientAction } from "@/features/tournaments/actions/tournamentRoster.action"
 import MatchStatisticsCharts from "./MatchStatisticsCharts"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
@@ -413,6 +414,12 @@ const LegsViewModal: React.FC<LegsViewModalProps> = ({ isOpen, onClose, match: i
               </Button>
             </div>
           </header>
+
+          {!isFeatureFlagLoading && !isDetailedStatsEnabled && detailedStatsDenialReason ? (
+            <div className="mb-8 max-w-2xl">
+              <FeatureFlagAccessCallout reason={detailedStatsDenialReason} variant="compact" />
+            </div>
+          ) : null}
 
           {loading ? (
             <div className="flex flex-col items-center justify-center py-24 gap-4">

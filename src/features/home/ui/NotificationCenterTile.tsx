@@ -19,16 +19,32 @@ export default function NotificationCenterTile({
   highlightUnread = false,
 }: NotificationCenterTileProps) {
   const t = useTranslations("HomeDashboard")
+  const profileIssueCount = notifications.profileIssueCount ?? 0
   const totalUnread =
-    notifications.unreadTickets + notifications.reminderCount + notifications.spotAvailabilityCount
+    notifications.unreadTickets +
+    notifications.reminderCount +
+    notifications.spotAvailabilityCount +
+    profileIssueCount
 
   const items = [
-    {
-      key: "profile",
-      label: t("notifications.profileActions"),
-      value: t("notifications.profileActionsHint"),
-      href: "/profile?tab=details",
-    },
+    ...(profileIssueCount > 0
+      ? [
+          {
+            key: "profileIncomplete",
+            label: t("notifications.profileIncomplete"),
+            value: t("notifications.profileIncompleteHint", { count: profileIssueCount }),
+            href: "/profile?tab=details",
+            unreadCount: profileIssueCount,
+          },
+        ]
+      : [
+          {
+            key: "profile",
+            label: t("notifications.profileActions"),
+            value: t("notifications.profileActionsHint"),
+            href: "/profile?tab=details",
+          },
+        ]),
     {
       key: "feedback",
       label: t("notifications.feedbackResponses"),

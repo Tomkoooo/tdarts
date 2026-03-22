@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+import mongoose, { type ClientSession } from 'mongoose';
 import { LeagueModel } from '@/database/models/league.model';
 import { PlayerModel } from '@/database/models/player.model';
 import { UserModel } from '@/database/models/user.model';
@@ -243,6 +243,63 @@ export class LeagueService {
   }
 
   /**
+   * Remove a tournament from league.attachedTournaments and strip its tournamentPoints rows.
+   * @param requireAttached — if true, throws when the tournament is not in attachedTournaments
+   */
+  private static removeTournamentFromLeagueInMemory(
+    league: LeagueDocument,
+    tournamentMongoId: mongoose.Types.ObjectId,
+    tournamentIdStr: string,
+    requireAttached: boolean
+  ): void {
+    const idx = league.attachedTournaments.findIndex((id: mongoose.Types.ObjectId) =>
+      id.equals(tournamentMongoId)
+    );
+    if (idx === -1 && requireAttached) {
+      throw new BadRequestError('Tournament is not attached to this league');
+    }
+    if (idx !== -1) {
+      league.attachedTournaments.splice(idx, 1);
+    }
+
+    for (const player of league.players) {
+      const pointsIndex = player.tournamentPoints.findIndex(
+        (tp: any) => tp.tournament.toString() === tournamentIdStr
+      );
+      if (pointsIndex !== -1) {
+        player.tournamentPoints.splice(pointsIndex, 1);
+        player.totalPoints = this.calculatePlayerTotalPointsForLeague(player);
+      }
+    }
+  }
+
+  /**
+   * Superadmin-only: detach tournament from whichever league references it (if any).
+   * Used when reopening a finished tournament so league points and attachment are cleared.
+   */
+  static async detachTournamentFromLeagueAsSuperAdmin(
+    tournamentMongoId: string,
+    requesterId: string,
+    options?: { session?: ClientSession | null }
+  ): Promise<void> {
+    await connectMongo();
+    const isGlobalAdmin = await AuthorizationService.isGlobalAdmin(requesterId);
+    if (!isGlobalAdmin) {
+      throw new AuthorizationError('Only global admins can detach tournaments when reopening');
+    }
+
+    const league = await this.findLeagueByTournament(tournamentMongoId, options?.session ?? undefined);
+    if (!league) {
+      return;
+    }
+
+    const oid = new mongoose.Types.ObjectId(tournamentMongoId);
+    const tid = oid.toString();
+    this.removeTournamentFromLeagueInMemory(league, oid, tid, false);
+    await league.save({ session: options?.session ?? undefined });
+  }
+
+  /**
    * Detach a tournament from a league and remove all associated tournament points
    */
   static async detachTournamentFromLeague(
@@ -275,34 +332,16 @@ export class LeagueService {
       throw new BadRequestError('Tournament not found - League Service');
     }
 
-    // Check if tournament is actually attached to this league
-    const tournamentObjectId = new mongoose.Types.ObjectId(tournamentId);
-    const tournamentIndex = league.attachedTournaments.findIndex((id: mongoose.Types.ObjectId) => id.equals(tournamentObjectId));
-
-    if (tournamentIndex === -1) {
-      throw new BadRequestError('Tournament is not attached to this league');
-    }
-
-    // Remove tournament from attachedTournaments
-    league.attachedTournaments.splice(tournamentIndex, 1);
-
-    // Remove all tournamentPoints entries for this tournament from all players
-    for (const player of league.players) {
-      const pointsIndex = player.tournamentPoints.findIndex(
-        (tp: any) => tp.tournament.toString() === tournamentId
-      );
-
-      if (pointsIndex !== -1) {
-        console.log(`Removing tournament points for player ${player.player} from tournament ${tournamentId}`);
-        player.tournamentPoints.splice(pointsIndex, 1);
-
-        // Recalculate total points for this player
-        player.totalPoints = this.calculatePlayerTotalPointsForLeague(player);
-      }
-    }
+    const tournamentObjectId = new mongoose.Types.ObjectId(tournament._id);
+    this.removeTournamentFromLeagueInMemory(
+      league,
+      tournamentObjectId,
+      tournamentObjectId.toString(),
+      true
+    );
 
     await league.save();
-    console.log(`Tournament ${tournamentId} detached from league ${leagueId} successfully`);
+    console.log(`Tournament ${tournamentObjectId.toString()} detached from league ${leagueId} successfully`);
 
     return league;
   }
@@ -1358,12 +1397,19 @@ export class LeagueService {
   /**
    * Find league by tournament ID
    */
-  static async findLeagueByTournament(tournamentId: string): Promise<LeagueDocument | null> {
+  static async findLeagueByTournament(
+    tournamentId: string,
+    session?: ClientSession | null
+  ): Promise<LeagueDocument | null> {
     await connectMongo();
 
-    return await LeagueModel.findOne({
+    let query = LeagueModel.findOne({
       attachedTournaments: tournamentId,
-      isActive: true
+      isActive: true,
     });
+    if (session) {
+      query = query.session(session);
+    }
+    return query;
   }
 }

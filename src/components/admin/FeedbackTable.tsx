@@ -261,7 +261,11 @@ export default function FeedbackTable() {
               </TableRow>
             ) : (
               data.map((item) => (
-                <TableRow key={item._id}>
+                <TableRow
+                  key={item._id}
+                  className="cursor-pointer hover:bg-muted/40"
+                  onClick={() => openEditModal(item)}
+                >
                   <TableCell>
                       <div className="p-2 rounded-md bg-muted/50 w-fit">
                         {getCategoryIcon(item.category)}
@@ -286,7 +290,7 @@ export default function FeedbackTable() {
                   <TableCell className="text-muted-foreground text-sm">
                     {format(new Date(item.createdAt), "yyyy. MM. dd.", { locale: hu })}
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" className="h-8 w-8 p-0">
