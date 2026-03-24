@@ -11,7 +11,7 @@ export interface SimplifiedUser {
   profilePicture?: string;
   city?: string | null;
   country?: string | null;
-  locale?: "hu" | "en";
+  locale?: "hu" | "en" | "de";
 }
 
 interface UserContextType {

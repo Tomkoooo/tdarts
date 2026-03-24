@@ -1,6 +1,6 @@
 import { UserModel } from '@/database/models/user.model';
 
-const SESSION_USER_SELECT = '_id username name email isVerified isAdmin profilePicture';
+const SESSION_USER_SELECT = '_id username name email isVerified isAdmin profilePicture country locale';
 
 export async function findSessionUserByEmail(email?: string | null) {
   if (!email) return null;

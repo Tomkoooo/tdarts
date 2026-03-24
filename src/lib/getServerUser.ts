@@ -13,6 +13,8 @@ export type ServerUser = {
   isVerified: boolean;
   isAdmin: boolean;
   profilePicture?: string;
+  country?: string | null;
+  locale?: 'hu' | 'en' | 'de';
 };
 
 type SessionUserShape = {
@@ -23,6 +25,8 @@ type SessionUserShape = {
   isVerified?: boolean;
   isAdmin?: boolean;
   profilePicture?: string | null;
+  country?: string | null;
+  locale?: 'hu' | 'en' | 'de';
 };
 
 function normalizeSessionUser(user: unknown): SessionUserShape | null {
@@ -57,6 +61,8 @@ const resolveServerUser = cache(async (): Promise<ServerUser | undefined> => {
         isVerified: user.isVerified,
         isAdmin: user.isAdmin,
         profilePicture: user.profilePicture,
+        country: (user as any).country ?? null,
+        locale: (user as any).locale || 'hu',
       };
     } catch {
       // Invalid token - fall through to session check
@@ -81,6 +87,8 @@ const resolveServerUser = cache(async (): Promise<ServerUser | undefined> => {
           isVerified: Boolean(user.isVerified),
           isAdmin: Boolean(user.isAdmin),
           profilePicture: user.profilePicture || undefined,
+          country: user.country ?? null,
+          locale: user.locale || 'hu',
         };
       }
     } catch {

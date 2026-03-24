@@ -14,5 +14,5 @@ export default async function ProfilePage({ params }: Props) {
     redirect(`/${locale}/auth/login?redirect=${encodeURIComponent(`/${locale}/profile`)}`);
   }
 
-  return <ProfilePageClient />;
+  return <ProfilePageClient serverUser={user} />;
 }

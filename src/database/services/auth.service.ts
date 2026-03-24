@@ -108,7 +108,7 @@ export class AuthService {
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { id: string };
       const user = await UserModel.findById(decoded.id).select(
-        '_id username name email isVerified isAdmin profilePicture isDeleted'
+        '_id username name email isVerified isAdmin profilePicture country locale isDeleted'
       );
       if (!user) {
         throw new BadRequestError('User not found', 'auth', {

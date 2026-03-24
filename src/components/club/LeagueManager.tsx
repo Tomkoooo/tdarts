@@ -165,7 +165,7 @@ export default function LeagueManager({ clubId, userRole, autoOpenLeagueId }: Le
     );
   }
 
-  if (!featureEnabled) {
+  if (!managementEnabled) {
     return (
       <Card className="border-dashed">
         <CardContent className="py-12 text-center space-y-4">

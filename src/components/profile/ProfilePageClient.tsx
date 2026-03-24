@@ -30,8 +30,13 @@ import { useTranslations } from "next-intl";
 import GoogleAuthSection from "@/components/profile/GoogleAuthSection";
 import { useLogout } from "@/hooks/useLogout";
 import { getMatchByIdClientAction } from "@/features/tournaments/actions/tournamentRoster.action";
+import type { ServerUser } from "@/lib/getServerUser";
 
-export function ProfilePageClient() {
+type ProfilePageClientProps = {
+  serverUser: ServerUser;
+};
+
+export function ProfilePageClient({ serverUser }: ProfilePageClientProps) {
   const t = useTranslations("Profile");
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -56,6 +61,36 @@ export function ProfilePageClient() {
   const [ticketToastDismissed, setTicketToastDismissed] = React.useState(false);
   const { unreadCount, refresh: refreshUnreadCount } = useUnreadTickets({ enabled: Boolean(userId) });
   const ticketFromUrl = searchParams.get("ticket");
+
+  React.useEffect(() => {
+    if (!serverUser?._id) return;
+    setUser((prev) => {
+      if (!prev || prev._id !== serverUser._id) {
+        return {
+          _id: serverUser._id,
+          username: serverUser.username,
+          name: serverUser.name,
+          email: serverUser.email,
+          isVerified: Boolean(serverUser.isVerified),
+          isAdmin: Boolean(serverUser.isAdmin),
+          profilePicture: serverUser.profilePicture,
+          country: serverUser.country ?? null,
+          locale: serverUser.locale,
+        };
+      }
+      return {
+        ...prev,
+        username: serverUser.username || prev.username,
+        name: serverUser.name || prev.name,
+        email: serverUser.email || prev.email,
+        isVerified: Boolean(serverUser.isVerified),
+        isAdmin: Boolean(serverUser.isAdmin),
+        profilePicture: serverUser.profilePicture ?? prev.profilePicture,
+        country: serverUser.country ?? prev.country ?? null,
+        locale: serverUser.locale ?? prev.locale,
+      };
+    });
+  }, [serverUser, setUser]);
 
   React.useEffect(() => {
     if (ticketFromUrl) {
