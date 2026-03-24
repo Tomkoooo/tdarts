@@ -2989,6 +2989,10 @@
     "login_title": "Jelentkezz be a funkció eléréséhez",
     "login_description": "Nem tudtuk ellenőrizni a munkamenetedet (például beépített böngészőben). Jelentkezz be a funkció használatához.",
     "login_cta": "Bejelentkezés",
+    "subscription_title": "Előfizetés szükséges",
+    "subscription_description": "A funkció használatához a klub számára megfelelő előfizetés szükséges.",
+    "permission_title": "Jogosultság szükséges",
+    "permission_description": "A fiókod nem rendelkezik a funkció használatához szükséges jogosultsággal.",
     "disabled_title": "A funkció nem érhető el",
     "disabled_description": "Ez a funkció ki van kapcsolva ehhez a klubhoz, vagy a fiókod ebben a helyzetben nem fér hozzá."
   },

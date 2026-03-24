@@ -1,3 +1,5 @@
+import { FEATURE_KEYS, normalizeFeatureKey, toClubFeatureFlagKey } from '@/features/flags/lib/featureKeys';
+
 export interface FeatureFlags {
   liveMatchFollowing: boolean;
   advancedStatistics: boolean;
@@ -8,24 +10,28 @@ export interface FeatureFlags {
 
 export class FeatureFlagService {
   static isEnvFeatureEnabled(featureName: string): boolean {
+    const featureKey = normalizeFeatureKey(featureName);
+    if (!featureKey) {
+      return false;
+    }
     if (process.env.NEXT_PUBLIC_ENABLE_ALL === 'true') {
       return true;
     }
 
-    switch (featureName) {
-      case 'LIVE_MATCH_FOLLOWING':
+    switch (featureKey) {
+      case FEATURE_KEYS.LIVE_MATCH_FOLLOWING:
         return process.env.NEXT_PUBLIC_ENABLE_LIVE_MATCH_FOLLOWING === 'true';
-      case 'ADVANCED_STATISTICS':
+      case FEATURE_KEYS.ADVANCED_STATISTICS:
         return process.env.NEXT_PUBLIC_ENABLE_ADVANCED_STATISTICS === 'true';
-      case 'PREMIUM_TOURNAMENTS':
+      case FEATURE_KEYS.PREMIUM_TOURNAMENTS:
         return process.env.NEXT_PUBLIC_ENABLE_PREMIUM_TOURNAMENTS === 'true';
-      case 'LEAGUES':
+      case FEATURE_KEYS.LEAGUES:
         return process.env.NEXT_PUBLIC_ENABLE_LEAGUES === 'true';
-      case 'SOCKET':
+      case FEATURE_KEYS.SOCKET:
         return process.env.NEXT_PUBLIC_ENABLE_SOCKET === 'true';
-      case 'OAC_CREATION':
+      case FEATURE_KEYS.OAC_CREATION:
         return process.env.NEXT_PUBLIC_ENABLE_OAC_CREATION === 'true' || process.env.NEXT_PUBLIC_ENABLE_OAC_CREATION === undefined;
-      case 'DETAILED_STATISTICS':
+      case FEATURE_KEYS.DETAILED_STATISTICS:
         return process.env.NEXT_PUBLIC_ENABLE_DETAILED_STATISTICS === 'true';
       default:
         return false;
@@ -33,6 +39,11 @@ export class FeatureFlagService {
   }
 
   static async isClubFeatureEnabled(clubId: string, featureName: string): Promise<boolean> {
+    const featureKey = normalizeFeatureKey(featureName);
+    if (!featureKey) {
+      return false;
+    }
+
     try {
       const { ClubModel } = await import('@/database/models/club.model');
       const club = await ClubModel.findById(clubId).select('featureFlags subscriptionModel');
@@ -42,11 +53,11 @@ export class FeatureFlagService {
         return true;
       }
 
-      if (featureName === 'detailedStatistics') {
+      if (featureKey === FEATURE_KEYS.DETAILED_STATISTICS) {
         return club.subscriptionModel !== 'free' && !!club.subscriptionModel;
       }
 
-      if (featureName === 'leagues') {
+      if (featureKey === FEATURE_KEYS.LEAGUES) {
         return club.subscriptionModel !== 'free';
       }
 
@@ -54,7 +65,12 @@ export class FeatureFlagService {
         return false;
       }
 
-      return club.featureFlags[featureName as keyof typeof club.featureFlags] === true;
+      const clubFeatureFlagKey = toClubFeatureFlagKey(featureKey);
+      if (!clubFeatureFlagKey) {
+        return false;
+      }
+
+      return club.featureFlags[clubFeatureFlagKey] === true;
     } catch (error) {
       console.error('Error checking club feature flag:', error);
       return false;
@@ -62,12 +78,17 @@ export class FeatureFlagService {
   }
 
   static async isFeatureEnabled(featureName: string, clubId?: string): Promise<boolean> {
+    const featureKey = normalizeFeatureKey(featureName);
+    if (!featureKey) {
+      return false;
+    }
+
     if (process.env.NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED === 'false') {
       return true;
     }
 
-    const envEnabled = this.isEnvFeatureEnabled(featureName);
-    if (!envEnabled && featureName !== 'detailedStatistics') {
+    const envEnabled = this.isEnvFeatureEnabled(featureKey);
+    if (!envEnabled && featureKey !== FEATURE_KEYS.DETAILED_STATISTICS) {
       return false;
     }
 
@@ -75,7 +96,7 @@ export class FeatureFlagService {
       return envEnabled;
     }
 
-    return this.isClubFeatureEnabled(clubId, featureName);
+    return this.isClubFeatureEnabled(clubId, featureKey);
   }
 
   static async isSocketEnabled(clubId?: string): Promise<boolean> {
@@ -83,7 +104,7 @@ export class FeatureFlagService {
       return true;
     }
 
-    const envSocketEnabled = this.isEnvFeatureEnabled('SOCKET');
+    const envSocketEnabled = this.isEnvFeatureEnabled(FEATURE_KEYS.SOCKET);
     if (!envSocketEnabled) {
       return false;
     }

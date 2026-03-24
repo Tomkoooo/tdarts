@@ -7,7 +7,12 @@ export type RouteTelemetryHandler<TArgs extends unknown[]> = (
 
 export type ActionTelemetryHandler<TInput, TOutput> = (input: TInput) => Promise<TOutput>;
 
-export type GuardFailureCode = 'UNAUTHORIZED' | 'FEATURE_DISABLED';
+export type GuardFailureCode =
+  | 'UNAUTHORIZED'
+  | 'LOGIN_REQUIRED'
+  | 'FEATURE_DISABLED'
+  | 'SUBSCRIPTION_REQUIRED'
+  | 'PERMISSION_REQUIRED';
 
 export type GuardFailureStatus = 401 | 403;
 

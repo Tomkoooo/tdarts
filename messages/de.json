@@ -481,6 +481,10 @@
     "login_title": "Melden Sie sich an, um diese Funktion zu nutzen",
     "login_description": "Ihre Sitzung konnte nicht geprüft werden (z. B. im In-App-Browser). Melden Sie sich an, um diese Funktion zu nutzen.",
     "login_cta": "Anmelden",
+    "subscription_title": "Abonnement erforderlich",
+    "subscription_description": "Für diese Funktion ist ein berechtigtes Abonnement für diesen Verein erforderlich.",
+    "permission_title": "Berechtigung erforderlich",
+    "permission_description": "Ihr Konto hat nicht die erforderlichen Berechtigungen für diese Funktion.",
     "disabled_title": "Diese Funktion ist nicht verfügbar",
     "disabled_description": "Diese Funktion ist für diesen Verein deaktiviert, oder Ihr Konto hat in diesem Kontext keinen Zugriff."
   },

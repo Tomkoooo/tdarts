@@ -1,9 +1,5 @@
-jest.mock('@/features/auth/lib/authorizeUser', () => ({
-  authorizeUserResult: jest.fn(),
-}));
-
-jest.mock('@/features/flags/lib/eligibility', () => ({
-  assertEligibilityResult: jest.fn(),
+jest.mock('@/features/flags/lib/featureAccess', () => ({
+  evaluateFeatureAccess: jest.fn(),
 }));
 
 jest.mock('@/database/services/league.service', () => ({
@@ -13,8 +9,7 @@ jest.mock('@/database/services/league.service', () => ({
 }));
 
 import { createLeagueAction } from '@/features/leagues/actions/createLeague.action';
-import { authorizeUserResult } from '@/features/auth/lib/authorizeUser';
-import { assertEligibilityResult } from '@/features/flags/lib/eligibility';
+import { evaluateFeatureAccess } from '@/features/flags/lib/featureAccess';
 import { LeagueService } from '@/database/services/league.service';
 
 describe('createLeagueAction', () => {
@@ -23,10 +18,9 @@ describe('createLeagueAction', () => {
   });
 
   it('creates league on successful guard chain', async () => {
-    (authorizeUserResult as jest.Mock).mockResolvedValue({ ok: true, data: { userId: 'u1' } });
-    (assertEligibilityResult as jest.Mock).mockResolvedValue({
+    (evaluateFeatureAccess as jest.Mock).mockResolvedValue({
       ok: true,
-      data: { allowed: true, paidOverride: true, reason: 'paid_override' },
+      data: { userId: 'u1', featureKey: 'LEAGUES', bypassReason: 'none' },
     });
     (LeagueService.createLeague as jest.Mock).mockResolvedValue({ _id: 'l1' });
 

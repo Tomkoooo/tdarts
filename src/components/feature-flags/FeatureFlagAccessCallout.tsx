@@ -31,6 +31,28 @@ export function FeatureFlagAccessCallout({ reason, variant = "default", classNam
     );
   }
 
+  if (reason === "subscription_required") {
+    return (
+      <Alert className={className} variant="default">
+        <AlertTitle className={compact ? "text-sm" : undefined}>{t("subscription_title")}</AlertTitle>
+        <AlertDescription className={compact ? "text-xs" : undefined}>
+          <p>{t("subscription_description")}</p>
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
+  if (reason === "permission_required") {
+    return (
+      <Alert className={className} variant="default">
+        <AlertTitle className={compact ? "text-sm" : undefined}>{t("permission_title")}</AlertTitle>
+        <AlertDescription className={compact ? "text-xs" : undefined}>
+          <p>{t("permission_description")}</p>
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
   return (
     <Alert className={className} variant="default">
       <AlertTitle className={compact ? "text-sm" : undefined}>{t("disabled_title")}</AlertTitle>

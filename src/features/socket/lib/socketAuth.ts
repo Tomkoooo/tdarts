@@ -1,6 +1,6 @@
 import jwt from 'jsonwebtoken';
 import { AuthService } from '@/database/services/auth.service';
-import { assertEligibilityResult } from '@/shared/lib/guards';
+import { evaluateFeatureAccess } from '@/features/flags/lib/featureAccess';
 
 type SocketAuthResult =
   | { ok: true; token: string; expiresAt: number; issuedAt: number; ttlSeconds: number }
@@ -30,16 +30,16 @@ export async function issueSocketAuthToken(input: { token?: string; clubId?: str
   }
 
   if (input.clubId) {
-    const eligibility = await assertEligibilityResult({
-      featureName: 'socket',
+    const accessResult = await evaluateFeatureAccess({
+      featureName: 'SOCKET',
       clubId: input.clubId,
-      allowPaidOverride: true,
+      requiresSubscription: true,
     });
-    if (!eligibility.ok) {
+    if (!accessResult.ok) {
       return {
         ok: false,
-        status: eligibility.status,
-        error: eligibility.message,
+        status: accessResult.status,
+        error: accessResult.message,
       };
     }
   }

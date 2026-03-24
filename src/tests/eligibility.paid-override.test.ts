@@ -26,7 +26,7 @@ describe('feature eligibility paid override', () => {
     process.env.NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED = 'false';
 
     const result = await assertEligibilityResult({
-      featureName: 'premiumTournaments',
+      featureName: 'PREMIUM_TOURNAMENTS',
       clubId: 'club-1',
       allowPaidOverride: true,
     });
@@ -48,7 +48,7 @@ describe('feature eligibility paid override', () => {
     (FeatureFlagService.isFeatureEnabled as jest.Mock).mockResolvedValue(false);
 
     const result = await assertEligibilityResult({
-      featureName: 'premiumTournaments',
+      featureName: 'PREMIUM_TOURNAMENTS',
       clubId: 'club-1',
       allowPaidOverride: true,
     });
@@ -57,7 +57,7 @@ describe('feature eligibility paid override', () => {
       ok: false,
       code: 'FEATURE_DISABLED',
       status: 403,
-      message: 'Feature disabled: premiumTournaments',
+      message: 'Feature disabled: PREMIUM_TOURNAMENTS',
     });
   });
 
@@ -74,8 +74,8 @@ describe('feature eligibility paid override', () => {
     process.env.NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED = 'true';
     process.env.NEXT_PUBLIC_ENABLE_ALL = 'false';
     (FeatureFlagService.isFeatureEnabled as jest.Mock).mockResolvedValue(false);
-    await expect(assertEligibility({ featureName: 'premiumTournaments', clubId: 'club-1' })).rejects.toThrow(
-      'Feature disabled: premiumTournaments'
+    await expect(assertEligibility({ featureName: 'PREMIUM_TOURNAMENTS', clubId: 'club-1' })).rejects.toThrow(
+      'Feature disabled: PREMIUM_TOURNAMENTS'
     );
   });
 });

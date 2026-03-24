@@ -1,4 +1,5 @@
 import { FeatureFlagService } from '@/features/flags/lib/featureFlags';
+import { normalizeFeatureKey } from '@/features/flags/lib/featureKeys';
 import { AuthorizationError } from '@/middleware/errorHandle';
 import { GuardFailureResult, GuardResult } from '@/shared/lib/telemetry/types';
 
@@ -47,9 +48,14 @@ export async function assertEligibilityResult(params: EligibilityParams): Promis
     return { ok: true, data: { allowed: true, paidOverride: false, reason: 'not_checked' } };
   }
 
-  const enabled = await FeatureFlagService.isFeatureEnabled(params.featureName, params.clubId);
-  if (!enabled) {
+  const normalizedFeature = normalizeFeatureKey(params.featureName);
+  if (!normalizedFeature) {
     return featureDisabledResult(params.featureName);
+  }
+
+  const enabled = await FeatureFlagService.isFeatureEnabled(normalizedFeature, params.clubId);
+  if (!enabled) {
+    return featureDisabledResult(normalizedFeature);
   }
 
   return { ok: true, data: { allowed: true, paidOverride: false, reason: 'feature_enabled' } };

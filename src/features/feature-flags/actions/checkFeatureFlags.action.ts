@@ -3,7 +3,8 @@
 import { FeatureFlagService } from '@/features/flags/lib/featureFlags';
 import { z } from 'zod';
 import { withTelemetry } from '@/shared/lib/withTelemetry';
-import { authorizeUserResult, assertEligibilityResult } from '@/shared/lib/guards';
+import { evaluateFeatureAccess, PAYWALLED_FEATURES } from '@/features/flags/lib/featureAccess';
+import { normalizeFeatureKey } from '@/features/flags/lib/featureKeys';
 import { resolveGuardAwareStatus } from '@/shared/lib/guards/result';
 import { GuardFailureResult } from '@/shared/lib/telemetry/types';
 import { BadRequestError } from '@/middleware/errorHandle';
@@ -43,21 +44,26 @@ export async function checkFeatureFlagAction(
   const input = parsedInput.data;
 
   const action = withTelemetry('featureFlags.checkFeature', async (payload: CheckFeatureFlagInput) => {
-    const authResult = await authorizeUserResult();
-    if (!authResult.ok) {
-      return authResult;
+    const normalizedFeature = normalizeFeatureKey(payload.feature);
+    if (!normalizedFeature) {
+      return {
+        ok: false,
+        code: 'FEATURE_DISABLED',
+        status: 403,
+        message: `Feature disabled: ${payload.feature}`,
+      };
     }
 
-    const eligibilityResult = await assertEligibilityResult({
-      featureName: payload.feature,
+    const accessResult = await evaluateFeatureAccess({
+      featureName: normalizedFeature,
       clubId: payload.clubId,
-      allowPaidOverride: true,
+      requiresSubscription: PAYWALLED_FEATURES.has(normalizedFeature),
     });
-    if (!eligibilityResult.ok) {
-      return eligibilityResult;
+    if (!accessResult.ok) {
+      return accessResult;
     }
 
-    const enabled = await FeatureFlagService.isFeatureEnabled(payload.feature, payload.clubId || undefined);
+    const enabled = await FeatureFlagService.isFeatureEnabled(normalizedFeature, payload.clubId || undefined);
     return {
       enabled,
       subscriptionModelEnabled: process.env.NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED !== 'false',
@@ -79,18 +85,13 @@ export async function checkSocketFlagAction(input: CheckSocketFlagInput): Promis
   if (!parsedInput.success) throw new BadRequestError(parsedInput.error.issues[0]?.message || 'Invalid payload');
 
   const action = withTelemetry('featureFlags.checkSocket', async (payload: CheckSocketFlagInput) => {
-    const authResult = await authorizeUserResult();
-    if (!authResult.ok) {
-      return authResult;
-    }
-
-    const eligibilityResult = await assertEligibilityResult({
-      featureName: 'socket',
+    const accessResult = await evaluateFeatureAccess({
+      featureName: 'SOCKET',
       clubId: payload.clubId,
-      allowPaidOverride: true,
+      requiresSubscription: true,
     });
-    if (!eligibilityResult.ok) {
-      return eligibilityResult;
+    if (!accessResult.ok) {
+      return accessResult;
     }
 
     const enabled = await FeatureFlagService.isSocketEnabled(payload.clubId || undefined);

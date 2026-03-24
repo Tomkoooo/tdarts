@@ -96,7 +96,7 @@ export default function LeagueManager({ clubId, onLeagueSelect }: LeagueManagerP
       setFeatureFlagDenial(null);
 
       // Feature flag ellenőrzés
-      const featureFlagResponse = await checkFeatureFlagAction({ feature: 'leagueSystem', clubId });
+      const featureFlagResponse = await checkFeatureFlagAction({ feature: 'LEAGUES', clubId });
       if (isGuardFailureResult(featureFlagResponse)) {
         setFeatureFlagDenial(guardFailureToFeatureFlagDenial(featureFlagResponse) ?? 'feature_disabled');
         setLeagueSystemAccess({

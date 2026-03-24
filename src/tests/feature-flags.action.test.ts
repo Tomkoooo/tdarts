@@ -1,9 +1,6 @@
-jest.mock('@/features/auth/lib/authorizeUser', () => ({
-  authorizeUserResult: jest.fn(),
-}));
-
-jest.mock('@/features/flags/lib/eligibility', () => ({
-  assertEligibilityResult: jest.fn(),
+jest.mock('@/features/flags/lib/featureAccess', () => ({
+  evaluateFeatureAccess: jest.fn(),
+  PAYWALLED_FEATURES: new Set(['LEAGUES', 'SOCKET']),
 }));
 
 jest.mock('@/features/flags/lib/featureFlags', () => ({
@@ -14,8 +11,7 @@ jest.mock('@/features/flags/lib/featureFlags', () => ({
 }));
 
 import { checkFeatureFlagAction, checkSocketFlagAction } from '@/features/feature-flags/actions/checkFeatureFlags.action';
-import { authorizeUserResult } from '@/features/auth/lib/authorizeUser';
-import { assertEligibilityResult } from '@/features/flags/lib/eligibility';
+import { evaluateFeatureAccess } from '@/features/flags/lib/featureAccess';
 import { FeatureFlagService } from '@/features/flags/lib/featureFlags';
 
 describe('feature flags actions', () => {
@@ -24,26 +20,25 @@ describe('feature flags actions', () => {
   });
 
   it('returns auth denial shape', async () => {
-    (authorizeUserResult as jest.Mock).mockResolvedValue({
+    (evaluateFeatureAccess as jest.Mock).mockResolvedValue({
       ok: false,
-      code: 'UNAUTHORIZED',
+      code: 'LOGIN_REQUIRED',
       status: 401,
       message: 'Unauthorized',
     });
-    const result = await checkFeatureFlagAction({ feature: 'leagues', clubId: 'club-1' });
+    const result = await checkFeatureFlagAction({ feature: 'LEAGUES', clubId: 'club-1' });
     expect(result).toMatchObject({ ok: false, status: 401 });
   });
 
   it('returns feature and socket checks when allowed', async () => {
-    (authorizeUserResult as jest.Mock).mockResolvedValue({ ok: true, data: { userId: 'u1' } });
-    (assertEligibilityResult as jest.Mock).mockResolvedValue({
+    (evaluateFeatureAccess as jest.Mock).mockResolvedValue({
       ok: true,
-      data: { allowed: true, paidOverride: false, reason: 'feature_enabled' },
+      data: { userId: 'u1', featureKey: 'LEAGUES', bypassReason: 'none' },
     });
     (FeatureFlagService.isFeatureEnabled as jest.Mock).mockResolvedValue(true);
     (FeatureFlagService.isSocketEnabled as jest.Mock).mockResolvedValue(false);
 
-    await expect(checkFeatureFlagAction({ feature: 'leagues', clubId: 'club-1' })).resolves.toEqual(
+    await expect(checkFeatureFlagAction({ feature: 'LEAGUES', clubId: 'club-1' })).resolves.toEqual(
       expect.objectContaining({ enabled: true })
     );
     await expect(checkSocketFlagAction({ clubId: 'club-1' })).resolves.toEqual({ enabled: false });

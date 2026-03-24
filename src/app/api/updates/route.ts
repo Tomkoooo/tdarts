@@ -142,7 +142,7 @@ async function __GET(req: NextRequest) {
     const clubId = tournament.clubId?.toString();
     if (clubId) {
       const eligibility = await assertEligibilityResult({
-        featureName: 'socket',
+        featureName: 'SOCKET',
         clubId,
         allowPaidOverride: true,
       });

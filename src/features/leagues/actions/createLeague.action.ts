@@ -2,7 +2,8 @@
 
 import { LeagueService } from '@/database/services/league.service';
 import { z } from 'zod';
-import { authorizeUserResult, assertEligibilityResult } from '@/shared/lib/guards';
+import { evaluateFeatureAccess } from '@/features/flags/lib/featureAccess';
+import { AuthorizationService } from '@/database/services/authorization.service';
 import { BadRequestError } from '@/middleware/errorHandle';
 import { withTelemetry } from '@/shared/lib/withTelemetry';
 import { resolveGuardAwareStatus } from '@/shared/lib/guards/result';
@@ -32,21 +33,18 @@ export async function createLeagueAction(input: CreateLeagueActionInput) {
       if (!parsedPayload.success) throw new BadRequestError(parsedPayload.error.issues[0]?.message || 'Invalid payload');
       const payload = parsedPayload.data;
 
-      const authResult = await authorizeUserResult(rawPayload.request ? { request: rawPayload.request } : undefined);
-      if (!authResult.ok) {
-        return authResult;
-      }
-
-      const eligibilityResult = await assertEligibilityResult({
-        featureName: 'leagues',
+      const accessResult = await evaluateFeatureAccess({
+        request: rawPayload.request,
+        featureName: 'LEAGUES',
         clubId: payload.clubId,
-        allowPaidOverride: true,
+        requiresSubscription: true,
+        permissionCheck: async ({ userId }) => AuthorizationService.checkAdminOrModerator(userId, payload.clubId),
       });
-      if (!eligibilityResult.ok) {
-        return eligibilityResult;
+      if (!accessResult.ok) {
+        return accessResult;
       }
 
-      return LeagueService.createLeague(payload.clubId, authResult.data.userId, {
+      return LeagueService.createLeague(payload.clubId, accessResult.data.userId, {
         name: payload.name,
         description: payload.description,
         startDate: new Date(),

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { checkFeatureFlagAction, checkSocketFlagAction } from "@/features/feature-flags/actions/checkFeatureFlags.action";
+import { normalizeFeatureKey } from "@/features/flags/lib/featureKeys";
 import {
   guardFailureToFeatureFlagDenial,
   isGuardFailureResult,
@@ -31,13 +32,18 @@ async function checkFeatureFlagClientOutcome(
     return { enabled: true, denialReason: null };
   }
 
-  const envVarName = `NEXT_PUBLIC_ENABLE_${featureName.toUpperCase()}`;
+  const normalizedFeature = normalizeFeatureKey(featureName);
+  if (!normalizedFeature) {
+    return disabled("feature_disabled");
+  }
+
+  const envVarName = `NEXT_PUBLIC_ENABLE_${normalizedFeature}`;
   const envValue = process.env[envVarName];
 
   if (envValue === undefined) {
-    if (featureName === "detailedStatistics" && clubId) {
+    if (normalizedFeature === "DETAILED_STATISTICS" && clubId) {
       try {
-        const data = await checkFeatureFlagAction({ feature: featureName, clubId });
+        const data = await checkFeatureFlagAction({ feature: normalizedFeature, clubId });
         if (isGuardFailureResult(data)) {
           return disabled(guardFailureToFeatureFlagDenial(data) ?? "feature_disabled");
         }
@@ -64,7 +70,7 @@ async function checkFeatureFlagClientOutcome(
   }
 
   try {
-    const data = await checkFeatureFlagAction({ feature: featureName, clubId });
+    const data = await checkFeatureFlagAction({ feature: normalizedFeature, clubId });
     if (isGuardFailureResult(data)) {
       return disabled(guardFailureToFeatureFlagDenial(data) ?? "feature_disabled");
     }

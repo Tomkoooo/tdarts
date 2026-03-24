@@ -6,16 +6,12 @@ jest.mock('stripe', () => {
   }));
 });
 
-jest.mock('@/features/auth/lib/authorizeUser', () => ({
-  authorizeUserResult: jest.fn(),
-}));
-
-jest.mock('@/features/flags/lib/eligibility', () => ({
-  assertEligibilityResult: jest.fn(),
+jest.mock('@/features/flags/lib/featureAccess', () => ({
+  evaluateFeatureAccess: jest.fn(),
 }));
 
 import { createTournamentAction } from '@/features/tournaments/actions/createTournament.action';
-import { authorizeUserResult } from '@/features/auth/lib/authorizeUser';
+import { evaluateFeatureAccess } from '@/features/flags/lib/featureAccess';
 
 describe('createTournamentAction', () => {
   beforeEach(() => {
@@ -23,9 +19,9 @@ describe('createTournamentAction', () => {
   });
 
   it('returns auth denial before tournament orchestration', async () => {
-    (authorizeUserResult as jest.Mock).mockResolvedValue({
+    (evaluateFeatureAccess as jest.Mock).mockResolvedValue({
       ok: false,
-      code: 'UNAUTHORIZED',
+      code: 'LOGIN_REQUIRED',
       status: 401,
       message: 'Unauthorized',
     });
@@ -33,12 +29,15 @@ describe('createTournamentAction', () => {
     const result = await createTournamentAction({
       request: { headers: new Headers() } as any,
       clubId: 'club-1',
-      payload: {},
+      payload: {
+        name: 'Test tournament',
+        boards: [{}],
+      },
     });
 
     expect(result).toMatchObject({
       ok: false,
-      code: 'UNAUTHORIZED',
+      code: 'LOGIN_REQUIRED',
       status: 401,
     });
   });

@@ -129,7 +129,7 @@ export async function addTournamentPlayerAction(input: { request: NextRequest; c
 
       const { user, canModerate, tournament } = await getAuthContext(payload.code, token);
       const eligibilityResult = await assertEligibilityResult({
-        featureName: 'premiumTournaments',
+        featureName: 'PREMIUM_TOURNAMENTS',
         clubId: tournament.clubId?.toString(),
         allowPaidOverride: true,
       });
@@ -346,7 +346,7 @@ export async function updateTournamentPlayerStatusAction(input: { request: NextR
       if (!canModerate) return unauthorized('Forbidden', 403);
 
       const eligibilityResult = await assertEligibilityResult({
-        featureName: 'premiumTournaments',
+        featureName: 'PREMIUM_TOURNAMENTS',
         clubId: tournament.clubId?.toString(),
         allowPaidOverride: true,
       });
@@ -381,7 +381,7 @@ export async function removeTournamentPlayerAction(input: { request: NextRequest
 
       const { user, canModerate, tournament } = await getAuthContext(payload.code, token);
       const eligibilityResult = await assertEligibilityResult({
-        featureName: 'premiumTournaments',
+        featureName: 'PREMIUM_TOURNAMENTS',
         clubId: tournament.clubId?.toString(),
         allowPaidOverride: true,
       });

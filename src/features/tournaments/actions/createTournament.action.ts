@@ -8,8 +8,8 @@ import { SubscriptionService } from '@/database/services/subscription.service';
 import { LeagueService } from '@/database/services/league.service';
 import { z } from 'zod';
 import { parseIsoDateInput } from '@/lib/date-time';
-import { authorizeUserResult, assertEligibilityResult } from '@/shared/lib/guards';
-import { BadRequestError, AuthorizationError } from '@/middleware/errorHandle';
+import { evaluateFeatureAccess } from '@/features/flags/lib/featureAccess';
+import { BadRequestError } from '@/middleware/errorHandle';
 import { withTelemetry } from '@/shared/lib/withTelemetry';
 import { AuthorizationService } from '@/database/services/authorization.service';
 import { resolveGuardAwareStatus } from '@/shared/lib/guards/result';
@@ -63,18 +63,15 @@ export async function createTournamentAction(input: CreateTournamentInput): Prom
     'tournaments.createTournament',
     async (params: CreateTournamentInput) => {
       const { clubId, request } = params;
-      const authResult = await authorizeUserResult({ request });
-      if (!authResult.ok) {
-        return authResult;
-      }
-
-      const eligibilityResult = await assertEligibilityResult({
-        featureName: 'premiumTournaments',
+      const accessResult = await evaluateFeatureAccess({
+        request,
+        featureName: 'PREMIUM_TOURNAMENTS',
         clubId,
-        allowPaidOverride: true,
+        requiresSubscription: true,
+        permissionCheck: async ({ userId }) => AuthorizationService.checkAdminOrModerator(userId, clubId),
       });
-      if (!eligibilityResult.ok) {
-        return eligibilityResult;
+      if (!accessResult.ok) {
+        return accessResult;
       }
 
       const club = await ClubService.getClub(clubId);
@@ -88,13 +85,8 @@ export async function createTournamentAction(input: CreateTournamentInput): Prom
       }
       const payload = parsedPayload.data;
 
-      const isAuthorized = await AuthorizationService.checkAdminOrModerator(authResult.data.userId, clubId);
-      if (!isAuthorized) {
-        throw new AuthorizationError('Forbidden');
-      }
-
       if (payload.billingInfo && payload.saveBillingInfo) {
-        await ClubService.updateClub(clubId, authResult.data.userId, {
+        await ClubService.updateClub(clubId, accessResult.data.userId, {
           billingInfo: payload.billingInfo,
         } as Record<string, unknown>);
       }
@@ -122,7 +114,12 @@ export async function createTournamentAction(input: CreateTournamentInput): Prom
       );
 
       if (!subscriptionCheck.canCreate) {
-        throw new AuthorizationError(subscriptionCheck.errorMessage || 'Subscription limit exceeded');
+        return {
+          ok: false,
+          code: 'SUBSCRIPTION_REQUIRED',
+          status: 403,
+          message: subscriptionCheck.errorMessage || 'Subscription limit exceeded',
+        };
       }
 
       if (isVerified || payload.leagueId) {
@@ -226,7 +223,7 @@ export async function createTournamentAction(input: CreateTournamentInput): Prom
           await LeagueService.attachTournamentToLeague(
             payload.leagueId,
             newTournament._id.toString(),
-            authResult.data.userId
+            accessResult.data.userId
           );
         } catch (error) {
           console.error('Error attaching tournament to league:', error);

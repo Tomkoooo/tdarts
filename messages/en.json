@@ -4129,6 +4129,10 @@
     "login_title": "Sign in to access this feature",
     "login_description": "We could not verify your session (for example in an in-app browser). Sign in to use this feature.",
     "login_cta": "Log in",
+    "subscription_title": "Subscription required",
+    "subscription_description": "This feature requires an eligible subscription for this club.",
+    "permission_title": "Permission required",
+    "permission_description": "Your account does not have the required permissions for this feature.",
     "disabled_title": "This feature is not available",
     "disabled_description": "This feature is turned off for this club, or your account cannot access it in this context."
   },

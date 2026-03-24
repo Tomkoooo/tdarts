@@ -31,7 +31,7 @@ export async function getPublicClubLeagueManagementMetaAction(
       if (!club) {
         throw new BadRequestError('Club not found');
       }
-      const managementEnabled = await FeatureFlagService.isFeatureEnabled('leagues', clubId);
+      const managementEnabled = await FeatureFlagService.isFeatureEnabled('LEAGUES', clubId);
       return {
         subscriptionModel: String((club as { subscriptionModel?: string }).subscriptionModel || 'free'),
         managementEnabled,
