@@ -30,7 +30,7 @@ export default function GoogleCallbackPageClient() {
 
       if (session?.user) {
         try {
-          const response = await axios.post('/api/auth/google');
+          const response = await axios.post('/api/auth/google-callback');
 
           if (response.data.success) {
             setUser(response.data.user);

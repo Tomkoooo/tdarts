@@ -2796,6 +2796,21 @@
     },
     "close": "Bezárás"
   },
+  "LocaleMismatchPrompt": {
+    "title": "Nyelvet váltasz ehhez a linkhez?",
+    "message": "A mentett nyelved: {currentLocale}, de ez a link {linkLocale} nyelvu. Atvaltod a nyelvi beallitast, hogy ehhez a linkhez igazodjon?",
+    "stayButton": "Maradjon a jelenlegi nyelv",
+    "continueLabels": {
+      "hu": "Folytatas magyarul",
+      "en": "Continue in English",
+      "de": "Weiter auf Deutsch"
+    },
+    "localeNames": {
+      "hu": "magyar",
+      "en": "angol",
+      "de": "nemet"
+    }
+  },
   "Features": {
     "badge": "Funkciók",
     "title": "Miért tDarts?",

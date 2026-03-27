@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import dynamic from "next/dynamic";
 import { useTranslations } from "next-intl";
 import { useParams, useSearchParams } from "next/navigation";
-import { IconDeviceTv, IconEdit, IconRefresh, IconShare2, IconScreenShare } from "@tabler/icons-react";
+import { IconDeviceDesktop, IconDeviceTv, IconEdit, IconRefresh, IconShare2, IconScreenShare } from "@tabler/icons-react";
 import { useUserContext } from "@/hooks/useUser";
 import { Link } from "@/i18n/routing";
 import { shouldShowTournamentLiveTvLinks } from "@/lib/local-calendar-date";
@@ -350,6 +350,8 @@ const TournamentPageClient: React.FC<TournamentPageClientProps> = ({
   }, [sseConnected, sseEnabled, sseSessionExpired]);
 
   const canManageTournament = userClubRole === "admin" || userClubRole === "moderator";
+  const isGlobalAdmin = user?.isAdmin === true;
+  const canSeeAdminControls = canManageTournament || isGlobalAdmin;
 
   if (loading && !tournament) {
     return (
@@ -410,7 +412,7 @@ const TournamentPageClient: React.FC<TournamentPageClientProps> = ({
   }
 
   return (
-    <div className="relative min-h-screen bg-background pb-20 md:pb-8">
+    <div className="relative min-h-screen bg-background pb-28 md:pb-8">
       <div
         className="pointer-events-none absolute inset-0 opacity-20"
         style={{
@@ -418,105 +420,154 @@ const TournamentPageClient: React.FC<TournamentPageClientProps> = ({
             "radial-gradient(circle at 10% 20%, var(--color-primary) 0%, transparent 38%), radial-gradient(circle at 90% 15%, var(--color-accent) 0%, transparent 30%)",
         }}
       />
-      <div className="container relative mx-auto space-y-4 px-4 py-4 md:space-y-6 md:py-8">
-        <header className="rounded-2xl border border-border/70 bg-card/85 p-4 shadow-[0_14px_34px_rgba(0,0,0,0.28)] backdrop-blur-xl md:rounded-3xl md:p-6">
-          <div className="space-y-3">
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="outline" className={statusInfo.badgeClass}>
-                {statusInfo.label}
-              </Badge>
-              <span className="rounded-full border border-border/60 bg-muted/20 px-2.5 py-1 text-[11px] text-muted-foreground">
-                {t("header.tournament_code", { code: tournament.tournamentId })}
-              </span>
-              <span
-                className={`rounded-full border px-2.5 py-1 text-[11px] font-medium ${sseBadgeClass}`}
-                title={sseBadgeLabel}
-              >
-                {sseBadgeLabel}
-              </span>
-              <TournamentFormatBadges
-                type={tournament?.tournamentSettings?.type}
-                participationMode={tournament?.tournamentSettings?.participationMode}
-                size="md"
-              />
-            </div>
-            <h1 className="text-2xl font-bold leading-tight text-foreground md:text-4xl">
-              {tournament.tournamentSettings?.name || t("tabs.overview")}
-            </h1>
-            {hostedClub ? (
-              <p className="text-sm text-muted-foreground">
-                <span className="mr-1">{t("header.hosted_by_label")}</span>
-                <Link
-                  href={`/clubs/${hostedClub.id}`}
-                  className="font-medium text-primary hover:underline"
-                >
-                  {hostedClub.name}
-                </Link>
-              </p>
-            ) : null}
-            <p className="max-w-3xl text-sm leading-relaxed text-muted-foreground md:text-base">
-              {statusInfo.description}
-            </p>
-            <div className="flex flex-wrap items-center gap-2">
-              {canManageTournament && tournament?.tournamentSettings?.status !== "finished" ? (
-                <Button variant="outline" size="sm" onClick={() => setEditModalOpen(true)} className="gap-2">
-                  <IconEdit className="h-4 w-4" />
-                  {t("tabs.overview")}
-                </Button>
-              ) : null}
-              {showLiveTvLinks && tournamentCode ? (
-                <>
-                  <Button asChild size="sm" className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90">
-                    <Link href={`/tournaments/${tournamentCode}/live`} target="_blank" rel="noopener noreferrer">
-                      <IconScreenShare className="h-4 w-4" />
-                      {t("header.live_open")}
-                    </Link>
-                  </Button>
-                  <Button asChild size="sm" className="gap-2 bg-sky-600 text-white hover:bg-sky-600/90">
-                    <Link href={`/tournaments/${tournamentCode}/tv`} target="_blank" rel="noopener noreferrer">
-                      <IconDeviceTv className="h-4 w-4" />
-                      {t("header.tv_view")}
-                    </Link>
-                  </Button>
-                </>
-              ) : null}
-              <Button variant="secondary" size="sm" onClick={handleRefetch} className="gap-2">
-                <IconRefresh className="h-4 w-4" />
-                {t("header.refresh")}
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => setTournamentShareModal(true)} className="gap-2">
-                <IconShare2 className="h-4 w-4" />
-                {t("header.share")}
-              </Button>
-            </div>
-          </div>
-          <div className="mt-4 grid grid-cols-1 gap-2.5 sm:grid-cols-3">
-            <TournamentStatTile label={t("tabs.players")} value={tournamentStats.playersCount} />
-            <TournamentStatTile label={t("tabs.boards")} value={tournamentStats.boardsCount} />
-            <TournamentStatTile label="Format" value={tournamentStats.format} />
-          </div>
-        </header>
-
+      <div className="container relative mx-auto space-y-4 px-4 py-3 md:space-y-6 md:py-8">
         <Tabs
           value={activeTab}
           onValueChange={setActiveTab}
-          className="flex flex-col gap-4 pb-24 md:gap-5 md:pb-0"
+          className="flex flex-col gap-4 pb-28 md:gap-5 md:pb-0"
         >
           <div className="flex flex-col gap-3 md:gap-4">
-            <TournamentTabsNavigation
-              tabs={tabs}
-              activeTab={activeTab}
-              onTabChange={setActiveTab}
-              userClubRole={userClubRole}
-              format={tournament?.tournamentSettings?.format}
-              scorerHref={tournamentIdentifier ? `/board/${tournamentIdentifier}` : undefined}
-              liveHref={
-                showLiveTvLinks && tournamentIdentifier
-                  ? `/tournaments/${tournamentIdentifier}/live`
-                  : undefined
-              }
-              liveEnabled={showLiveTvLinks}
-            />
+            <div className="md:hidden">
+              <TournamentTabsNavigation
+                tabs={tabs}
+                activeTab={activeTab}
+                onTabChange={setActiveTab}
+                userClubRole={userClubRole}
+                isGlobalAdmin={isGlobalAdmin}
+                format={tournament?.tournamentSettings?.format}
+                scorerHref={tournamentIdentifier ? `/board/${tournamentIdentifier}` : undefined}
+                scorerLabel={t("header.boards_writer")}
+                liveHref={
+                  showLiveTvLinks && tournamentIdentifier
+                    ? `/tournaments/${tournamentIdentifier}/live`
+                    : undefined
+                }
+                liveLabel={t("header.live_open")}
+                liveEnabled={showLiveTvLinks}
+              />
+            </div>
+            <header
+              className={`rounded-2xl border border-border/70 bg-card/85 p-3.5 shadow-[0_14px_34px_rgba(0,0,0,0.28)] backdrop-blur-xl md:rounded-3xl md:p-6 ${
+                activeTab !== "overview" ? "hidden md:block" : ""
+              }`}
+            >
+              <div className="space-y-2.5 md:space-y-3">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge variant="outline" className={statusInfo.badgeClass}>
+                    {statusInfo.label}
+                  </Badge>
+                  <span className="rounded-full border border-border/60 bg-muted/20 px-2.5 py-1 text-[11px] text-muted-foreground">
+                    {t("header.tournament_code", { code: tournament.tournamentId })}
+                  </span>
+                  <span
+                    className={`rounded-full border px-2.5 py-1 text-[11px] font-medium ${sseBadgeClass}`}
+                    title={sseBadgeLabel}
+                  >
+                    {sseBadgeLabel}
+                  </span>
+                  <TournamentFormatBadges
+                    type={tournament?.tournamentSettings?.type}
+                    participationMode={tournament?.tournamentSettings?.participationMode}
+                    size="md"
+                  />
+                </div>
+                <h1 className="text-xl font-bold leading-tight text-foreground md:text-4xl">
+                  {tournament.tournamentSettings?.name || t("tabs.overview")}
+                </h1>
+                {hostedClub ? (
+                  <p className="text-sm text-muted-foreground">
+                    <span className="mr-1">{t("header.hosted_by_label")}</span>
+                    <Link
+                      href={`/clubs/${hostedClub.id}`}
+                      className="font-medium text-primary hover:underline"
+                    >
+                      {hostedClub.name}
+                    </Link>
+                  </p>
+                ) : null}
+                <p className="max-w-3xl text-xs leading-relaxed text-muted-foreground md:text-base">
+                  {statusInfo.description}
+                </p>
+                <div className="flex flex-wrap items-center gap-2">
+                  {canManageTournament && tournament?.tournamentSettings?.status !== "finished" ? (
+                    <Button variant="outline" size="sm" onClick={() => setEditModalOpen(true)} className="gap-2">
+                      <IconEdit className="h-4 w-4" />
+                      {t("tabs.overview")}
+                    </Button>
+                  ) : null}
+                  {isGlobalAdmin && tournament?.tournamentSettings?.status === "finished" ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleReopenTournament}
+                      disabled={isReopening}
+                      className="gap-2"
+                    >
+                      <IconRefresh className="h-4 w-4" />
+                      {isReopening ? t("admin.reopen.btn_loading") : t("admin.reopen.btn")}
+                    </Button>
+                  ) : null}
+                  {showLiveTvLinks && tournamentCode ? (
+                    <>
+                      <Button asChild size="sm" className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90">
+                        <Link href={`/tournaments/${tournamentCode}/live`} target="_blank" rel="noopener noreferrer">
+                          <IconScreenShare className="h-4 w-4" />
+                          {t("header.live_open")}
+                        </Link>
+                      </Button>
+                      <Button asChild size="sm" className="gap-2 bg-sky-600 text-white hover:bg-sky-600/90">
+                        <Link href={`/tournaments/${tournamentCode}/tv`} target="_blank" rel="noopener noreferrer">
+                          <IconDeviceTv className="h-4 w-4" />
+                          {t("header.tv_view")}
+                        </Link>
+                      </Button>
+                    </>
+                  ) : null}
+                  <Button variant="secondary" size="sm" onClick={handleRefetch} className="gap-2">
+                    <IconRefresh className="h-4 w-4" />
+                    {t("header.refresh")}
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => setTournamentShareModal(true)} className="gap-2">
+                    <IconShare2 className="h-4 w-4" />
+                    {t("header.share")}
+                  </Button>
+                </div>
+              </div>
+              <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3 md:mt-4 md:gap-2.5">
+                <TournamentStatTile label={t("tabs.players")} value={tournamentStats.playersCount} />
+                <TournamentStatTile label={t("tabs.boards")} value={tournamentStats.boardsCount} />
+                <TournamentStatTile label="Format" value={tournamentStats.format} />
+              </div>
+            </header>
+            <div className="hidden md:block">
+              <TournamentTabsNavigation
+                tabs={tabs}
+                activeTab={activeTab}
+                onTabChange={setActiveTab}
+                userClubRole={userClubRole}
+                isGlobalAdmin={isGlobalAdmin}
+                format={tournament?.tournamentSettings?.format}
+                scorerHref={tournamentIdentifier ? `/board/${tournamentIdentifier}` : undefined}
+                scorerLabel={t("header.boards_writer")}
+                liveHref={
+                  showLiveTvLinks && tournamentIdentifier
+                    ? `/tournaments/${tournamentIdentifier}/live`
+                    : undefined
+                }
+                liveLabel={t("header.live_open")}
+                liveEnabled={showLiveTvLinks}
+              />
+            </div>
+            {tournamentIdentifier ? (
+              <div className="sticky top-[4.5rem] z-20 md:hidden">
+                <Button asChild className="h-12 w-full gap-2 text-sm font-semibold">
+                  <Link href={`/board/${tournamentIdentifier}`} target="_blank" rel="noopener noreferrer">
+                    <IconDeviceDesktop className="h-4 w-4" />
+                    {t("header.boards_writer")}
+                  </Link>
+                </Button>
+              </div>
+            ) : null}
 
             <TabsContent value="overview" className="mt-0 space-y-4">
               <TournamentOverview
@@ -595,7 +646,7 @@ const TournamentPageClient: React.FC<TournamentPageClientProps> = ({
         tournamentCode={tournament.tournamentId}
         tournamentName={tournament.tournamentSettings?.name || t("tabs.overview")}
       />
-      {editModalOpen && user?._id && (
+      {editModalOpen && user?._id && canSeeAdminControls && (
         <EditTournamentModal
           isOpen={editModalOpen}
           onClose={() => setEditModalOpen(false)}

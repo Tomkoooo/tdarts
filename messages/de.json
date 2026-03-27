@@ -3981,5 +3981,20 @@
       "cancel": "Cancel",
       "confirm": "Confirm"
     }
+  },
+  "LocaleMismatchPrompt": {
+    "title": "Sprache fur diesen Link wechseln?",
+    "message": "Deine gespeicherte Sprache ist {currentLocale}, aber dieser Link ist auf {linkLocale}. Mochtest du deine Spracheinstellung fur diesen Link ubernehmen?",
+    "stayButton": "Aktuelle Sprache behalten",
+    "continueLabels": {
+      "hu": "Folytatas magyarul",
+      "en": "Continue in English",
+      "de": "Weiter auf Deutsch"
+    },
+    "localeNames": {
+      "hu": "Ungarisch",
+      "en": "Englisch",
+      "de": "Deutsch"
+    }
   }
 }

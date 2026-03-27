@@ -3021,6 +3021,21 @@
     },
     "close": "Close"
   },
+  "LocaleMismatchPrompt": {
+    "title": "Switch language for this link?",
+    "message": "Your saved language is {currentLocale}, but this link is in {linkLocale}. Do you want to switch your language preference to match this link?",
+    "stayButton": "Keep my current language",
+    "continueLabels": {
+      "hu": "Folytatas magyarul",
+      "en": "Continue in English",
+      "de": "Weiter auf Deutsch"
+    },
+    "localeNames": {
+      "hu": "Hungarian",
+      "en": "English",
+      "de": "German"
+    }
+  },
   "SearchPage": {
     "filters": {
       "country_netherlands": "Netherlands",

@@ -39,6 +39,7 @@ import {
 import { perfFlags } from "@/features/performance/lib/perfFlags";
 
 const LIVE_TOURNAMENT_STATUSES = new Set(['group-stage', 'knockout', 'ongoing', 'in_progress']);
+type RefreshViewMode = "boards" | "full";
 
 export default function TVModePage() {
   const t = useTranslations("Tournament.tv");
@@ -48,6 +49,7 @@ export default function TVModePage() {
   const [tournament, setTournament] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const sseRefreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const queuedRefreshModeRef = useRef<RefreshViewMode | null>(null)
   const resyncInFlightRef = useRef(false)
   const [qrExpanded, setQrExpanded] = useState(true)
   const [qrPosition, setQrPosition] = useState<{ x: number; y: number } | null>(null)
@@ -121,15 +123,19 @@ export default function TVModePage() {
   }, [settings]);
 
   // Silent refresh for live updates
-  const silentRefresh = useCallback(async () => {
+  const silentRefresh = useCallback(async (mode: RefreshViewMode = "boards") => {
     if (!code) return
-    if (resyncInFlightRef.current) return
+    if (resyncInFlightRef.current) {
+      queuedRefreshModeRef.current =
+        queuedRefreshModeRef.current === "full" || mode === "full" ? "full" : "boards";
+      return
+    }
     resyncInFlightRef.current = true
     try {
       const res = await getTournamentPageDataAction({
         code: String(code),
         includeViewer: false,
-        view: perfFlags.realtimeLiteFirst ? "boards" : "full",
+        view: mode,
         bypassCache: true,
       })
       const nextTournament =
@@ -153,6 +159,11 @@ export default function TVModePage() {
       console.error('Silent refresh error:', error)
     } finally {
       resyncInFlightRef.current = false
+      const queuedMode = queuedRefreshModeRef.current
+      if (queuedMode) {
+        queuedRefreshModeRef.current = null
+        void silentRefreshRef.current(queuedMode)
+      }
     }
   }, [code, urgentQueue, scheduler])
 
@@ -225,6 +236,48 @@ export default function TVModePage() {
     silentRefreshRef.current = silentRefresh;
   }, [silentRefresh]);
 
+  const queueRefresh = useCallback((mode: RefreshViewMode) => {
+    const currentQueuedMode = queuedRefreshModeRef.current;
+    queuedRefreshModeRef.current =
+      currentQueuedMode === "full" || mode === "full" ? "full" : "boards";
+
+    if (sseRefreshTimerRef.current) return;
+
+    const plannedMode = queuedRefreshModeRef.current;
+    const delayMs =
+      plannedMode === "full"
+        ? 450 + (perfFlags.realtimeLiteFirst ? Math.floor(Math.random() * 350) : 0)
+        : 220;
+
+    sseRefreshTimerRef.current = setTimeout(() => {
+      sseRefreshTimerRef.current = null
+      const nextMode = queuedRefreshModeRef.current ?? mode
+      queuedRefreshModeRef.current = null
+      void silentRefreshRef.current(nextMode)
+    }, delayMs)
+  }, [])
+
+  const resolveRefreshMode = useCallback(
+    (delta: SseDeltaPayload<any>, applied: boolean): RefreshViewMode | null => {
+      if (delta.requiresResync) return "full"
+      if (delta.scope === "group" || delta.scope === "tournament") return "full"
+
+      if (delta.scope === "match") {
+        if (delta.action === "finished" || delta.action === "leg-finished") {
+          return "full"
+        }
+        return applied ? null : "boards"
+      }
+
+      if (delta.scope === "board") {
+        return applied ? null : "boards"
+      }
+
+      return "full"
+    },
+    []
+  )
+
   useEffect(() => {
     fetchTournament()
   }, [fetchTournament])
@@ -242,16 +295,15 @@ export default function TVModePage() {
     if (!delta) return;
     if (delta.tournamentId && tournamentCode && delta.tournamentId !== tournamentCode) return;
     const applied = applyTvDelta(delta);
-    if (!delta.requiresResync && applied) return;
-
-    console.log('TV Mode - Triggering fallback resync')
+    const refreshMode = resolveRefreshMode(delta, applied)
+    if (!refreshMode) return
     if (sseRefreshTimerRef.current) {
-      clearTimeout(sseRefreshTimerRef.current)
+      console.log('TV Mode - Coalescing refresh', { mode: refreshMode })
+    } else {
+      console.log('TV Mode - Triggering fallback resync', { mode: refreshMode })
     }
-    sseRefreshTimerRef.current = setTimeout(() => {
-      void silentRefreshRef.current()
-    }, 400 + (perfFlags.realtimeLiteFirst ? Math.floor(Math.random() * 400) : 0))
-  }, [lastEvent, tournamentCode, applyTvDelta])
+    queueRefresh(refreshMode)
+  }, [lastEvent, tournamentCode, applyTvDelta, queueRefresh, resolveRefreshMode])
 
   useEffect(() => {
     return () => {

@@ -29,6 +29,7 @@ export interface ModalConfig {
   isLoading?: boolean
   size?: ModalSize
   showSkeleton?: boolean
+  showCloseButton?: boolean
 }
 
 interface ModalContextType {
@@ -160,13 +161,15 @@ function UnifiedModal({
             <div className="flex-1">
               <DialogTitle className="text-xl">{config.title}</DialogTitle>
             </div>
-            <button
-              onClick={onCancel}
-              aria-label={t("confirm.cancel")}
-              className="inline-flex items-center justify-center rounded-md p-2 hover:bg-muted"
-            >
-              <IconX className="w-4 h-4" />
-            </button>
+            {config.showCloseButton !== false && (
+              <button
+                onClick={onCancel}
+                aria-label={t("confirm.cancel")}
+                className="inline-flex items-center justify-center rounded-md p-2 hover:bg-muted"
+              >
+                <IconX className="w-4 h-4" />
+              </button>
+            )}
           </div>
         </DialogHeader>
 

@@ -16,6 +16,8 @@ import { buildLocaleAlternates, getBaseUrl } from "@/lib/seo";
 import { DEFAULT_OG_PATH, ogImageDimensionsForPath, toAbsoluteImageUrl } from "@/lib/og-image";
 import { getUserTimeZone } from "@/lib/date-time";
 import { loadLocaleMessages } from "@/i18n/messages";
+import { getServerUser } from "@/lib/getServerUser";
+import { toInitialUserContext } from "@/lib/auth/user-context-bootstrap";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params;
@@ -137,6 +139,8 @@ export default async function RootLayout({
     defaultLocale: routing.defaultLocale,
   });
   const userTimeZone = getUserTimeZone();
+  const serverUser = await getServerUser();
+  const initialUser = toInitialUserContext(serverUser);
 
   return (
     <html lang={locale} className="dark">
@@ -150,7 +154,7 @@ export default async function RootLayout({
       <body className="flex min-h-screen flex-col">
         <NextIntlClientProvider messages={messages} timeZone={userTimeZone}>
           <SessionProvider>
-            <UserProvider initialUser={undefined}>
+            <UserProvider initialUser={initialUser}>
               <AuthSync />
               <TimezoneSync />
               <PageVitalsReporter />

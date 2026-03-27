@@ -6,8 +6,24 @@ import { AuthorizationService } from './authorization.service';
 import { roundRobin } from '@/lib/utils';
 import mongoose from 'mongoose';
 import { TournamentPlayerDocument } from '@/interface/tournament.interface';
+import { createSseDeltaPayload, EVENTS, eventsBus } from '@/lib/events';
 
 export class TournamentGroupService {
+    private static publishStageRefresh(tournamentId: string): void {
+        eventsBus.publish(
+            EVENTS.TOURNAMENT_UPDATE,
+            createSseDeltaPayload({
+                tournamentId,
+                scope: 'tournament',
+                action: 'updated',
+                requiresResync: true,
+                data: {
+                    legacyType: 'tournament-update',
+                },
+            })
+        );
+    }
+
     static async getManualGroupsContext(tournamentCode: string): Promise<{
         boards: Array<{ boardNumber: number; isUsed: boolean }>,
         availablePlayers: Array<{ _id: string; name: string }>
@@ -155,6 +171,7 @@ export class TournamentGroupService {
 
         const result = await this.appendManualGroupToTournament(tournament, params);
         await tournament.save();
+        this.publishStageRefresh(tournament.tournamentId);
         return result;
     }
 
@@ -207,6 +224,7 @@ export class TournamentGroupService {
         }
 
         await tournament.save();
+        this.publishStageRefresh(tournament.tournamentId);
 
         return results;
     }
@@ -367,6 +385,7 @@ export class TournamentGroupService {
             tournament.groups = groups as any;
             tournament.tournamentSettings.status = 'group-stage';
             await tournament.save();
+            this.publishStageRefresh(tournament.tournamentId);
             return true;
         } catch (err) {
             console.error('generateGroups error:', err);

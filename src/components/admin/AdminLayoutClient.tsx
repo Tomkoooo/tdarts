@@ -29,6 +29,7 @@ import { CommandPalette, useCommandPalette } from "@/components/admin/CommandPal
 import { GlobalTodoShortcut } from "@/components/admin/GlobalTodoShortcut";
 import Image from "next/image";
 import type { ServerUser } from "@/lib/getServerUser";
+import { isSegmentActive } from "@/lib/navigation/nav-active";
 
 interface AdminLayoutClientProps {
   children: ReactNode;
@@ -72,7 +73,7 @@ function SidebarContent({
       <div className="space-y-1.5">
         {sidebarItems.map((item) => {
           const Icon = item.icon;
-          const isActive = pathname === item.href;
+          const isActive = isSegmentActive(pathname, item.href);
           const isFeedback = item.href === "/admin/feedback";
           const showUnread = isFeedback && feedbackUnreadCount > 0;
           return (

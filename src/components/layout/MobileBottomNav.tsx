@@ -8,8 +8,8 @@ import {
   IconDeviceDesktop,
   IconHome,
   IconLanguage,
+  IconPlayerPlay,
   IconSearch,
-  IconTrophy,
   IconUser,
   IconUsersGroup,
 } from "@tabler/icons-react";
@@ -21,6 +21,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Link } from "@/i18n/routing";
 import { useOngoingTournamentQuickLinkWithOptions } from "@/features/navigation/hooks/useOngoingTournamentQuickLink";
+import { findActiveNavIndex, matchesMyClubRoute } from "@/lib/navigation/nav-active";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -52,7 +53,6 @@ export const MobileBottomNav: React.FC = () => {
     ? (maybeLocale as SupportedLocale)
     : DEFAULT_LOCALE;
   const isClubRoute = normalizedPath.startsWith("/clubs");
-  const hideBoardNav = normalizedPath.startsWith("/tournaments/");
   const hooksEnabled = !isClubRoute || allowDeferredHooks;
   const { unreadCount } = useUnreadTickets({ enabled: Boolean(user?._id) && hooksEnabled, deferMs: isClubRoute ? 1200 : 0 });
   const { ongoingTournament } = useOngoingTournamentQuickLinkWithOptions(user?._id, {
@@ -74,10 +74,10 @@ export const MobileBottomNav: React.FC = () => {
   const navItems = React.useMemo<NavItem[]>(() => {
     const boardItemLoggedIn: NavItem = {
       id: "board",
-      href: ongoingTournament?.code ? `/tournaments/${ongoingTournament.code}` : "/board",
-      icon: hasQuickTournament ? IconTrophy : IconDeviceDesktop,
-      label: hasQuickTournament ? t("active_tournament") : t("board"),
-      match: (path) => path.startsWith("/board") || path.startsWith("/tournaments"),
+      href: "/board",
+      icon: IconDeviceDesktop,
+      label: t("board"),
+      match: (path) => path.startsWith("/board"),
     };
     const boardItemGuest: NavItem = {
       id: "board",
@@ -103,7 +103,18 @@ export const MobileBottomNav: React.FC = () => {
           label: t("search"),
           match: (path) => path === "/search",
         },
-        ...(hideBoardNav ? [] : [boardItemLoggedIn]),
+        ...(hasQuickTournament ? [] : [boardItemLoggedIn]),
+        ...(hasQuickTournament
+          ? [
+              {
+                id: "today-tournament",
+                href: `/tournaments/${ongoingTournament!.code}`,
+                icon: IconPlayerPlay,
+                label: "Verseny",
+                match: (path: string) => path === `/tournaments/${ongoingTournament!.code}`,
+              } as NavItem,
+            ]
+          : []),
         {
           id: "profile",
           href: "/profile",
@@ -115,7 +126,7 @@ export const MobileBottomNav: React.FC = () => {
           href: "/myclub",
           icon: IconUsersGroup,
           label: t("my_club"),
-          match: (path) => path.startsWith("/myclub") || path.startsWith("/clubs"),
+          match: (path) => matchesMyClubRoute(path),
         },
         ...(isGlobalAdmin
           ? [
@@ -146,7 +157,7 @@ export const MobileBottomNav: React.FC = () => {
         label: t("search"),
         match: (path) => path === "/search",
       },
-      ...(hideBoardNav ? [] : [boardItemGuest]),
+      boardItemGuest,
       {
         id: "login",
         href: "/auth/login",
@@ -162,7 +173,7 @@ export const MobileBottomNav: React.FC = () => {
         match: (path) => path.startsWith("/auth/register"),
       },
     ];
-  }, [user, isGlobalAdmin, hasQuickTournament, ongoingTournament?.code, t, hideBoardNav]);
+  }, [user, isGlobalAdmin, hasQuickTournament, ongoingTournament?.code, t]);
 
   const isActive = (item: NavItem): boolean => {
     if (item.match) return item.match(normalizedPath, searchParams);
@@ -171,16 +182,19 @@ export const MobileBottomNav: React.FC = () => {
     return normalizedPath.startsWith(hrefPath);
   };
 
-  const activeIndex = React.useMemo(() => {
-    const index = navItems.findIndex((item) => isActive(item));
-    return index >= 0 ? index : 0;
-  }, [navItems, normalizedPath, searchParams]);
+  const activeIndex = React.useMemo(
+    () => findActiveNavIndex(navItems, normalizedPath, new URLSearchParams(searchParams.toString())),
+    [navItems, normalizedPath, searchParams]
+  );
 
   const slotPercent = 100 / navItems.length;
 
-  const bubbleStyle = {
-    left: `calc(${slotPercent * activeIndex}% + ${slotPercent / 2}% - 1.75rem)`,
-  };
+  const bubbleStyle =
+    activeIndex === null
+      ? undefined
+      : {
+          left: `calc(${slotPercent * activeIndex}% + ${slotPercent / 2}% - 1.75rem)`,
+        };
 
   const languageOptions = React.useMemo(
     () => [
@@ -245,10 +259,12 @@ export const MobileBottomNav: React.FC = () => {
             "shadow-sm"
           )}
         >
-          <span
-            className="pointer-events-none absolute -top-6 h-14 w-14 rounded-full border-2 border-primary/35 bg-primary text-primary-foreground shadow-[0_12px_28px_rgba(146,34,16,0.5)] ring-2 ring-primary/20 transition-all duration-500 ease-out"
-            style={bubbleStyle}
-          />
+          {bubbleStyle ? (
+            <span
+              className="pointer-events-none absolute -top-6 h-14 w-14 rounded-full border-2 border-primary/35 bg-primary text-primary-foreground shadow-[0_12px_28px_rgba(146,34,16,0.5)] ring-2 ring-primary/20 transition-all duration-500 ease-out"
+              style={bubbleStyle}
+            />
+          ) : null}
 
           <div
             className="grid h-full"

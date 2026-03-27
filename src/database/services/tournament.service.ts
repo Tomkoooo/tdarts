@@ -20,6 +20,24 @@ import { ErrorService } from './error.service';
 import { eventsBus, EVENTS, createSseDeltaPayload } from '@/lib/events';
 
 export class TournamentService {
+    private static publishTournamentRefresh(
+        tournamentId: string,
+        action: 'updated' | 'knockout-updated'
+    ): void {
+        eventsBus.publish(
+            EVENTS.TOURNAMENT_UPDATE,
+            createSseDeltaPayload({
+                tournamentId,
+                scope: 'tournament',
+                action,
+                requiresResync: true,
+                data: {
+                    legacyType: action === 'knockout-updated' ? 'knockout-update' : 'tournament-update',
+                },
+            })
+        );
+    }
+
     private static toThreeDartAverage(score: number, darts: number): number {
         return darts > 0 ? Math.round((score / darts) * 3 * 100) / 100 : 0;
     }
@@ -1092,18 +1110,7 @@ export class TournamentService {
             await tournament.save();
             
             // Emit SSE event to notify frontend of knockout bracket update
-            eventsBus.publish(
-                EVENTS.TOURNAMENT_UPDATE,
-                createSseDeltaPayload({
-                    tournamentId: tournament.tournamentId,
-                    scope: 'tournament',
-                    action: 'knockout-updated',
-                    requiresResync: true,
-                    data: {
-                        legacyType: 'knockout-update',
-                    },
-                })
-            );
+            this.publishTournamentRefresh(tournament.tournamentId, 'knockout-updated');
         } catch (error) {
             console.error('Auto-advance knockout winner error:', error);
             throw error;
@@ -1664,6 +1671,7 @@ export class TournamentService {
 
             // Tournament structure should now be updated by bye auto-advances
             console.log('Bye match processing complete');
+            this.publishTournamentRefresh(tournament.tournamentId, 'updated');
 
             return true;
         } catch (error) {
@@ -5665,6 +5673,7 @@ export class TournamentService {
             }
 
             console.log(`✅ Tournament ${tournamentCode} finished successfully with MMR updates`);
+            this.publishTournamentRefresh(tournament.tournamentId, 'updated');
             return true;
         } catch (error) {
             console.error('Finish tournament error:', error);
@@ -5737,6 +5746,7 @@ export class TournamentService {
 
             await tournament.save();
             console.log(`Knockout cancelled for tournament ${tournamentCode}`);
+            this.publishTournamentRefresh(tournament.tournamentId, 'updated');
 
             return true;
         } catch (error) {
@@ -5811,6 +5821,7 @@ export class TournamentService {
 
             await tournament.save();
             console.log(`Groups cancelled for tournament ${tournamentCode}`);
+            this.publishTournamentRefresh(tournament.tournamentId, 'updated');
 
             return true;
         } catch (error) {
@@ -7037,6 +7048,7 @@ export class TournamentService {
         } else {
             await tournament.save();
         }
+        this.publishTournamentRefresh(tournament.tournamentId, 'updated');
 
         return tournament;
     }

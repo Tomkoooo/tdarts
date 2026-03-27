@@ -45,6 +45,7 @@ import { cn } from "@/lib/utils";
 import IconDart from "@/components/homapage/icons/IconDart";
 import { Badge } from "@/components/ui/Badge";
 import { useOngoingTournamentQuickLinkWithOptions } from "@/features/navigation/hooks/useOngoingTournamentQuickLink";
+import { matchesMyClubRoute } from "@/lib/navigation/nav-active";
 
 interface NavItem {
   href: string;
@@ -84,8 +85,6 @@ export const DesktopSidebar: React.FC<DesktopSidebarProps> = ({
     ? (maybeLocale as SupportedLocale)
     : DEFAULT_LOCALE;
 
-  const hideBoardNav = normalizedPath.startsWith("/tournaments/");
-
   const navItems = React.useMemo<NavItem[]>(() => {
     const core: NavItem[] = [
       {
@@ -107,10 +106,13 @@ export const DesktopSidebar: React.FC<DesktopSidebarProps> = ({
         match: (path, params) =>
           path === "/search" && params.get("tab") !== "clubs" && params.get("tab") !== "tournaments",
       },
+      {
+        href: "/board",
+        icon: IconTargetArrow,
+        label: t("board"),
+        match: (path) => path.startsWith("/board"),
+      },
     ];
-    if (!hideBoardNav) {
-      core.push({ href: "/board", icon: IconTargetArrow, label: t("board") });
-    }
     core.push(
       { href: "/how-it-works", icon: IconInfoCircle, label: t("how_it_works") },
       {
@@ -118,10 +120,15 @@ export const DesktopSidebar: React.FC<DesktopSidebarProps> = ({
         icon: IconUser,
         label: t("profile"),
       },
-      { href: "/myclub", icon: IconDart, label: t("my_club") }
+      {
+        href: "/myclub",
+        icon: IconDart,
+        label: t("my_club"),
+        match: (path) => matchesMyClubRoute(path),
+      }
     );
     return core;
-  }, [t, hideBoardNav]);
+  }, [t]);
 
   const languageOptions = React.useMemo(
     () => [
@@ -251,15 +258,15 @@ export const DesktopSidebar: React.FC<DesktopSidebarProps> = ({
               href={toLocalizedHref(`/tournaments/${ongoingTournament.code}`)}
               className={cn(
                 "group relative mt-2 flex items-center gap-3 overflow-hidden rounded-xl border border-primary/35 bg-primary/10 px-3 py-3 text-sm font-medium text-primary transition-all hover:bg-primary/15",
+                normalizedPath === `/tournaments/${ongoingTournament.code}` &&
+                  "bg-primary text-primary-foreground shadow-(--shadow-nav-active)",
                 collapsed && "justify-center px-2"
               )}
               title={ongoingTournament.name}
             >
               <IconPlayerPlay size={18} className="shrink-0" />
               {!collapsed ? (
-                <span className="truncate">
-                  {t.has("active_tournament") ? t("active_tournament") : t("tournaments")}
-                </span>
+                <span className="truncate">Verseny</span>
               ) : null}
             </Link>
           ) : null}

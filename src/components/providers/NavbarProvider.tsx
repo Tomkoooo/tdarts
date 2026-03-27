@@ -8,6 +8,7 @@ import { MobileBottomNav } from '@/components/layout/MobileBottomNav'
 import { PageTransitionWrapper } from '@/components/layout/PageTransitionWrapper'
 import { stripLocalePrefix } from "@/lib/seo"
 import { cn } from "@/lib/utils"
+import { LocaleMismatchPrompt } from "@/components/i18n/LocaleMismatchPrompt"
 import {
   shouldHideNavbar,
   shouldShowFooter,
@@ -105,7 +106,12 @@ function NavbarProviderInner({
     </div>
   )
 
-  return <ModalProvider>{content}</ModalProvider>
+  return (
+    <ModalProvider>
+      <LocaleMismatchPrompt />
+      {content}
+    </ModalProvider>
+  )
 }
 
 export function NavbarProvider({
