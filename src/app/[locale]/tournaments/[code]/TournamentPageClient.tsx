@@ -427,7 +427,7 @@ const TournamentPageClient: React.FC<TournamentPageClientProps> = ({
           className="flex flex-col gap-4 pb-28 md:gap-5 md:pb-0"
         >
           <div className="flex flex-col gap-3 md:gap-4">
-            <div className="md:hidden">
+            <div className="md:hidden z-50 sticky top-0">
               <TournamentTabsNavigation
                 tabs={tabs}
                 activeTab={activeTab}
@@ -444,6 +444,7 @@ const TournamentPageClient: React.FC<TournamentPageClientProps> = ({
                 }
                 liveLabel={t("header.live_open")}
                 liveEnabled={showLiveTvLinks}
+                mobileActionRow
               />
             </div>
             <header
@@ -558,16 +559,6 @@ const TournamentPageClient: React.FC<TournamentPageClientProps> = ({
                 liveEnabled={showLiveTvLinks}
               />
             </div>
-            {tournamentIdentifier ? (
-              <div className="sticky top-[4.5rem] z-20 md:hidden">
-                <Button asChild className="h-12 w-full gap-2 text-sm font-semibold">
-                  <Link href={`/board/${tournamentIdentifier}`} target="_blank" rel="noopener noreferrer">
-                    <IconDeviceDesktop className="h-4 w-4" />
-                    {t("header.boards_writer")}
-                  </Link>
-                </Button>
-              </div>
-            ) : null}
 
             <TabsContent value="overview" className="mt-0 space-y-4">
               <TournamentOverview

@@ -154,7 +154,7 @@ export default function EditTournamentModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-2xl w-[95vw] max-h-[90vh] overflow-y-auto bg-card/95 backdrop-blur-md shadow-2xl border-border/40">
+      <DialogContent className="w-[calc(100vw-1rem)] max-w-none max-h-[90vh] overflow-y-auto overflow-x-hidden bg-card/95 backdrop-blur-md shadow-2xl border-border/40 sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold text-primary-foreground">
             Torna szerkesztése
@@ -376,8 +376,8 @@ export default function EditTournamentModal({
               
               <div className="space-y-3">
                 {boards.map((board, index) => (
-                  <div key={index} className="flex gap-2 items-center p-3 bg-muted/20 rounded-lg border border-border/20">
-                    <div className="flex items-center gap-2 px-2">
+                  <div key={index} className="flex min-w-0 gap-2 items-center p-3 bg-muted/20 rounded-lg border border-border/20">
+                    <div className="flex shrink-0 items-center gap-2 px-2">
                       <IconTarget className="w-4 h-4 text-primary" />
                       <span className="text-sm font-medium whitespace-nowrap">#{index + 1}</span>
                     </div>
@@ -385,7 +385,7 @@ export default function EditTournamentModal({
                       type="text"
                       value={board.name}
                       onChange={(e) => handleBoardChange(index, 'name', e.target.value)}
-                      className="flex-1 px-3 py-1.5 bg-background/50 rounded-md border border-border/40 outline-none focus:ring-1 ring-primary/30 text-sm"
+                      className="flex-1 min-w-0 px-3 py-1.5 bg-background/50 rounded-md border border-border/40 outline-none focus:ring-1 ring-primary/30 text-sm"
                       placeholder={`Tábla ${index + 1}`}
                     />
                     {boards.length > 1 && (

@@ -1,5 +1,6 @@
 'use server';
 
+import { cookies } from 'next/headers';
 import { authorizeUserResult } from '@/features/auth/lib/authorizeUser';
 import { ProfileService } from '@/database/services/profile.service';
 import { withTelemetry } from '@/shared/lib/withTelemetry';
@@ -14,6 +15,8 @@ export async function logoutAction() {
         return authResult;
       }
       await ProfileService.logout(authResult.data.userId);
+      const cookieStore = await cookies();
+      cookieStore.set('token', '', { maxAge: 0, path: '/' });
       return { success: true };
     },
     {

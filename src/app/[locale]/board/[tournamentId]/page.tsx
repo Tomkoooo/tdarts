@@ -1,7 +1,7 @@
 "use client";
 import { useTranslations } from "next-intl";
 
-import React, { useState, useEffect, use, useRef, useCallback } from "react";
+import React, { useState, useEffect, use, useRef, useCallback, useMemo } from "react";
 import MatchGame from "@/components/board/MatchGame";
 import LocalMatchGame from "@/components/board/LocalMatchGame";
 import { useUserContext } from "@/hooks/useUser";
@@ -27,6 +27,7 @@ import { showErrorToast } from "@/lib/toastUtils";
 import toast from "react-hot-toast";
 import {
   finishBoardMatchAction,
+  getBoardPasswordBypassStatusAction,
   getBoardListAction,
   getBoardMatchesAction,
   getBoardTournamentAction,
@@ -44,7 +45,7 @@ const LIVE_TOURNAMENT_STATUSES = new Set(['group-stage', 'knockout', 'ongoing', 
 const BoardPage: React.FC<BoardPageProps> = (props) => {
   const t = useTranslations("Board");
   const { tournamentId } = use(props.params);
-  const { user } = useUserContext();
+  useUserContext();
   
   // State management
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
@@ -89,6 +90,11 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
   const bootstrapDoneRef = useRef(false);
   const boardsRequestIdRef = useRef(0);
   const matchesRequestIdRef = useRef(0);
+
+  const accessPassword = useMemo(() => {
+    const trimmed = password.trim();
+    return trimmed ? trimmed : undefined;
+  }, [password]);
   
   const startingScoreOptions = [170, 201, 301, 401, 501, 601, 701];
   const getBoardLabel = (boardNumber: number, name?: string) =>
@@ -112,7 +118,7 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
           setTournamentData(response.tournament);
         } else {
           try {
-            const tournamentResponse = await getBoardTournamentAction({ tournamentId });
+            const tournamentResponse = await getBoardTournamentAction({ tournamentId, password: pwdToUse });
             setTournamentData(tournamentResponse);
           } catch (err: any) {
             console.error('Failed to load tournament data:', err);
@@ -171,6 +177,25 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
     }
 
     bootstrapDoneRef.current = true;
+    void (async () => {
+      try {
+        const bypass = await getBoardPasswordBypassStatusAction({ tournamentId });
+        if (bypass && typeof bypass === 'object' && 'canBypass' in bypass && bypass.canBypass) {
+          setIsAuthenticated(true);
+          const [tournamentResponse, boardsResponse] = await Promise.all([
+            getBoardTournamentAction({ tournamentId }),
+            getBoardListAction({ tournamentId }),
+          ]);
+          setTournamentData(tournamentResponse);
+          if (boardsResponse && typeof boardsResponse === 'object' && 'boards' in boardsResponse) {
+            setBoards((boardsResponse as { boards: Board[] }).boards || []);
+          }
+        }
+      } catch (err) {
+        // If bypass check fails (or user not eligible), we keep the password screen.
+        console.warn('Board bypass check failed:', err);
+      }
+    })();
   }, [handlePasswordSubmit, tournamentId]);
 
   // Check for saved board selection
@@ -294,7 +319,7 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
     const requestId = ++boardsRequestIdRef.current;
     setLoading(true);
     try {
-      const response = await getBoardListAction({ tournamentId });
+      const response = await getBoardListAction({ tournamentId, password: accessPassword });
       if (requestId !== boardsRequestIdRef.current) return;
       if (response && typeof response === 'object' && 'boards' in response) {
         setBoards((response as { boards: Board[] }).boards || []);
@@ -326,6 +351,7 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
       const response = await getBoardMatchesAction({
         tournamentId,
         boardNumber: Number(selectedBoard.boardNumber),
+        password: accessPassword,
       });
       if (requestId !== matchesRequestIdRef.current) return;
       if (response && typeof response === 'object' && 'matches' in response) {
@@ -352,7 +378,7 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
 
   const loadUserRole = async () => {
     try {
-      const response = await getBoardUserRoleAction({ tournamentId });
+      const response = await getBoardUserRoleAction({ tournamentId, password: accessPassword });
       setUserRole(response as UserRole);
     } catch (err) {
       console.error('Failed to load user role:', err);
@@ -386,9 +412,11 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
     
     try {
       await finishBoardMatchAction({
+        tournamentId,
         matchId: String(adminMatch._id),
         player1LegsWon: cleanedPlayer1Legs,
         player2LegsWon: cleanedPlayer2Legs,
+        password: accessPassword,
         player1Stats: {
           highestCheckout: adminMatch.player1.highestCheckout || 0,
           oneEightiesCount: adminMatch.player1.oneEightiesCount || 0,
@@ -431,6 +459,7 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
         matchId: selectedMatch._id,
         legsToWin,
         startingPlayer,
+        password: accessPassword,
       });
       
       if (response && typeof response === 'object' && 'success' in response && response.success) {

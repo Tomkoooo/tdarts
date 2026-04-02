@@ -199,7 +199,10 @@ function applyTournamentData(
 
   const roleData = tournamentData?.viewer || null;
   if (!roleData) {
-    return; // Caller must fetch role separately
+    setters.setUserClubRole("none");
+    setters.setUserPlayerStatus("none");
+    setters.setUserPlayerId(null);
+    return;
   }
 
   setters.setUserClubRole(roleData.userClubRole || "none");
@@ -247,6 +250,7 @@ export function useTournamentPageData(
   const [hasFullData, setHasFullData] = useState(false);
   const currentViewRef = useRef<TournamentView>("overview");
   const initialDataHydratedCodeRef = useRef<string | null>(null);
+  const lastUserIdRef = useRef<string | undefined>(undefined);
   const [lastLoadedSection, setLastLoadedSection] = useState<
     "overview" | "players" | "boards" | "groups" | "bracket"
   >("overview");
@@ -345,6 +349,19 @@ export function useTournamentPageData(
 
       setTournament((prev: any) => {
         if (!prev) return tournamentLite;
+        const prevClubId = prev?.clubId;
+        const nextClubId = tournamentLite?.clubId;
+        const prevClubIdIsPopulated =
+          typeof prevClubId === "object" &&
+          prevClubId !== null &&
+          "_id" in prevClubId &&
+          "name" in prevClubId;
+        const nextClubIdIsBare =
+          typeof nextClubId === "string" ||
+          (typeof nextClubId === "object" &&
+            nextClubId !== null &&
+            !("name" in nextClubId));
+
         const previousBoards = Array.isArray(prev.boards) ? prev.boards : [];
         const liteBoards = Array.isArray(tournamentLite.boards) ? tournamentLite.boards : [];
         // Lite payload is authoritative for which boards exist (count / ids). Mapping over
@@ -368,6 +385,7 @@ export function useTournamentPageData(
             ...(prev.tournamentSettings || {}),
             ...(tournamentLite.tournamentSettings || {}),
           },
+          clubId: prevClubIdIsPopulated && nextClubIdIsBare ? prevClubId : nextClubId,
           boards: mergedBoards,
         };
       });
@@ -630,6 +648,27 @@ export function useTournamentPageData(
       fetchAll("overview");
     }
   }, [code, fetchAll, initialData, initialSections, user?._id, applySectionPayload]);
+
+  useEffect(() => {
+    const normalizedCode = typeof code === "string" ? code : "";
+    if (!normalizedCode) {
+      lastUserIdRef.current = user?._id;
+      return;
+    }
+
+    const userIdNow = user?._id;
+    if (!userIdNow) {
+      lastUserIdRef.current = undefined;
+      return;
+    }
+
+    if (userIdNow === lastUserIdRef.current) {
+      return;
+    }
+
+    lastUserIdRef.current = userIdNow;
+    void fetchAll(currentViewRef.current, { bypassCache: true });
+  }, [code, fetchAll, user?._id]);
 
   return {
     tournament,
