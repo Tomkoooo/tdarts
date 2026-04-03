@@ -41,7 +41,7 @@ const startBoardMatchSchema = z.object({
 });
 
 const finishBoardMatchSchema = z.object({
-  tournamentId: z.string().min(1),
+  tournamentId: z.string().min(1).optional(),
   matchId: z.string().min(1),
   player1LegsWon: z.number(),
   player2LegsWon: z.number(),
@@ -182,7 +182,7 @@ export async function validateBoardPasswordAction(input: {
   return run(input);
 }
 
-export async function getBoardTournamentAction(input: { tournamentId: string }) {
+export async function getBoardTournamentAction(input: { tournamentId: string; password?: string }) {
   const run = withTelemetry(
     'board.getTournament',
     async (payload: { tournamentId: string; password?: string }) => {
@@ -258,7 +258,7 @@ export async function getBoardMatchesAction(input: {
   return run(input);
 }
 
-export async function getBoardUserRoleAction(input: { tournamentId: string }) {
+export async function getBoardUserRoleAction(input: { tournamentId: string; password?: string }) {
   const run = withTelemetry(
     'board.getUserRole',
     async (payload: { tournamentId: string; password?: string }) => {
@@ -323,7 +323,7 @@ export async function startBoardMatchAction(input: {
 }
 
 export async function finishBoardMatchAction(input: {
-  tournamentId: string;
+  tournamentId?: string;
   matchId: string;
   player1LegsWon: number;
   player2LegsWon: number;
@@ -334,7 +334,7 @@ export async function finishBoardMatchAction(input: {
   const run = withTelemetry(
     'board.finishMatch',
     async (payload: {
-      tournamentId: string;
+      tournamentId?: string;
       matchId: string;
       player1LegsWon: number;
       player2LegsWon: number;
@@ -343,7 +343,10 @@ export async function finishBoardMatchAction(input: {
       password?: string;
     }) => {
       const parsed = finishBoardMatchSchema.parse(payload);
-      await assertBoardAccess({ tournamentId: parsed.tournamentId, password: parsed.password });
+      const tournamentIdForAccess =
+        (parsed.tournamentId && parsed.tournamentId.trim()) ||
+        (await MatchService.getTournamentIdStringForMatch(parsed.matchId));
+      await assertBoardAccess({ tournamentId: tournamentIdForAccess, password: parsed.password });
       const authResult = await authorizeUserResult();
       const adminId = authResult.ok ? authResult.data.userId : null;
       const match = await MatchService.finishMatch(parsed.matchId, {

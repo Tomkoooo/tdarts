@@ -127,6 +127,26 @@ export class MatchService {
         };
     }
 
+    /**
+     * Public tournament code (e.g. C0KL) for a match — used when callers only have matchId.
+     */
+    static async getTournamentIdStringForMatch(matchId: string): Promise<string> {
+        await connectMongo();
+        const match = (await MatchModel.findById(matchId).select('tournamentRef').lean()) as {
+            tournamentRef?: unknown;
+        } | null;
+        if (!match?.tournamentRef) {
+            throw new BadRequestError('Match not found');
+        }
+        const tournament = (await TournamentModel.findById(match.tournamentRef as any)
+            .select('tournamentId')
+            .lean()) as { tournamentId?: string } | null;
+        if (!tournament?.tournamentId) {
+            throw new BadRequestError('Tournament not found');
+        }
+        return String(tournament.tournamentId);
+    }
+
     static async startMatch(tournamentId: string, matchId: string, legsToWin: number, startingPlayer: 1 | 2) {
         const match = await MatchModel.findById(matchId);
         if (!match) throw new BadRequestError('Match not found', 'tournament', {
