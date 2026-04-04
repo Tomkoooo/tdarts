@@ -70,6 +70,8 @@ interface MatchGameProps {
   match: Match;
   /** Tournament id string (same as live page / join-tournament); required for socket room routing. */
   tournamentCode: string;
+  /** When the board was opened with a tournament password (not logged-in flow), pass it so server actions can authorize. */
+  boardAccessPassword?: string;
   onBack: () => void;
   onMatchFinished?: () => void;
   clubId?: string;
@@ -79,7 +81,15 @@ interface MatchGameProps {
   };
 }
 
-const MatchGame: React.FC<MatchGameProps> = ({ match, tournamentCode, onBack, onMatchFinished, clubId, scoliaConfig }) => {
+const MatchGame: React.FC<MatchGameProps> = ({
+  match,
+  tournamentCode,
+  boardAccessPassword,
+  onBack,
+  onMatchFinished,
+  clubId,
+  scoliaConfig,
+}) => {
   const t = useTranslations("Board");
   // Helper to format full names as initials + last name (e.g., "D. S. Erika")
   const formatName = (fullName: string) => {
@@ -781,9 +791,11 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, tournamentCode, onBack, on
 
       // Finish match via server action
       const response = await finishBoardMatchAction({
+        tournamentId: tournamentCode,
         matchId: match._id,
         player1LegsWon: finalPlayer1LegsWon,
         player2LegsWon: finalPlayer2LegsWon,
+        password: boardAccessPassword,
       });
       
       if (!(response as any)?.success) {

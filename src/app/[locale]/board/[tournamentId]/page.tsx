@@ -983,6 +983,7 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
     return (
       <MatchGame 
         tournamentCode={tournamentId}
+        boardAccessPassword={accessPassword}
         match={{
           ...selectedMatch,
           legsToWin: selectedMatch.legsToWin || legsToWin
