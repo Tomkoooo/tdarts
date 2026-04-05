@@ -1,0 +1,74 @@
+import { Types, Document } from 'mongoose';
+
+export interface MatchPlayer {
+  playerId: Types.ObjectId;
+  legsWon: number;
+  legsLost: number;
+  average: number;
+  firstNineAvg?: number;
+  highestCheckout?: number;
+  oneEightiesCount?: number;
+}
+
+export interface Throw {
+  score: number;
+  darts: number;
+  isDouble?: boolean;
+  isCheckout?: boolean;
+}
+
+export interface Leg {
+  legNumber: number;
+  player1Score: number;
+  player2Score: number;
+  player1Throws: Throw[];
+  player2Throws: Throw[];
+  winnerId?: Types.ObjectId;
+  checkoutScore?: number;
+  checkoutDarts?: number;
+  winnerArrowCount?: number;
+  loserRemainingScore?: number;
+  doubleAttempts?: number;
+  player1TotalDarts?: number;
+  player2TotalDarts?: number;
+  createdAt: Date;
+}
+
+export interface Match {
+  _id: Types.ObjectId;
+  boardReference: number;
+  tournamentRef: Types.ObjectId;
+  type: 'group' | 'knockout';
+  round: number;
+  bracketPosition?: number;
+  scorerSource?: {
+    type: 'group_loser' | 'match_loser' | 'manual';
+    sourceMatchId?: Types.ObjectId;
+    playerId?: Types.ObjectId;
+  };
+  player1?: MatchPlayer;
+  player2?: MatchPlayer;
+  scorer?: Types.ObjectId;
+  status: 'pending' | 'ongoing' | 'finished';
+  winnerId?: Types.ObjectId;
+  legsToWin?: number;
+  startingPlayer?: 1 | 2;
+  legs?: Leg[];
+  manualOverride?: boolean;
+  overrideTimestamp?: Date;
+  manualChangeType?: 'admin_finish' | 'admin_state_change' | 'winner_override' | null;
+  manualChangedBy?: Types.ObjectId;
+  previousState?: {
+    player1LegsWon: number;
+    player2LegsWon: number;
+    winnerId?: Types.ObjectId;
+    status: string;
+  };
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface MatchDocument extends Omit<Match, '_id'>, Document {
+  _id: Types.ObjectId;
+  winnerId?: Types.ObjectId;
+}

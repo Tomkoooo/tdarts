@@ -1,0 +1,66 @@
+name: Docker API
+
+on:
+  push:
+    branches: ["main", "feature/api"]
+    paths:
+      - "apps/api/**"
+      - "packages/core/**"
+      - "packages/services/**"
+      - "packages/schemas/**"
+      - "Dockerfile.api"
+      - "pnpm-lock.yaml"
+      - "turbo.json"
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  # Separate package so the API image is distinct from the web image in GHCR
+  IMAGE_NAME: ${{ github.repository_owner }}/tdarts-api
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata (tags, labels)
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=api-latest,enable={{is_default_branch}}
+            type=sha,prefix=api-,format=short
+            type=semver,pattern=api-{{version}},enable=${{ startsWith(github.ref, 'refs/tags/') }}
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push API image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile.api
+          platforms: linux/amd64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

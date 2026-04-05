@@ -1,0 +1,16 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "typeRoots": [
+      "./node_modules/@types",
+      "../core/node_modules/@types",
+      "../../node_modules/@types"
+    ],
+    "types": ["node", "uuid"],
+    "paths": {
+      "@tdarts/core": ["../core/src/index.ts"]
+    }
+  },
+  "include": ["src/**/*.ts"]
+}

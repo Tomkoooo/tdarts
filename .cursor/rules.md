@@ -10,6 +10,8 @@
 - Tests: minden feature-hez unit (Jest) + E2E (Playwright) kötelező, coverage > 85%
 - Clean Code: SOLID, no god classes, server components only, Tailwind + shadcn, accessibility AA, mobile-first
 - Next 16: csak server actions, NO /api/routes
+- When creating a markdown documentation sotre it inside the /docs folder orginized!
+- When creating a helping script store it inside the /scripts folder orginized!
 
 # NEW: Telemetry & Observability (critical for production health)
 - Minden server action kötelezően wrapped withTelemetry HOF-fal: const action = withTelemetry("feature.actionName", async (input) => { ... })

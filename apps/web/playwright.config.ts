@@ -38,7 +38,7 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'npm run start',
+    command: 'pnpm run start',
     url: baseURL,
     reuseExistingServer: true,
     timeout: 120_000,

@@ -6,9 +6,7 @@ Ez a mappa tartalmazza a Husky git hook-okat.
 
 A `pre-push` hook automatikusan fut minden `git push` előtt és a következő ellenőrzéseket végzi:
 
-1. **ESLint** - Kód minőség ellenőrzés
-2. **TypeScript Type Check** - Típus ellenőrzés
-3. **Production Build** - Build teszt
+1. **Production Build (web)** - `pnpm run build:web` a monorepo gyökeréből
 
 Ha bármelyik ellenőrzés sikertelen, a push **nem fog végrehajtódni**.
 
@@ -26,19 +24,19 @@ git push --no-verify
 
 Ha a pre-push hook hibát jelez:
 
-1. **ESLint hibák:**
+1. **Lint:**
    ```bash
-   npm run lint
+   pnpm lint
    ```
 
-2. **TypeScript hibák:**
+2. **TypeScript (web):**
    ```bash
-   npx tsc --noEmit
+   pnpm exec tsc --noEmit -p apps/web
    ```
 
 3. **Build hibák:**
    ```bash
-   npm run build
+   pnpm run build:web
    ```
 
 ### Hook letiltása (fejlesztés során)

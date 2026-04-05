@@ -1,11 +1,25 @@
+import path from "path";
+import { fileURLToPath } from "url";
+import { config as loadEnv } from "dotenv";
 import type { NextConfig } from "next";
 import createNextIntlPlugin from 'next-intl/plugin';
+
+// Monorepo: load env from repository root (apps/web -> repo root is two levels up)
+const configDir = path.dirname(fileURLToPath(import.meta.url));
+const monorepoRoot = path.resolve(configDir, "..", "..");
+loadEnv({ path: path.join(monorepoRoot, ".env") });
+loadEnv({ path: path.join(monorepoRoot, ".env.local"), override: true });
+// Optional app-local overrides
+loadEnv({ path: path.join(configDir, ".env") });
+loadEnv({ path: path.join(configDir, ".env.local"), override: true });
 
 const withNextIntl = createNextIntlPlugin();
 
 const nextConfig: NextConfig = {
   // Traced production server bundle for smaller Docker images (see Dockerfile).
   output: 'standalone',
+  /** Transpile workspace TS packages when bundling the App Router (Turbopack). */
+  transpilePackages: ['@tdarts/api', '@tdarts/services', '@tdarts/schemas', '@tdarts/core'],
   serverExternalPackages: ['mongoose'],
   images: {
     remotePatterns: [

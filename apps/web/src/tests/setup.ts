@@ -1,10 +1,12 @@
+import path from 'path';
 import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import dotenv from 'dotenv';
 import { ApiTelemetryService } from '@/database/services/api-telemetry.service';
 
-// Load .env file
-dotenv.config({ path: '<rootDir>/.env' });
+// Monorepo: load root .env (apps/web/src/tests -> ../../../)
+dotenv.config({ path: path.join(__dirname, '../../../.env') });
+dotenv.config({ path: path.join(__dirname, '../../../.env.local'), override: true });
 
 let mongoServer: MongoMemoryServer | null = null;
 

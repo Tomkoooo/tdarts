@@ -1,0 +1,18 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "noEmit": true,
+    "typeRoots": [
+      "./node_modules/@types",
+      "../../node_modules/@types"
+    ],
+    "paths": {
+      "@tdarts/core": ["../../packages/core/src/index.ts"],
+      "@tdarts/services": ["../../packages/services/src/index.ts"],
+      "@tdarts/schemas": ["../../packages/schemas/src/index.ts"]
+    }
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules", "dist"]
+}

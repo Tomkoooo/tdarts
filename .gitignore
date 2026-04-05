@@ -1,7 +1,11 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
+# Turborepo
+.turbo/
+out/
+
 # dependencies
-/node_modules
+node_modules/
 /.pnp
 .pnp.*
 .yarn/*
@@ -12,16 +16,21 @@
 
 # testing
 /coverage
+coverage/
 /test-results
+test-results/
 /playwright-report
-/src/features/tests/load/artifacts/
+playwright-report/
+apps/web/src/features/tests/load/artifacts/
+**/src/features/tests/load/artifacts/
 
 # next.js
-/.next/
-/out/
+.next/
+out/
 
 # production
 /build
+apps/api/dist/
 
 # misc
 .DS_Store
@@ -49,8 +58,6 @@ next-env.d.ts
 
 docs/openapi.yaml
 docs/api-docs.md
-.pnpm
-.pnpm-store 
+.pnpm/
 .pnpm-store/
-.pnpm-store*
-/.pnpm-store
+.venv/

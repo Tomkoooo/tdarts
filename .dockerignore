@@ -2,7 +2,8 @@
 .github
 .cursor
 node_modules
-.next
+**/node_modules
+**/.next
 coverage
 dist
 build
@@ -19,16 +20,14 @@ temp
 .env
 .env.*
 !.env.example
-
-# shrink build context (faster docker build, smaller send to daemon)
 docs
-scripts
-src/tests
-src/features/tests
-playwright-report
-test-results
+**/playwright-report
+**/test-results
 **/*.test.ts
 **/*.test.tsx
 **/*.spec.ts
 **/*.spec.tsx
 patch_h2h*.js
+.venv
+.pnpm-store
+out/

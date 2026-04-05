@@ -1,0 +1,128 @@
+config:
+  # Point to the standalone tRPC API server (or co-hosted Next bridge)
+  # Override via: export API_TARGET_URL=https://api.tdarts.example.com
+  target: "{{ $processEnvironment.API_TARGET_URL || 'http://localhost:4000' }}"
+  phases:
+    # Warmup — let JIT and connection pool stabilize
+    - duration: 30
+      arrivalRate: 2
+      name: warmup
+    # Ramp to peak observed QPS from Server Action telemetry
+    # auth.login: ~5 req/min, search.global: ~60 req/min, tournament.getPageData: ~120 req/min
+    - duration: 60
+      arrivalRate: 5
+      rampTo: 20
+      name: ramp_to_peak
+    - duration: 120
+      arrivalRate: 20
+      name: sustain_peak
+    # Spike test
+    - duration: 30
+      arrivalRate: 50
+      name: spike
+  defaults:
+    headers:
+      # Tier 1 — mobile app credentials
+      x-client-id: "{{ $processEnvironment.API_MOBILE_CLIENT_ID }}"
+      x-client-secret: "{{ $processEnvironment.API_MOBILE_CLIENT_SECRET }}"
+      content-type: "application/json"
+  http:
+    timeout: 10
+  ensure:
+    # SLA from plan: p95 < 1500ms, error rate < 2%
+    thresholds:
+      - "http.response_time.p95": 1500
+      - "http.response_time.p99": 3000
+      - "errors.rate": 0.02
+      - "vusers.failed": 5%
+
+scenarios:
+  # -------------------------------------------------------------------------
+  # auth.login  (~5 req/min weight, high priority, real user flows)
+  # -------------------------------------------------------------------------
+  - name: auth_login
+    weight: 5
+    flow:
+      - post:
+          url: "/trpc/auth.login"
+          json:
+            "0":
+              json:
+                email: "loadtest-{{ $randomNumber(1,100) }}@example.com"
+                password: "WrongPassword123"
+          capture:
+            - json: "$[0].result.data.token"
+              as: "user_token"
+          expect:
+            # auth.login with wrong password should return BAD_REQUEST or ok — just not 500
+            - statusCode: [200]
+
+  # -------------------------------------------------------------------------
+  # auth.ping   (heartbeat for Tier 1 validity, low weight)
+  # -------------------------------------------------------------------------
+  - name: auth_ping
+    weight: 5
+    flow:
+      - get:
+          url: "/trpc/auth.ping"
+          expect:
+            - statusCode: 200
+            - hasProperty: "result"
+
+  # -------------------------------------------------------------------------
+  # search.global  (~60 req/min — highest traffic route)
+  # -------------------------------------------------------------------------
+  - name: search_global
+    weight: 40
+    flow:
+      - get:
+          url: "/trpc/search.global?input=%7B%22json%22%3A%7B%22q%22%3A%22darts%22%2C%22tab%22%3A%22tournaments%22%7D%7D"
+          expect:
+            - statusCode: 200
+      - get:
+          url: "/trpc/search.global?input=%7B%22json%22%3A%7B%22q%22%3A%22club%22%2C%22tab%22%3A%22clubs%22%7D%7D"
+          expect:
+            - statusCode: 200
+
+  # -------------------------------------------------------------------------
+  # tournament.getPageData  (~120 req/min — highest sustained throughput)
+  # -------------------------------------------------------------------------
+  - name: tournament_page_data
+    weight: 35
+    flow:
+      - get:
+          url: "/trpc/tournament.getPageData?input=%7B%22json%22%3A%7B%22code%22%3A%22TEST001%22%7D%7D"
+          expect:
+            - statusCode: 200
+
+  # -------------------------------------------------------------------------
+  # tournament.getLite  (card/list views)
+  # -------------------------------------------------------------------------
+  - name: tournament_lite
+    weight: 10
+    flow:
+      - get:
+          url: "/trpc/tournament.getLite?input=%7B%22json%22%3A%7B%22code%22%3A%22TEST001%22%7D%7D"
+          expect:
+            - statusCode: 200
+
+  # -------------------------------------------------------------------------
+  # club.getSummary  (club cards)
+  # -------------------------------------------------------------------------
+  - name: club_summary
+    weight: 5
+    flow:
+      - get:
+          url: "/trpc/club.getSummary?input=%7B%22json%22%3A%7B%22clubId%22%3A%22{{ $processEnvironment.LOAD_TEST_CLUB_ID }}%22%7D%7D"
+          expect:
+            - statusCode: 200
+
+# Run guide:
+# 1) Start API: pnpm --filter @tdarts/api dev
+# 2) Set credentials:
+#    export API_MOBILE_CLIENT_ID='your-client-id'
+#    export API_MOBILE_CLIENT_SECRET='your-client-secret'
+#    export API_TARGET_URL='http://localhost:4000'
+#    export LOAD_TEST_CLUB_ID='your-real-club-id'
+# 3) Run: artillery run apps/web/src/features/tests/load/load-test-trpc.yaml
+# 4) For output:  --output apps/web/src/features/tests/load/results-trpc.json
