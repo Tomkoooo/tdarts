@@ -6,9 +6,8 @@ RUN corepack enable pnpm
 # --- prune: extract only what "web" needs ---
 FROM base AS pruner
 WORKDIR /app
-RUN pnpm add -g turbo@^2
 COPY . .
-RUN turbo prune web --docker
+RUN pnpm dlx turbo@^2 prune web --docker
 
 # --- deps: install pruned dependencies ---
 FROM base AS deps
