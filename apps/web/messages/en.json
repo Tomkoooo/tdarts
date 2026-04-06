@@ -134,7 +134,9 @@
     "válaszd_ki_a_78": "Wählen Sie das Turnierformat und die Regeln",
     "átlag_19": "Durchschnitt",
     "újrapróbálkozás": "Erneuter Versuch",
-    "pleaseWait": "Please wait while the page is loading."
+    "pleaseWait": "Please wait while the page is loading.",
+    "honor_avg_tooltip": "Last 10 closed matches average: {avg}",
+    "honor_badge_tooltip": "{title} honor"
   },
   "Navbar": {
     "tournaments": "Competitions",

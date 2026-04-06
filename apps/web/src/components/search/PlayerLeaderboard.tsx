@@ -8,6 +8,11 @@ import { cn } from "@/lib/utils"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { SmartAvatar } from "@/components/ui/smart-avatar"
 import CountryFlag from "@/components/ui/country-flag"
+import HonorAverageBadge from "@/components/player/HonorAverageBadge"
+import { getPlayerHonorAverage } from "@/lib/honorAvgBadge"
+import { useTranslations } from "next-intl"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { sortHonorsByPriority } from "@/features/profile/lib/honorSorting"
 
 interface PlayerLeaderboardProps {
     players: any[];
@@ -18,6 +23,8 @@ interface PlayerLeaderboardProps {
 
 export function PlayerLeaderboard({ players, isOac, rankingType, onRankingChange }: PlayerLeaderboardProps) {
     const [selectedPlayer, setSelectedPlayer] = useState<any | null>(null)
+    const tCommon = useTranslations("Common");
+    const hasCommonKey = (key: string) => (tCommon as unknown as { has?: (k: string) => boolean }).has?.(key) ?? false
 
     // Derived active tab for internal logic if needed, but we rely on parent
     const activeRanking = rankingType || 'oacMmr';
@@ -83,22 +90,46 @@ export function PlayerLeaderboard({ players, isOac, rankingType, onRankingChange
                                         )}
                                     </div>
                                     <div className="flex flex-wrap gap-2 mb-1">
-                                        {player.honors?.map((honor: any, i: number) => (
-                                            <Badge 
-                                                key={`${honor.title}-${honor.year}-${i}`} 
-                                                variant="secondary" 
-                                                className={cn(
-                                                "min-w-0 max-w-full gap-1 overflow-hidden px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider h-auto",
-                                                honor.type === 'rank' ? "bg-amber-500/10 text-amber-600 border-amber-500/20" : 
-                                                honor.type === 'tournament' ? "bg-indigo-500/10 text-indigo-600 border-indigo-500/20" : 
-                                                "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
-                                                )}
-                                            >
-                                                {honor.type === 'rank' && <IconMedal className="h-3 w-3" /> }
-                                                {honor.type === 'tournament' && <IconTrophy className="h-3 w-3" /> }
-                                                <span className="truncate max-w-[120px] sm:max-w-[180px]">{honor.title}</span>
-                                            </Badge>
-                                        ))}
+                                        {(() => {
+                                          const honorAverage = getPlayerHonorAverage(player);
+                                          return (
+                                            <>
+                                        {sortHonorsByPriority(player.honors as any[])?.map((honor: any, i: number) => {
+                                            const honorTooltip = honor.description || (hasCommonKey("honor_badge_tooltip")
+                                              ? tCommon("honor_badge_tooltip", { title: honor.title })
+                                              : `${honor.title} honor`);
+                                            return (
+                                              <TooltipProvider key={`${honor.title}-${honor.year}-${i}`}>
+                                                <Tooltip>
+                                                  <TooltipTrigger asChild>
+                                                    <Badge
+                                                      variant="secondary"
+                                                      className={cn(
+                                                      "min-w-0 max-w-full gap-1 overflow-hidden px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider h-auto",
+                                                      honor.type === 'rank' ? "bg-amber-500/10 text-amber-600 border-amber-500/20" :
+                                                      honor.type === 'tournament' ? "bg-indigo-500/10 text-indigo-600 border-indigo-500/20" :
+                                                      "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
+                                                      )}
+                                                    >
+                                                      {honor.type === 'rank' && <IconMedal className="h-3 w-3" /> }
+                                                      {honor.type === 'tournament' && <IconTrophy className="h-3 w-3" /> }
+                                                      <span className="truncate max-w-[120px] sm:max-w-[180px]">{honor.title}</span>
+                                                    </Badge>
+                                                  </TooltipTrigger>
+                                                  <TooltipContent>{honorTooltip}</TooltipContent>
+                                                </Tooltip>
+                                              </TooltipProvider>
+                                            );
+                                        })}
+                                        <HonorAverageBadge
+                                          average={honorAverage}
+                                          tooltip={honorAverage ? (hasCommonKey("honor_avg_tooltip")
+                                            ? tCommon("honor_avg_tooltip", { avg: honorAverage.toFixed(2) })
+                                            : `Last 10 closed matches average: ${honorAverage.toFixed(2)}`) : undefined}
+                                        />
+                                            </>
+                                          );
+                                        })()}
                                     </div>
                                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                         {(player.type === 'pair' || player.type === 'team') && (

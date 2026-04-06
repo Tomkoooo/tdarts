@@ -359,6 +359,11 @@ describe('Simple Tournament Lifecycle Test', () => {
     const finishedTournament = await TournamentModel.findById(tournamentId);
     expect(finishedTournament?.tournamentSettings?.status).toBe('finished');
     expect(finishedTournament?.tournamentPlayers?.length).toBe(TEST_CONFIG.playerCount);
+    const sampleTournamentPlayer = finishedTournament?.tournamentPlayers?.[0];
+    if (sampleTournamentPlayer?.playerReference) {
+      const samplePlayer = await PlayerModel.findById(sampleTournamentPlayer.playerReference);
+      expect(Number.isFinite(Number(samplePlayer?.stats?.last10ClosedAvg))).toBe(true);
+    }
 
     const tpSample = (finishedTournament?.tournamentPlayers || []).find(
       (p: any) => p.groupStats != null && typeof p.groupStats.matchesWon === 'number'

@@ -84,6 +84,16 @@ type PlayerTranslations = {
   team: string;
   matches: string;
   legs: string;
+  honorAvgTooltip: string;
+  honorBadgeTooltip: string;
+  honorsSectionTitle: string;
+  honorsCategorySpecial: string;
+  honorsCategoryRank: string;
+  honorsCategoryTournament: string;
+  honorsEmptyTitle: string;
+  honorsEmptySubtitle: string;
+  honorsShowMore: string;
+  honorsShowLess: string;
 };
 
 const translations: Record<PlayerLocale, PlayerTranslations> = {
@@ -171,6 +181,16 @@ const translations: Record<PlayerLocale, PlayerTranslations> = {
     team: "Csapat",
     matches: "Meccsek",
     legs: "Legek",
+    honorAvgTooltip: "Utolsó 10 lezárt meccs átlaga: {avg}",
+    honorBadgeTooltip: "{title} elismerés",
+    honorsSectionTitle: "Elismerések és eredmények",
+    honorsCategorySpecial: "Különleges elismerések",
+    honorsCategoryRank: "Rangsor eredmények",
+    honorsCategoryTournament: "Verseny eredmények",
+    honorsEmptyTitle: "Még nincsenek elismerések",
+    honorsEmptySubtitle: "Az első kiemelkedő eredmények itt fognak megjelenni.",
+    honorsShowMore: "Továbbiak",
+    honorsShowLess: "Kevesebb",
   },
   en: {
     headToHeadTitle: "Head-to-Head",
@@ -256,6 +276,16 @@ const translations: Record<PlayerLocale, PlayerTranslations> = {
     team: "Team",
     matches: "Matches",
     legs: "Legs",
+    honorAvgTooltip: "Last 10 closed matches average: {avg}",
+    honorBadgeTooltip: "{title} honor",
+    honorsSectionTitle: "Honors & Achievements",
+    honorsCategorySpecial: "Special Honors",
+    honorsCategoryRank: "Ranking Achievements",
+    honorsCategoryTournament: "Tournament Wins",
+    honorsEmptyTitle: "No honors yet",
+    honorsEmptySubtitle: "Top achievements will appear here once earned.",
+    honorsShowMore: "Show more",
+    honorsShowLess: "Show less",
   },
 };
 

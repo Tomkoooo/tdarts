@@ -38,6 +38,7 @@ export interface PlayerSeasonStats {
         legsLost: number;
         avg: number;
         firstNineAvg?: number;
+        last10ClosedAvg?: number;
         oneEightiesCount: number;
         highestCheckout: number;
         averagePosition: number;
@@ -94,6 +95,7 @@ export interface PlayerDocument {
         legsLost: number;
         avg: number;
         firstNineAvg?: number;
+        last10ClosedAvg?: number;
         oneEightiesCount: number;
         highestCheckout: number;
         averagePosition: number;
@@ -131,6 +133,7 @@ export interface Player {
         legsLost: number;
         avg: number;
         firstNineAvg?: number;
+        last10ClosedAvg?: number;
         oneEightiesCount: number;
         highestCheckout: number;
         averagePosition: number;

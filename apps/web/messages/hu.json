@@ -134,7 +134,9 @@
     "válaszd_ki_a_78": "Wählen Sie das Turnierformat und die Regeln",
     "átlag_19": "Durchschnitt",
     "újrapróbálkozás": "Újrapróbálkozás",
-    "pleaseWait": "Kérjük várj, az oldal betöltése folyamatban van."
+    "pleaseWait": "Kérjük várj, az oldal betöltése folyamatban van.",
+    "honor_avg_tooltip": "Utolsó 10 lezárt meccs átlaga: {avg}",
+    "honor_badge_tooltip": "{title} elismerés"
   },
   "Navbar": {
     "tournaments": "Versenyek",

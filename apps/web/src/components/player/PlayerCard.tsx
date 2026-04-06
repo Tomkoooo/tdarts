@@ -8,6 +8,10 @@ import { Badge } from "@/components/ui/Badge"
 import { Separator } from "@/components/ui/separator"
 import { cn } from "@/lib/utils"
 import CountryFlag from "@/components/ui/country-flag"
+import HonorAverageBadge from "@/components/player/HonorAverageBadge"
+import { getPlayerHonorAverage } from "@/lib/honorAvgBadge"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { sortHonorsByPriority } from "@/features/profile/lib/honorSorting"
 
 interface PlayerCardProps {
   player: Player
@@ -29,7 +33,7 @@ const topRankStyles: Record<
 }
 
 const PlayerCard: React.FC<PlayerCardProps> = ({ player, onClick, rank, showGlobalRank = false }) => {
-    const t = useTranslations("Common");
+  const t = useTranslations("Common");
   const mmr = (player as any).mmr ?? player.stats?.mmr ?? 800
 
   const mmrTier =
@@ -44,6 +48,14 @@ const PlayerCard: React.FC<PlayerCardProps> = ({ player, onClick, rank, showGlob
     })()
 
   const globalRank = (player as any).globalRank
+  const honorAverage = getPlayerHonorAverage(player)
+  const sortedHonors = sortHonorsByPriority(player.honors)
+  const hasCommonKey = (key: string) => (t as unknown as { has?: (k: string) => boolean }).has?.(key) ?? false
+  const avgTooltip = honorAverage
+    ? hasCommonKey("honor_avg_tooltip")
+      ? t("honor_avg_tooltip", { avg: honorAverage.toFixed(2) })
+      : `Last 10 closed matches average: ${honorAverage.toFixed(2)}`
+    : undefined
   const hasRankBadge = typeof rank === "number" && rank > 0
   const rankStyle = hasRankBadge && topRankStyles[rank]
 
@@ -104,23 +116,36 @@ const PlayerCard: React.FC<PlayerCardProps> = ({ player, onClick, rank, showGlob
                   )}
                 </Badge>
                 {/* Honors / Titles */}
-                {player.honors?.map((honor, i) => (
-                  <Badge 
-                    key={`${honor.title}-${honor.year}-${i}`} 
-                    variant="secondary" 
-                    className={cn(
-                      "min-w-0 max-w-full gap-1 overflow-hidden px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider h-auto",
-                      honor.type === 'rank' ? "bg-amber-500/10 text-amber-600 border-amber-500/20" : 
-                      honor.type === 'tournament' ? "bg-indigo-500/10 text-indigo-600 border-indigo-500/20" : 
-                      "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
-                    )}
-                    title={honor.description}
-                  >
-                    {honor.type === 'rank' && <IconMedal className="h-3 w-3" />}
-                    {honor.type === 'tournament' && <IconTrophy className="h-3 w-3" />}
-                    <span className="truncate max-w-[120px] sm:max-w-[180px]">{honor.title}</span>
-                  </Badge>
-                ))}
+                {sortedHonors.map((honor, i) => {
+                  const honorTooltip =
+                    honor.description ||
+                    (hasCommonKey("honor_badge_tooltip")
+                      ? t("honor_badge_tooltip", { title: honor.title })
+                      : `${honor.title} honor`);
+                  return (
+                    <TooltipProvider key={`${honor.title}-${honor.year}-${i}`}>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Badge
+                            variant="secondary"
+                            className={cn(
+                              "min-w-0 max-w-full gap-1 overflow-hidden px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider h-auto",
+                              honor.type === 'rank' ? "bg-amber-500/10 text-amber-600 border-amber-500/20" :
+                              honor.type === 'tournament' ? "bg-indigo-500/10 text-indigo-600 border-indigo-500/20" :
+                              "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
+                            )}
+                          >
+                            {honor.type === 'rank' && <IconMedal className="h-3 w-3" />}
+                            {honor.type === 'tournament' && <IconTrophy className="h-3 w-3" />}
+                            <span className="truncate max-w-[120px] sm:max-w-[180px]">{honor.title}</span>
+                          </Badge>
+                        </TooltipTrigger>
+                        <TooltipContent>{honorTooltip}</TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  );
+                })}
+                <HonorAverageBadge average={honorAverage} tooltip={avgTooltip} />
               </div>
             </div>
           </div>

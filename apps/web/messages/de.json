@@ -120,7 +120,9 @@
     "átlag_19": "Durchschnitt",
     "újrapróbálkozás": "Erneuter Versuch",
     "pleaseWait": "Bitte warten Sie, die Seite wird geladen.",
-    "loading": "Laden..."
+    "loading": "Laden...",
+    "honor_avg_tooltip": "Durchschnitt der letzten 10 abgeschlossenen Spiele: {avg}",
+    "honor_badge_tooltip": "{title}-Auszeichnung"
   },
   "Index": {
     "title": "tDarts – Der Darts-Turniermanager"

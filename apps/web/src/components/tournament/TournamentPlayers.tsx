@@ -42,6 +42,10 @@ import LegsViewModal from "@/components/tournament/LegsViewModal"
 import TeamRegistrationModal from "@/components/tournament/TeamRegistrationModal"
 import HeadToHeadModal from "@/components/tournament/HeadToHeadModal"
 import CountryFlag from "@/components/ui/country-flag"
+import HonorAverageBadge from "@/components/player/HonorAverageBadge"
+import { getPlayerHonorAverage } from "@/lib/honorAvgBadge"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { sortHonorsByPriority } from "@/features/profile/lib/honorSorting"
 import {
   addToWaitingListClientAction,
   addTournamentPlayerClientAction,
@@ -108,6 +112,8 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
   onRefresh,
 }) => {
   const tTour = useTranslations("Tournament")
+  const tCommon = useTranslations("Common")
+  const hasCommonKey = (key: string) => (tCommon as unknown as { has?: (k: string) => boolean }).has?.(key) ?? false
   const tp = (key: string, values?: any) => tTour(`players.${key}`, values)
   const tr = (key: string, values?: any) => tTour(`registration.${key}`, values)
   const tw = (key: string, values?: any) => tTour(`waiting_list.${key}`, values)
@@ -934,7 +940,8 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
                       const statusMeta = playerStatusBadge[status]
                       const isCurrentUser = localUserPlayerId && (player.playerReference?._id?.toString() === localUserPlayerId.toString() || player._id?.toString() === localUserPlayerId.toString())
                       const rowNumber = i + 1;
-                      const honorsList = ((player.playerReference?.honors || player.honors || []) as any[])
+                      const honorsList = sortHonorsByPriority(((player.playerReference?.honors || player.honors || []) as any[]))
+                      const honorAverage = getPlayerHonorAverage(player)
                       const rowKey = playerId ? `player-${playerId}` : `fallback-${name}-${i}`;
 
                       return (
@@ -983,31 +990,60 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
                                       {tTour(statusMeta.labelKey)}
                                     </Badge>
                                   )}
-                                  {honorsList.length > 0 && honorsList.slice(0, 2).map((honor: any, i: number) => (
-                                    <Badge
-                                      key={`${honor.title}-${honor.year}-${i}`}
-                                      variant="outline"
-                                      className={cn(
-                                        "inline-flex items-center gap-1 rounded-full px-1.5 py-0 text-[9px] font-bold",
-                                        honor.type === "rank"
-                                          ? "border-amber-500/20 bg-amber-500/10 text-amber-600"
-                                          : honor.type === "tournament"
-                                          ? "border-indigo-500/20 bg-indigo-500/10 text-indigo-600"
-                                          : "border-emerald-500/20 bg-emerald-500/10 text-emerald-600",
-                                      )}
-                                      title={honor.description || honor.title}
-                                    >
-                                      {honor.type === "rank" ? <IconMedal className="h-3 w-3" /> : null}
-                                      {honor.type === "tournament" ? <IconTrophy className="h-3 w-3" /> : null}
-                                      {honor.type !== "rank" && honor.type !== "tournament" ? <IconCheck className="h-3 w-3" /> : null}
-                                      <span className="truncate max-w-[100px]">{honor.title}</span>
-                                    </Badge>
-                                  ))}
+                                  {honorsList.length > 0 && honorsList.slice(0, 2).map((honor: any, i: number) => {
+                                    const honorTooltip = honor.description || (hasCommonKey("honor_badge_tooltip")
+                                      ? tCommon("honor_badge_tooltip", { title: honor.title })
+                                      : `${honor.title} honor`);
+                                    return (
+                                      <TooltipProvider key={`${honor.title}-${honor.year}-${i}`}>
+                                        <Tooltip>
+                                          <TooltipTrigger asChild>
+                                            <Badge
+                                              variant="outline"
+                                              className={cn(
+                                                "inline-flex items-center gap-1 rounded-full px-1.5 py-0 text-[9px] font-bold",
+                                                honor.type === "rank"
+                                                  ? "border-amber-500/20 bg-amber-500/10 text-amber-600"
+                                                  : honor.type === "tournament"
+                                                  ? "border-indigo-500/20 bg-indigo-500/10 text-indigo-600"
+                                                  : "border-emerald-500/20 bg-emerald-500/10 text-emerald-600",
+                                              )}
+                                            >
+                                              {honor.type === "rank" ? <IconMedal className="h-3 w-3" /> : null}
+                                              {honor.type === "tournament" ? <IconTrophy className="h-3 w-3" /> : null}
+                                              {honor.type !== "rank" && honor.type !== "tournament" ? <IconCheck className="h-3 w-3" /> : null}
+                                              <span className="truncate max-w-[100px]">{honor.title}</span>
+                                            </Badge>
+                                          </TooltipTrigger>
+                                          <TooltipContent>{honorTooltip}</TooltipContent>
+                                        </Tooltip>
+                                      </TooltipProvider>
+                                    );
+                                  })}
                                   {honorsList.length > 2 ? (
-                                    <Badge variant="outline" className="px-1.5 py-0 text-[9px] font-black">
-                                      +{honorsList.length - 2}
-                                    </Badge>
+                                    <TooltipProvider>
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <Badge variant="outline" className="px-1.5 py-0 text-[9px] font-black">
+                                            +{honorsList.length - 2}
+                                          </Badge>
+                                        </TooltipTrigger>
+                                        <TooltipContent className="max-w-[280px]">
+                                          {(honorsList
+                                            .slice(2)
+                                            .map((h: any) => `${h.title}${h.year ? ` (${h.year})` : ""}`)
+                                            .join(", ")) || "..."}
+                                        </TooltipContent>
+                                      </Tooltip>
+                                    </TooltipProvider>
                                   ) : null}
+                                  <HonorAverageBadge
+                                    average={honorAverage}
+                                    className="px-1.5 py-0 text-[9px]"
+                                    tooltip={honorAverage ? (hasCommonKey("honor_avg_tooltip")
+                                      ? tCommon("honor_avg_tooltip", { avg: honorAverage.toFixed(2) })
+                                      : `Last 10 closed matches average: ${honorAverage.toFixed(2)}`) : undefined}
+                                  />
                                   {/* Show team members if this is a team/pair */}
                                   {(player.playerReference?.type === 'pair' || player.playerReference?.type === 'team') && 
                                   player.playerReference?.members && 

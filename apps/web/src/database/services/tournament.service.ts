@@ -120,6 +120,92 @@ export class TournamentService {
 
         return result;
     }
+
+    private static async recalculateLast10ClosedAveragesBulk(playerIds: string[]): Promise<Map<string, number>> {
+        const result = new Map<string, number>();
+        if (playerIds.length === 0) return result;
+
+        const normalizedIds = Array.from(new Set(playerIds.map((id) => String(id))));
+        for (const playerId of normalizedIds) {
+            result.set(playerId, 0);
+        }
+
+        type AggregateRow = {
+            _id: string;
+            values?: number[];
+        };
+
+        const rows = await MatchModel.aggregate<AggregateRow>([
+            {
+                $match: {
+                    status: 'finished',
+                    $or: [
+                        { 'player1.playerId': { $in: normalizedIds } },
+                        { 'player2.playerId': { $in: normalizedIds } },
+                    ],
+                },
+            },
+            {
+                $project: {
+                    tournamentRef: 1,
+                    createdAt: 1,
+                    sides: [
+                        { playerId: '$player1.playerId', average: '$player1.average' },
+                        { playerId: '$player2.playerId', average: '$player2.average' },
+                    ],
+                },
+            },
+            { $unwind: '$sides' },
+            {
+                $match: {
+                    'sides.playerId': { $in: normalizedIds },
+                    'sides.average': { $gt: 0 },
+                },
+            },
+            {
+                $lookup: {
+                    from: 'tournaments',
+                    let: { tournamentId: '$tournamentRef' },
+                    pipeline: [
+                        { $match: { $expr: { $eq: ['$_id', '$$tournamentId'] } } },
+                        { $match: { 'tournamentSettings.status': 'finished' } },
+                        { $project: { _id: 1 } },
+                    ],
+                    as: 'tournamentMatch',
+                },
+            },
+            {
+                $match: {
+                    tournamentMatch: { $ne: [] },
+                },
+            },
+            { $sort: { 'sides.playerId': 1, createdAt: -1 } },
+            {
+                $group: {
+                    _id: '$sides.playerId',
+                    values: { $push: '$sides.average' },
+                },
+            },
+            {
+                $project: {
+                    values: { $slice: ['$values', 10] },
+                },
+            },
+        ]);
+
+        for (const row of rows) {
+            const playerId = String(row._id);
+            const values = (row.values || []).map((value) => Number(value)).filter((value) => Number.isFinite(value) && value > 0);
+            if (values.length === 0) {
+                result.set(playerId, 0);
+                continue;
+            }
+            const avg = values.reduce((sum, value) => sum + value, 0) / values.length;
+            result.set(playerId, Math.round(avg * 100) / 100);
+        }
+
+        return result;
+    }
     // Initialize indexes when the service is first used
     private static indexesInitialized = false;
     
@@ -5459,7 +5545,10 @@ export class TournamentService {
                 const playersById = new Map<string, any>(
                     playerDocs.map((playerDoc) => [playerDoc._id.toString(), playerDoc]),
                 );
-                const seasonalAveragesByPlayer = await this.recalculateCurrentSeasonAveragesBulk(playerIds);
+                const [seasonalAveragesByPlayer, recentClosedAveragesByPlayer] = await Promise.all([
+                    this.recalculateCurrentSeasonAveragesBulk(playerIds),
+                    this.recalculateLast10ClosedAveragesBulk(playerIds),
+                ]);
                 const mutatedPlayers = new Set<string>();
 
                 for (const [playerId, stats] of playerStats) {
@@ -5589,6 +5678,7 @@ export class TournamentService {
                             || { avg: 0, firstNineAvg: 0 };
                         player.stats.avg = seasonAverages.avg;
                         player.stats.firstNineAvg = seasonAverages.firstNineAvg;
+                        player.stats.last10ClosedAvg = recentClosedAveragesByPlayer.get(playerId) || 0;
                         mutatedPlayers.add(playerId);
                     }
                 }
@@ -6990,13 +7080,16 @@ export class TournamentService {
             }
 
             if (mutatedPlayers.size > 0) {
-                const seasonalAveragesByPlayer = await this.recalculateCurrentSeasonAveragesBulk(
-                    Array.from(mutatedPlayers.keys()),
-                );
+                const playerIds = Array.from(mutatedPlayers.keys());
+                const [seasonalAveragesByPlayer, recentClosedAveragesByPlayer] = await Promise.all([
+                    this.recalculateCurrentSeasonAveragesBulk(playerIds),
+                    this.recalculateLast10ClosedAveragesBulk(playerIds),
+                ]);
                 for (const [playerId, player] of mutatedPlayers.entries()) {
                     const seasonAverages = seasonalAveragesByPlayer.get(playerId) || { avg: 0, firstNineAvg: 0 };
                     player.stats.avg = seasonAverages.avg;
                     player.stats.firstNineAvg = seasonAverages.firstNineAvg;
+                    player.stats.last10ClosedAvg = recentClosedAveragesByPlayer.get(playerId) || 0;
                 }
 
                 const bulkOpts: mongoose.mongo.BulkWriteOptions = { ordered: false };

@@ -41,6 +41,9 @@ import {
   Cell,
 } from "recharts"
 import { TournamentHistory, PlayerHonor } from "@/interface/player.interface"
+import HonorAverageBadge from "@/components/player/HonorAverageBadge"
+import { getPlayerHonorAverage } from "@/lib/honorAvgBadge"
+import HonorsSection from "@/features/profile/ui/HonorsSection"
 
 interface PlayerStatsData {
   hasPlayer: boolean
@@ -190,6 +193,7 @@ export function PlayerStatisticsSection({
   
   const previousSeasons = React.useMemo(() => playerStats?.player?.previousSeasons || [], [playerStats]);
   const honors = React.useMemo(() => playerStats?.player?.honors || [], [playerStats]);
+  const honorAverage = React.useMemo(() => getPlayerHonorAverage(playerStats?.player), [playerStats]);
   const currentYear = React.useMemo(() => new Date().getFullYear(), []);
   
   const availableYears = React.useMemo(() => {
@@ -586,16 +590,10 @@ export function PlayerStatisticsSection({
             <CountryFlag countryCode={playerStats.player.country} className="text-base" />
             </CardTitle>
             <div className="flex flex-wrap gap-2 pt-1">
-                {honors.map((honor, i) => (
-                    <Badge
-                      key={i}
-                      variant="secondary"
-                      className="min-w-0 max-w-full gap-1 overflow-hidden bg-amber-500/10 text-amber-600 border-amber-500/20 px-2 py-0.5 text-[10px] font-black uppercase tracking-tighter h-auto"
-                    >
-                        <IconMedal size={10} />
-                        <span className="truncate max-w-[120px] sm:max-w-[180px]">{honor.title}</span>
-                    </Badge>
-                ))}
+              <HonorAverageBadge
+                average={honorAverage}
+                tooltip={honorAverage ? t.honorAvgTooltip.replace("{avg}", honorAverage.toFixed(2)) : undefined}
+              />
             </div>
         </div>
         
@@ -618,6 +616,18 @@ export function PlayerStatisticsSection({
       </CardHeader>
       
       <CardContent className="space-y-8 px-0">
+        <HonorsSection
+          honors={honors}
+          text={{
+            honorsSectionTitle: t.honorsSectionTitle,
+            honorsCategorySpecial: t.honorsCategorySpecial,
+            honorsCategoryRank: t.honorsCategoryRank,
+            honorsCategoryTournament: t.honorsCategoryTournament,
+            honorsEmptyTitle: t.honorsEmptyTitle,
+            honorsEmptySubtitle: t.honorsEmptySubtitle,
+          }}
+        />
+
         {/* Head-to-Head Section */}
         <div className="space-y-8">
           {/* Search Header */}

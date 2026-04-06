@@ -27,6 +27,10 @@ import { cn } from "@/lib/utils"
 import { showErrorToast } from "@/lib/toastUtils"
 import { SmartAvatar } from "@/components/ui/smart-avatar"
 import CountryFlag from "@/components/ui/country-flag"
+import HonorAverageBadge from "@/components/player/HonorAverageBadge"
+import { getPlayerHonorAverage } from "@/lib/honorAvgBadge"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { sortHonorsByPriority } from "@/features/profile/lib/honorSorting"
 
 interface PlayerStatsModalProps {
   player: Player | null
@@ -37,6 +41,8 @@ interface PlayerStatsModalProps {
 
 const PlayerStatsModal: React.FC<PlayerStatsModalProps> = ({ player, onClose, isOacContext }) => {
   const tTour = useTranslations("Tournament");
+  const tCommon = useTranslations("Common");
+  const hasCommonKey = (key: string) => (tCommon as unknown as { has?: (k: string) => boolean }).has?.(key) ?? false
   const t = (key: string, values?: any) => tTour(`player_stats_modal.${key}`, values);
   const tStats = (key: string, values?: any) => tTour(`statistics.${key}`, values);
   const [activePlayer, setActivePlayer] = React.useState<Player | null>(player)
@@ -111,7 +117,8 @@ const PlayerStatsModal: React.FC<PlayerStatsModalProps> = ({ player, onClose, is
   const isTeam = displayPlayer?.type === 'pair' || displayPlayer?.type === 'team'
   const members = displayPlayer?.members || []
   const previousSeasons = React.useMemo(() => displayPlayer?.previousSeasons || [], [displayPlayer]);
-  const honors = React.useMemo(() => displayPlayer?.honors || [], [displayPlayer]);
+  const honors = React.useMemo(() => sortHonorsByPriority(displayPlayer?.honors || []), [displayPlayer]);
+  const honorAverage = React.useMemo(() => getPlayerHonorAverage(displayPlayer), [displayPlayer]);
   const currentYear = React.useMemo(() => new Date().getFullYear(), []);
 
   const availableYears = React.useMemo(() => {
@@ -335,16 +342,38 @@ const PlayerStatsModal: React.FC<PlayerStatsModalProps> = ({ player, onClose, is
               </li>
             </ul>
 
-            {honors.length > 0 && (
+            {(honors.length > 0 || Boolean(honorAverage)) && (
               <div className="mt-8 pt-6 border-t border-border">
                 <h4 className="text-[10px] uppercase font-bold tracking-[0.2em] text-muted-foreground mb-4">Medals & Awards</h4>
                 <div className="flex flex-wrap gap-2">
-                  {honors.map((h, i) => (
-                    <Badge key={i} variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-500/20 text-[9px] uppercase tracking-wider py-1 font-black">
-                      <IconMedal className="w-3 h-3 mr-1" />
-                      {h.title}
-                    </Badge>
-                  ))}
+                  {honors.map((h, i) => {
+                    const honorTooltip = h.description || (hasCommonKey("honor_badge_tooltip")
+                      ? tCommon("honor_badge_tooltip", { title: h.title })
+                      : `${h.title} honor`);
+                    return (
+                      <TooltipProvider key={i}>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Badge
+                              variant="outline"
+                              className="bg-amber-500/10 text-amber-600 border-amber-500/20 text-[9px] uppercase tracking-wider py-1 font-black"
+                            >
+                              <IconMedal className="w-3 h-3 mr-1" />
+                              {h.title}
+                            </Badge>
+                          </TooltipTrigger>
+                          <TooltipContent>{honorTooltip}</TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    );
+                  })}
+                  <HonorAverageBadge
+                    average={honorAverage}
+                    className="text-[9px] py-1"
+                    tooltip={honorAverage ? (hasCommonKey("honor_avg_tooltip")
+                      ? tCommon("honor_avg_tooltip", { avg: honorAverage.toFixed(2) })
+                      : `Last 10 closed matches average: ${honorAverage.toFixed(2)}`) : undefined}
+                  />
                 </div>
               </div>
             )}
