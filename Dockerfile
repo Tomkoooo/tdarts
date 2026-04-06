@@ -29,6 +29,7 @@ ENV NEXT_PUBLIC_OAC_STRIPE_PUBLISHABLE_KEY=pk_test
 ENV OAC_SZAMLAZZ_KEY=asd
 COPY --from=deps /app/ .
 COPY --from=pruner /app/out/full/ .
+COPY tsconfig.json ./tsconfig.json
 RUN pnpm turbo build --filter=web
 
 # --- run: standalone output ---
