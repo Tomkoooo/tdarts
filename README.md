@@ -33,3 +33,35 @@ You may not apply legal terms or technological measures that legally restrict ot
 
 **Important note**:  
 This is **not** an approved Open Source license according to the Open Source Initiative (OSI), because it prohibits commercial use.
+
+---
+
+## Monorepo (Turborepo + pnpm)
+
+This repository is a [Turborepo](https://turbo.build/) monorepo using [pnpm workspaces](https://pnpm.io/workspaces).
+
+### Layout
+
+- `apps/web` — Next.js 16 application (production Docker image builds from here via root `Dockerfile`)
+- `apps/api` — standalone tRPC API server (`@tdarts/api`; Docker: root `Dockerfile.api`; docs: [OpenAPI](docs/api/openapi.md), [Portainer / GHCR](docs/api/portainer-ghcr.md))
+- `packages/core`, `packages/services`, `packages/schemas`, `packages/ui` — shared libraries consumed by web and API
+
+### Commands (from repository root)
+
+| Command | Description |
+|--------|-------------|
+| `pnpm install` | Install all workspace dependencies |
+| `pnpm dev:web` | Start Next.js dev server (`turbo dev --filter=web`) |
+| `pnpm build:web` | Production build for the web app only |
+| `pnpm build` | Build all packages and apps |
+| `pnpm lint` / `pnpm test` | Run via Turborepo across workspaces |
+
+### Environment files
+
+Keep `.env` / `.env.local` at the **repository root** (next to `apps/`). `apps/web/next.config.ts` loads them automatically for local builds.
+
+### Docker / CI
+
+- **Web**: `.github/workflows/ci.yml` builds the root `Dockerfile` (Next.js `standalone`; entry `node apps/web/server.js`). Pushes to `main` / `new_ui` only run when relevant paths change (see workflow `paths:`). **Portainer / GHCR:** [docs/api/portainer-ghcr.md](docs/api/portainer-ghcr.md).
+- **API**: `.github/workflows/docker-api.yml` builds `Dockerfile.api` and pushes to `ghcr.io/<owner>/tdarts-api` (not the same image as the web app).
+- **Regression**: `.github/workflows/web-regression.yml` — on `to_release`, lint + tests + QA coverage + API tests (no `next build`); on `main` / `feature/api` and PRs to `main`, includes `next build`. Lint failures fail the job.

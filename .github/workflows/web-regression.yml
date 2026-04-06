@@ -1,0 +1,81 @@
+name: Web Regression Gate
+
+on:
+  push:
+    branches: ["feature/api", "main", "to_release"]
+  pull_request:
+    branches: ["main", "to_release"]
+
+env:
+  # Minimal env so tests + build succeed without real secrets
+  JWT_SECRET: "ci-test-secret-not-for-production"
+  MONGODB_URI: "mongodb://localhost:27017/tdarts_ci"
+  MONGODB_DB_NAME: "tdarts_ci"
+
+jobs:
+  lint-test-build:
+    name: Monorepo — lint, test, optional next build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: .
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build shared packages (@tdarts/*)
+        run: pnpm turbo build --filter="@tdarts/*"
+
+      - name: Lint apps/web
+        run: pnpm --filter web lint
+
+      - name: Run apps/web unit tests
+        run: pnpm --filter web test
+        env:
+          JWT_SECRET: ${{ env.JWT_SECRET }}
+          MONGODB_URI: ${{ env.MONGODB_URI }}
+
+      - name: Run apps/web QA unit tests
+        run: pnpm --filter web test:qa:unit
+        env:
+          JWT_SECRET: ${{ env.JWT_SECRET }}
+          MONGODB_URI: ${{ env.MONGODB_URI }}
+
+      # Targeted coverage for QA paths — runs on to_release only (lighter gate before main)
+      - name: Web QA coverage (to_release branch / PRs into to_release)
+        if: |
+          github.ref == 'refs/heads/to_release' ||
+          (github.event_name == 'pull_request' && github.base_ref == 'to_release')
+        run: pnpm --filter web test:qa:coverage
+        env:
+          JWT_SECRET: ${{ env.JWT_SECRET }}
+          MONGODB_URI: ${{ env.MONGODB_URI }}
+
+      - name: Test apps/api (@tdarts/api)
+        run: pnpm --filter "@tdarts/api" test
+
+      # Full Next.js production build — skipped on to_release to save minutes; runs on main / feature/api and PRs into main
+      - name: Build apps/web (next build)
+        if: |
+          github.ref != 'refs/heads/to_release' &&
+          !(github.event_name == 'pull_request' && github.base_ref == 'to_release')
+        run: pnpm --filter web build
+        env:
+          JWT_SECRET: ${{ env.JWT_SECRET }}
+          MONGODB_URI: ${{ env.MONGODB_URI }}
+          SKIP_ENV_VALIDATION: "1"

@@ -1,0 +1,37 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "paths": {
+      "@/database/models/*": ["../../packages/core/src/models/*"],
+      "@/database/services/*": ["../../packages/services/src/*"],
+      "@/interface/*": ["../../packages/core/src/interfaces/*"],
+      "@/lib/mongoose": ["../../packages/core/src/lib/mongoose"],
+      "@/lib/mailer": ["../../packages/core/src/lib/mailer"],
+      "@/lib/email-layout": ["../../packages/core/src/lib/email-layout"],
+      "@/lib/email-resend": ["../../packages/core/src/lib/email-resend"],
+      "@/lib/events": ["../../packages/core/src/lib/events"],
+      "@/lib/date-time": ["../../packages/core/src/lib/date-time"],
+      "@/lib/club-location-completeness": ["../../packages/core/src/lib/club-location-completeness"],
+      "@/lib/leaguePointSystems": ["../../packages/core/src/lib/leaguePointSystems"],
+      "@tdarts/core": ["../../packages/core/src/index"],
+      "@tdarts/services": ["../../packages/services/src/index"],
+      "@tdarts/schemas": ["../../packages/schemas/src/index"],
+      "@tdarts/api": ["../api/src/index"],
+      "@/*": ["./src/*"]
+    }
+  },
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts",
+    "src/test/index.js",
+    ".next/dev/types/**/*.ts"
+  ],
+  "exclude": ["node_modules"]
+}

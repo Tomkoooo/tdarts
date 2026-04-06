@@ -1,0 +1,22 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "outDir": "./dist",
+    "noEmit": false,
+    "declaration": false,
+    "typeRoots": [
+      "./node_modules/@types",
+      "../../node_modules/@types"
+    ],
+    "paths": {
+      "@tdarts/core": ["../../packages/core/src/index.ts"],
+      "@tdarts/services": ["../../packages/services/src/index.ts"],
+      "@tdarts/schemas": ["../../packages/schemas/src/index.ts"]
+    }
+  },
+  "include": ["src/**/*.ts", "../../packages/core/src/**/*.ts", "../../packages/services/src/**/*.ts", "../../packages/schemas/src/**/*.ts"],
+  "exclude": ["node_modules", "dist", "src/tests/**/*.ts"]
+}

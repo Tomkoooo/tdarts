@@ -1,0 +1,27 @@
+{
+  "name": "@tdarts/core",
+  "version": "0.0.0",
+  "private": true,
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "build": "tsc --noEmit",
+    "lint": "echo 'no lint configured'",
+    "test": "echo 'no tests'"
+  },
+  "dependencies": {
+    "jsonwebtoken": "^9.0.2",
+    "nodemailer": "^6.9.16"
+  },
+  "peerDependencies": {
+    "bcryptjs": ">=3",
+    "mongoose": ">=8"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "*",
+    "@types/jsonwebtoken": "*",
+    "@types/nodemailer": "*",
+    "@types/node": "^20",
+    "typescript": "^5"
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "name": "@tdarts/services",
+  "version": "0.0.0",
+  "private": true,
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "build": "tsc --noEmit",
+    "lint": "echo 'no lint configured'",
+    "test": "echo 'no tests'"
+  },
+  "dependencies": {
+    "@tdarts/core": "workspace:*",
+    "google-auth-library": "^9.15.1",
+    "uuid": "^11.1.0"
+  },
+  "devDependencies": {
+    "@types/jsonwebtoken": "^9",
+    "@types/node": "^20",
+    "@types/uuid": "^10",
+    "typescript": "^5"
+  },
+  "peerDependencies": {
+    "jsonwebtoken": ">=9",
+    "mongoose": ">=8",
+    "nodemailer": ">=6",
+    "stripe": ">=18",
+    "zod": ">=3"
+  }
+}

@@ -1,0 +1,48 @@
+# syntax=docker/dockerfile:1
+
+FROM node:20-alpine3.20 AS base
+RUN corepack enable pnpm
+
+# --- pruner: extract only what @tdarts/api needs ---
+FROM base AS pruner
+WORKDIR /app
+RUN pnpm add -g turbo@^2
+COPY . .
+RUN turbo prune @tdarts/api --docker
+
+# --- deps: install pruned dependencies ---
+FROM base AS deps
+WORKDIR /app
+COPY --from=pruner /app/out/json/ .
+COPY --from=pruner /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
+RUN pnpm install --frozen-lockfile
+
+# --- builder: compile the API server bundle ---
+FROM base AS builder
+WORKDIR /app
+COPY --from=deps /app/ .
+COPY --from=pruner /app/out/full/ .
+RUN pnpm --filter @tdarts/api build
+
+# --- runner: minimal production image ---
+FROM node:20-alpine3.20 AS runner
+WORKDIR /app
+ENV NODE_ENV=production
+ENV PORT=4000
+
+RUN addgroup --system --gid 1001 nodejs \
+  && adduser --system --uid 1001 --ingroup nodejs apiuser
+
+# Copy pnpm virtual store (runtime npm packages; workspace deps are inlined by tsup)
+COPY --from=builder --chown=apiuser:nodejs /app/node_modules ./node_modules
+
+# Copy the bundled server output
+COPY --from=builder --chown=apiuser:nodejs /app/apps/api/dist ./apps/api/dist
+
+USER apiuser
+EXPOSE 4000/tcp
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
+  CMD wget -q -O /dev/null "http://127.0.0.1:${PORT:-4000}/health" || exit 1
+
+CMD ["node", "apps/api/dist/server.mjs"]

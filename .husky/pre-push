@@ -5,53 +5,24 @@ set -e
 echo "🚀 Running pre-push checks..."
 echo "⏳ This may take a few minutes..."
 
-# Get the project root directory (where package.json is)
 PROJECT_ROOT="$(git rev-parse --show-toplevel)"
 cd "$PROJECT_ROOT" || exit 1
 
-# Use exactly the same Node/npm that are on PATH in the shell
-NODE_BIN="$(command -v node || true)"
-NPM_BIN="$(command -v npm || true)"
-
-if [ -z "$NODE_BIN" ] || [ -z "$NPM_BIN" ]; then
-  echo "❌ node/npm not found on PATH inside pre-push hook."
-  echo "Please ensure your shell initialization exposes Node before git push."
+PNPM_BIN="$(command -v pnpm || true)"
+if [ -z "$PNPM_BIN" ]; then
+  echo "❌ pnpm not found on PATH inside pre-push hook."
+  echo "Install pnpm (https://pnpm.io/installation) and try again."
   exit 1
 fi
 
-echo "🔧 Node: $($NODE_BIN -v)"
-echo "🔧 Npm: $($NPM_BIN -v)"
+echo "🔧 pnpm: $($PNPM_BIN -v)"
 
-# Resolve Next CLI directly and run it with Node.
-NEXT_CLI="./node_modules/next/dist/bin/next"
-if [ ! -f "$NEXT_CLI" ]; then
-  echo "❌ next CLI not found at $NEXT_CLI"
-  echo "Run npm install first."
-  exit 1
-fi
-
-# On Apple Silicon hardware, always force arm64 execution even if git was launched under Rosetta.
-RUN_PREFIX=""
-if [ -x "/usr/sbin/sysctl" ] && [ -x "/usr/bin/arch" ]; then
-  HOST_ARM64="$(/usr/sbin/sysctl -in hw.optional.arm64 2>/dev/null || echo 0)"
-  if [ "$HOST_ARM64" = "1" ]; then
-    RUN_PREFIX="/usr/bin/arch -arm64"
-    echo "🔧 Exec mode: arm64 (forced)"
-  fi
-fi
-
-
-# Run build
 echo ""
-echo "🏗️  Running production build..."
-if [ -n "$RUN_PREFIX" ]; then
-  $RUN_PREFIX "$NODE_BIN" "$NEXT_CLI" build
-else
-  "$NODE_BIN" "$NEXT_CLI" build
-fi || {
+echo "🏗️  Running production build (web)..."
+"$PNPM_BIN" run build:web || {
   echo ""
   echo "❌ Build failed. Please fix the errors before pushing."
-  echo "Run 'npm run build' to see the errors."
+  echo "Run 'pnpm run build:web' to see the errors."
   exit 1
 }
 
