@@ -739,7 +739,15 @@ export class ClubService {
         )
       : new Map<string, any>();
 
-    const members = rawMembers.map((player: any) => {
+    const members: Array<{
+      _id: string;
+      name: string;
+      userRef?: string;
+      username: string;
+      role: 'admin' | 'moderator' | 'member';
+      honors?: any[];
+      stats?: { last10ClosedAvg?: number };
+    }> = rawMembers.map((player: any) => {
       const userRefStr = player?.userRef ? String(player.userRef) : '';
       const isAdmin = userRefStr ? adminIds.includes(userRefStr) : false;
       const isModerator = userRefStr ? moderatorIds.includes(userRefStr) : false;
@@ -897,7 +905,7 @@ export class ClubService {
     }
     const isGlobalAdmin = await AuthorizationService.checkAdminOnly(userId, clubs[0]?._id.toString());
     const clubsWithRoles = clubs.map((club) => {
-      const userRole = club.admin.includes(userObjectId)
+      const userRole: 'admin' | 'moderator' | 'member' | 'none' = club.admin.includes(userObjectId)
         ? 'admin'
         : club.moderators.includes(userObjectId)
           ? 'moderator'
@@ -908,9 +916,10 @@ export class ClubService {
               : 'none';
 
       return {
+        _id: club._id,
         ...(club.toObject() as Record<string, unknown>),
         userRole,
-      };
+      } as Record<string, unknown> & { _id: Types.ObjectId; userRole: 'admin' | 'moderator' | 'member' | 'none' };
     });
     return { clubs: clubsWithRoles };
   }
