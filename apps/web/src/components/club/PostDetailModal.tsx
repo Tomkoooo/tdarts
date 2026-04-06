@@ -37,7 +37,7 @@ export default function PostDetailModal({ isOpen, onClose, post, clubCode }: Pos
 
   return (
     <>
-        <Dialog open={isOpen} onOpenChange={onClose}>
+        <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
         <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col overflow-hidden p-0 gap-0">
             <DialogHeader className="p-6 pb-2 flex-shrink-0 bg-background z-10">
                 <div className="flex justify-between items-start gap-4">

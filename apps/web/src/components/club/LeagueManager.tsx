@@ -34,14 +34,12 @@ export default function LeagueManager({ clubId, userRole, autoOpenLeagueId }: Le
   const [clubSubscription, setClubSubscription] = useState<string>('free');
   /** Product gate for create/manage only — never used to hide public league reads */
   const [managementEnabled, setManagementEnabled] = useState(false);
+  const [isGlobalAdmin, setIsGlobalAdmin] = useState(false);
 
   const subscriptionProductEnabled = process.env.NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED !== 'false';
 
   const canManageLeagues = userRole === 'admin' || userRole === 'moderator';
-  const canCreateLeagues =
-    canManageLeagues &&
-    managementEnabled &&
-    (!subscriptionProductEnabled || clubSubscription !== 'free');
+  const canCreateLeagues = canManageLeagues && managementEnabled;
 
   useEffect(() => {
     const load = async () => {
@@ -77,6 +75,7 @@ export default function LeagueManager({ clubId, userRole, autoOpenLeagueId }: Le
                   const meta = await getPublicClubLeagueManagementMetaAction({ clubId });
                   setClubSubscription(meta.subscriptionModel);
                   setManagementEnabled(meta.managementEnabled);
+                  setIsGlobalAdmin(Boolean(meta.isGlobalAdmin));
                 } catch (err) {
                   showErrorToast(t("hiba_a_klub"), {
                     context: 'Liga kezelési jogosultság betöltése',
@@ -182,7 +181,7 @@ export default function LeagueManager({ clubId, userRole, autoOpenLeagueId }: Le
                   {t("a_ligák_használatához")}</AlertDescription>
               </Alert>
               <Button asChild>
-                <Link href="/#pricing" className="gap-2">
+                <Link href="/landing#pricing" className="gap-2">
                   <IconPlus className="h-4 w-4" />
                   {t("előfizetés_frissítése")}</Link>
               </Button>
@@ -205,9 +204,9 @@ export default function LeagueManager({ clubId, userRole, autoOpenLeagueId }: Le
           <Button onClick={() => setShowCreateModal(true)} className="gap-2">
             <IconPlus className="h-4 w-4" />
             {t("új_liga")}</Button>
-        ) : canManageLeagues && clubSubscription === 'free' && subscriptionProductEnabled ? (
+        ) : canManageLeagues && clubSubscription === 'free' && subscriptionProductEnabled && !isGlobalAdmin ? (
           <Button asChild variant="outline" className="gap-2">
-            <Link href="/#pricing" title={t("prémium_előfizetés_szükséges")}>
+            <Link href="/landing#pricing" title={t("prémium_előfizetés_szükséges")}>
               <IconPlus className="h-4 w-4" />
               {t("új_liga_prémium")}</Link>
           </Button>
@@ -236,14 +235,14 @@ export default function LeagueManager({ clubId, userRole, autoOpenLeagueId }: Le
               <Button onClick={() => setShowCreateModal(true)} className="gap-2">
                 <IconPlus className="h-4 w-4" />
                 {t("első_liga_létrehozása")}</Button>
-            ) : canManageLeagues && clubSubscription === 'free' ? (
+            ) : canManageLeagues && clubSubscription === 'free' && !isGlobalAdmin ? (
               <div className="space-y-3">
                 <Alert>
                   <AlertDescription>
                     {t("a_ligák_létrehozásához")}</AlertDescription>
                 </Alert>
                 <Button asChild className="gap-2">
-                  <Link href="/#pricing">
+                  <Link href="/landing#pricing">
                     <IconPlus className="h-4 w-4" />
                     {t("előfizetés_frissítése")}</Link>
                 </Button>

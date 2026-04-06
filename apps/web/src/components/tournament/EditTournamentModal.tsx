@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { TournamentSettings } from '@/interface/tournament.interface';
 import { IconTarget, IconExternalLink } from '@tabler/icons-react';
-import { useRouter } from 'next/navigation';
+import { useRouter } from '@/i18n/routing';
 import { Button } from '@/components/ui/Button';
 import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
@@ -182,7 +182,7 @@ export default function EditTournamentModal({
                 className="ml-3 gap-2"
                 onClick={() => {
                   onClose();
-                  router.push('/#pricing');
+                  router.push('/landing#pricing');
                 }}
               >
                 <IconExternalLink className="w-4 h-4" />

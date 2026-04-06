@@ -12,5 +12,5 @@ export type { MediaUploadMode } from './http/restHandlers';
 export { handleSocketAuthPost } from './http/socketHandlers';
 export { handleUpdatesGet } from './http/updatesHandlers';
 export { handlePaymentsVerifyPost } from './http/paymentsHandlers';
-export { handlePlayerAvatarPost } from './http/playersHandlers';
+export { handlePlayerAvatarGet, handlePlayerAvatarPost } from './http/playersHandlers';
 export type { NativeRouteMode } from './http/restCommon';

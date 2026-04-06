@@ -6,6 +6,8 @@ import { BadRequestError } from '@/middleware/errorHandle';
 import { ClubModel } from '@/database/models/club.model';
 import { FeatureFlagService } from '@/features/flags/lib/featureFlags';
 import { withTelemetry } from '@/shared/lib/withTelemetry';
+import { authorizeUserResult } from '@/features/auth/lib/authorizeUser';
+import { AuthorizationService } from '@/database/services/authorization.service';
 
 const inputSchema = z.object({ clubId: z.string().min(1) });
 
@@ -13,6 +15,8 @@ export type PublicClubLeagueManagementMeta = {
   subscriptionModel: string;
   /** Whether this club may use league management (create/edit) per product rules — not used to gate public reading */
   managementEnabled: boolean;
+  /** Whether current user can bypass subscription gate via global admin */
+  isGlobalAdmin: boolean;
 };
 
 /**
@@ -31,10 +35,16 @@ export async function getPublicClubLeagueManagementMetaAction(
       if (!club) {
         throw new BadRequestError('Club not found');
       }
-      const managementEnabled = await FeatureFlagService.isFeatureEnabled('LEAGUES', clubId);
+      const [featureEnabled, authResult] = await Promise.all([
+        FeatureFlagService.isFeatureEnabled('LEAGUES', clubId),
+        authorizeUserResult(),
+      ]);
+      const isGlobalAdmin = authResult.ok ? await AuthorizationService.isGlobalAdmin(authResult.data.userId) : false;
+      const managementEnabled = featureEnabled || isGlobalAdmin;
       return {
         subscriptionModel: String((club as { subscriptionModel?: string }).subscriptionModel || 'free'),
         managementEnabled,
+        isGlobalAdmin,
       };
     },
     { method: 'ACTION', metadata: { feature: 'clubs', actionName: 'getPublicLeagueManagementMeta' } }

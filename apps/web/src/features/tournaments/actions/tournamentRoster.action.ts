@@ -51,6 +51,33 @@ function revalidateTournamentRosterTags(code: string) {
   revalidateTag(`tournament:volatile:${code}`, 'max');
 }
 
+async function resolveTournamentPlayerIdForUser(code: string, userId: string): Promise<string | null> {
+  const tournament = await TournamentService.getTournament(code);
+  const entries = Array.isArray((tournament as any)?.players) ? (tournament as any).players : [];
+
+  for (const entry of entries) {
+    const playerReference = entry?.playerReference || entry;
+    if (!playerReference) continue;
+
+    const directUserRef = playerReference?.userRef?._id?.toString?.() || playerReference?.userRef?.toString?.();
+    if (directUserRef === userId) {
+      return playerReference?._id?.toString?.() || entry?._id?.toString?.() || null;
+    }
+
+    if (Array.isArray(playerReference?.members)) {
+      const isMember = playerReference.members.some((member: any) => {
+        const memberUserRef = member?.userRef?._id?.toString?.() || member?.userRef?.toString?.();
+        return memberUserRef === userId;
+      });
+      if (isMember) {
+        return playerReference?._id?.toString?.() || entry?._id?.toString?.() || null;
+      }
+    }
+  }
+
+  return null;
+}
+
 export async function addTournamentPlayerClientAction(
   input: z.infer<typeof playerPayloadSchema>
 ) {
@@ -615,22 +642,58 @@ export async function getTournamentPlayerMatchesClientAction(input: {
 export async function getTournamentHeadToHeadClientAction(input: {
   code: string;
   opponentId: string;
+  currentPlayerId?: string;
 }) {
   const run = withTelemetry(
     'tournaments.headToHead.get',
-    async (payload: { code: string; opponentId: string }) => {
+    async (payload: { code: string; opponentId: string; currentPlayerId?: string }) => {
       const parsed = z
-        .object({ code: z.string().min(1), opponentId: z.string().min(1) })
+        .object({
+          code: z.string().min(1),
+          opponentId: z.string().min(1),
+          currentPlayerId: z.string().min(1).optional(),
+        })
         .parse(payload);
       const authResult = await authorizeUserResult();
       if (!authResult.ok) return authResult;
-      const currentPlayer = await PlayerService.findPlayerByUserId(authResult.data.userId);
-      if (!currentPlayer) throw new Error('Current player not found');
-      const data = await TournamentService.getHeadToHead(
-        currentPlayer._id.toString(),
-        parsed.opponentId,
-        { tournamentCode: parsed.code }
+
+      const tournamentPlayerId = await resolveTournamentPlayerIdForUser(parsed.code, authResult.data.userId);
+      const fallbackPlayer = await PlayerService.findPlayerByUserId(authResult.data.userId);
+      const fallbackPlayerId = fallbackPlayer?._id?.toString() || null;
+      const candidateIds = Array.from(
+        new Set(
+          [parsed.currentPlayerId, fallbackPlayerId, tournamentPlayerId].filter(
+            (id): id is string => Boolean(id && typeof id === 'string')
+          )
+        )
       );
+
+      if (candidateIds.length === 0) throw new Error('Current player not found');
+
+      let data: any = null;
+      let selectedCandidateId: string | null = null;
+      for (const candidateId of candidateIds) {
+        const next = await TournamentService.getHeadToHead(candidateId, parsed.opponentId, {
+          tournamentCode: parsed.code,
+        });
+        data = next;
+        selectedCandidateId = candidateId;
+        if ((next?.summary?.matchesPlayed || 0) > 0 || (next?.matches?.length || 0) > 0) {
+          break;
+        }
+      }
+
+      // If tournament-scoped H2H is empty, fall back to all-time H2H so users still see historical matches.
+      if (
+        selectedCandidateId &&
+        ((data?.summary?.matchesPlayed || 0) === 0 || (data?.matches?.length || 0) === 0)
+      ) {
+        const allTime = await TournamentService.getHeadToHead(selectedCandidateId, parsed.opponentId);
+        if ((allTime?.summary?.matchesPlayed || 0) > 0 || (allTime?.matches?.length || 0) > 0) {
+          data = allTime;
+        }
+      }
+
       return serializeForClient({ success: true, data });
     },
     {

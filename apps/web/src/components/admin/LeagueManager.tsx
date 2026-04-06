@@ -287,14 +287,14 @@ export default function LeagueManager({ clubId, onLeagueSelect }: LeagueManagerP
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <Link 
-                href="/#pricing" 
+                href="/landing#pricing" 
                 className="admin-btn-primary btn-lg"
               >
                 <IconTrophy className="w-5 h-5" />
                 {t('promo.subscription_btn')}
               </Link>
               <button 
-                onClick={() => window.open('/#pricing', '_blank')}
+                onClick={() => window.open('/landing#pricing', '_blank')}
                 className="admin-btn-secondary btn-lg"
               >
                 {t('promo.details_btn')}

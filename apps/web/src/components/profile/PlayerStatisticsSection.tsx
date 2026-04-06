@@ -183,7 +183,7 @@ export function PlayerStatisticsSection({
   const [pendingInvites, setPendingInvites] = React.useState<PendingInviteEntry[]>([])
   const [pendingInvitesLoading, setPendingInvitesLoading] = React.useState(false)
   const [topTournamentLimit, setTopTournamentLimit] = React.useState(3)
-  const [topMatchLimit, setTopMatchLimit] = React.useState(3)
+  const [topMatchLimit, setTopMatchLimit] = React.useState(5)
 
   // Move all hooks to the top
   const playerStats = React.useMemo(() => initialPlayerStats || { hasPlayer: false } as any, [initialPlayerStats]);
@@ -912,7 +912,7 @@ export function PlayerStatisticsSection({
                         {t.headToHeadNoMatches || "Nincsenek közös meccsek"}
                       </div>
                     ) : (
-                      <div className="max-h-[min(500px,70dvh)] md:max-h-[385px] overflow-y-auto w-full custom-scrollbar">
+                      <div className="max-h-[min(560px,75dvh)] md:max-h-[385px] overflow-y-auto w-full custom-scrollbar">
                         {headToHead.matches.map((match) => {
                           const isWin = match.playerA.legsWon > match.playerB.legsWon;
                           const isDraw = match.playerA.legsWon === match.playerB.legsWon;
@@ -1027,7 +1027,7 @@ export function PlayerStatisticsSection({
                 </h2>
                 <div className="flex gap-2">
                   <Button variant="secondary" size="sm" className="text-[10px] font-bold uppercase tracking-widest h-8 bg-muted hover:bg-muted/80 text-foreground" onClick={() => setTopMatchLimit((prev) => Math.min(prev + 5, matchAveragesAll.length || 5))}>{t.loadMore || "Több"}</Button>
-                  {topMatchLimit > 3 && <Button variant="ghost" size="sm" className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground h-8" onClick={() => setTopMatchLimit(3)}>{t.reset || "Reset"}</Button>}
+                  {topMatchLimit > 5 && <Button variant="ghost" size="sm" className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground h-8" onClick={() => setTopMatchLimit(5)}>{t.reset || "Reset"}</Button>}
                 </div>
               </div>
               <div className="min-w-0 flex-1">
@@ -1076,7 +1076,7 @@ export function PlayerStatisticsSection({
                                 <span className="text-[10px] uppercase tracking-widest">{t.openDetails || "Open"}</span>
                               </Button>
                             </div>
-                            <div className="mt-3 grid grid-cols-3 gap-2">
+                            <div className="mt-3 grid grid-cols-2 gap-2">
                               <div className="rounded-md border border-border/40 bg-muted/20 px-2 py-1.5 text-center">
                                 <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">{t.topTournamentAvg || "Avg"}</p>
                                 <p className="font-headline text-sm font-black text-primary">{Number(match.average).toFixed(1)}</p>
@@ -1084,12 +1084,6 @@ export function PlayerStatisticsSection({
                               <div className="rounded-md border border-border/40 bg-muted/20 px-2 py-1.5 text-center">
                                 <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">{t.f9Avg || "F9"}</p>
                                 <p className="font-headline text-sm font-black text-foreground">{typeof match.firstNineAvg === "number" ? Number(match.firstNineAvg).toFixed(1) : "—"}</p>
-                              </div>
-                              <div className="rounded-md border border-border/40 bg-muted/20 px-2 py-1.5 text-center">
-                                <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">{t.date || "Date"}</p>
-                                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                                  {new Date(match.date).toLocaleDateString("hu-HU", { month: "short", day: "2-digit" })}
-                                </p>
                               </div>
                             </div>
                           </div>
@@ -1105,14 +1099,13 @@ export function PlayerStatisticsSection({
                       <th className="px-2 lg:px-4 py-4 font-label text-[10px] font-bold uppercase tracking-widest text-muted-foreground text-center">{t.opponentResult || "Result"}</th>
                       <th className="px-2 lg:px-4 py-4 font-label text-[10px] font-bold uppercase tracking-widest text-muted-foreground text-right border-l border-border/30">{t.topTournamentAvg || "Átlag"}</th>
                       <th className="px-2 lg:px-4 py-4 font-label text-[10px] font-bold uppercase tracking-widest text-muted-foreground text-center">{t.f9Avg || "F9 Átlag"}</th>
-                      <th className="px-2 lg:px-4 py-4 font-label text-[10px] font-bold uppercase tracking-widest text-muted-foreground text-center">{t.date || "Dátum"}</th>
                       <th className="px-3 lg:px-6 py-4 text-right"></th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border/30">
                     {topThreeMatchAverages.length === 0 ? (
                       <tr>
-                        <td colSpan={6} className="py-12 text-center">
+                        <td colSpan={5} className="py-12 text-center">
                           <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground border border-dashed border-border/50 rounded-xl px-6 py-4">{t.noData || "No data"}</span>
                         </td>
                       </tr>
@@ -1158,11 +1151,6 @@ export function PlayerStatisticsSection({
                           <td className="px-2 lg:px-4 py-5 text-center">
                             <span className="font-headline text-base font-bold text-foreground">
                               {typeof match.firstNineAvg === "number" ? Number(match.firstNineAvg).toFixed(1) : "—"}
-                            </span>
-                          </td>
-                          <td className="px-2 lg:px-4 py-5 text-center">
-                            <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground bg-muted/30 px-2 py-1.5 rounded-md border border-border/50 whitespace-nowrap">
-                              {new Date(match.date).toLocaleDateString("hu-HU", { month: 'short', day: '2-digit' })}
                             </span>
                           </td>
                           <td className="px-3 lg:px-6 py-5 text-right">

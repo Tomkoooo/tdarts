@@ -176,7 +176,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
   }, [search])
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-w-2xl p-0 gap-0 overflow-hidden">
         <DialogHeader className="px-4 pt-4 pb-3 border-b border-border">
           <DialogTitle className="sr-only">{t("command_palette")}</DialogTitle>

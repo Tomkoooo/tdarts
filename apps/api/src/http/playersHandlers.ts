@@ -1,7 +1,34 @@
-import { BadRequestError, ValidationError } from '@tdarts/core';
+import { BadRequestError, UserModel, ValidationError } from '@tdarts/core';
 import { PlayerService } from '@tdarts/services';
 import { json, unauthorizedCaller, unauthorizedUser, type NativeRouteMode } from './restCommon';
 import { requireMobileTier1, resolveAuthedUserId } from './authUser';
+
+/**
+ * GET /api/players/:id/avatar — public avatar URL resolver.
+ */
+export async function handlePlayerAvatarGet(playerId: string): Promise<Response> {
+  try {
+    const player = await PlayerService.findPlayerById(playerId);
+    if (!player) {
+      return json({ imageUrl: null }, 200);
+    }
+
+    const playerImage =
+      (typeof player.profilePicture === 'string' && player.profilePicture.trim() !== ''
+        ? player.profilePicture
+        : null) || null;
+    const userImage =
+      playerImage || !player.userRef
+        ? null
+        : (await UserModel.findById(player.userRef).select('profilePicture').lean())?.profilePicture || null;
+    const imageUrl = playerImage || userImage;
+
+    return json({ imageUrl }, 200);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Avatar fetch failed';
+    return json({ error: msg }, 400);
+  }
+}
 
 /**
  * POST /api/players/:id/avatar — multipart field "file". Owner or global admin.

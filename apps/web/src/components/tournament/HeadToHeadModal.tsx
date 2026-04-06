@@ -96,7 +96,7 @@ export default function HeadToHeadModal({ isOpen, onClose, fetchData }: HeadToHe
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => (!open ? onClose() : null)}>
-      <DialogContent className="w-[95vw] max-h-[90vh] max-w-3xl overflow-y-auto p-3 sm:p-6">
+      <DialogContent className="w-[95vw] max-h-[90vh] max-w-3xl overflow-x-hidden overflow-y-auto p-3 sm:p-6">
         <DialogHeader>
           <DialogTitle>{t.headToHeadTitle}</DialogTitle>
         </DialogHeader>
@@ -113,10 +113,10 @@ export default function HeadToHeadModal({ isOpen, onClose, fetchData }: HeadToHe
             </Button>
           </div>
         ) : data ? (
-          <div className="space-y-8 animate-fade-in relative">
+          <div className="space-y-8 animate-fade-in relative overflow-x-hidden">
             {/* Head-to-Head Hero Section */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch relative">
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] bg-primary/10 rounded-full blur-[120px] pointer-events-none -z-10"></div>
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch relative overflow-x-hidden">
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[260px] w-[min(520px,85vw)] sm:h-[300px] sm:w-[600px] bg-primary/10 rounded-full blur-[80px] sm:blur-[120px] pointer-events-none -z-10"></div>
               
               {/* Player 1 Card */}
               <div className="lg:col-span-4 bg-card rounded-2xl p-8 flex flex-col items-center text-center relative overflow-hidden shadow-lg border border-border/50">
@@ -218,8 +218,8 @@ export default function HeadToHeadModal({ isOpen, onClose, fetchData }: HeadToHe
                     <IconChartBar className="text-primary" />
                   </div>
                 </div>
-                <div className="p-0 overflow-x-auto">
-                  <table className="w-full table-fixed text-sm border-collapse min-w-[400px]">
+                <div className="p-0 overflow-x-auto overscroll-x-contain">
+                  <table className="w-full table-fixed text-sm border-collapse min-w-[320px] sm:min-w-[400px]">
                     <colgroup>
                       <col className="w-[42%]" />
                       <col className="w-[29%]" />
@@ -371,7 +371,14 @@ export default function HeadToHeadModal({ isOpen, onClose, fetchData }: HeadToHe
               </div>
             </div>
           </div>
-        ) : null}
+        ) : (
+          <div className="space-y-3 rounded-xl border border-border/50 bg-muted/10 p-6 text-center">
+            <p className="text-sm text-muted-foreground">{t.headToHeadNoMatches || "Nincsenek elérhető adatok"}</p>
+            <Button variant="outline" size="sm" onClick={() => setReloadToken((prev) => prev + 1)}>
+              {t.retry}
+            </Button>
+          </div>
+        )}
 
         {showMatchModal && selectedMatch && (
           <LegsViewModal

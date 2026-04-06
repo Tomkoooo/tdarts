@@ -142,8 +142,8 @@ const PlayerMatchesModal: React.FC<PlayerMatchesModalProps> = ({
           {t('title') || 'Player Profile'} - {playerName}
         </DialogTitle>
         {/* Abstract Background Glows */}
-        <div className="absolute top-1/4 -left-20 w-96 h-96 bg-primary/10 rounded-full blur-[120px] pointer-events-none"></div>
-        <div className="absolute bottom-1/4 -right-20 w-96 h-96 bg-accent/10 rounded-full blur-[120px] pointer-events-none"></div>
+        <div className="absolute top-1/4 -left-20 -z-10 h-96 w-96 rounded-full bg-primary/10 blur-[120px] pointer-events-none"></div>
+        <div className="absolute bottom-1/4 -right-20 -z-10 h-96 w-96 rounded-full bg-accent/10 blur-[120px] pointer-events-none"></div>
 
         {/* Modal Header */}
         <div className="p-6 md:p-8 border-b border-border/50 relative shrink-0 z-10">

@@ -1,7 +1,6 @@
 "use client"
 
 import React, { useCallback, useMemo, useState } from "react"
-import dynamic from "next/dynamic"
 import Link from "next/link"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { useTranslations } from "next-intl"
@@ -37,6 +36,11 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { cn } from "@/lib/utils"
 import { showErrorToast } from "@/lib/toastUtils"
 import { SmartAvatar } from "@/components/ui/smart-avatar"
+import PlayerNotificationModal from "@/components/tournament/PlayerNotificationModal"
+import PlayerMatchesModal from "@/components/tournament/PlayerMatchesModal"
+import LegsViewModal from "@/components/tournament/LegsViewModal"
+import TeamRegistrationModal from "@/components/tournament/TeamRegistrationModal"
+import HeadToHeadModal from "@/components/tournament/HeadToHeadModal"
 import CountryFlag from "@/components/ui/country-flag"
 import {
   addToWaitingListClientAction,
@@ -50,22 +54,6 @@ import {
   unsubscribeFromTournamentNotificationsClientAction,
   updateTournamentPlayerStatusClientAction,
 } from "@/features/tournaments/actions/tournamentRoster.action"
-
-const PlayerNotificationModal = dynamic(
-  () => import("@/components/tournament/PlayerNotificationModal")
-)
-const PlayerMatchesModal = dynamic(
-  () => import("@/components/tournament/PlayerMatchesModal")
-)
-const LegsViewModal = dynamic(
-  () => import("@/components/tournament/LegsViewModal")
-)
-const TeamRegistrationModal = dynamic(
-  () => import("@/components/tournament/TeamRegistrationModal")
-)
-const HeadToHeadModal = dynamic(
-  () => import("@/components/tournament/HeadToHeadModal")
-)
 
 interface TournamentPlayersProps {
   tournament: any
@@ -179,8 +167,9 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
     return getTournamentHeadToHeadClientAction({
       code,
       opponentId: headToHeadTarget.id,
+      currentPlayerId: localUserPlayerId?.toString(),
     })
-  }, [code, headToHeadTarget?.id])
+  }, [code, headToHeadTarget?.id, localUserPlayerId])
 
   const participationMode = tournament?.tournamentSettings?.participationMode || 'individual'
   const router = useRouter()
