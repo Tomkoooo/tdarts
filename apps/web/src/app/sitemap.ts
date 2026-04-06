@@ -53,11 +53,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   try {
     // We fetch clubs but with a timeout to avoid hanging if DB is slow or unreachable (though force-dynamic helps)
     const clubs = await ClubService.getAllClubs();
-    clubPages = clubs.map((club: { _id: string; updatedAt?: Date }) => createLocalizedEntry(`/clubs/${club._id}`, {
+    clubPages = clubs.map((club: { _id: string; code?: string; updatedAt?: Date }) => {
+      const clubPathToken = club.code || club._id;
+      return createLocalizedEntry(`/clubs/${clubPathToken}`, {
       lastModified: club.updatedAt || new Date(),
       changeFrequency: 'weekly' as const,
       priority: 0.8,
-    }));
+    });
+    });
   } catch (error) {
     console.error('Error fetching clubs for sitemap:', error);
   }

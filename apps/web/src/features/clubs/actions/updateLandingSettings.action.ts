@@ -6,6 +6,7 @@ import { authorizeUserResult, assertEligibilityResult } from '@/shared/lib/guard
 import { BadRequestError } from '@/middleware/errorHandle';
 import { withTelemetry } from '@/shared/lib/withTelemetry';
 import { resolveGuardAwareStatus } from '@/shared/lib/guards/result';
+import { serializeForClient } from '@/shared/lib/serializeForClient';
 
 const landingSettingsSchema = z.record(z.unknown());
 
@@ -27,7 +28,8 @@ export async function updateLandingSettingsAction(input: z.infer<typeof schema>)
       if (!authResult.ok) return authResult;
       const eligibilityResult = await assertEligibilityResult({ clubId, allowPaidOverride: true });
       if (!eligibilityResult.ok) return eligibilityResult;
-      return ClubService.updateLandingSettings(clubId, authResult.data.userId, landingPage);
+      const updatedClub = await ClubService.updateLandingSettings(clubId, authResult.data.userId, landingPage);
+      return serializeForClient(updatedClub);
     },
     {
       method: 'ACTION',

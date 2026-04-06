@@ -10,6 +10,7 @@ import { AuthorizationService } from './authorization.service';
 import { GeocodingService } from './geocoding.service';
 import { clubHasCorrectAddress, clubHasGeoLocationSynced } from '@/lib/club-location-completeness';
 import type { StructuredLocation } from '@/interface/location.interface';
+import type { PlayerHonor } from '@/interface/player.interface';
 
 //TODO a klubba és a tornákra ezentúl nem a user collectionből vesszük fel az emberekt.
 //Hanem egy köztes kapcsoló Player collectionbe rakjuk és hogyha regisztrált akkor kap egy userRefet
@@ -563,6 +564,37 @@ export class ClubService {
         role: playerRole,
       };
     });
+
+    const existingMemberUserRefs = new Set(
+      membersWithUsernames
+        .map((member: any) => (member.userRef ? String(member.userRef) : ''))
+        .filter(Boolean)
+    );
+    const roleOnlyUsers = [
+      ...club.admin.map((user: any) => ({ ...user, role: 'admin' as const })),
+      ...club.moderators.map((user: any) => ({ ...user, role: 'moderator' as const })),
+    ].filter((user: any) => !existingMemberUserRefs.has(String(user._id)));
+
+    if (roleOnlyUsers.length > 0) {
+      const roleOnlyUserIds = roleOnlyUsers.map((user: any) => user._id);
+      const roleOnlyPlayers = await PlayerModel.find({ userRef: { $in: roleOnlyUserIds } })
+        .select('_id userRef')
+        .lean();
+      const roleOnlyPlayerByUserRef = new Map(
+        roleOnlyPlayers.map((player: any) => [String(player.userRef), String(player._id)])
+      );
+
+      for (const user of roleOnlyUsers) {
+        const userId = String(user._id);
+        membersWithUsernames.push({
+          _id: roleOnlyPlayerByUserRef.get(userId) || userId,
+          name: user.name || '',
+          userRef: userId,
+          username: user.username || 'vendég',
+          role: user.role,
+        });
+      }
+    }
     const result = {
       ...club.toJSON(),
       admin: club.admin.map((user: any) => ({
@@ -662,7 +694,15 @@ export class ClubService {
   }
 
   static async getClubMembersForManagement(clubId: string, requestId?: string): Promise<{
-    members: Array<{ _id: string; name: string; userRef?: string; username: string; role: 'admin' | 'moderator' | 'member' }>;
+    members: Array<{
+      _id: string;
+      name: string;
+      userRef?: string;
+      username: string;
+      role: 'admin' | 'moderator' | 'member';
+      honors?: PlayerHonor[];
+      stats?: { last10ClosedAvg?: number };
+    }>;
     admin: Array<{ _id: string; role: 'admin' }>;
     moderators: Array<{ _id: string; role: 'moderator' }>;
     membersCount: number;
@@ -672,28 +712,112 @@ export class ClubService {
 
     const club = await ClubModel.findById(clubId)
       .select('members admin moderators')
-      .populate('members', 'name userRef')
+      .populate('members', 'name userRef honors stats')
+      .populate('admin', 'name username')
+      .populate('moderators', 'name username')
       .lean();
 
     if (!club) {
       throw new BadRequestError('Club not found');
     }
 
-    const adminIds = ((club as any).admin || []).map((id: any) => String(id));
-    const moderatorIds = ((club as any).moderators || []).map((id: any) => String(id));
+    const adminUsers = ((club as any).admin || []) as Array<{ _id: unknown; name?: string; username?: string }>;
+    const moderatorUsers = ((club as any).moderators || []) as Array<{ _id: unknown; name?: string; username?: string }>;
+    const adminIds = adminUsers.map((user: any) => String(user?._id || user));
+    const moderatorIds = moderatorUsers.map((user: any) => String(user?._id || user));
+    const rawMembers = ((club as any).members || []) as any[];
 
-    const members = ((club as any).members || []).map((player: any) => {
+    const userRefIds = rawMembers
+      .map((player: any) => (player?.userRef ? String(player.userRef) : ''))
+      .filter(Boolean);
+    const usersById = userRefIds.length
+      ? new Map(
+          (
+            await UserModel.find({ _id: { $in: userRefIds } }).select('username').lean()
+          ).map((u: any) => [String(u._id), u])
+        )
+      : new Map<string, any>();
+
+    const members = rawMembers.map((player: any) => {
       const userRefStr = player?.userRef ? String(player.userRef) : '';
       const isAdmin = userRefStr ? adminIds.includes(userRefStr) : false;
       const isModerator = userRefStr ? moderatorIds.includes(userRefStr) : false;
+      const username = userRefStr ? usersById.get(userRefStr)?.username || 'vendég' : 'vendég';
       return {
         _id: String(player._id),
         name: String(player?.name || ''),
-        userRef: player?.userRef ? String(player.userRef) : undefined,
-        username: 'vendég',
+        userRef: userRefStr || undefined,
+        username,
         role: isAdmin ? 'admin' : isModerator ? 'moderator' : 'member',
+        honors: Array.isArray(player?.honors) ? player.honors : undefined,
+        stats: player?.stats ? { last10ClosedAvg: player.stats?.last10ClosedAvg } : undefined,
       };
     });
+
+    const existingMemberUserRefs = new Set(
+      members
+        .map((member: any) => (member.userRef ? String(member.userRef) : ''))
+        .filter(Boolean)
+    );
+    const roleOnlyUserIds = [...new Set([...adminIds, ...moderatorIds])].filter(
+      (id) => !existingMemberUserRefs.has(id)
+    );
+
+    if (roleOnlyUserIds.length > 0) {
+      const roleOnlyUsersFromPopulate = [...adminUsers, ...moderatorUsers]
+        .map((user: any) => {
+          const id = user?._id ? String(user._id) : '';
+          if (!id) return null;
+          return {
+            _id: id,
+            name: typeof user?.name === 'string' ? user.name : undefined,
+            username: typeof user?.username === 'string' ? user.username : undefined,
+          };
+        })
+        .filter(Boolean) as Array<{ _id: string; name?: string; username?: string }>;
+      const roleOnlyUsersFromDb = (
+        await UserModel.find({ _id: { $in: roleOnlyUserIds } }).select('name username').lean()
+      ).map((user: any) => ({
+        _id: String(user._id),
+        name: typeof user?.name === 'string' ? user.name : undefined,
+        username: typeof user?.username === 'string' ? user.username : undefined,
+      }));
+
+      const roleOnlyUserById = new Map<string, { _id: string; name?: string; username?: string }>();
+      for (const user of roleOnlyUsersFromDb) roleOnlyUserById.set(user._id, user);
+      for (const user of roleOnlyUsersFromPopulate) {
+        const existing = roleOnlyUserById.get(user._id);
+        roleOnlyUserById.set(user._id, {
+          _id: user._id,
+          name: existing?.name || user.name,
+          username: existing?.username || user.username,
+        });
+      }
+
+      const roleOnlyPlayerByUserRef = new Map(
+        (
+          await PlayerModel.find({ userRef: { $in: roleOnlyUserIds } })
+            .select('_id userRef name honors stats')
+            .lean()
+        ).map((player: any) => [String(player.userRef), player])
+      );
+
+      for (const userId of roleOnlyUserIds) {
+        const user = roleOnlyUserById.get(userId);
+        const player = roleOnlyPlayerByUserRef.get(userId);
+        const resolvedName = String(user?.name || player?.name || 'Ismeretlen tag');
+        const resolvedUsername = user?.username ? String(user.username) : 'vendég';
+        members.push({
+          _id: player ? String(player._id) : userId,
+          name: resolvedName,
+          userRef: userId,
+          username: resolvedUsername,
+          role: adminIds.includes(userId) ? 'admin' : 'moderator',
+          honors: Array.isArray(player?.honors) ? player.honors : undefined,
+          stats: player?.stats ? { last10ClosedAvg: player.stats?.last10ClosedAvg } : undefined,
+        });
+      }
+    }
 
     const response = {
       members,
@@ -749,7 +873,9 @@ export class ClubService {
     return metadataTheme;
   }
 
-  static async getUserClubs(userId: string): Promise<{ clubs: ClubDocument[], userRoleInClub: string }> {
+  static async getUserClubs(userId: string): Promise<{
+    clubs: Array<Record<string, unknown> & { _id: Types.ObjectId; userRole: 'admin' | 'moderator' | 'member' | 'none' }>;
+  }> {
     await connectMongo();
 
     const userObjectId = new Types.ObjectId(userId);
@@ -767,14 +893,27 @@ export class ClubService {
       ],
     });
     if (clubs.length === 0) {
-      return { clubs: [], userRoleInClub: 'none' };
+      return { clubs: [] };
     }
-    const club = clubs[0];
-    const userRoleInClub = club.admin.includes(userObjectId) ? 'admin' :
-                           club.moderators.includes(userObjectId) ? 'moderator' :
-                           (playerId && club.members.includes(playerId)) ? 'member' :
-                           await AuthorizationService.checkAdminOnly(userId, club._id.toString()) ? 'admin' : 'none';
-    return { clubs, userRoleInClub };
+    const isGlobalAdmin = await AuthorizationService.checkAdminOnly(userId, clubs[0]?._id.toString());
+    const clubsWithRoles = clubs.map((club) => {
+      const userRole = club.admin.includes(userObjectId)
+        ? 'admin'
+        : club.moderators.includes(userObjectId)
+          ? 'moderator'
+          : playerId && club.members.includes(playerId)
+            ? 'member'
+            : isGlobalAdmin
+              ? 'admin'
+              : 'none';
+
+      return {
+        ...(club.toObject() as Record<string, unknown>),
+        userRole,
+      };
+    });
+
+    return { clubs: clubsWithRoles };
   }
 
   /**
@@ -840,6 +979,14 @@ export class ClubService {
       throw new BadRequestError('Club not found');
     }
 
+    // Global super admin must always retain admin-level access regardless of member role.
+    const { UserModel } = await import('../models/user.model');
+    const user = await UserModel.findById(userId).select('isAdmin');
+    if (user?.isAdmin === true) {
+      this.logTiming('getUserRoleInClub', startedAt, requestId, { clubId, userId });
+      return 'admin';
+    }
+
     // Check Admin (User ID)
     if (club.admin.some((id: Types.ObjectId) => id.equals(userObjectId))) {
       this.logTiming('getUserRoleInClub', startedAt, requestId, { clubId, userId });
@@ -862,16 +1009,6 @@ export class ClubService {
       return 'member';
     }
     
-    const { UserModel } = await import('../models/user.model');
-    const user = await UserModel.findById(userId).select('isAdmin');
-    
-    // Only give admin access to users who are ACTUALLY global admins (isAdmin: true)
-    if (user?.isAdmin === true) {
-      console.log('Global admin detected, granting admin access to club:', clubId);
-      this.logTiming('getUserRoleInClub', startedAt, requestId, { clubId, userId });
-      return 'admin';
-    }
-
     this.logTiming('getUserRoleInClub', startedAt, requestId, { clubId, userId });
     return 'none';
   }
@@ -894,13 +1031,14 @@ export class ClubService {
   }
 
   // --- SITEMAP SUPPORT ---
-  static async getAllClubs(): Promise<{ _id: string; updatedAt?: Date }[]> {
+  static async getAllClubs(): Promise<{ _id: string; code?: string; updatedAt?: Date }[]> {
     await connectMongo();
     const clubs = await ClubModel.find({ isActive: { $ne: false } })
-      .select('_id updatedAt')
+      .select('_id code updatedAt')
       .lean();
     return clubs.map((club: any) => ({
       _id: club._id.toString(),
+      code: typeof club.code === 'string' && club.code.trim() ? club.code.trim() : undefined,
       updatedAt: club.updatedAt
     }));
   }

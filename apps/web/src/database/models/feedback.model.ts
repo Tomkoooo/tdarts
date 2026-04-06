@@ -26,6 +26,10 @@ export interface FeedbackDocument extends Document {
   resolvedAt?: Date;
   resolvedBy?: string; // userId
   userId?: string; // Ha bejelentkezett felhasználó
+  autoLogged?: boolean;
+  errorCode?: string;
+  requestId?: string;
+  errorType?: string;
   createdAt: Date;
   updatedAt: Date;
   history?: {
@@ -110,6 +114,25 @@ const feedbackSchema = new Schema<FeedbackDocument>({
   userId: { 
     type: Schema.Types.ObjectId, 
     ref: 'User' 
+  },
+  autoLogged: {
+    type: Boolean,
+    default: false
+  },
+  errorCode: {
+    type: String,
+    trim: true,
+    maxlength: 100
+  },
+  requestId: {
+    type: String,
+    trim: true,
+    maxlength: 120
+  },
+  errorType: {
+    type: String,
+    trim: true,
+    maxlength: 120
   },
   
   // New fields for ticketing system

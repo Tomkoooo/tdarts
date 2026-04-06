@@ -34,7 +34,8 @@ export async function removeMemberAction(input: z.infer<typeof schema>) {
       if (player && userId === authResult.data.userId) {
         memberIdToRemove = player._id.toString();
       }
-      return ClubService.removeMember(clubId, memberIdToRemove, authResult.data.userId);
+      await ClubService.removeMember(clubId, memberIdToRemove, authResult.data.userId);
+      return { ok: true as const };
     },
     {
       method: 'ACTION',

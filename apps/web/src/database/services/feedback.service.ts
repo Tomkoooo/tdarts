@@ -12,6 +12,10 @@ export interface CreateFeedbackData {
   browser?: string;
   userAgent?: string;
   userId?: string;
+  autoLogged?: boolean;
+  errorCode?: string;
+  requestId?: string;
+  errorType?: string;
 }
 
 export interface UpdateFeedbackData {

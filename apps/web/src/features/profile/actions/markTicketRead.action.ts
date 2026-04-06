@@ -21,11 +21,21 @@ export async function markTicketReadAction(input: Input) {
 
       const ticket = await FeedbackService.getFeedbackById(params.ticketId);
       if (!ticket) {
-        throw new BadRequestError('Ticket not found');
+        return {
+          success: false,
+          status: 404,
+          code: 'TICKET_NOT_FOUND',
+          message: 'Ticket not found',
+        };
       }
 
       if (String(ticket.userId) !== authResult.data.userId) {
-        throw new BadRequestError('Forbidden');
+        return {
+          success: false,
+          status: 403,
+          code: 'PERMISSION_REQUIRED',
+          message: 'Forbidden',
+        };
       }
 
       await FeedbackService.updateFeedback(

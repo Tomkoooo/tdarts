@@ -19,19 +19,25 @@ const RankingColumn = ({
   heading: string;
   accentClass: string;
 }) => (
-  <section className="rounded-xl border border-muted/20 bg-background/35 p-2.5 sm:p-3 md:p-4">
-    <h3 className="mb-2 sm:mb-3 text-lg sm:text-xl md:text-2xl font-black">{heading}</h3>
+  <section className="rounded-2xl border border-slate-700/60 bg-slate-900/65 p-3 sm:p-4 md:p-5">
+    <h3 className="mb-3 text-xl font-black text-slate-100 sm:text-2xl md:text-3xl">{heading}</h3>
     {rows.length === 0 ? (
-      <div className="rounded-lg bg-muted/15 px-3 sm:px-4 py-4 sm:py-5 text-sm sm:text-base md:text-lg text-muted-foreground">-</div>
+      <div className="rounded-lg bg-slate-800/80 px-4 py-5 text-base text-slate-300">-</div>
     ) : (
-      <div className="space-y-1.5 sm:space-y-2">
+      <div className="space-y-2">
         {rows.slice(0, 8).map((row, index) => (
-          <div key={row.playerId} className="flex items-center justify-between rounded-lg bg-muted/15 px-3 sm:px-4 py-2 sm:py-3">
-            <div className="flex min-w-0 items-center gap-2 sm:gap-3">
-              <span className={`w-8 sm:w-10 text-lg sm:text-xl md:text-2xl font-black ${accentClass}`}>#{index + 1}</span>
-              <span className="truncate text-sm sm:text-base md:text-xl font-semibold">{row.name}</span>
+          <div key={row.playerId} className="flex items-center justify-between rounded-xl bg-slate-800/80 px-4 py-3">
+            <div className="flex min-w-0 items-center gap-3">
+              <span
+                className={`w-10 font-black ${accentClass} ${
+                  index === 0 ? "text-4xl" : index <= 2 ? "text-3xl" : "text-2xl"
+                }`}
+              >
+                #{index + 1}
+              </span>
+              <span className={`truncate font-semibold text-slate-100 ${index === 0 ? "text-2xl" : "text-xl"}`}>{row.name}</span>
             </div>
-            <span className={`text-lg sm:text-2xl md:text-3xl font-black ${accentClass}`}>{row.value}</span>
+            <span className={`text-3xl font-black ${accentClass} sm:text-4xl`}>{row.value}</span>
           </div>
         ))}
       </div>
@@ -50,13 +56,13 @@ export default function SlideRankingsCombined({
   const hasData = rows180.length > 0 || rowsCheckout.length > 0;
 
   return (
-    <SlideFrame title={title} accentClassName="from-primary/20 to-background">
+    <SlideFrame title={title} accentClassName="from-fuchsia-500/25 via-transparent to-transparent">
       {!hasData ? (
-        <div className="flex h-full items-center justify-center text-lg sm:text-2xl md:text-3xl text-muted-foreground text-center px-3">{emptyLabel}</div>
+        <div className="flex h-full items-center justify-center px-3 text-center text-lg text-slate-300 sm:text-2xl md:text-3xl">{emptyLabel}</div>
       ) : (
-        <div className="grid h-full grid-cols-1 md:grid-cols-2 gap-2 sm:gap-3 md:gap-4 overflow-y-auto pr-1">
-          <RankingColumn rows={rows180} heading={title180} accentClass="text-primary" />
-          <RankingColumn rows={rowsCheckout} heading={titleCheckout} accentClass="text-warning" />
+        <div className="grid h-full grid-cols-1 gap-3 overflow-y-auto pr-1 md:grid-cols-2 md:gap-4">
+          <RankingColumn rows={rows180} heading={`Darts ${title180}`} accentClass="text-fuchsia-300" />
+          <RankingColumn rows={rowsCheckout} heading={`Trophy ${titleCheckout}`} accentClass="text-amber-300" />
         </div>
       )}
     </SlideFrame>

@@ -22,7 +22,8 @@ export async function deactivateClubAction(input: z.infer<typeof schema>) {
       const { clubId } = parsed.data;
       const authResult = await authorizeUserResult();
       if (!authResult.ok) return authResult;
-      return ClubService.deactivateClub(clubId, authResult.data.userId);
+      await ClubService.deactivateClub(clubId, authResult.data.userId);
+      return { ok: true as const };
     },
     {
       method: 'ACTION',

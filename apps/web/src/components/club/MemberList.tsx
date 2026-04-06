@@ -11,8 +11,9 @@ import {
   IconDotsVertical,
   IconChartBar
 } from '@tabler/icons-react'
-import { Club } from '@/interface/club.interface'
+import { PlayerHonor } from '@/interface/player.interface'
 import PlayerStatsModal from '@/components/player/PlayerStatsModal'
+import HonorAverageBadge from '@/components/player/HonorAverageBadge'
 import { Card, CardContent } from "@/components/ui/Card"
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
@@ -34,11 +35,13 @@ interface MemberListProps {
     userRef?: string
     name: string
     username: string
+    honors?: PlayerHonor[]
+    stats?: { last10ClosedAvg?: number }
   }[]
   userRole: 'admin' | 'moderator' | 'member' | 'none'
   userId?: string
   clubId: string
-  onClubUpdated: (club: Club) => void
+  onClubUpdated: () => void | Promise<void>
   showActions?: boolean
 }
 
@@ -61,7 +64,7 @@ export default function MemberList({
       if (typeof result === 'object' && 'ok' in result && !result.ok) {
         throw new Error((result as any).message)
       }
-      onClubUpdated(result as unknown as Club)
+      await onClubUpdated()
       toast.success(`${memberName} törölve!`, { id: toastId })
     } catch (err: any) {
       toast.dismiss(toastId)
@@ -81,7 +84,7 @@ export default function MemberList({
       if (typeof result === 'object' && 'ok' in result && !result.ok) {
         throw new Error((result as any).message)
       }
-      onClubUpdated(result as unknown as Club)
+      await onClubUpdated()
       toast.success(`${memberName} moderátorrá nevezve!`, { id: toastId })
     } catch (err: any) {
       toast.dismiss(toastId)
@@ -101,7 +104,7 @@ export default function MemberList({
       if (typeof result === 'object' && 'ok' in result && !result.ok) {
         throw new Error((result as any).message)
       }
-      onClubUpdated(result as unknown as Club)
+      await onClubUpdated()
       toast.success(`${memberName} moderátori jogai visszavonva!`, { id: toastId })
     } catch (err: any) {
       toast.dismiss(toastId)
@@ -158,7 +161,8 @@ export default function MemberList({
       ) : (
         <div className="grid gap-3">
           {members.map((member) => {
-            const isGuest = member.username === 'vendég'
+            const isGuest = !member.userRef
+            const hasDisplayUsername = !!member.userRef && member.username && member.username !== 'vendég'
             const isSelf = member._id === userId
             const roleBadge = getRoleBadge(member.role)
 
@@ -169,7 +173,7 @@ export default function MemberList({
               .map((part) => part[0]?.toUpperCase())
               .join('') || 'JD'
 
-            const canPromote = userRole === 'admin' && member.role === 'member' && !isGuest
+            const canPromote = userRole === 'admin' && member.role === 'member' && !!member.userRef
             const canDemote = userRole === 'admin' && member.role === 'moderator'
             const canRemove =
               userRole === 'admin'
@@ -199,7 +203,7 @@ export default function MemberList({
                           {roleBadge.label}
                         </Badge>
                       </div>
-                      <div className="flex items-center gap-3 text-sm text-muted-foreground mt-1">
+                      <div className="mt-1 flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
                         {isGuest ? (
                           <Badge variant="outline" className="border-none bg-muted/40 text-muted-foreground">
                             Vendég
@@ -209,9 +213,22 @@ export default function MemberList({
                             <Badge variant="outline" className="border-none bg-emerald-500/10 text-emerald-500">
                               Regisztrált
                             </Badge>
-                            <span>@{member.username}</span>
+                            {hasDisplayUsername ? <span>@{member.username}</span> : null}
                           </>
                         )}
+                        <HonorAverageBadge
+                          average={member.stats?.last10ClosedAvg ?? null}
+                          tooltip="Utolsó 10 meccs záróátlag"
+                        />
+                        {(member.honors || []).slice(0, 2).map((honor, index) => (
+                          <Badge
+                            key={`${member._id}-honor-${index}`}
+                            variant="outline"
+                            className="border-none bg-amber-500/10 text-amber-600"
+                          >
+                            {honor.title}
+                          </Badge>
+                        ))}
                       </div>
                     </div>
                   </div>

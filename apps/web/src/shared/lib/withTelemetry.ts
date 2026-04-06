@@ -18,6 +18,7 @@ import {
   WithTelemetryActionOptions,
 } from '@/shared/lib/telemetry/types';
 import { isGuardFailureResult } from '@/shared/lib/guards/result';
+import { AuthorizationError, BadRequestError, ValidationError } from '@/middleware/errorHandle';
 
 function classifyMethodOperation(method: string): 'read' | 'write' | 'other' {
   const m = method.toUpperCase();
@@ -36,6 +37,25 @@ function detectTimeout(status: number, error: unknown): boolean {
   if (status === 408 || status === 504) return true;
   if (!(error instanceof Error)) return false;
   return /timeout|timed out|etimedout|abort/i.test(error.message || '');
+}
+
+function resolveErrorStatus(error: unknown): number {
+  if (
+    error instanceof BadRequestError ||
+    error instanceof ValidationError ||
+    error instanceof AuthorizationError
+  ) {
+    return error.statusCode;
+  }
+
+  if (typeof error === 'object' && error !== null && 'statusCode' in error) {
+    const statusCode = (error as { statusCode?: unknown }).statusCode;
+    if (typeof statusCode === 'number') {
+      return statusCode;
+    }
+  }
+
+  return 500;
 }
 
 export function withRouteTelemetry<TArgs extends unknown[]>(
@@ -141,7 +161,7 @@ export function withTelemetry<TInput, TOutput>(
       return result;
     } catch (error) {
       capturedError = error;
-      status = 500;
+      status = resolveErrorStatus(error);
       throw error;
     } finally {
       const durationMs = Math.max(0, performance.now() - startedAt);

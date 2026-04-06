@@ -38,4 +38,17 @@ describe('sitemap', () => {
     const urls = entries.map((entry) => entry.url);
     expect(urls.some((url) => url.includes('/clubs/club123'))).toBe(true);
   });
+
+  it('prefers public club code over internal id in sitemap urls', async () => {
+    (ClubService.getAllClubs as jest.Mock).mockResolvedValue([
+      { _id: 'mongo-internal-id', code: 'public-club-code', updatedAt: new Date('2026-01-01') },
+    ]);
+    (TournamentService.getAllTournaments as jest.Mock).mockResolvedValue([]);
+
+    const entries = await sitemap();
+    const urls = entries.map((entry) => entry.url);
+
+    expect(urls.some((url) => url.includes('/clubs/public-club-code'))).toBe(true);
+    expect(urls.some((url) => url.includes('/clubs/mongo-internal-id'))).toBe(false);
+  });
 });

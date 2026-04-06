@@ -7,6 +7,7 @@ import { BadRequestError } from '@/middleware/errorHandle';
 import { withTelemetry } from '@/shared/lib/withTelemetry';
 import { resolveGuardAwareStatus } from '@/shared/lib/guards/result';
 import type { BillingInfo } from '@/interface/club.interface';
+import { serializeForClient } from '@/shared/lib/serializeForClient';
 
 const updateClubUpdatesSchema = z.object({
   _id: z.string().optional(),
@@ -67,7 +68,8 @@ export async function updateClubAction(input: UpdateClubActionInput) {
         return eligibilityResult;
       }
 
-      return ClubService.updateClub(clubId, authResult.data.userId, payload.updates);
+      const updatedClub = await ClubService.updateClub(clubId, authResult.data.userId, payload.updates);
+      return serializeForClient(updatedClub);
     },
     {
       method: 'ACTION',

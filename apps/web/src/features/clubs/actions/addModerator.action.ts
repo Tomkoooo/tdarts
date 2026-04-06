@@ -23,7 +23,8 @@ export async function addModeratorAction(input: z.infer<typeof schema>) {
       const { clubId, userId } = parsed.data;
       const authResult = await authorizeUserResult();
       if (!authResult.ok) return authResult;
-      return ClubService.addModerator(clubId, userId, authResult.data.userId);
+      await ClubService.addModerator(clubId, userId, authResult.data.userId);
+      return { ok: true as const };
     },
     {
       method: 'ACTION',

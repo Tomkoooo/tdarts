@@ -1,5 +1,6 @@
 import { Types, Document } from 'mongoose';
 import { StructuredLocation } from './location.interface';
+import { PlayerHonor } from './player.interface';
 
 export interface BillingInfo {
   type: 'individual' | 'company';
@@ -27,7 +28,14 @@ export interface Club {
     website?: string;
   };
   // Player collection references (members can be guests or registered)
-  members: { _id: string; name: string; username: string; userRef?: string }[];
+  members: {
+    _id: string;
+    name: string;
+    username: string;
+    userRef?: string;
+    honors?: PlayerHonor[];
+    stats?: { last10ClosedAvg?: number };
+  }[];
   membersCount?: number;
   // User collection references (only registered users)
   admin: { _id: string; name: string; username: string }[];
@@ -90,6 +98,7 @@ export interface Club {
     }>;
   }[];
   leagues?: { _id: string; name: string; isActive: boolean; totalPlayers: number; totalTournaments: number; createdAt: Date }[];
+  userRole?: 'admin' | 'moderator' | 'member' | 'none';
 }
 
 export interface ClubDocument extends Omit<Document, 'toJSON'>, Omit<Club, '_id' | 'members' | 'admin' | 'moderators' | 'tournaments' | 'leagues'> {

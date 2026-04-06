@@ -48,6 +48,12 @@ const feedbackSchema = z.object({
   device: z.enum(["desktop", "mobile", "tablet"]),
 })
 type FeedbackValues = z.infer<typeof feedbackSchema>
+type ErrorLinkage = {
+  autoLogged: boolean
+  errorCode?: string
+  requestId?: string
+  errorType?: string
+}
 
 export default function FeedbackPage() {
     const t = useTranslations("Feedback");
@@ -65,6 +71,15 @@ export default function FeedbackPage() {
   const { user } = useUserContext()
   const router = useRouter()
   const searchParams = useSearchParams()
+  const errorLinkage = React.useMemo<ErrorLinkage>(
+    () => ({
+      autoLogged: searchParams.get("autoLogged") === "1",
+      errorCode: searchParams.get("errCode") || undefined,
+      requestId: searchParams.get("reqId") || undefined,
+      errorType: searchParams.get("errType") || undefined,
+    }),
+    [searchParams]
+  )
 
   const defaultValues = React.useMemo<FeedbackValues>(
     () => ({
@@ -89,7 +104,11 @@ export default function FeedbackPage() {
 
   React.useEffect(() => {
     if (!user) {
-      router.push(`/auth/login?redirect=${encodeURIComponent("/feedback")}`)
+      const currentPath =
+        typeof window !== "undefined"
+          ? `${window.location.pathname}${window.location.search}`
+          : "/feedback"
+      router.push(`/auth/login?redirect=${encodeURIComponent(currentPath)}`)
       return
     }
 
@@ -112,6 +131,10 @@ export default function FeedbackPage() {
       await axios.post("/api/feedback", {
         ...values,
         userId: user?._id,
+        errorCode: errorLinkage.errorCode,
+        requestId: errorLinkage.requestId,
+        errorType: errorLinkage.errorType,
+        autoLogged: errorLinkage.autoLogged,
       })
       toast.success(t("köszönjük_a_visszajelzésedet"))
       form.reset({
@@ -126,6 +149,10 @@ export default function FeedbackPage() {
         error: error?.response?.data?.error,
         context: "Feedback küldése",
         errorName: "Visszajelzés küldése sikertelen",
+        errorCode: error?.response?.data?.errorCode,
+        requestId: error?.response?.data?.requestId,
+        errorType: "feedback_submission",
+        isLogged: Boolean(error?.response?.data?.errorCode || error?.response?.data?.requestId),
       })
     }
   }
@@ -147,6 +174,17 @@ export default function FeedbackPage() {
             <p className="text-muted-foreground">{t("oszd_meg_velünk")}</p>
           </div>
         </div>
+
+        {errorLinkage.autoLogged && (
+          <div className="rounded-xl border border-amber-400/40 bg-amber-100/80 p-4 text-sm text-amber-950">
+            <p className="font-semibold">A hibat mar rogzitettuk.</p>
+            <p className="mt-1">
+              Tovabbi megjegyzes megadasa opcionális.
+              {errorLinkage.errorCode ? ` Hibakod: ${errorLinkage.errorCode}.` : ""}
+              {errorLinkage.requestId ? ` Azonosito: ${errorLinkage.requestId}.` : ""}
+            </p>
+          </div>
+        )}
 
         {/* Form Card */}
         <Card className="bg-card/50 backdrop-blur-xl shadow-2xl shadow-black/20">

@@ -9,25 +9,28 @@ interface SlideGroupsProps {
 
 export default function SlideGroups({ groups, title, emptyLabel }: SlideGroupsProps) {
   return (
-    <SlideFrame title={title} accentClassName="from-info/20 to-background">
+    <SlideFrame title={title} accentClassName="from-cyan-400/30 via-transparent to-transparent">
       {groups.length === 0 ? (
-        <div className="flex h-full items-center justify-center text-lg sm:text-2xl md:text-3xl text-muted-foreground text-center px-3">{emptyLabel}</div>
+        <div className="flex h-full items-center justify-center px-3 text-center text-lg text-slate-300 sm:text-2xl md:text-3xl">{emptyLabel}</div>
       ) : (
-        <div className="grid h-full grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2 sm:gap-3 md:gap-4 overflow-y-auto pr-1 sm:pr-2">
+        <div className="grid h-full grid-cols-1 gap-3 overflow-y-auto pr-1 sm:grid-cols-2 xl:grid-cols-3">
           {groups.map((group) => (
-            <div key={group.id} className="rounded-xl border border-muted/20 bg-background/40 p-2.5 sm:p-3 md:p-4">
-              <div className="mb-2 sm:mb-3 flex items-end justify-between border-b border-muted/20 pb-2">
-                <h3 className="text-xl sm:text-2xl md:text-3xl font-black text-primary">{group.label}</h3>
-                <span className="text-xs sm:text-sm md:text-lg text-muted-foreground">Board {group.boardNumber}</span>
+            <div key={group.id} className="rounded-2xl border border-cyan-300/30 bg-slate-900/70 p-3 sm:p-4">
+              <div className="mb-3 flex items-end justify-between border-b border-slate-700/50 pb-2">
+                <h3 className="text-2xl font-black text-cyan-200 sm:text-3xl">{group.label}</h3>
+                <span className="text-xs text-slate-300 sm:text-sm md:text-base">Board {group.boardNumber}</span>
               </div>
-              <div className="space-y-1.5 sm:space-y-2">
-                {group.rows.map((row) => (
-                  <div key={row.playerId} className="flex items-center justify-between rounded-lg bg-muted/15 px-2.5 sm:px-3 py-1.5 sm:py-2">
-                    <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-                      <span className="w-6 sm:w-8 text-lg sm:text-xl md:text-2xl font-black text-primary">{row.standing}.</span>
-                      <span className="truncate text-sm sm:text-base md:text-xl font-semibold">{row.name}</span>
+              <div className="space-y-2">
+                {group.rows.map((row, index) => (
+                  <div
+                    key={row.playerId}
+                    className={`flex items-center justify-between rounded-xl px-3 py-2 ${index === 0 ? "border border-cyan-200/40 bg-cyan-400/15" : "bg-slate-800/70"}`}
+                  >
+                    <div className="flex min-w-0 items-center gap-3">
+                      <span className="w-10 text-3xl font-black text-cyan-200 sm:text-4xl">{row.standing}</span>
+                      <span className="truncate text-base font-semibold text-slate-100 sm:text-lg md:text-xl">{row.name}</span>
                     </div>
-                    <span className="text-sm sm:text-base md:text-xl font-bold text-muted-foreground whitespace-nowrap">
+                    <span className="whitespace-nowrap text-lg font-black text-cyan-100 sm:text-xl md:text-2xl">
                       {row.points}p {row.legs > 0 ? `(${row.legs})` : ""}
                     </span>
                   </div>

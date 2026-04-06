@@ -53,13 +53,17 @@ export default function TVModePage() {
   const resyncInFlightRef = useRef(false)
   const [qrExpanded, setQrExpanded] = useState(true)
   const [qrPosition, setQrPosition] = useState<{ x: number; y: number } | null>(null)
-  const [qrSize, setQrSize] = useState(160)
+  const [qrSize, setQrSize] = useState(200)
   const [isDragging, setIsDragging] = useState(false)
   const [isResizing, setIsResizing] = useState(false)
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
-  const [resizeStart, setResizeStart] = useState({ size: 160, x: 0, y: 0 })
+  const [resizeStart, setResizeStart] = useState({ size: 200, x: 0, y: 0 })
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [isMobileViewport, setIsMobileViewport] = useState(false);
+  const [controlsVisible, setControlsVisible] = useState(true);
+  const controlsHideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [slideProgress, setSlideProgress] = useState(0);
+  const slideStartRef = useRef<number>(Date.now());
   const [knockoutRequiredDisplayMs, setKnockoutRequiredDisplayMs] = useState(0);
   const holdTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const holdAppliedSlideIdRef = useRef<string>("");
@@ -347,10 +351,10 @@ export default function TVModePage() {
       const deltaX = e.clientX - resizeStart.x
       const deltaY = e.clientY - resizeStart.y
       const delta = Math.max(deltaX, deltaY)
-      const newSize = Math.max(100, Math.min(400, resizeStart.size + delta))
+      const newSize = Math.max(120, Math.min(420, resizeStart.size + delta))
       setQrSize(newSize)
     }
-  }, [isDragging, dragStart, isResizing, resizeStart])
+  }, [isDragging, dragStart, isResizing, resizeStart, setQrSize])
 
   const handleMouseUp = useCallback(() => {
     setIsDragging(false)
@@ -374,6 +378,60 @@ export default function TVModePage() {
     window.addEventListener("resize", updateViewport);
     return () => window.removeEventListener("resize", updateViewport);
   }, []);
+
+  const revealControls = useCallback(() => {
+    setControlsVisible(true);
+    if (controlsHideTimerRef.current) {
+      clearTimeout(controlsHideTimerRef.current);
+    }
+    controlsHideTimerRef.current = setTimeout(() => {
+      setControlsVisible(false);
+    }, 4000);
+  }, []);
+
+  useEffect(() => {
+    const onActivity = () => revealControls();
+    revealControls();
+    window.addEventListener("mousemove", onActivity);
+    window.addEventListener("touchstart", onActivity);
+    return () => {
+      window.removeEventListener("mousemove", onActivity);
+      window.removeEventListener("touchstart", onActivity);
+      if (controlsHideTimerRef.current) clearTimeout(controlsHideTimerRef.current);
+    };
+  }, [revealControls]);
+
+  useEffect(() => {
+    slideStartRef.current = Date.now();
+    setSlideProgress(0);
+  }, [activeSlide.id]);
+
+  useEffect(() => {
+    const durationMs =
+      activeSlide.durationMs ??
+      (activeSlide.kind === "urgent" ? settings.urgentIntervalMs : settings.baseIntervalMs);
+    if (durationMs <= 0 || scheduler.isPaused || settings.freezeBaseRotation) {
+      setSlideProgress(0);
+      return;
+    }
+
+    const tick = () => {
+      const elapsed = Date.now() - slideStartRef.current;
+      const ratio = Math.min(1, elapsed / durationMs);
+      setSlideProgress(ratio);
+    };
+    tick();
+    const interval = window.setInterval(tick, 80);
+    return () => window.clearInterval(interval);
+  }, [
+    activeSlide.id,
+    activeSlide.kind,
+    activeSlide.durationMs,
+    scheduler.isPaused,
+    settings.freezeBaseRotation,
+    settings.baseIntervalMs,
+    settings.urgentIntervalMs,
+  ]);
 
   useEffect(() => {
     if (holdTimeoutRef.current) {
@@ -448,7 +506,7 @@ export default function TVModePage() {
 
   const tournamentUrl = process.env.NEXT_PUBLIC_NODE_ENV === 'development'
     ? `http://localhost:3000/tournaments/${code}`
-    : `https://tdarts.sironic.hu/tournaments/${code}`
+    : `https://tdarts.hu/tournaments/${code}`
 
   const tournamentName = tournament.tournamentSettings?.name || "Tournament";
 
@@ -570,18 +628,24 @@ export default function TVModePage() {
   };
 
   return (
-    <div className="h-screen w-screen overflow-hidden bg-background text-foreground relative">
-      <header className="min-h-[64px] px-3 sm:px-4 md:px-6 py-2 flex flex-col md:flex-row md:items-center md:justify-between gap-2 bg-muted/5 border-b border-muted/20">
-        <div className="flex min-w-0 items-center gap-2 sm:gap-3 md:gap-4">
-          <h1 className="text-base sm:text-lg md:text-2xl font-bold truncate">{tournamentName}</h1>
-          <span className="text-[10px] sm:text-xs md:text-sm text-muted-foreground uppercase tracking-wider whitespace-nowrap">
-            {activeSlide.kind === "urgent"
-              ? tTour("tv_slideshow.live_priority")
-              : tTour("tv_slideshow.rotation")}
-          </span>
-        </div>
+    <div className="relative h-screen w-screen overflow-hidden bg-slate-950 text-slate-100">
+      <div className="pointer-events-none fixed left-4 top-3 z-40 text-xs font-semibold uppercase tracking-[0.18em] text-slate-200/50 sm:text-sm">
+        {tournamentName}
+      </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+      <header
+        className={`fixed left-0 right-0 top-0 z-40 px-3 py-3 transition-opacity duration-300 sm:px-4 md:px-6 ${controlsVisible || settingsOpen ? "opacity-100" : "pointer-events-none opacity-0"}`}
+      >
+        <div className="rounded-xl border border-slate-700/60 bg-slate-950/70 p-2 shadow-2xl backdrop-blur md:p-3">
+          <div className="mb-2 flex min-w-0 items-center justify-between gap-2 md:mb-3">
+            <h1 className="truncate text-sm font-bold text-slate-100 sm:text-base md:text-lg">{tournamentName}</h1>
+            <span className="text-[10px] uppercase tracking-wider text-slate-300 sm:text-xs">
+              {activeSlide.kind === "urgent"
+                ? tTour("tv_slideshow.live_priority")
+                : tTour("tv_slideshow.rotation")}
+            </span>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
           <Button
             variant="outline"
             onClick={() => setSettings({ freezeBaseRotation: !settings.freezeBaseRotation })}
@@ -715,11 +779,19 @@ export default function TVModePage() {
             {t("exit")}
           </Button>
         </div>
+        </div>
       </header>
 
-      <main className="h-[calc(100vh-96px)] md:h-[92vh] p-2 sm:p-3 md:p-4">
+      <main className="h-screen w-screen">
         {slideContent}
       </main>
+
+      <div className="pointer-events-none fixed bottom-0 left-0 right-0 z-30 h-1.5 bg-slate-800/70">
+        <div
+          className="h-full bg-primary transition-[width] duration-75"
+          style={{ width: `${Math.round(slideProgress * 100)}%` }}
+        />
+      </div>
 
       {settings.showQr && !isMobileViewport ? (
         <div
@@ -733,7 +805,7 @@ export default function TVModePage() {
           }}
         >
           {qrExpanded ? (
-            <div className="bg-white p-2 sm:p-3 md:p-4 rounded-xl shadow-2xl border-2 sm:border-4 border-primary relative">
+            <div className="relative rounded-2xl border-2 border-primary bg-white p-3 shadow-2xl sm:p-4 md:p-5">
               <div
                 className="flex items-center justify-between mb-2 cursor-grab active:cursor-grabbing"
                 onMouseDown={handleMouseDown}
@@ -747,16 +819,18 @@ export default function TVModePage() {
                 </button>
               </div>
               <QRCode value={tournamentUrl} size={qrSize} level="H" />
-              <div className="text-center mt-2 text-xs font-semibold text-gray-800">
+              <div className="mt-2 text-center text-xs font-semibold text-gray-800">
                 {t("scan_to_join")}
+              </div>
+              <div className="mt-1 text-center text-[11px] font-medium text-gray-600">
+                tdarts.hu
               </div>
               <div
                 onMouseDown={handleResizeMouseDown}
-                className="absolute -bottom-1 -right-1 w-6 h-6 bg-primary rounded-full cursor-nwse-resize hover:bg-primary/80 transition-colors shadow-lg flex items-center justify-center"
-                style={{ touchAction: 'none' }}
-              >
-                <div className="w-2 h-2 border-r-2 border-b-2 border-white" />
-              </div>
+                className="absolute -bottom-1 -right-1 h-6 w-6 cursor-nwse-resize rounded-full bg-primary shadow-lg transition-colors hover:bg-primary/80"
+                style={{ touchAction: "none" }}
+                aria-label="Resize QR"
+              />
             </div>
           ) : (
             <button

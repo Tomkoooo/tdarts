@@ -108,6 +108,37 @@ export default function ClubDetailClientPage({
     }
   }, [code, toClub])
 
+  const refreshMembers = React.useCallback(
+    async (clubId: string) => {
+      if (!clubId) return
+      setMembersLoading(true)
+      try {
+        const membersData = (await getClubMembersAction({
+          clubId,
+          requestId: requestIdRef.current,
+        })) as any
+        if (membersData && typeof membersData === "object" && Array.isArray(membersData.members)) {
+          setClub((prev) => {
+            if (!prev) return prev
+            return {
+              ...prev,
+              members: membersData.members,
+              admin: Array.isArray(membersData.admin) ? membersData.admin : prev.admin,
+              moderators: Array.isArray(membersData.moderators) ? membersData.moderators : prev.moderators,
+              membersCount: typeof membersData.membersCount === "number" ? membersData.membersCount : prev.membersCount,
+            } as Club
+          })
+          setMembersLoaded(true)
+        }
+      } catch (error) {
+        console.error("Failed to refresh club members", error)
+      } finally {
+        setMembersLoading(false)
+      }
+    },
+    []
+  )
+
   React.useEffect(() => {
     const syncRole = async () => {
       if (!code || !user?._id) return
@@ -126,35 +157,8 @@ export default function ClubDetailClientPage({
     const needsMembers = page === "players" || page === "settings"
     if (!needsMembers || membersLoaded || membersLoading || !club?._id) return
 
-    const loadMembers = async () => {
-      setMembersLoading(true)
-      try {
-        const membersData = await getClubMembersAction({
-          clubId: club._id,
-          requestId: requestIdRef.current,
-        }) as any
-        if (membersData && typeof membersData === "object" && Array.isArray(membersData.members)) {
-          setClub((prev) => {
-            if (!prev) return prev
-            return {
-              ...prev,
-              members: membersData.members,
-              admin: Array.isArray(membersData.admin) ? membersData.admin : prev.admin,
-              moderators: Array.isArray(membersData.moderators) ? membersData.moderators : prev.moderators,
-              membersCount: typeof membersData.membersCount === "number" ? membersData.membersCount : prev.membersCount,
-            } as Club
-          })
-          setMembersLoaded(true)
-        }
-      } catch (error) {
-        console.error("Failed to load club members", error)
-      } finally {
-        setMembersLoading(false)
-      }
-    }
-
-    void loadMembers()
-  }, [club?._id, membersLoaded, membersLoading, searchParams])
+    void refreshMembers(club._id)
+  }, [club?._id, membersLoaded, membersLoading, searchParams, refreshMembers])
 
   React.useEffect(() => {
     const loadInitialPosts = async () => {
@@ -227,6 +231,7 @@ export default function ClubDetailClientPage({
 
   const handlePlayerSelected = async (player: any) => {
     if (!club || !user?._id) return
+    const toastId = toast.loading(t("játékos_hozzáadása"))
     try {
       let playerId = player._id
       if (!playerId) {
@@ -240,11 +245,12 @@ export default function ClubDetailClientPage({
           throw new Error("Failed to create player")
         }
       }
-      const toastId = toast.loading(t("játékos_hozzáadása"))
       await addMemberAction({ clubId: club._id, userId: playerId })
       await fetchClub()
+      await refreshMembers(club._id)
       toast.success(t("játékos_hozzáadva"), { id: toastId })
     } catch (err: any) {
+      toast.dismiss(toastId)
       showErrorToast(err?.response?.data?.error || err?.message || "Játékos hozzáadása sikertelen", {
         error: err?.response?.data?.error || err?.message,
         context: "Klub tag hozzáadása",
@@ -377,7 +383,10 @@ export default function ClubDetailClientPage({
             club={club}
             userRole={userRole}
             userId={user?._id}
-            onClubUpdated={() => fetchClub()}
+            onClubUpdated={async () => {
+              await fetchClub()
+              await refreshMembers(club._id)
+            }}
             membersLoading={membersLoading && !membersLoaded}
           />
         }
@@ -414,7 +423,10 @@ export default function ClubDetailClientPage({
               onPlayerSelected={handlePlayerSelected}
               onLeaveClub={handleLeaveClub}
               onDeactivateClub={handleDeactivateClub}
-              onClubUpdated={() => fetchClub()}
+              onClubUpdated={async () => {
+                await fetchClub()
+                await refreshMembers(club._id)
+              }}
               membersLoading={membersLoading && !membersLoaded}
             />
           ) : undefined

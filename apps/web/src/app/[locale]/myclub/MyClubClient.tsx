@@ -9,16 +9,22 @@ import { getUserClubsAction } from "@/features/clubs/actions/getUserClubs.action
 import { IconUsersGroup, IconSparkles } from "@tabler/icons-react"
 import { useTranslations } from "next-intl"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Card, CardContent } from "@/components/ui/Card"
+import { Button } from "@/components/ui/Button"
 
 type Props = {
   userId: string
+}
+
+type ClubWithRole = Club & {
+  userRole?: "admin" | "moderator" | "member" | "none"
 }
 
 export default function MyClubClient({ userId }: Props) {
   const t = useTranslations("Club.pages")
   const router = useRouter()
   const [isLoading, setIsLoading] = React.useState(true)
-  const [clubs, setClubs] = React.useState<Club[]>([])
+  const [clubs, setClubs] = React.useState<ClubWithRole[]>([])
 
   React.useEffect(() => {
     const checkUserClubs = async () => {
@@ -32,11 +38,17 @@ export default function MyClubClient({ userId }: Props) {
             ? ((result as { clubs?: unknown[] }).clubs || [])
             : []
         const userClubs = rawClubs.filter(
-          (club): club is Club => !!club && typeof club === "object" && "_id" in (club as Record<string, unknown>)
+          (club): club is ClubWithRole =>
+            !!club && typeof club === "object" && "_id" in (club as Record<string, unknown>)
         )
         setClubs(userClubs)
 
-        if (userClubs.length > 0) {
+        const managedClub = userClubs.find((club) => club.userRole === "admin" || club.userRole === "moderator")
+        if (managedClub) {
+          router.push(`/clubs/${managedClub._id}`)
+          return
+        }
+        if (userClubs.length === 1) {
           router.push(`/clubs/${userClubs[0]._id}`)
         }
       } catch (error: any) {
@@ -116,5 +128,32 @@ export default function MyClubClient({ userId }: Props) {
     )
   }
 
-  return null
+  return (
+    <div className="min-h-screen bg-background">
+      <div className="mx-auto flex max-w-4xl flex-col gap-4 px-4 py-10">
+        <h1 className="text-2xl font-bold text-foreground">Válaszd ki a klubot</h1>
+        <p className="text-muted-foreground">Több klubtagságod van, válassz melyik klub oldalára lépnél.</p>
+
+        <div className="grid gap-3">
+          {clubs.map((club) => (
+            <Card key={club._id} className="bg-card/85 shadow-sm shadow-black/20">
+              <CardContent className="flex items-center justify-between gap-4 py-4">
+                <div className="min-w-0">
+                  <p className="truncate text-base font-semibold text-foreground">{club.name}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {club.userRole === "admin"
+                      ? "Adminisztrátor"
+                      : club.userRole === "moderator"
+                        ? "Moderátor"
+                        : "Tag"}
+                  </p>
+                </div>
+                <Button onClick={() => router.push(`/clubs/${club._id}`)}>Megnyitás</Button>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
 }

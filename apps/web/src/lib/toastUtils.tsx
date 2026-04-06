@@ -8,6 +8,10 @@ interface ErrorToastOptions {
   error?: string;
   context?: string;
   errorName?: string;
+  errorCode?: string;
+  requestId?: string;
+  errorType?: string;
+  isLogged?: boolean;
   reportable?: boolean;
 }
 
@@ -16,8 +20,9 @@ interface ErrorToastOptions {
  * Adds a CTA that routes users to the feedback page with prefilled params.
  */
 export const showErrorToast = (message: string, options: ErrorToastOptions = {}) => {
-  const { error, context, errorName, reportable = true } = options;
+  const { error, context, errorName, errorCode, requestId, errorType, isLogged, reportable = true } = options;
   const canUseWindow = typeof window !== 'undefined';
+  const hasLoggingEvidence = Boolean(errorCode || requestId || isLogged);
 
   if (reportable && canUseWindow) {
     const reportUrl = new URL('/feedback', window.location.origin);
@@ -33,11 +38,22 @@ export const showErrorToast = (message: string, options: ErrorToastOptions = {})
 
     reportUrl.searchParams.set('description', descriptionParts.join(' ').trim());
     reportUrl.searchParams.set('page', window.location.pathname);
+    if (hasLoggingEvidence) {
+      reportUrl.searchParams.set('autoLogged', '1');
+    }
+    if (errorCode) reportUrl.searchParams.set('errCode', errorCode);
+    if (requestId) reportUrl.searchParams.set('reqId', requestId);
+    if (errorType) reportUrl.searchParams.set('errType', errorType);
 
     toast.error(
       (toastObj) => (
         <div className="flex flex-col gap-2 text-black">
           <span className="text-sm font-medium">{message}</span>
+          {hasLoggingEvidence ? (
+            <span className="text-xs text-muted-foreground">
+              A hibat automatikusan naploztuk, kuldhetsz tovabbi reszleteket.
+            </span>
+          ) : null}
           <Button
             variant="outline"
             size="sm"

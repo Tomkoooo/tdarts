@@ -982,6 +982,43 @@ describe('ClubService', () => {
     expect(role).toBe('none');
   }, 30000);
 
+  it('keeps global admin access even when user is only a regular member in club', async () => {
+    const clubAdmin = await UserModel.create({
+      email: 'clubadmin@example.com',
+      password: 'password123',
+      username: 'club_admin',
+      name: 'Club Admin',
+      isVerified: true,
+      isAdmin: false,
+    });
+
+    const superAdmin = await UserModel.create({
+      email: 'superadmin@example.com',
+      password: 'password123',
+      username: 'super_admin',
+      name: 'Super Admin',
+      isVerified: true,
+      isAdmin: true,
+    });
+
+    const superAdminPlayer = await PlayerModel.create({
+      name: superAdmin.name,
+      userRef: superAdmin._id,
+      isRegistered: true,
+    });
+
+    const club: ClubDocument = await ClubService.createClub(clubAdmin._id.toString(), {
+      name: 'SuperAdminClub',
+      description: 'Role precedence test club',
+      location: 'Test City',
+    });
+
+    await ClubService.addMember(club._id.toString(), superAdminPlayer._id.toString(), clubAdmin._id.toString());
+
+    const role = await ClubService.getUserRoleInClub(superAdmin._id.toString(), club._id.toString());
+    expect(role).toBe('admin');
+  }, 30000);
+
   it('should search users by name or username', async () => {
     await UserModel.insertMany([
       {
@@ -1012,5 +1049,65 @@ describe('ClubService', () => {
       name: 'User Two',
       username: 'user_two',
     });
+  }, 30000);
+
+  it('projects role-only admin into members list using player by userRef', async () => {
+    const adminUser = await UserModel.create({
+      email: 'admin-only@example.com',
+      password: 'password123',
+      username: 'admin_only',
+      name: 'Admin Only',
+      isVerified: true,
+    });
+    const modUser = await UserModel.create({
+      email: 'mod-member@example.com',
+      password: 'password123',
+      username: 'mod_member',
+      name: 'Mod Member',
+      isVerified: true,
+    });
+
+    const adminPlayer = await PlayerModel.create({
+      name: adminUser.name,
+      userRef: adminUser._id,
+      isRegistered: true,
+      stats: { last10ClosedAvg: 61.23 },
+      honors: [{ title: 'Captain', year: 2025, type: 'special' }],
+    });
+    const modPlayer = await PlayerModel.create({
+      name: modUser.name,
+      userRef: modUser._id,
+      isRegistered: true,
+    });
+
+    const club = await ClubModel.create({
+      name: 'Projection Club',
+      description: 'Projection test',
+      location: 'Budapest',
+      members: [modPlayer._id], // admin player intentionally missing from members
+      admin: [adminUser._id],
+      moderators: [modUser._id],
+      isActive: true,
+    });
+
+    const projected = await ClubService.getClubMembersForManagement(club._id.toString(), 'test-role-projection');
+
+    expect(projected.members).toHaveLength(2);
+    expect(projected.members).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          _id: modPlayer._id.toString(),
+          userRef: modUser._id.toString(),
+          username: 'mod_member',
+          role: 'moderator',
+        }),
+        expect.objectContaining({
+          _id: adminPlayer._id.toString(),
+          userRef: adminUser._id.toString(),
+          username: 'admin_only',
+          role: 'admin',
+        }),
+      ])
+    );
   }, 30000);
 });

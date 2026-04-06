@@ -12,8 +12,8 @@ export async function getUserClubsAction() {
     async () => {
       const authResult = await authorizeUserResult();
       if (!authResult.ok) return authResult;
-      const { clubs, userRoleInClub } = await ClubService.getUserClubs(authResult.data.userId);
-      return serializeForClient({ clubs, userRoleInClub });
+      const { clubs } = await ClubService.getUserClubs(authResult.data.userId);
+      return serializeForClient({ clubs });
     },
     {
       method: 'ACTION',

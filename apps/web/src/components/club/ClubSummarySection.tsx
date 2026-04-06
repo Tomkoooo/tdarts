@@ -272,7 +272,8 @@ export default function ClubSummarySection({
           <CardContent className="p-6">
             <h3 className="text-xl font-semibold mb-4 text-foreground">{t('about')}</h3>
             <div 
-              className="prose dark:prose-invert max-w-none text-muted-foreground break-words overflow-hidden" 
+              lang="hu"
+              className="prose dark:prose-invert max-w-none text-muted-foreground [word-break:normal] [overflow-wrap:break-word] [hyphens:auto] [&_*]:whitespace-normal [&_*]:max-w-full [&_*]:[word-break:normal] [&_*]:[overflow-wrap:break-word]"
               dangerouslySetInnerHTML={{ __html: aboutText || club.description }} 
             />
           </CardContent>

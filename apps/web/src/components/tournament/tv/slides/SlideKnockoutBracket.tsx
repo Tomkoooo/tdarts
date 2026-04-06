@@ -13,9 +13,9 @@ interface SlideKnockoutBracketProps {
 }
 
 const statusClass = (status: string) => {
-  if (status === "ongoing") return "border-green-500/50 bg-green-500/10";
-  if (status === "finished") return "border-blue-500/40 bg-blue-500/10";
-  return "border-yellow-500/40 bg-yellow-500/10";
+  if (status === "ongoing") return "border-emerald-400/60 bg-emerald-400/12";
+  if (status === "finished") return "border-sky-400/55 bg-sky-400/10";
+  return "border-amber-300/45 bg-amber-300/10";
 };
 
 export default function SlideKnockoutBracket({
@@ -39,26 +39,54 @@ export default function SlideKnockoutBracket({
     container.scrollTop = 0;
     container.scrollLeft = 0;
     userInterruptedAutoScrollRef.current = false;
-    const maxScrollX = container.scrollWidth - container.clientWidth;
-    const maxScrollY = container.scrollHeight - container.clientHeight;
-    if (maxScrollX <= 0 && maxScrollY <= 0) return;
 
-    const speedPxX = 1;
-    const speedPxY = 1;
-    const stepMs = 50;
-    const interval = window.setInterval(() => {
-      if (userInterruptedAutoScrollRef.current) return;
-      if (maxScrollX > 0) {
-        const nextX = container.scrollLeft + speedPxX;
-        container.scrollLeft = nextX >= maxScrollX ? 0 : nextX;
-      }
+    let intervalId: ReturnType<typeof setInterval> | null = null;
+    const rafId = window.requestAnimationFrame(() => {
+      const maxScrollX = Math.max(0, container.scrollWidth - container.clientWidth);
+      const maxScrollY = Math.max(0, container.scrollHeight - container.clientHeight);
+      if (maxScrollX <= 0 && maxScrollY <= 0) return;
 
-      if (maxScrollY > 0) {
-        const nextY = container.scrollTop + speedPxY;
-        container.scrollTop = nextY >= maxScrollY ? 0 : nextY;
-      }
-    }, stepMs);
-    return () => window.clearInterval(interval);
+      const speedPxX = 1;
+      const speedPxY = 1;
+      const stepMs = 50;
+      const endTolerancePx = 1;
+      const pauseAtEndMs = 1500;
+      let phase: "forward" | "pause" = "forward";
+      let pauseStartedAt = 0;
+
+      intervalId = window.setInterval(() => {
+        if (userInterruptedAutoScrollRef.current) return;
+
+        if (phase === "pause") {
+          if (Date.now() - pauseStartedAt >= pauseAtEndMs) {
+            container.scrollLeft = 0;
+            container.scrollTop = 0;
+            phase = "forward";
+          }
+          return;
+        }
+
+        if (maxScrollX > 0) {
+          container.scrollLeft = Math.min(maxScrollX, container.scrollLeft + speedPxX);
+        }
+
+        if (maxScrollY > 0) {
+          container.scrollTop = Math.min(maxScrollY, container.scrollTop + speedPxY);
+        }
+
+        const atX = maxScrollX <= 0 || container.scrollLeft >= maxScrollX - endTolerancePx;
+        const atY = maxScrollY <= 0 || container.scrollTop >= maxScrollY - endTolerancePx;
+        if (atX && atY) {
+          phase = "pause";
+          pauseStartedAt = Date.now();
+        }
+      }, stepMs);
+    });
+
+    return () => {
+      window.cancelAnimationFrame(rafId);
+      if (intervalId) window.clearInterval(intervalId);
+    };
   }, [rounds]);
 
   const stopAutoScrollForUser = () => {
@@ -87,13 +115,13 @@ export default function SlideKnockoutBracket({
   }, [rounds, onRequiredDisplayMsChange]);
 
   return (
-    <SlideFrame title={title} subtitle={sideLabel} accentClassName="from-primary/20 to-background">
+    <SlideFrame title={title} subtitle={sideLabel} accentClassName="from-violet-500/25 via-transparent to-transparent">
       {rounds.length === 0 ? (
-        <div className="flex h-full items-center justify-center text-lg sm:text-2xl md:text-3xl text-muted-foreground text-center px-3">{emptyLabel}</div>
+        <div className="flex h-full items-center justify-center px-3 text-center text-lg text-slate-300 sm:text-2xl md:text-3xl">{emptyLabel}</div>
       ) : (
         <div
           ref={scrollRef}
-          className="flex h-full items-stretch gap-2 sm:gap-3 md:gap-4 overflow-x-auto pb-2"
+          className="flex h-full items-stretch gap-3 overflow-x-auto pb-2"
           onWheel={stopAutoScrollForUser}
           onTouchStart={stopAutoScrollForUser}
           onPointerDown={stopAutoScrollForUser}
@@ -104,8 +132,8 @@ export default function SlideKnockoutBracket({
             const dynamicGap = baseGapPx + (factor - 1) * (cardHeightPx + baseGapPx);
             const dynamicPaddingTop = roundIndex === 0 ? 0 : ((cardHeightPx + baseGapPx) * (factor - 1)) / 2;
             return (
-            <div key={round.id} className="flex min-h-0 min-w-64 sm:min-w-72 md:min-w-88 flex-1 flex-col">
-              <div className="mb-2 sm:mb-3 text-lg sm:text-xl md:text-2xl font-bold text-primary">{round.label}</div>
+            <div key={round.id} className="flex min-h-0 min-w-72 flex-1 flex-col sm:min-w-80 md:min-w-96">
+              <div className="mb-3 text-xl font-black text-violet-200 sm:text-2xl md:text-3xl">{round.label}</div>
               <div
                 className="min-h-0 flex-1 pr-1"
                 style={{ paddingTop: `${dynamicPaddingTop}px` }}
@@ -114,20 +142,32 @@ export default function SlideKnockoutBracket({
                 {round.matches.map((match) => (
                   <article
                     key={match.id}
-                    className={`h-33 rounded-xl border p-2.5 sm:p-3 ${statusClass(match.status)}`}
+                    className={`h-36 rounded-2xl border p-3 ${statusClass(match.status)}`}
                   >
-                    <div className="mb-1.5 sm:mb-2 text-xs sm:text-sm font-semibold text-muted-foreground">
+                    <div className="mb-2 text-sm font-semibold text-slate-300">
                       {match.boardLabel}
                     </div>
-                    <div className="flex items-center justify-between text-sm sm:text-base md:text-lg">
-                      <span className="truncate">{match.player1Name}</span>
+                    <div className="flex items-center justify-between text-lg md:text-xl">
+                      <span
+                        className={`truncate ${
+                          match.status === "finished" && match.player1Legs > match.player2Legs ? "font-black text-violet-100" : "font-semibold"
+                        }`}
+                      >
+                        {match.player1Name}
+                      </span>
                       <strong>{match.player1Legs}</strong>
                     </div>
-                    <div className="mt-1 flex items-center justify-between text-sm sm:text-base md:text-lg">
-                      <span className="truncate">{match.player2Name}</span>
+                    <div className="mt-1.5 flex items-center justify-between text-lg md:text-xl">
+                      <span
+                        className={`truncate ${
+                          match.status === "finished" && match.player2Legs > match.player1Legs ? "font-black text-violet-100" : "font-semibold"
+                        }`}
+                      >
+                        {match.player2Name}
+                      </span>
                       <strong>{match.player2Legs}</strong>
                     </div>
-                    <div className="mt-1.5 sm:mt-2 text-xs sm:text-sm text-muted-foreground">
+                    <div className="mt-2 text-sm text-slate-300">
                       {scorerLabel}: {match.scorerName || scorerFallback}
                     </div>
                   </article>

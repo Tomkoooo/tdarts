@@ -18,6 +18,20 @@ const getClubMetadataThemeCached = unstable_cache(
   { revalidate: 15 }
 );
 
+const stripHtmlToText = (value?: string): string => {
+  if (!value) return "";
+  return value
+    .replace(/<[^>]*>/g, " ")
+    .replace(/\s+([.,!?;:])/g, "$1")
+    .replace(/\s+/g, " ")
+    .trim();
+};
+
+const truncateForDescription = (value: string, maxLength = 200): string => {
+  if (value.length <= maxLength) return value;
+  return `${value.slice(0, maxLength - 1).trimEnd()}…`;
+};
+
 export async function generateMetadata({
   params,
 }: {
@@ -39,8 +53,10 @@ export async function generateMetadata({
     const brandSuffix = "tDarts";
     const pageTitle = `${primaryTitle} | ${brandSuffix}`;
     const place = club.location || club.address;
+    const aboutTextFallback = truncateForDescription(stripHtmlToText(club.landingPage?.aboutText));
     const description =
       club.landingPage?.seo?.description ||
+      aboutTextFallback ||
       club.description ||
       (place
         ? tSeo("description_fallback_with_place", { clubName: name, place })
@@ -91,6 +107,10 @@ export async function generateMetadata({
         title: pageTitle,
         description,
         images: [imageUrl],
+      },
+      robots: {
+        index: true,
+        follow: true,
       },
       other: {
         "og:type": "website",
