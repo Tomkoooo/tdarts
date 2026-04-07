@@ -5,7 +5,7 @@ import ClubDetailClientPage, { type ClubInitialDataLevel } from "./ClubDetailCli
 
 type ClubPageProps = {
   params: Promise<{ locale: string; code: string }>;
-  searchParams: Promise<{ page?: string; league?: string }>;
+  searchParams: Promise<{ page?: string; league?: string; st?: string }>;
 };
 
 function toSupportedLocale(locale: string): SupportedLocale {
@@ -36,6 +36,17 @@ export default async function ClubDetailPage({ params, searchParams }: ClubPageP
       console.log(`[perf][club] [${requestId}] page-start code=${code} detail=${initialDetailLevel}`);
     }
     const club = await ClubService.getClubSummary(code, requestId);
+    let initialSelectedTournamentIds: string[] = [];
+    let invalidShareToken = false;
+    const shareToken = typeof search.st === 'string' ? search.st.trim() : '';
+    if (shareToken) {
+      const resolvedShare = await ClubService.resolveSelectedTournamentsShareToken(shareToken);
+      if (resolvedShare && resolvedShare.clubId === String((club as any)._id)) {
+        initialSelectedTournamentIds = resolvedShare.tournamentIds;
+      } else {
+        invalidShareToken = true;
+      }
+    }
 
     return (
       <>
@@ -55,6 +66,8 @@ export default async function ClubDetailPage({ params, searchParams }: ClubPageP
           defaultPage={defaultPage}
           initialLeagueId={search.league ?? null}
           initialDetailLevel={initialDetailLevel}
+          initialSelectedTournamentIds={initialSelectedTournamentIds}
+          invalidShareToken={invalidShareToken}
         />
       </>
     );
@@ -69,6 +82,8 @@ export default async function ClubDetailPage({ params, searchParams }: ClubPageP
         defaultPage={defaultPage}
         initialLeagueId={search.league ?? null}
         initialDetailLevel={initialDetailLevel}
+        initialSelectedTournamentIds={[]}
+        invalidShareToken={false}
       />
     );
   }

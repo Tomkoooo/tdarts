@@ -9,6 +9,8 @@ import { addDaysToDateKey, formatDateKeyLabel, getLocalDateKey, getUserTimeZone 
 
 interface ClubTournamentsSectionProps {
   tournaments: any[]
+  preselectedTournamentIds?: string[]
+  invalidShareToken?: boolean
   userRole: 'admin' | 'moderator' | 'member' | 'none'
   isVerified?: boolean
   onCreateTournament: (isSandbox: boolean) => void
@@ -18,6 +20,8 @@ interface ClubTournamentsSectionProps {
 
 export function ClubTournamentsSection({
   tournaments,
+  preselectedTournamentIds = [],
+  invalidShareToken = false,
   userRole,
   isVerified = false,
   onCreateTournament,
@@ -55,6 +59,11 @@ export function ClubTournamentsSection({
   const [selectedDate, setSelectedDate] = React.useState<string>('')
   const [nameQuery, setNameQuery] = React.useState<string>('')
   const [filtersTouched, setFiltersTouched] = React.useState(false)
+  const [selectedShareTournamentIds, setSelectedShareTournamentIds] = React.useState<string[]>(preselectedTournamentIds)
+
+  React.useEffect(() => {
+    setSelectedShareTournamentIds(preselectedTournamentIds)
+  }, [preselectedTournamentIds])
 
   React.useEffect(() => {
     if (filtersTouched) return
@@ -99,6 +108,11 @@ export function ClubTournamentsSection({
       // Name search
       if (query && !tournamentName.includes(query)) return false;
 
+      if (selectedShareTournamentIds.length > 0) {
+        const currentTournamentId = String(t.tournamentId || '').trim()
+        if (!currentTournamentId || !selectedShareTournamentIds.includes(currentTournamentId)) return false
+      }
+
       // Time filter
       if (timePreset !== 'all') {
         if (!hasValidStartDate || !startDateValue) return false;
@@ -125,7 +139,8 @@ export function ClubTournamentsSection({
     nameQuery,
     timePreset,
     selectedDate,
-    timeZone
+    timeZone,
+    selectedShareTournamentIds
   ])
 
   // Group tournaments by date (Newest first)
@@ -254,6 +269,26 @@ export function ClubTournamentsSection({
 
       {/* Filters */}
       <div className="grid grid-cols-1 gap-4 rounded-2xl border border-border/50 bg-card/50 p-4 backdrop-blur-xl sm:flex sm:flex-wrap sm:items-end">
+        {invalidShareToken && (
+          <div className="w-full rounded-lg border border-warning/30 bg-warning/10 px-3 py-2 text-xs font-medium text-warning">
+            {t('share_filter.invalid_token')}
+          </div>
+        )}
+        {selectedShareTournamentIds.length > 0 && (
+          <div className="flex w-full items-center justify-between gap-2 rounded-lg border border-primary/25 bg-primary/8 px-3 py-2 text-xs">
+            <span className="font-medium text-foreground">
+              {t('share_filter.active_count', { count: selectedShareTournamentIds.length })}
+            </span>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 text-xs"
+              onClick={() => setSelectedShareTournamentIds([])}
+            >
+              {t('share_filter.clear')}
+            </Button>
+          </div>
+        )}
         <div className="flex flex-col gap-1.5 flex-1 min-w-[150px]">
           <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground ml-1">{t('filters.status')}</label>
           <select 
@@ -355,7 +390,8 @@ export function ClubTournamentsSection({
           sortOrder !== 'asc' ||
           timePreset !== 'all' ||
           selectedDate !== '' ||
-          nameQuery.trim() !== '') && (
+          nameQuery.trim() !== '' ||
+          selectedShareTournamentIds.length > 0) && (
           <Button 
             variant="ghost" 
             size="sm" 
@@ -368,6 +404,7 @@ export function ClubTournamentsSection({
               setTimePreset(defaults.timePreset);
               setSelectedDate('');
               setNameQuery('');
+              setSelectedShareTournamentIds([]);
             }}
             className="text-xs h-9"
           >

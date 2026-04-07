@@ -45,6 +45,8 @@ type ClubDetailClientPageProps = {
   defaultPage: "summary" | "players" | "tournaments" | "leagues" | "settings";
   initialLeagueId: string | null;
   initialDetailLevel: ClubInitialDataLevel;
+  initialSelectedTournamentIds?: string[];
+  invalidShareToken?: boolean;
 };
 
 export default function ClubDetailClientPage({
@@ -56,6 +58,8 @@ export default function ClubDetailClientPage({
   defaultPage,
   initialLeagueId,
   initialDetailLevel,
+  initialSelectedTournamentIds = [],
+  invalidShareToken = false,
 }: ClubDetailClientPageProps) {
   const t = useTranslations("Club.pages");
   const mt = getMapSettingsTranslations(typeof navigator !== "undefined" ? navigator.language : "hu")
@@ -393,6 +397,8 @@ export default function ClubDetailClientPage({
         tournaments={
           <ClubTournamentsSection
             tournaments={club.tournaments || []}
+            preselectedTournamentIds={initialSelectedTournamentIds}
+            invalidShareToken={invalidShareToken}
             userRole={userRole}
             isVerified={club.verified || false}
             onCreateTournament={(isSandbox: boolean) => {
@@ -460,7 +466,9 @@ export default function ClubDetailClientPage({
         isOpen={clubShareModal}
         onClose={() => setClubShareModal(false)}
         clubCode={code}
+        clubId={club._id}
         clubName={club.name}
+        tournaments={club.tournaments || []}
       />
       <DeleteTournamentModal
         isOpen={deleteTournamentModal.isOpen}

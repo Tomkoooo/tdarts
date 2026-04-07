@@ -10,20 +10,43 @@ import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { useLocale, useTranslations } from 'next-intl'
 import type { SupportedLocale } from '@/lib/seo'
-import { buildClubLoginRedirectShareLink, buildClubPublicShareLink } from '@/lib/club-share-links'
+import {
+  buildClubLoginRedirectShareLink,
+  buildClubPublicShareLink,
+  buildClubSelectedTournamentsShortShareLink,
+} from '@/lib/club-share-links'
+import { createSelectedTournamentsShareLinkAction } from '@/features/clubs/actions/createSelectedTournamentsShareLink.action'
+import { listSelectedTournamentsShareLinksAction } from '@/features/clubs/actions/listSelectedTournamentsShareLinks.action'
 
 interface ClubShareModalProps {
   isOpen: boolean
   onClose: () => void
+  clubId: string
   clubCode: string
   clubName: string
+  tournaments: Array<{
+    tournamentId: string
+    tournamentSettings?: { name?: string; startDate?: string; status?: string }
+    isDeleted?: boolean
+    isSandbox?: boolean
+  }>
 }
 
-export default function ClubShareModal({ isOpen, onClose, clubCode, clubName }: ClubShareModalProps) {
+export default function ClubShareModal({ isOpen, onClose, clubId, clubCode, clubName, tournaments }: ClubShareModalProps) {
   const t = useTranslations('Club.share_modal')
   const locale = useLocale() as SupportedLocale
-  const [shareType, setShareType] = useState<'public' | 'auth'>('public')
+  const [shareType, setShareType] = useState<'public' | 'auth' | 'selected'>('public')
   const [baseUrl, setBaseUrl] = useState('')
+  const [selectedTournamentIds, setSelectedTournamentIds] = useState<string[]>([])
+  const [selectedToken, setSelectedToken] = useState('')
+  const [isGeneratingToken, setIsGeneratingToken] = useState(false)
+  const [isLoadingLinks, setIsLoadingLinks] = useState(false)
+  const [existingLinks, setExistingLinks] = useState<Array<{
+    token: string
+    tournamentIds: string[]
+    createdAt: string
+    expiresAt: string
+  }>>([])
 
   React.useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -31,8 +54,32 @@ export default function ClubShareModal({ isOpen, onClose, clubCode, clubName }: 
     }
   }, [])
 
+  React.useEffect(() => {
+    if (!isOpen || shareType !== 'selected') return
+    let cancelled = false
+    const load = async () => {
+      setIsLoadingLinks(true)
+      try {
+        const rows = await listSelectedTournamentsShareLinksAction({ clubId })
+        if (!cancelled) setExistingLinks(rows)
+      } catch {
+        if (!cancelled) setExistingLinks([])
+      } finally {
+        if (!cancelled) setIsLoadingLinks(false)
+      }
+    }
+    void load()
+    return () => {
+      cancelled = true
+    }
+  }, [isOpen, shareType, clubId])
+
   const generateQRCodeData = () => {
     if (!baseUrl) return ''
+    if (shareType === 'selected') {
+      if (!selectedToken) return ''
+      return buildClubSelectedTournamentsShortShareLink(baseUrl, locale, selectedToken)
+    }
     if (shareType === 'auth') {
       return buildClubLoginRedirectShareLink(baseUrl, locale, clubCode)
     }
@@ -41,14 +88,72 @@ export default function ClubShareModal({ isOpen, onClose, clubCode, clubName }: 
 
   const handleCopyLink = () => {
     const link = generateQRCodeData()
+    if (!link) return
     navigator.clipboard.writeText(link)
     toast.success(t('toast_copied'))
   }
 
+  const availableTournaments = React.useMemo(() => {
+    return [...tournaments]
+      .filter((tournament) => tournament.isDeleted !== true)
+      .sort((a, b) => {
+        const aStatus = String(a.tournamentSettings?.status || '').trim().toLowerCase()
+        const bStatus = String(b.tournamentSettings?.status || '').trim().toLowerCase()
+        const aWaitingRank = aStatus === 'pending' ? 0 : 1
+        const bWaitingRank = bStatus === 'pending' ? 0 : 1
+        if (aWaitingRank !== bWaitingRank) return aWaitingRank - bWaitingRank
+        const aDate = a.tournamentSettings?.startDate ? new Date(a.tournamentSettings.startDate).getTime() : 0
+        const bDate = b.tournamentSettings?.startDate ? new Date(b.tournamentSettings.startDate).getTime() : 0
+        return bDate - aDate
+      })
+  }, [tournaments])
+
+  const formatTournamentDate = (value?: string) => {
+    if (!value) return null
+    const date = new Date(value)
+    if (Number.isNaN(date.getTime())) return null
+    return date.toLocaleDateString(locale)
+  }
+
+  const tournamentNameById = React.useMemo(() => {
+    const map = new Map<string, string>()
+    for (const tournament of availableTournaments) {
+      map.set(tournament.tournamentId, tournament.tournamentSettings?.name || t('unnamed_tournament'))
+    }
+    return map
+  }, [availableTournaments, t])
+
+  const handleToggleTournament = (id: string) => {
+    setSelectedTournamentIds((prev) => (prev.includes(id) ? prev.filter((value) => value !== id) : [...prev, id]))
+  }
+
+  const handleGenerateSelectedLink = async () => {
+    if (selectedTournamentIds.length === 0) {
+      toast.error(t('select_required'))
+      return
+    }
+    setIsGeneratingToken(true)
+    try {
+      const result = await createSelectedTournamentsShareLinkAction({
+        clubId,
+        tournamentIds: selectedTournamentIds,
+      })
+      setSelectedToken(result.token)
+      const rows = await listSelectedTournamentsShareLinksAction({ clubId })
+      setExistingLinks(rows)
+      toast.success(t('selected_link_ready'))
+    } catch {
+      toast.error(t('selected_link_error'))
+    } finally {
+      setIsGeneratingToken(false)
+    }
+  }
+
   const handlePrint = () => {
+    const qrData = generateQRCodeData()
+    if (!qrData) return
     const printWindow = window.open('', '_blank')
     if (printWindow) {
-      const qrData = generateQRCodeData()
       const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrData)}`
       const authTitle = t('print_auth_subtitle')
       const publicTitle = t('print_public_subtitle')
@@ -107,6 +212,14 @@ export default function ClubShareModal({ isOpen, onClose, clubCode, clubName }: 
               {t('public_tab')}
             </Button>
             <Button
+              variant={shareType === 'selected' ? 'default' : 'outline'}
+              size="sm"
+              className="flex-1"
+              onClick={() => setShareType('selected')}
+            >
+              {t('selected_tab')}
+            </Button>
+            <Button
               variant={shareType === 'auth' ? 'default' : 'outline'}
               size="sm"
               className="flex-1"
@@ -119,8 +232,77 @@ export default function ClubShareModal({ isOpen, onClose, clubCode, clubName }: 
           <p className="text-sm text-muted-foreground">
             {shareType === 'public'
               ? t('public_desc')
+              : shareType === 'selected'
+                ? t('selected_desc')
               : t('auth_desc')}
           </p>
+
+          {shareType === 'selected' && (
+            <div className="space-y-3 rounded-lg border border-border/60 bg-card/30 p-3">
+              <p className="text-xs font-medium text-foreground">{t('selected_picker_label')}</p>
+              <div className="max-h-40 space-y-2 overflow-auto pr-1">
+                {availableTournaments.map((tournament) => (
+                  <label
+                    key={tournament.tournamentId}
+                    className="flex cursor-pointer items-start gap-2 rounded-md px-2 py-1.5 hover:bg-muted/35"
+                  >
+                    <input
+                      type="checkbox"
+                      className="mt-0.5"
+                      checked={selectedTournamentIds.includes(tournament.tournamentId)}
+                      onChange={() => handleToggleTournament(tournament.tournamentId)}
+                    />
+                    <div className="text-xs text-foreground">
+                      <div>
+                        {tournament.tournamentSettings?.name || t('unnamed_tournament')}
+                        {formatTournamentDate(tournament.tournamentSettings?.startDate) && (
+                          <span className="ml-1 italic text-muted-foreground">
+                            ({formatTournamentDate(tournament.tournamentSettings?.startDate)})
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-[11px] text-muted-foreground">
+                        {t('status_label')}: {tournament.tournamentSettings?.status || 'pending'}
+                      </div>
+                    </div>
+                  </label>
+                ))}
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full"
+                onClick={handleGenerateSelectedLink}
+                disabled={isGeneratingToken || selectedTournamentIds.length === 0}
+              >
+                {isGeneratingToken ? t('selected_generating') : t('selected_generate')}
+              </Button>
+              <div className="space-y-2 rounded-lg border border-border/50 bg-background/40 p-3">
+                <p className="text-xs font-medium text-foreground">{t('existing_links_title')}</p>
+                {isLoadingLinks ? (
+                  <p className="text-xs text-muted-foreground">{t('existing_links_loading')}</p>
+                ) : existingLinks.length === 0 ? (
+                  <p className="text-xs text-muted-foreground">{t('existing_links_empty')}</p>
+                ) : (
+                  <div className="max-h-36 space-y-2 overflow-auto pr-1">
+                    {existingLinks.map((link) => (
+                      <button
+                        key={link.token}
+                        type="button"
+                        className="w-full rounded-md border border-border/40 px-2 py-2 text-left hover:bg-muted/35"
+                        onClick={() => setSelectedToken(link.token)}
+                      >
+                        <div className="text-[11px] font-medium text-foreground">{link.token}</div>
+                        <div className="text-[11px] text-muted-foreground">
+                          {link.tournamentIds.map((id) => tournamentNameById.get(id) || id).join(', ')}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           <div className="flex justify-center">
             <div className="rounded-lg border-0 bg-white p-3 shadow-lg">
@@ -142,11 +324,16 @@ export default function ClubShareModal({ isOpen, onClose, clubCode, clubName }: 
         </div>
 
         <DialogFooter className="flex flex-col gap-2 sm:flex-row sm:justify-between">
-          <Button variant="outline" className="w-full sm:w-auto bg-card/85 hover:bg-card" onClick={handleCopyLink}>
+          <Button
+            variant="outline"
+            className="w-full sm:w-auto bg-card/85 hover:bg-card"
+            onClick={handleCopyLink}
+            disabled={!generateQRCodeData()}
+          >
             <IconCopy className="mr-2 h-4 w-4" />
             {t('copy_link')}
           </Button>
-          <Button className="w-full sm:w-auto" onClick={handlePrint}>
+          <Button className="w-full sm:w-auto" onClick={handlePrint} disabled={!generateQRCodeData()}>
             <IconPrinter className="mr-2 h-4 w-4" />
             {t('print')}
           </Button>

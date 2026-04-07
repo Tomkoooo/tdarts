@@ -173,6 +173,8 @@ export type {
 export { BoardModel, BoardSchema } from './models/board.model';
 
 export { ClubModel } from './models/club.model';
+export { ClubShareTokenModel } from './models/club-share-token.model';
+export type { ClubShareTokenDocument, ClubShareTokenType } from './models/club-share-token.model';
 
 export { EmailTemplateModel } from './models/emailtemplate.model';
 export type { IEmailTemplate } from './models/emailtemplate.model';

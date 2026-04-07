@@ -3129,6 +3129,11 @@
         "all": "Összes dátum"
       },
       "search_placeholder": "Versenynév keresése...",
+      "share_filter": {
+        "active_count": "{count} kiválasztott torna szűrő aktív",
+        "clear": "Kiválasztott szűrő törlése",
+        "invalid_token": "Ez a megosztott torna-válogatás link érvénytelen vagy lejárt."
+      },
       "date_header": {
         "today": "Ma",
         "unknown": "Nincs kezdődátum"
@@ -3684,9 +3689,22 @@
       "title": "Klub megosztása",
       "description": "Oszd meg a klubod linkjét vagy QR-kódját a játékosokkal.",
       "public_tab": "Nyilvános",
+      "selected_tab": "Kiválasztott tornák",
       "auth_tab": "Bejelentkezéssel",
       "public_desc": "Nyilvános link – bárki megtekintheti a klubot.",
+      "selected_desc": "Készíts rövid linket, ami csak az előre kiválasztott tornákkal nyit.",
       "auth_desc": "Bejelentkezési link – automatikus átirányítás bejelentkezés után.",
+      "selected_picker_label": "Válaszd ki a megjelenítendő tornákat",
+      "selected_generate": "Kiválasztott link generálása",
+      "selected_generating": "Generálás...",
+      "selected_link_ready": "A kiválasztott tornák linkje elkészült",
+      "selected_link_error": "Nem sikerült létrehozni a kiválasztott tornák linkjét",
+      "existing_links_title": "Létező linkek",
+      "existing_links_loading": "Létező linkek betöltése...",
+      "existing_links_empty": "Még nincs aktív kiválasztott-torna link.",
+      "select_required": "Válassz legalább egy tornát",
+      "status_label": "Állapot",
+      "unnamed_tournament": "Névtelen torna",
       "qr_alt": "QR kód",
       "print_qr_title": "{name} - QR Kód",
       "print_auth_subtitle": "Bejelentkezési QR Kód",

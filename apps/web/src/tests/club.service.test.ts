@@ -2,6 +2,8 @@ import { ClubService } from '@/database/services/club.service';
 import { ClubModel } from '@/database/models/club.model';
 import { UserModel } from '@/database/models/user.model';
 import { PlayerModel } from '@/database/models/player.model';
+import { TournamentModel } from '@/database/models/tournament.model';
+import { ClubShareTokenModel } from '@/database/models/club-share-token.model';
 import { BadRequestError, AuthorizationError } from '@/middleware/errorHandle';
 import { connectMongo as connectToDatabase } from '@/lib/mongoose';
 import { Types } from 'mongoose';
@@ -16,12 +18,16 @@ describe('ClubService', () => {
     await UserModel.deleteMany({});
     await ClubModel.deleteMany({});
     await PlayerModel.deleteMany({});
+    await TournamentModel.deleteMany({});
+    await ClubShareTokenModel.deleteMany({});
   });
 
   afterAll(async () => {
     await UserModel.deleteMany({});
     await ClubModel.deleteMany({});
     await PlayerModel.deleteMany({});
+    await TournamentModel.deleteMany({});
+    await ClubShareTokenModel.deleteMany({});
   });
 
   it('should create a new club', async () => {
@@ -1109,5 +1115,103 @@ describe('ClubService', () => {
         }),
       ])
     );
+  }, 30000);
+
+  it('ignores malformed role user refs when fetching club', async () => {
+    const user = await UserModel.create({
+      email: 'clean-user@example.com',
+      password: 'password123',
+      username: 'clean_user',
+      name: 'Clean User',
+      isVerified: true,
+    });
+
+    const player = await PlayerModel.create({
+      name: user.name,
+      userRef: user._id,
+      isRegistered: true,
+    });
+
+    const club = await ClubModel.create({
+      name: 'Malformed Role Club',
+      description: 'Regression test',
+      location: 'Budapest',
+      members: [player._id],
+      admin: [user._id],
+      moderators: [],
+      isActive: true,
+    });
+
+    await ClubModel.collection.updateOne({ _id: club._id }, { $push: { admin: 'undefined' as any } });
+
+    const fetched = await ClubService.getClub(club._id.toString());
+    expect(fetched).toBeDefined();
+    expect(Array.isArray(fetched.members)).toBe(true);
+    expect(fetched.members).toEqual(
+      expect.arrayContaining([expect.objectContaining({ userRef: user._id })])
+    );
+  }, 30000);
+
+  it('creates and resolves selected tournament share token', async () => {
+    const admin = await UserModel.create({
+      email: 'share-admin@example.com',
+      password: 'password123',
+      username: 'share_admin',
+      name: 'Share Admin',
+      isVerified: true,
+    });
+
+    const club: ClubDocument = await ClubService.createClub(admin._id.toString(), {
+      name: 'Share Club',
+      description: 'Share token club',
+      location: 'Budapest',
+    });
+
+    await TournamentModel.create({
+      clubId: club._id,
+      tournamentId: 'tour_a',
+      tournamentSettings: {
+        name: 'Tournament A',
+        startDate: new Date(),
+        status: 'pending',
+        maxPlayers: 16,
+        format: 'group',
+        startingScore: 501,
+        tournamentPassword: 'test-pass',
+      },
+      tournamentPlayers: [],
+      isDeleted: false,
+      isSandbox: false,
+    });
+
+    const token = await ClubService.createSelectedTournamentsShareToken(club._id.toString(), ['tour_a']);
+    expect(token).toEqual(expect.any(String));
+    expect(token.length).toBeGreaterThanOrEqual(8);
+
+    const resolved = await ClubService.resolveSelectedTournamentsShareToken(token);
+    expect(resolved).toEqual({
+      clubId: club._id.toString(),
+      tournamentIds: ['tour_a'],
+    });
+  }, 30000);
+
+  it('rejects selected tournament token creation when tournaments are invalid', async () => {
+    const admin = await UserModel.create({
+      email: 'share-admin-2@example.com',
+      password: 'password123',
+      username: 'share_admin_2',
+      name: 'Share Admin 2',
+      isVerified: true,
+    });
+
+    const club: ClubDocument = await ClubService.createClub(admin._id.toString(), {
+      name: 'Share Club 2',
+      description: 'Share token validation',
+      location: 'Budapest',
+    });
+
+    await expect(
+      ClubService.createSelectedTournamentsShareToken(club._id.toString(), ['missing_tournament'])
+    ).rejects.toThrow(BadRequestError);
   }, 30000);
 });

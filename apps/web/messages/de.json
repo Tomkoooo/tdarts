@@ -1896,6 +1896,11 @@
         "all": "Alle Daten"
       },
       "search_placeholder": "Turniername suchen...",
+      "share_filter": {
+        "active_count": "{count} ausgewählte Turnierfilter aktiv",
+        "clear": "Ausgewählten Filter löschen",
+        "invalid_token": "Dieser geteilte Turnierauswahl-Link ist ungültig oder abgelaufen."
+      },
       "date_header": {
         "today": "Heute",
         "unknown": "Kein Startdatum"
@@ -2451,9 +2456,22 @@
       "title": "Club-Sharing",
       "description": "Teilen Sie den Link oder QR-Code Ihres Clubs mit den Spielern.",
       "public_tab": "Öffentlich",
+      "selected_tab": "Ausgewählte Turniere",
       "auth_tab": "Durch Einloggen",
       "public_desc": "Öffentlicher Link – jeder kann den Club sehen.",
+      "selected_desc": "Erstellen Sie einen kurzen Link mit vorausgewählten Turnieren.",
       "auth_desc": "Login-Link – automatische Weiterleitung nach dem Login.",
+      "selected_picker_label": "Turniere zur Anzeige auswählen",
+      "selected_generate": "Auswahl-Link erstellen",
+      "selected_generating": "Wird erstellt...",
+      "selected_link_ready": "Link für ausgewählte Turniere ist bereit",
+      "selected_link_error": "Link für ausgewählte Turniere konnte nicht erstellt werden",
+      "existing_links_title": "Vorhandene Links",
+      "existing_links_loading": "Vorhandene Links werden geladen...",
+      "existing_links_empty": "Noch keine aktiven Links für ausgewählte Turniere.",
+      "select_required": "Bitte mindestens ein Turnier auswählen",
+      "status_label": "Status",
+      "unnamed_tournament": "Unbenanntes Turnier",
       "qr_alt": "QR-Code",
       "print_qr_title": "{name} – QR-Code",
       "print_auth_subtitle": "QR-Code anmelden",

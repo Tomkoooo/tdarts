@@ -6,11 +6,13 @@ import { ClubModel } from '@/database/models/club.model';
 import { UserModel } from '@/database/models/user.model';
 import { PlayerModel } from '@/database/models/player.model';
 import { TournamentModel } from '@/database/models/tournament.model';
+import { ClubShareTokenModel } from '@/database/models/club-share-token.model';
 import { AuthorizationService } from './authorization.service';
 import { GeocodingService } from './geocoding.service';
 import { clubHasCorrectAddress, clubHasGeoLocationSynced } from '@/lib/club-location-completeness';
 import type { StructuredLocation } from '@/interface/location.interface';
 import type { PlayerHonor } from '@/interface/player.interface';
+import { randomBytes } from 'node:crypto';
 
 //TODO a klubba és a tornákra ezentúl nem a user collectionből vesszük fel az emberekt.
 //Hanem egy köztes kapcsoló Player collectionbe rakjuk és hogyha regisztrált akkor kap egy userRefet
@@ -28,6 +30,14 @@ export type ManagedClubLocationCompletenessRow = {
 
 export class ClubService {
   private static readonly MANUAL_GEOCODE_COOLDOWN_MS = 24 * 60 * 60 * 1000;
+  private static readonly SHARE_TOKEN_DEFAULT_TTL_DAYS = 60;
+  private static sanitizeObjectIdStrings(values: unknown[]): string[] {
+    const normalized = values
+      .map((value) => (value == null ? '' : String(value).trim()))
+      .filter((value) => value.length > 0 && value !== 'undefined' && value !== 'null');
+    return [...new Set(normalized.filter((value) => Types.ObjectId.isValid(value)))];
+  }
+
   private static logTiming(label: string, startedAt: number, requestId?: string, meta?: Record<string, string>) {
     if (process.env.NODE_ENV === 'production') return;
     const elapsed = Date.now() - startedAt;
@@ -512,6 +522,132 @@ export class ClubService {
     return club;
   }
 
+  static async createSelectedTournamentsShareToken(
+    clubId: string,
+    tournamentIds: string[],
+    options?: { ttlDays?: number }
+  ): Promise<string> {
+    await connectMongo();
+    const normalizedTournamentIds: string[] = [...new Set(
+      (Array.isArray(tournamentIds) ? tournamentIds : [])
+        .map((id) => String(id || '').trim())
+        .filter((id): id is string => id.length > 0)
+    )];
+
+    if (normalizedTournamentIds.length === 0) {
+      throw new BadRequestError('At least one tournamentId is required');
+    }
+
+    const club = await ClubModel.findById(clubId).select('_id').lean();
+    if (!club) {
+      throw new BadRequestError('Club not found');
+    }
+
+    const existingTournaments = await TournamentModel.find({
+      clubId: new Types.ObjectId(clubId),
+      tournamentId: { $in: normalizedTournamentIds },
+      isDeleted: { $ne: true },
+    })
+      .select('tournamentId')
+      .lean();
+
+    const allowedTournamentIds = new Set(existingTournaments.map((t: any) => String(t.tournamentId || '').trim()).filter(Boolean));
+    const validTournamentIds = normalizedTournamentIds.filter((id) => allowedTournamentIds.has(id));
+    if (validTournamentIds.length === 0) {
+      throw new BadRequestError('No valid tournaments selected for share link');
+    }
+
+    const canonicalTournamentIds = [...validTournamentIds].sort();
+    const existingToken = await ClubShareTokenModel.findOne({
+      clubId: new Types.ObjectId(clubId),
+      type: 'selected_tournaments',
+      expiresAt: { $gt: new Date() },
+      tournamentIds: canonicalTournamentIds,
+    })
+      .select('token')
+      .lean();
+    if (existingToken && typeof (existingToken as any).token === 'string') {
+      return String((existingToken as any).token);
+    }
+
+    const ttlDays = Math.max(1, Math.min(365, Number(options?.ttlDays || this.SHARE_TOKEN_DEFAULT_TTL_DAYS)));
+    const expiresAt = new Date(Date.now() + ttlDays * 24 * 60 * 60 * 1000);
+
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      const token = randomBytes(6).toString('base64url');
+      try {
+        await ClubShareTokenModel.create({
+          token,
+          clubId: new Types.ObjectId(clubId),
+          type: 'selected_tournaments',
+          tournamentIds: canonicalTournamentIds,
+          expiresAt,
+        });
+        return token;
+      } catch (error: any) {
+        if (error?.code === 11000) continue;
+        throw error;
+      }
+    }
+
+    throw new BadRequestError('Failed to create a unique share token');
+  }
+
+  static async resolveSelectedTournamentsShareToken(token: string): Promise<{
+    clubId: string;
+    tournamentIds: string[];
+  } | null> {
+    await connectMongo();
+    const normalizedToken = String(token || '').trim();
+    if (!normalizedToken) return null;
+
+    const row = await ClubShareTokenModel.findOne({
+      token: normalizedToken,
+      type: 'selected_tournaments',
+      expiresAt: { $gt: new Date() },
+    })
+      .select('clubId tournamentIds')
+      .lean();
+
+    if (!row) return null;
+    const rawTournamentIds: unknown[] = Array.isArray((row as any).tournamentIds)
+      ? (row as any).tournamentIds
+      : [];
+    const uniqueTournamentIds = Array.from(
+      new Set(rawTournamentIds.map((id) => String(id || '').trim()).filter((id) => id.length > 0))
+    );
+
+    return {
+      clubId: String((row as any).clubId),
+      tournamentIds: uniqueTournamentIds,
+    };
+  }
+
+  static async listSelectedTournamentsShareTokens(clubId: string): Promise<Array<{
+    token: string;
+    tournamentIds: string[];
+    expiresAt: string;
+    createdAt: string;
+  }>> {
+    await connectMongo();
+    const rows = await ClubShareTokenModel.find({
+      clubId: new Types.ObjectId(clubId),
+      type: 'selected_tournaments',
+      expiresAt: { $gt: new Date() },
+    })
+      .select('token tournamentIds expiresAt createdAt')
+      .sort({ createdAt: -1 })
+      .limit(50)
+      .lean();
+
+    return rows.map((row: any) => ({
+      token: String(row.token),
+      tournamentIds: Array.isArray(row.tournamentIds) ? row.tournamentIds.map((id: unknown) => String(id)) : [],
+      expiresAt: new Date(row.expiresAt).toISOString(),
+      createdAt: new Date(row.createdAt).toISOString(),
+    }));
+  }
+
   static async getClub(clubId: string): Promise<any> {
     await connectMongo();
 
@@ -540,16 +676,17 @@ export class ClubService {
         )
       : new Map<string, any>();
 
+    const adminUsers = (club.admin || []).filter((user: any) => user?._id);
+    const moderatorUsers = (club.moderators || []).filter((user: any) => user?._id);
+    const adminIds = adminUsers.map((user: any) => user._id.toString());
+    const moderatorIds = moderatorUsers.map((user: any) => user._id.toString());
+
     const membersWithUsernames = club.members.map((player: any) => {
       let username = 'vendég';
       if (player.userRef) {
         const user = usersById.get(String(player.userRef));
         if (user && user.username) username = user.username;
       }
-
-      // Convert all admin and moderator IDs to string for comparison
-      const adminIds = club.admin.map((player: any) => player._id.toString());
-      const moderatorIds = club.moderators.map((player: any) => player._id.toString());
       const userRefStr = player.userRef ? player.userRef.toString() : undefined;
 
       const isAdmin = userRefStr ? adminIds.includes(userRefStr) : false;
@@ -571,39 +708,42 @@ export class ClubService {
         .filter(Boolean)
     );
     const roleOnlyUsers = [
-      ...club.admin.map((user: any) => ({ ...user, role: 'admin' as const })),
-      ...club.moderators.map((user: any) => ({ ...user, role: 'moderator' as const })),
+      ...adminUsers.map((user: any) => ({ ...user, role: 'admin' as const })),
+      ...moderatorUsers.map((user: any) => ({ ...user, role: 'moderator' as const })),
     ].filter((user: any) => !existingMemberUserRefs.has(String(user._id)));
 
     if (roleOnlyUsers.length > 0) {
-      const roleOnlyUserIds = roleOnlyUsers.map((user: any) => user._id);
-      const roleOnlyPlayers = await PlayerModel.find({ userRef: { $in: roleOnlyUserIds } })
-        .select('_id userRef')
-        .lean();
-      const roleOnlyPlayerByUserRef = new Map(
-        roleOnlyPlayers.map((player: any) => [String(player.userRef), String(player._id)])
-      );
+      const roleOnlyUserIds = this.sanitizeObjectIdStrings(roleOnlyUsers.map((user: any) => user?._id));
+      if (roleOnlyUserIds.length > 0) {
+        const roleOnlyPlayers = await PlayerModel.find({ userRef: { $in: roleOnlyUserIds } })
+          .select('_id userRef')
+          .lean();
+        const roleOnlyPlayerByUserRef = new Map(
+          roleOnlyPlayers.map((player: any) => [String(player.userRef), String(player._id)])
+        );
 
-      for (const user of roleOnlyUsers) {
-        const userId = String(user._id);
-        membersWithUsernames.push({
-          _id: roleOnlyPlayerByUserRef.get(userId) || userId,
-          name: user.name || '',
-          userRef: userId,
-          username: user.username || 'vendég',
-          role: user.role,
-        });
+        for (const user of roleOnlyUsers) {
+          const userId = String(user._id);
+          if (!roleOnlyUserIds.includes(userId)) continue;
+          membersWithUsernames.push({
+            _id: roleOnlyPlayerByUserRef.get(userId) || userId,
+            name: user.name || '',
+            userRef: userId,
+            username: user.username || 'vendég',
+            role: user.role,
+          });
+        }
       }
     }
     const result = {
       ...club.toJSON(),
-      admin: club.admin.map((user: any) => ({
+      admin: adminUsers.map((user: any) => ({
         _id: user._id.toString(),
         name: user.name,
         username: user.username,
         role: 'admin',
       })),
-      moderators: club.moderators.map((user: any) => ({
+      moderators: moderatorUsers.map((user: any) => ({
         _id: user._id.toString(),
         name: user.name,
         username: user.username,
@@ -738,7 +878,15 @@ export class ClubService {
         )
       : new Map<string, any>();
 
-    const members = rawMembers.map((player: any) => {
+    const members: Array<{
+      _id: string;
+      name: string;
+      userRef?: string;
+      username: string;
+      role: 'admin' | 'moderator' | 'member';
+      honors?: PlayerHonor[];
+      stats?: { last10ClosedAvg?: number };
+    }> = rawMembers.map((player: any) => {
       const userRefStr = player?.userRef ? String(player.userRef) : '';
       const isAdmin = userRefStr ? adminIds.includes(userRefStr) : false;
       const isModerator = userRefStr ? moderatorIds.includes(userRefStr) : false;
@@ -759,8 +907,8 @@ export class ClubService {
         .map((member: any) => (member.userRef ? String(member.userRef) : ''))
         .filter(Boolean)
     );
-    const roleOnlyUserIds = [...new Set([...adminIds, ...moderatorIds])].filter(
-      (id) => !existingMemberUserRefs.has(id)
+    const roleOnlyUserIds = this.sanitizeObjectIdStrings(
+      [...new Set([...adminIds, ...moderatorIds])].filter((id) => !existingMemberUserRefs.has(id))
     );
 
     if (roleOnlyUserIds.length > 0) {
@@ -896,8 +1044,10 @@ export class ClubService {
       return { clubs: [] };
     }
     const isGlobalAdmin = await AuthorizationService.checkAdminOnly(userId, clubs[0]?._id.toString());
-    const clubsWithRoles = clubs.map((club) => {
-      const userRole = club.admin.includes(userObjectId)
+    const clubsWithRoles: Array<
+      Record<string, unknown> & { _id: Types.ObjectId; userRole: 'admin' | 'moderator' | 'member' | 'none' }
+    > = clubs.map((club) => {
+      const userRole: 'admin' | 'moderator' | 'member' | 'none' = club.admin.includes(userObjectId)
         ? 'admin'
         : club.moderators.includes(userObjectId)
           ? 'moderator'
@@ -909,6 +1059,7 @@ export class ClubService {
 
       return {
         ...(club.toObject() as Record<string, unknown>),
+        _id: club._id,
         userRole,
       };
     });

@@ -3257,6 +3257,11 @@
         "all": "All dates"
       },
       "search_placeholder": "Search tournament name...",
+      "share_filter": {
+        "active_count": "{count} selected tournament filter active",
+        "clear": "Clear selected filter",
+        "invalid_token": "This shared tournament selection link is invalid or expired."
+      },
       "date_header": {
         "today": "Today",
         "unknown": "No start date"
@@ -3812,9 +3817,22 @@
       "title": "Club sharing",
       "description": "Share your club's link or QR code with players.",
       "public_tab": "Public",
+      "selected_tab": "Selected tournaments",
       "auth_tab": "By logging in",
       "public_desc": "Public link - anyone can view the club.",
+      "selected_desc": "Create a short link that opens preselected tournaments.",
       "auth_desc": "Login link - automatic redirection after login.",
+      "selected_picker_label": "Choose tournaments to include",
+      "selected_generate": "Generate selected link",
+      "selected_generating": "Generating...",
+      "selected_link_ready": "Selected tournaments link is ready",
+      "selected_link_error": "Could not generate selected tournaments link",
+      "existing_links_title": "Existing links",
+      "existing_links_loading": "Loading existing links...",
+      "existing_links_empty": "No active selected-tournament links yet.",
+      "select_required": "Select at least one tournament",
+      "status_label": "Status",
+      "unnamed_tournament": "Unnamed tournament",
       "qr_alt": "QR code",
       "print_qr_title": "{name} - QR Code",
       "print_auth_subtitle": "Login QR Code",
