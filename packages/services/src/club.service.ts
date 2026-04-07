@@ -565,8 +565,8 @@ export class ClubService {
     })
       .select('token')
       .lean();
-    if (existingToken?.token) {
-      return String(existingToken.token);
+    if (existingToken && typeof (existingToken as any).token === 'string') {
+      return String((existingToken as any).token);
     }
 
     const ttlDays = Math.max(1, Math.min(365, Number(options?.ttlDays || this.SHARE_TOKEN_DEFAULT_TTL_DAYS)));
@@ -609,11 +609,12 @@ export class ClubService {
       .lean();
 
     if (!row) return null;
-    const uniqueTournamentIds = [...new Set(
-      (Array.isArray((row as any).tournamentIds) ? (row as any).tournamentIds : [])
-        .map((id: unknown) => String(id || '').trim())
-        .filter(Boolean)
-    )];
+    const rawTournamentIds: unknown[] = Array.isArray((row as any).tournamentIds)
+      ? (row as any).tournamentIds
+      : [];
+    const uniqueTournamentIds = Array.from(
+      new Set(rawTournamentIds.map((id) => String(id || '').trim()).filter((id) => id.length > 0))
+    );
 
     return {
       clubId: String((row as any).clubId),
