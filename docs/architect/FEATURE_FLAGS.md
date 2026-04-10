@@ -26,7 +26,8 @@ NEXT_PUBLIC_ENABLE_ADVANCED_STATISTICS=true
 # Premium tournaments engedélyezése
 NEXT_PUBLIC_ENABLE_PREMIUM_TOURNAMENTS=true
 
-# Subscription model ellenőrzés engedélyezése
+# Előfizetéses / paywall réteg — csak explicit `true` esetén aktív (billinggel egyezően).
+# Hiányzó, üres vagy `false` értéknél nincs subscription-tier ellenőrzés.
 NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED=false
 ```
 
@@ -77,41 +78,40 @@ const socketEnabled = await FeatureFlagService.isSocketEnabled(clubId);
 
 A feature flag-ek a következő sorrendben ellenőrződnek:
 
-1. **ENV alapú ellenőrzés**: Ha `NEXT_PUBLIC_ENABLE_[FEATURE] = false`, akkor a feature mindenképp tiltott
-2. **Fizetős modell ellenőrzés**: Ha `NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED = false`, akkor minden feature elérhető
-3. **Klub specifikus ellenőrzés**: Ha a fizetős modell be van kapcsolva, akkor ellenőrzi a klub subscription modeljét
+1. **ENV alapú ellenőrzés**: Ha a megfelelő `NEXT_PUBLIC_ENABLE_*` nincs `true`-ra állítva, a feature tiltott (`NEXT_PUBLIC_ENABLE_ALL=true` felülírja).
+2. **Paywall / subscription tier**: Csak ha `NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED=true`, akkor lépnek életbe az előfizetési szinthez kötött szabályok (pl. ligák, detailed statistics).
+3. **Klub feature flag-ek**: Paywall nélkül is a klub `featureFlags` mezője szűr (pl. `liveMatchFollowing`, `premiumTournaments`); paywall mellett ezek és/vagy a `subscriptionModel` együtt érvényesülnek a feature-típustól függően.
 
 ### Detailed Statistics Feature
 
 A `detailedStatistics` feature a következő logika szerint működik:
 
-1. **NEXT_PUBLIC_ENABLE_ADVANCED_STATISTICS = false**: Mindenképp tiltott
-2. **NEXT_PUBLIC_ENABLE_ADVANCED_STATISTICS = true + NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED = false**: Mindenképp engedélyezett
-3. **NEXT_PUBLIC_ENABLE_ADVANCED_STATISTICS = true + NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED = true**: Csak akkor engedélyezett, ha `club.subscriptionModel === 'pro'`
+1. **ENV ki**: tiltott.
+2. **Paywall ki** (`NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED` nem `true`): engedélyezett, ha `club.featureFlags.advancedStatistics === true`.
+3. **Paywall be**: engedélyezett, ha a klub előfizetése nem `free` (tier alapú szabály).
 
 ### Live Match Following Feature
 
 A `liveMatchFollowing` feature a következő logika szerint működik:
 
-1. **NEXT_PUBLIC_ENABLE_LIVE_MATCH_FOLLOWING = false**: Mindenképp tiltott
-2. **NEXT_PUBLIC_ENABLE_LIVE_MATCH_FOLLOWING = true + NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED = false**: Mindenképp engedélyezett
-3. **NEXT_PUBLIC_ENABLE_LIVE_MATCH_FOLLOWING = true + NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED = true**: Csak akkor engedélyezett, ha a klub feature flag-je be van kapcsolva
+1. **ENV ki**: tiltott.
+2. **Paywall ki**: engedélyezett, ha `club.featureFlags.liveMatchFollowing === true`.
+3. **Paywall be**: ugyanígy a klub `liveMatchFollowing` flagje szükséges (tier helyett / mellett a flag az irányadó).
 
 ### Socket Feature
 
 A socket kapcsolat a következő logika szerint működik:
 
-1. **NEXT_PUBLIC_ENABLE_ALL = true**: Mindenképp engedélyezett
-2. **NEXT_PUBLIC_ENABLE_SOCKET = false**: Mindenképp tiltott
-3. **NEXT_PUBLIC_ENABLE_SOCKET = true + NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED = false**: Mindenképp engedélyezett
-4. **NEXT_PUBLIC_ENABLE_SOCKET = true + NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED = true**: Csak akkor engedélyezett, ha `club.subscriptionModel === 'pro'`
+1. **NEXT_PUBLIC_ENABLE_ALL = true**: engedélyezett.
+2. **NEXT_PUBLIC_ENABLE_SOCKET = false**: tiltott.
+3. **Egyébként**: ugyanaz a klub-szintű szabály, mint a live match following esetén: `club.featureFlags.liveMatchFollowing` kell legyen `true` (paywall állapottól függetlenül, ha az ENV engedélyezi a socketet).
 
 ## Subscription Model Logika
 
 A subscription model ellenőrzés a következő logika szerint működik:
 
-1. **NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED = false**: Mindenképp engedélyezett (korlátlan)
-2. **NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED = true**: Ellenőrzi a klub subscription modeljét
+1. **`NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED` nem `true`** (hiányzik, `false`, stb.): nincs subscription-tier paywall; a feature-ekre továbbra is érvényes a megfelelő `NEXT_PUBLIC_ENABLE_*` és a klub `featureFlags`.
+2. **NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED=true**: bekapcsolt paywall — a feature-típus szerint `subscriptionModel` és/vagy klub flag-ek szűrnek.
 
 ### Subscription Csomagok
 

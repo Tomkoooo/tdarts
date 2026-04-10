@@ -15,6 +15,7 @@ import { cn } from '@/lib/utils';
 import { getClubLeaguesAction } from '@/features/clubs/actions/getClubLeagues.action';
 import { getPublicClubLeagueManagementMetaAction } from '@/features/clubs/actions/getPublicClubLeagueManagementMeta.action';
 import { deleteLeagueAction } from '@/features/leagues/actions/manageLeague.action';
+import { isSubscriptionPaywallActive } from '@/features/flags/lib/subscriptionPaywall';
 
 interface LeagueManagerProps {
   clubId: string;
@@ -36,7 +37,7 @@ export default function LeagueManager({ clubId, userRole, autoOpenLeagueId }: Le
   const [managementEnabled, setManagementEnabled] = useState(false);
   const [isGlobalAdmin, setIsGlobalAdmin] = useState(false);
 
-  const subscriptionProductEnabled = process.env.NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED !== 'false';
+  const subscriptionProductEnabled = isSubscriptionPaywallActive();
 
   const canManageLeagues = userRole === 'admin' || userRole === 'moderator';
   const canCreateLeagues = canManageLeagues && managementEnabled;

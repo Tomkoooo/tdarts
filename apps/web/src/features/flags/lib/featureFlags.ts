@@ -1,4 +1,5 @@
 import { FEATURE_KEYS, normalizeFeatureKey, toClubFeatureFlagKey } from '@/features/flags/lib/featureKeys';
+import { isSubscriptionPaywallActive } from '@/features/flags/lib/subscriptionPaywall';
 
 export interface FeatureFlags {
   liveMatchFollowing: boolean;
@@ -49,8 +50,29 @@ export class FeatureFlagService {
       const club = await ClubModel.findById(clubId).select('featureFlags subscriptionModel');
       if (!club) return false;
 
-      if (process.env.NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED === 'false') {
-        return true;
+      const flags = club.featureFlags;
+
+      if (!isSubscriptionPaywallActive()) {
+        if (featureKey === FEATURE_KEYS.DETAILED_STATISTICS) {
+          return flags?.advancedStatistics === true;
+        }
+        if (featureKey === FEATURE_KEYS.LEAGUES) {
+          return true;
+        }
+        if (featureKey === FEATURE_KEYS.SOCKET || featureKey === FEATURE_KEYS.LIVE_MATCH_FOLLOWING) {
+          return flags?.liveMatchFollowing === true;
+        }
+        if (featureKey === FEATURE_KEYS.OAC_CREATION) {
+          return true;
+        }
+        if (!flags) {
+          return false;
+        }
+        const clubFeatureFlagKey = toClubFeatureFlagKey(featureKey);
+        if (!clubFeatureFlagKey) {
+          return false;
+        }
+        return flags[clubFeatureFlagKey] === true;
       }
 
       if (featureKey === FEATURE_KEYS.DETAILED_STATISTICS) {
@@ -61,7 +83,11 @@ export class FeatureFlagService {
         return club.subscriptionModel !== 'free';
       }
 
-      if (!club.featureFlags) {
+      if (featureKey === FEATURE_KEYS.SOCKET || featureKey === FEATURE_KEYS.LIVE_MATCH_FOLLOWING) {
+        return flags?.liveMatchFollowing === true;
+      }
+
+      if (!flags) {
         return false;
       }
 
@@ -70,7 +96,7 @@ export class FeatureFlagService {
         return false;
       }
 
-      return club.featureFlags[clubFeatureFlagKey] === true;
+      return flags[clubFeatureFlagKey] === true;
     } catch (error) {
       console.error('Error checking club feature flag:', error);
       return false;
@@ -81,10 +107,6 @@ export class FeatureFlagService {
     const featureKey = normalizeFeatureKey(featureName);
     if (!featureKey) {
       return false;
-    }
-
-    if (process.env.NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED === 'false') {
-      return true;
     }
 
     const envEnabled = this.isEnvFeatureEnabled(featureKey);
@@ -113,21 +135,6 @@ export class FeatureFlagService {
       return envSocketEnabled;
     }
 
-    if (process.env.NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED === 'false') {
-      return true;
-    }
-
-    try {
-      const { ClubModel } = await import('@/database/models/club.model');
-      const club = await ClubModel.findById(clubId).select('subscriptionModel');
-      if (!club) {
-        return false;
-      }
-
-      return club.subscriptionModel === 'enterprise';
-    } catch (error) {
-      console.error('Error checking club subscription:', error);
-      return false;
-    }
+    return this.isClubFeatureEnabled(clubId, FEATURE_KEYS.SOCKET);
   }
 }

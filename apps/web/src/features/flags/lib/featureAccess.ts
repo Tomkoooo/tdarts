@@ -2,6 +2,7 @@ import { AuthorizationService } from '@/database/services/authorization.service'
 import { authorizeUserResult } from '@/features/auth/lib/authorizeUser';
 import { FEATURE_KEYS, normalizeFeatureKey } from '@/features/flags/lib/featureKeys';
 import { FeatureFlagService } from '@/features/flags/lib/featureFlags';
+import { isSubscriptionPaywallActive } from '@/features/flags/lib/subscriptionPaywall';
 import { GuardFailureResult, GuardResult } from '@/shared/lib/telemetry/types';
 
 type FeatureAccessParams = {
@@ -63,7 +64,7 @@ export async function evaluateFeatureAccess(params: FeatureAccessParams): Promis
   }
 
   const requiresSubscription = params.requiresSubscription ?? false;
-  const paywallEnabled = process.env.NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED !== 'false';
+  const paywallEnabled = isSubscriptionPaywallActive();
   if (requiresSubscription && paywallEnabled && params.clubId) {
     const hasSubscriptionAccess = await FeatureFlagService.isClubFeatureEnabled(params.clubId, normalizedFeature);
     if (!hasSubscriptionAccess) {

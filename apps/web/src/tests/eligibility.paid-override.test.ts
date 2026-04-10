@@ -22,7 +22,7 @@ describe('feature eligibility paid override', () => {
     process.env.NEXT_PUBLIC_ENABLE_ALL = originalEnableAll;
   });
 
-  it('allows access when paid override is enabled', async () => {
+  it('allows access when paid override is enabled (explicit false)', async () => {
     process.env.NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED = 'false';
 
     const result = await assertEligibilityResult({
@@ -40,6 +40,27 @@ describe('feature eligibility paid override', () => {
       },
     });
     expect(FeatureFlagService.isFeatureEnabled).not.toHaveBeenCalled();
+  });
+
+  it('allows paid override when subscription env is unset', async () => {
+    delete process.env.NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED;
+
+    const result = await assertEligibilityResult({
+      featureName: 'PREMIUM_TOURNAMENTS',
+      clubId: 'club-1',
+      allowPaidOverride: true,
+    });
+
+    expect(result).toEqual({
+      ok: true,
+      data: {
+        allowed: true,
+        paidOverride: true,
+        reason: 'paid_override',
+      },
+    });
+    expect(FeatureFlagService.isFeatureEnabled).not.toHaveBeenCalled();
+    process.env.NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED = originalSubscription;
   });
 
   it('returns structured denial when feature is disabled and override is off', async () => {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { checkFeatureFlagAction, checkSocketFlagAction } from "@/features/feature-flags/actions/checkFeatureFlags.action";
+import { checkFeatureFlagAction } from "@/features/feature-flags/actions/checkFeatureFlags.action";
 import { normalizeFeatureKey } from "@/features/flags/lib/featureKeys";
 import {
   guardFailureToFeatureFlagDenial,
@@ -23,10 +23,6 @@ async function checkFeatureFlagClientOutcome(
     enabled: false,
     denialReason: reason,
   });
-
-  if (process.env.NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED === "false") {
-    return { enabled: true, denialReason: null };
-  }
 
   if (process.env.NEXT_PUBLIC_ENABLE_ALL === "true") {
     return { enabled: true, denialReason: null };
@@ -85,45 +81,7 @@ async function checkFeatureFlagClientOutcome(
 }
 
 async function checkSocketFeatureClientOutcome(clubId?: string): Promise<FeatureFlagCheckOutcome> {
-  const disabled = (reason: FeatureFlagDenialReason): FeatureFlagCheckOutcome => ({
-    enabled: false,
-    denialReason: reason,
-  });
-
-  if (process.env.NODE_ENV === "development") {
-    return { enabled: true, denialReason: null };
-  }
-
-  if (process.env.NEXT_PUBLIC_ENABLE_ALL === "true") {
-    return { enabled: true, denialReason: null };
-  }
-
-  if (process.env.NODE_ENV === "production") {
-    return { enabled: true, denialReason: null };
-  }
-
-  const socketOutcome = await checkFeatureFlagClientOutcome("SOCKET", clubId);
-  if (!socketOutcome.enabled) {
-    return socketOutcome;
-  }
-
-  if (!clubId) {
-    return { enabled: true, denialReason: null };
-  }
-
-  try {
-    const data = await checkSocketFlagAction({ clubId });
-    if (isGuardFailureResult(data)) {
-      return disabled(guardFailureToFeatureFlagDenial(data) ?? "feature_disabled");
-    }
-    return {
-      enabled: data.enabled,
-      denialReason: data.enabled ? null : "feature_disabled",
-    };
-  } catch (error) {
-    console.error("Error checking socket feature via API:", error);
-    return disabled("feature_disabled");
-  }
+  return checkFeatureFlagClientOutcome("SOCKET", clubId);
 }
 
 export const useFeatureFlag = (featureName: string, clubId?: string) => {

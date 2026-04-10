@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { withTelemetry } from '@/shared/lib/withTelemetry';
 import { evaluateFeatureAccess, PAYWALLED_FEATURES } from '@/features/flags/lib/featureAccess';
 import { normalizeFeatureKey } from '@/features/flags/lib/featureKeys';
+import { isSubscriptionPaywallActive } from '@/features/flags/lib/subscriptionPaywall';
 import { resolveGuardAwareStatus } from '@/shared/lib/guards/result';
 import { GuardFailureResult } from '@/shared/lib/telemetry/types';
 import { BadRequestError } from '@/middleware/errorHandle';
@@ -66,7 +67,7 @@ export async function checkFeatureFlagAction(
     const enabled = await FeatureFlagService.isFeatureEnabled(normalizedFeature, payload.clubId || undefined);
     return {
       enabled,
-      subscriptionModelEnabled: process.env.NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED !== 'false',
+      subscriptionModelEnabled: isSubscriptionPaywallActive(),
     };
   }, {
     method: 'ACTION',

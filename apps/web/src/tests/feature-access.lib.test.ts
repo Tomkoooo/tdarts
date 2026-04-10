@@ -76,6 +76,19 @@ describe('featureAccess evaluator', () => {
     });
   });
 
+  it('does not require subscription when paywall is inactive (unset env)', async () => {
+    delete process.env.NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED;
+    (authorizeUserResult as jest.Mock).mockResolvedValue({ ok: true, data: { userId: 'u1' } });
+    (AuthorizationService.isGlobalAdmin as jest.Mock).mockResolvedValue(false);
+    (FeatureFlagService.isFeatureEnabled as jest.Mock).mockResolvedValue(true);
+    (FeatureFlagService.isClubFeatureEnabled as jest.Mock).mockResolvedValue(false);
+
+    const result = await evaluateFeatureAccess({ featureName: 'LEAGUES', clubId: 'club-1', requiresSubscription: true });
+    expect(result.ok).toBe(true);
+    expect(FeatureFlagService.isClubFeatureEnabled).not.toHaveBeenCalled();
+    process.env.NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED = 'true';
+  });
+
   it('returns permission required when role check fails', async () => {
     (authorizeUserResult as jest.Mock).mockResolvedValue({ ok: true, data: { userId: 'u1' } });
     (AuthorizationService.isGlobalAdmin as jest.Mock).mockResolvedValue(false);

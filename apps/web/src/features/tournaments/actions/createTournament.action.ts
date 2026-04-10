@@ -19,6 +19,10 @@ import {
   findExistingVerifiedTournamentForWeek,
   findLeagueById,
 } from '@/features/tournaments/lib/tournamentCreation.db';
+import {
+  buildLocalizedClubUrl,
+  resolvePaymentLocaleForServerAction,
+} from '@/features/payments/lib/verifyOacCheckout';
 
 const stripe = new Stripe(process.env.OAC_STRIPE_SECRET_KEY!, {
   apiVersion: '2024-12-18.acacia' as Stripe.LatestApiVersion,
@@ -188,6 +192,7 @@ export async function createTournamentAction(input: CreateTournamentInput): Prom
 
       if (payload.verified) {
         const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+        const locale = await resolvePaymentLocaleForServerAction(request);
         const checkoutSession = await stripe.checkout.sessions.create({
           payment_method_types: ['card'],
           line_items: [
@@ -205,7 +210,7 @@ export async function createTournamentAction(input: CreateTournamentInput): Prom
           ],
           mode: 'payment',
           success_url: `${baseUrl}/api/payments/verify?session_id={CHECKOUT_SESSION_ID}`,
-          cancel_url: `${baseUrl}/clubs/${clubId}`,
+          cancel_url: buildLocalizedClubUrl(baseUrl, locale, clubId),
           metadata: { clubId },
         });
 

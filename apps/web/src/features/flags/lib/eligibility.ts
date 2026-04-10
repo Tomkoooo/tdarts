@@ -1,5 +1,6 @@
 import { FeatureFlagService } from '@/features/flags/lib/featureFlags';
 import { normalizeFeatureKey } from '@/features/flags/lib/featureKeys';
+import { isSubscriptionPaywallActive } from '@/features/flags/lib/subscriptionPaywall';
 import { AuthorizationError } from '@/middleware/errorHandle';
 import { GuardFailureResult, GuardResult } from '@/shared/lib/telemetry/types';
 
@@ -25,7 +26,7 @@ function featureDisabledResult(featureName?: string): GuardFailureResult {
 }
 
 export function isPaidOverrideEnabled(): boolean {
-  return process.env.NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED === 'false' || process.env.NEXT_PUBLIC_ENABLE_ALL === 'true';
+  return !isSubscriptionPaywallActive() || process.env.NEXT_PUBLIC_ENABLE_ALL === 'true';
 }
 
 export async function assertEligibility(params: EligibilityParams): Promise<EligibilityOutcome> {
