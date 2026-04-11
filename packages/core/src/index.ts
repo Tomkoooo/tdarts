@@ -34,6 +34,8 @@ export type {
   SseDeltaScope,
   SseDeltaAction,
   SseDeltaPayload,
+  SseSectionHint,
+  SseBoardPatch,
 } from './lib/events';
 
 // Date/time utilities

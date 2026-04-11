@@ -18,12 +18,14 @@ import { TournamentPlayerService } from './tournament-player.service';
 import { GeocodingService } from './geocoding.service';
 import { ErrorService } from './error.service';
 import { eventsBus, EVENTS, createSseDeltaPayload } from '@tdarts/core';
+import type { SseSectionHint } from '@tdarts/core';
 import { normalizeEntryFeeCurrency } from '@tdarts/core';
 
 export class TournamentService {
     private static publishTournamentRefresh(
         tournamentId: string,
-        action: 'updated' | 'knockout-updated'
+        action: 'updated' | 'knockout-updated',
+        sectionHint?: SseSectionHint,
     ): void {
         eventsBus.publish(
             EVENTS.TOURNAMENT_UPDATE,
@@ -31,7 +33,7 @@ export class TournamentService {
                 tournamentId,
                 scope: 'tournament',
                 action,
-                requiresResync: true,
+                sectionHint,
                 data: {
                     legacyType: action === 'knockout-updated' ? 'knockout-update' : 'tournament-update',
                 },
@@ -672,7 +674,7 @@ export class TournamentService {
             .populate('clubId', 'name location contact')
             .populate({
                 path: 'groups.matches',
-                select: 'boardReference type round player1 player2 scorer legsToWin startingPlayer status winnerId tournamentRef createdAt updatedAt',
+                select: 'boardReference type round player1 player2 scorer scorerSource legsToWin startingPlayer status winnerId tournamentRef createdAt updatedAt',
                 populate: [
                     { path: 'player1.playerId', model: 'Player', select: 'name profilePicture' },
                     { path: 'player2.playerId', model: 'Player', select: 'name profilePicture' },
@@ -681,7 +683,7 @@ export class TournamentService {
             })
             .populate({
                 path: 'knockout.matches.matchReference',
-                select: 'boardReference type round player1 player2 scorer legsToWin startingPlayer status winnerId tournamentRef createdAt updatedAt',
+                select: 'boardReference type round player1 player2 scorer scorerSource legsToWin startingPlayer status winnerId tournamentRef createdAt updatedAt',
                 populate: [
                     { path: 'player1.playerId', model: 'Player', select: 'name profilePicture' },
                     { path: 'player2.playerId', model: 'Player', select: 'name profilePicture' },
@@ -690,7 +692,7 @@ export class TournamentService {
             })
             .populate({
                 path: 'boards.currentMatch',
-                select: 'boardReference type round player1 player2 scorer legsToWin startingPlayer status winnerId tournamentRef createdAt updatedAt',
+                select: 'boardReference type round player1 player2 scorer scorerSource legsToWin startingPlayer status winnerId tournamentRef createdAt updatedAt',
                 populate: [
                     { path: 'player1.playerId', model: 'Player', select: 'name profilePicture' },
                     { path: 'player2.playerId', model: 'Player', select: 'name profilePicture' },
@@ -699,7 +701,7 @@ export class TournamentService {
             })
             .populate({
                 path: 'boards.nextMatch',
-                select: 'boardReference type round player1 player2 scorer legsToWin startingPlayer status winnerId tournamentRef createdAt updatedAt',
+                select: 'boardReference type round player1 player2 scorer scorerSource legsToWin startingPlayer status winnerId tournamentRef createdAt updatedAt',
                 populate: [
                     { path: 'player1.playerId', model: 'Player', select: 'name profilePicture' },
                     { path: 'player2.playerId', model: 'Player', select: 'name profilePicture' },
@@ -1197,7 +1199,7 @@ export class TournamentService {
             await tournament.save();
             
             // Emit SSE event to notify frontend of knockout bracket update
-            this.publishTournamentRefresh(tournament.tournamentId, 'knockout-updated');
+            this.publishTournamentRefresh(tournament.tournamentId, 'knockout-updated', 'boards+bracket');
         } catch (error) {
             console.error('Auto-advance knockout winner error:', error);
             throw error;
@@ -1758,7 +1760,7 @@ export class TournamentService {
 
             // Tournament structure should now be updated by bye auto-advances
             console.log('Bye match processing complete');
-            this.publishTournamentRefresh(tournament.tournamentId, 'updated');
+            this.publishTournamentRefresh(tournament.tournamentId, 'updated', 'boards+bracket');
 
             return true;
         } catch (error) {
@@ -5757,7 +5759,7 @@ export class TournamentService {
             }
 
             console.log(`✅ Tournament ${tournamentCode} finished successfully with MMR updates`);
-            this.publishTournamentRefresh(tournament.tournamentId, 'updated');
+            this.publishTournamentRefresh(tournament.tournamentId, 'updated', 'boards');
             return true;
         } catch (error) {
             console.error('Finish tournament error:', error);
@@ -5830,7 +5832,7 @@ export class TournamentService {
 
             await tournament.save();
             console.log(`Knockout cancelled for tournament ${tournamentCode}`);
-            this.publishTournamentRefresh(tournament.tournamentId, 'updated');
+            this.publishTournamentRefresh(tournament.tournamentId, 'updated', 'boards+bracket');
 
             return true;
         } catch (error) {
@@ -5905,7 +5907,7 @@ export class TournamentService {
 
             await tournament.save();
             console.log(`Groups cancelled for tournament ${tournamentCode}`);
-            this.publishTournamentRefresh(tournament.tournamentId, 'updated');
+            this.publishTournamentRefresh(tournament.tournamentId, 'updated', 'boards+groups');
 
             return true;
         } catch (error) {
@@ -7136,7 +7138,7 @@ export class TournamentService {
         } else {
             await tournament.save();
         }
-        this.publishTournamentRefresh(tournament.tournamentId, 'updated');
+        this.publishTournamentRefresh(tournament.tournamentId, 'updated', 'boards+bracket');
 
         return tournament;
     }

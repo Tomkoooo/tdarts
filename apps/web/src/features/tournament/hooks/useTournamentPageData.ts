@@ -9,6 +9,7 @@ import {
 import type { SseDeltaPayload } from "@/lib/events";
 import { extractTournamentPayload } from "@/features/tournament/lib/tournamentPageData";
 import { perfFlags } from "@/features/performance/lib/perfFlags";
+import { isSseVerboseDebugEnabled } from "@/lib/sseDebug";
 
 type UserClubRole = "admin" | "moderator" | "member" | "none";
 type UserPlayerStatus = "applied" | "checked-in" | "none";
@@ -16,6 +17,9 @@ type TournamentView = "overview" | "players" | "boards" | "groups" | "bracket" |
 type TournamentSection = "overview" | "players" | "boards" | "groups" | "bracket";
 type PrefetchedSectionMap = Partial<Record<Exclude<TournamentView, "full">, any>>;
 const SSE_DEBUG = process.env.NEXT_PUBLIC_SSE_DEBUG === "true";
+
+export type BoardsDataSyncSource = "initial" | "full_resync" | "lite_resync" | "sse_delta";
+const BOARDS_SSE_SYNC_THROTTLE_MS = 450;
 
 const hasPlayerStatusData = (list: any[]): boolean =>
   Array.isArray(list) &&
@@ -56,7 +60,8 @@ function mergeMatchPlayerSlot(existing: any, incoming: any) {
   return out;
 }
 
-function deepMergeSseMatch(existing: any, incoming: any) {
+/** Exported for board kiosk SSE merges (same rules as tournament page). */
+export function deepMergeSseMatch(existing: any, incoming: any) {
   if (!incoming) return existing;
   if (!existing) return incoming;
   const next: any = {
@@ -121,9 +126,52 @@ function mergeBoardSlotMatch(existing: any, incoming: any) {
   return deepMergeSseMatch(existing, incoming);
 }
 
+/**
+ * Overview API returns a thin tournament (no groups/knockout, boards without match slots).
+ * Replacing client state entirely breaks SSE match/board merges until a heavy tab is refetched.
+ */
+function mergeBoardsPreserveMatchSlots(prevBoards: any, nextBoards: any) {
+  if (!Array.isArray(nextBoards)) return prevBoards;
+  if (!Array.isArray(prevBoards)) return nextBoards;
+  return nextBoards.map((nb: any) => {
+    const pb = prevBoards.find((b: any) => Number(b?.boardNumber) === Number(nb?.boardNumber));
+    if (!pb) return nb;
+    const hasOwn = (o: any, k: string) => Object.prototype.hasOwnProperty.call(o, k);
+    return {
+      ...pb,
+      ...nb,
+      currentMatch: hasOwn(nb, "currentMatch") ? nb.currentMatch : pb.currentMatch,
+      nextMatch: hasOwn(nb, "nextMatch") ? nb.nextMatch : pb.nextMatch,
+    };
+  });
+}
+
+function mergeOverviewIntoPrev(prev: any, next: any) {
+  const merged = {
+    ...prev,
+    ...next,
+    tournamentSettings: {
+      ...(prev.tournamentSettings || {}),
+      ...(next.tournamentSettings || {}),
+    },
+    tournamentPlayers: next.tournamentPlayers ?? prev.tournamentPlayers,
+    waitingList: next.waitingList ?? prev.waitingList,
+  };
+  if (Array.isArray(next.boards)) {
+    merged.boards = mergeBoardsPreserveMatchSlots(prev.boards, next.boards);
+  }
+  return merged;
+}
+
 function mergeTournamentByView(prev: any, next: any, view: TournamentView) {
-  if (!prev || view === "overview" || view === "full") {
+  if (!prev) {
     return next;
+  }
+  if (view === "full") {
+    return next;
+  }
+  if (view === "overview") {
+    return mergeOverviewIntoPrev(prev, next);
   }
 
   const merged = {
@@ -254,6 +302,25 @@ export function useTournamentPageData(
   const [lastLoadedSection, setLastLoadedSection] = useState<
     "overview" | "players" | "boards" | "groups" | "bracket"
   >("overview");
+  const [boardsDataSyncedAt, setBoardsDataSyncedAt] = useState<number | null>(null);
+  const [boardsDataSyncSource, setBoardsDataSyncSource] =
+    useState<BoardsDataSyncSource | null>(null);
+  const boardsSseSyncThrottleRef = useRef(0);
+
+  const bumpBoardsDataSync = useCallback((source: BoardsDataSyncSource) => {
+    const now = Date.now();
+    setBoardsDataSyncedAt(now);
+    setBoardsDataSyncSource(source);
+  }, []);
+
+  const bumpBoardsDataSyncSseThrottled = useCallback(() => {
+    const now = Date.now();
+    if (now - boardsSseSyncThrottleRef.current < BOARDS_SSE_SYNC_THROTTLE_MS) {
+      return;
+    }
+    boardsSseSyncThrottleRef.current = now;
+    bumpBoardsDataSync("sse_delta");
+  }, [bumpBoardsDataSync]);
 
   const setters = {
     setUserClubRole,
@@ -278,8 +345,11 @@ export function useTournamentPageData(
         return incomingPlayers.length > 0 ? incomingPlayers : prev;
       });
       setLastLoadedSection(view);
+      if (view === "boards") {
+        bumpBoardsDataSync("initial");
+      }
     },
-    []
+    [bumpBoardsDataSync]
   );
 
   const fetchAll = useCallback(async (
@@ -313,6 +383,7 @@ export function useTournamentPageData(
       if (view === "full") {
         setTournament(payload.tournament);
         setPlayers(payload.players);
+        bumpBoardsDataSync("initial");
       } else {
         applySectionPayload(view, payload);
       }
@@ -331,7 +402,7 @@ export function useTournamentPageData(
     } finally {
       setLoading(false);
     }
-  }, [code, user?._id, errorMessage, applySectionPayload]);
+  }, [code, user?._id, errorMessage, applySectionPayload, bumpBoardsDataSync]);
 
   const resyncLiteData = useCallback(async (options?: { bypassCache?: boolean }) => {
     if (!code || typeof code !== "string") return false;
@@ -389,12 +460,40 @@ export function useTournamentPageData(
           boards: mergedBoards,
         };
       });
+      bumpBoardsDataSync("lite_resync");
       return true;
     } catch (err) {
       console.error("Silent refresh failed", err);
       return false;
     }
-  }, [code]);
+  }, [code, bumpBoardsDataSync]);
+
+  const fetchSection = useCallback(
+    async (section: TournamentSection) => {
+      if (!code || typeof code !== "string") return;
+      try {
+        const data = await getTournamentPageDataAction({
+          code,
+          includeViewer: Boolean(user?._id),
+          view: section,
+          bypassCache: true,
+          freshness: "force-fresh",
+        });
+        const payload = extractTournamentPayload(data);
+        if (!payload) return;
+        applySectionPayload(section, payload);
+        applyTournamentData(
+          { ...payload.tournament, viewer: payload.viewer },
+          user?._id,
+          code,
+          setters
+        );
+      } catch (err) {
+        console.error("[SSE] fetchSection failed", section, err);
+      }
+    },
+    [code, user?._id, applySectionPayload]
+  );
 
   const resyncFullData = useCallback(async (options?: { bypassCache?: boolean }) => {
     if (!code || typeof code !== "string") return;
@@ -434,28 +533,57 @@ export function useTournamentPageData(
           boards: Array.isArray(payload.tournament.boards) ? payload.tournament.boards.length : 0,
         });
       }
+      bumpBoardsDataSync("full_resync");
     } catch (err) {
       console.error("Full resync failed", err);
     }
-  }, [code, user?._id, lastLoadedSection, resyncLiteData]);
+  }, [code, user?._id, lastLoadedSection, resyncLiteData, bumpBoardsDataSync]);
 
   const silentRefresh = useCallback(async () => {
     await resyncLiteData();
   }, [resyncLiteData]);
 
   const applySseDelta = useCallback((delta: SseDeltaPayload<any>) => {
+    const verbose = isSseVerboseDebugEnabled();
     if (!delta || delta.kind !== "delta" || delta.schemaVersion !== 1) {
+      if (verbose) {
+        console.warn("[SSE][TournamentPageData] applySseDelta: invalid delta shape", delta);
+      }
       return false;
     }
 
-    const canApply =
-      (delta.scope === "board" && Boolean(delta.data?.board)) ||
-      (delta.scope === "match" &&
-        (Boolean(delta.data?.match?._id) || Boolean(delta.data?.matchId))) ||
-      (delta.scope === "tournament" &&
-        delta.action === "updated" &&
-        Boolean(delta.data?.tournamentPatch));
-    if (!canApply) return false;
+    // Tournament / group changes are refetched via `sectionHint` + fetchSection (no dead merge paths).
+    if (delta.scope !== "match") {
+      if (verbose) {
+        console.log("[SSE][TournamentPageData] applySseDelta: skip inline merge (non-match scope)", {
+          scope: delta.scope,
+          action: delta.action,
+        });
+      }
+      return false;
+    }
+
+    const incomingMatch = delta.data?.match;
+    const incomingIdRaw = incomingMatch?._id ?? delta.data?.matchId;
+    const incomingId = incomingIdRaw != null ? String(incomingIdRaw) : null;
+
+    const canApplyMatch =
+      delta.action === "started" ||
+      delta.action === "finished" ||
+      delta.action === "leg-finished";
+    if (!canApplyMatch) {
+      return false;
+    }
+
+    if (
+      (delta.action === "leg-finished" || delta.action === "finished") &&
+      !incomingId
+    ) {
+      if (verbose) {
+        console.warn("[SSE][TournamentPageData] applySseDelta: match id missing", delta);
+      }
+      return false;
+    }
 
     let applied = false;
     let forceResync = false;
@@ -463,31 +591,10 @@ export function useTournamentPageData(
       if (!prev) return prev;
       const next = { ...prev };
 
-      if (delta.scope === "board") {
-        const boardPatch = delta.data?.board;
-        if (boardPatch && Array.isArray(next.boards)) {
-          let boardFound = false;
-          next.boards = next.boards.map((board: any) =>
-            board?.boardNumber === boardPatch?.boardNumber
-              ? (() => {
-                  boardFound = true;
-                  return { ...board, ...boardPatch };
-                })()
-              : board
-          );
-          applied = boardFound;
-        }
-        return next;
-      }
+      let matchFound = false;
+      let boardVisualUpdate = false;
 
-      if (delta.scope === "match") {
-        const incomingMatch = delta.data?.match;
-        const incomingIdRaw = incomingMatch?._id ?? delta.data?.matchId;
-        if (!incomingIdRaw) return next;
-        const incomingId = String(incomingIdRaw);
-        let matchFound = false;
-        let boardVisualUpdate = false;
-
+      if (incomingId && incomingMatch) {
         if (Array.isArray(next.matches)) {
           next.matches = next.matches.map((match: any) =>
             String(match?._id) === incomingId
@@ -528,87 +635,96 @@ export function useTournamentPageData(
             return { ...round, matches };
           });
         }
-
-        if (Array.isArray(next.boards)) {
-          const boardNumber = toNumericBoardNumber(delta.data?.boardNumber ?? incomingMatch?.boardReference);
-          if (boardNumber !== null) {
-            const incomingMatchId = incomingId;
-            next.boards = next.boards.map((board: any) => {
-              if (toNumericBoardNumber(board?.boardNumber) !== boardNumber) return board;
-
-              if (delta.action === "started") {
-                boardVisualUpdate = true;
-                return {
-                  ...board,
-                  status: "playing",
-                  currentMatch:
-                    incomingMatch || board.currentMatch || incomingMatchId,
-                  nextMatch: delta.data?.nextMatch ?? board.nextMatch,
-                };
-              }
-
-              if (delta.action === "finished") {
-                boardVisualUpdate = true;
-                return {
-                  ...board,
-                  status: "waiting",
-                  currentMatch: undefined,
-                  nextMatch: delta.data?.nextMatch ?? board.nextMatch,
-                };
-              }
-
-              const updatedBoard = { ...board };
-              let slotMerged = false;
-
-              if (incomingMatch) {
-                if (boardMatchRefId(board.currentMatch) === incomingId) {
-                  updatedBoard.currentMatch = mergeBoardSlotMatch(board.currentMatch, incomingMatch);
-                  slotMerged = true;
-                } else if (
-                  !board.currentMatch &&
-                  toNumericBoardNumber(incomingMatch.boardReference) === boardNumber
-                ) {
-                  updatedBoard.currentMatch = incomingMatch;
-                  slotMerged = true;
-                }
-
-                if (boardMatchRefId(board.nextMatch) === incomingId) {
-                  updatedBoard.nextMatch = mergeBoardSlotMatch(board.nextMatch, incomingMatch);
-                  slotMerged = true;
-                }
-              }
-
-              if (slotMerged) {
-                boardVisualUpdate = true;
-              }
-              return updatedBoard;
-            });
-          }
-        }
-
-        applied = matchFound || boardVisualUpdate;
-        if (delta.action === "finished" && !applied) {
-          forceResync = true;
-        }
-        if (delta.action === "leg-finished" && !applied) {
-          forceResync = true;
-        }
       }
 
-      if (delta.scope === "tournament" && delta.action === "updated") {
-        const patch = delta.data?.tournamentPatch;
-        if (patch && typeof patch === "object") {
-          Object.assign(next, patch);
-          applied = true;
-        }
+      const patch = delta.boardPatch;
+      const boardNumber = toNumericBoardNumber(
+        patch?.boardNumber ?? delta.data?.boardNumber ?? incomingMatch?.boardReference
+      );
+
+      if (Array.isArray(next.boards) && boardNumber !== null) {
+        const incomingMatchId = incomingId;
+        next.boards = next.boards.map((board: any) => {
+          if (toNumericBoardNumber(board?.boardNumber) !== boardNumber) return board;
+
+          if (delta.action === "started") {
+            boardVisualUpdate = true;
+            if (patch && patch.boardNumber === boardNumber) {
+              return {
+                ...board,
+                status: patch.status,
+                currentMatch: patch.currentMatch ?? incomingMatch ?? board.currentMatch ?? incomingMatchId,
+                nextMatch: patch.nextMatch ?? delta.data?.nextMatch ?? board.nextMatch,
+              };
+            }
+            return {
+              ...board,
+              status: "playing",
+              currentMatch: incomingMatch || board.currentMatch || incomingMatchId,
+              nextMatch: delta.data?.nextMatch ?? board.nextMatch,
+            };
+          }
+
+          if (delta.action === "finished") {
+            boardVisualUpdate = true;
+            if (patch && patch.boardNumber === boardNumber) {
+              return {
+                ...board,
+                status: patch.status,
+                currentMatch: patch.currentMatch ?? undefined,
+                nextMatch: patch.nextMatch ?? delta.data?.nextMatch ?? board.nextMatch,
+              };
+            }
+            return {
+              ...board,
+              status: "waiting",
+              currentMatch: undefined,
+              nextMatch: delta.data?.nextMatch ?? board.nextMatch,
+            };
+          }
+
+          const updatedBoard = { ...board };
+          let slotMerged = false;
+
+          if (incomingMatch && incomingId) {
+            if (boardMatchRefId(board.currentMatch) === incomingId) {
+              updatedBoard.currentMatch = mergeBoardSlotMatch(board.currentMatch, incomingMatch);
+              slotMerged = true;
+            } else if (
+              !board.currentMatch &&
+              toNumericBoardNumber(incomingMatch.boardReference) === boardNumber
+            ) {
+              updatedBoard.currentMatch = incomingMatch;
+              slotMerged = true;
+            }
+
+            if (boardMatchRefId(board.nextMatch) === incomingId) {
+              updatedBoard.nextMatch = mergeBoardSlotMatch(board.nextMatch, incomingMatch);
+              slotMerged = true;
+            }
+          }
+
+          if (slotMerged) {
+            boardVisualUpdate = true;
+          }
+          return updatedBoard;
+        });
+      }
+
+      applied = matchFound || boardVisualUpdate;
+      if (delta.action === "finished" && !applied) {
+        forceResync = true;
+      }
+      if (delta.action === "leg-finished" && !applied) {
+        forceResync = true;
       }
 
       return next;
     });
 
     const finalApplied = applied && !forceResync;
-    if (SSE_DEBUG) {
-      console.log("[SSE][TournamentPageData] applyDelta", {
+    if (SSE_DEBUG || verbose) {
+      console.log("[SSE][TournamentPageData] applySseDelta: merge result", {
         code,
         scope: delta.scope,
         action: delta.action,
@@ -616,10 +732,17 @@ export function useTournamentPageData(
         applied,
         forceResync,
         finalApplied,
+        hint:
+          !applied && delta.scope === "match"
+            ? "No matching match/board in client state (wrong id or thin overview state)"
+            : undefined,
       });
     }
+    if (finalApplied && delta.scope === "match") {
+      bumpBoardsDataSyncSseThrottled();
+    }
     return finalApplied;
-  }, []);
+  }, [bumpBoardsDataSyncSseThrottled, code]);
 
   useEffect(() => {
     const normalizedCode = typeof code === "string" ? code : String(code || "");
@@ -685,5 +808,8 @@ export function useTournamentPageData(
     resyncLiteData,
     applySseDelta,
     resyncFullData,
+    fetchSection,
+    boardsDataSyncedAt,
+    boardsDataSyncSource,
   };
 }

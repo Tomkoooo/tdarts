@@ -16,7 +16,7 @@ export class TournamentGroupService {
                 tournamentId,
                 scope: 'tournament',
                 action: 'updated',
-                requiresResync: true,
+                sectionHint: 'groups',
                 data: {
                     legacyType: 'tournament-update',
                 },

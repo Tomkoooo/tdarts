@@ -129,6 +129,17 @@ export type SseDeltaAction =
   | 'knockout-updated'
   | 'resync-required';
 
+/** Client refetches these read-model sections (see getTournamentReadModelForSection). */
+export type SseSectionHint = 'boards' | 'groups' | 'bracket' | 'boards+groups' | 'boards+bracket';
+
+/** Inline board row update so UIs can skip a fetch for simple status transitions. */
+export type SseBoardPatch = {
+  boardNumber: number;
+  status: 'playing' | 'waiting' | 'idle';
+  currentMatch?: unknown;
+  nextMatch?: unknown;
+};
+
 export type SseDeltaPayload<TData = Record<string, unknown>> = {
   schemaVersion: 1;
   kind: 'delta';
@@ -139,6 +150,10 @@ export type SseDeltaPayload<TData = Record<string, unknown>> = {
   channel?: string;
   data: TData;
   requiresResync?: boolean;
+  /** When set, clients should merge that section from the server instead of guessing. */
+  sectionHint?: SseSectionHint;
+  /** Optional snapshot for boards tab / kiosk without an extra round-trip. */
+  boardPatch?: SseBoardPatch;
   emittedAt: string;
 };
 
@@ -148,6 +163,8 @@ export function createSseDeltaPayload<TData = Record<string, unknown>>(input: {
   action: SseDeltaAction;
   data: TData;
   requiresResync?: boolean;
+  sectionHint?: SseSectionHint;
+  boardPatch?: SseBoardPatch;
 }): SseDeltaPayload<TData> {
   return {
     schemaVersion: 1,
@@ -159,6 +176,8 @@ export function createSseDeltaPayload<TData = Record<string, unknown>>(input: {
     channel: input.tournamentId,
     data: input.data,
     requiresResync: input.requiresResync ?? false,
+    sectionHint: input.sectionHint,
+    boardPatch: input.boardPatch,
     emittedAt: new Date().toISOString(),
   };
 }

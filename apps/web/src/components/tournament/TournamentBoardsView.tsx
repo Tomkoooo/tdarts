@@ -13,15 +13,40 @@ import { Input } from "@/components/ui/Input"
 import { showErrorToast } from "@/lib/toastUtils"
 import toast from "react-hot-toast"
 import { updateTournamentBoardAction } from "@/features/tournaments/actions/manageTournament.action"
+import type { BoardsDataSyncSource } from "@/features/tournament/hooks/useTournamentPageData"
+import { useRelativeTimeAgo } from "@/lib/time/useRelativeTimeAgo"
 
 interface TournamentBoardsViewProps {
   tournament: any
   userClubRole?: 'admin' | 'moderator' | 'member' | 'none'
+  dataSyncedAt?: number | null
+  dataSyncSource?: BoardsDataSyncSource | null
 }
 
 
 
 const getPlayerName = (player: any) => player?.playerId?.name || player?.name || "N/A"
+
+/**
+ * Populated Player ref, plain id string, or unassigned — used for always-visible scorer lines.
+ * Uses `scorerSource` when the Player ref is not populated (same idea as TV group display).
+ */
+function resolveScorerDisplayName(match: any, tTour: (key: string) => string): string {
+  const sc = match?.scorer
+  if (sc != null && typeof sc === "object") {
+    const n = typeof sc.name === "string" ? sc.name.trim() : ""
+    if (n) return n
+  }
+  if (typeof sc === "string") {
+    const trimmed = sc.trim()
+    if (trimmed) return trimmed
+  }
+  const srcType = match?.scorerSource?.type as string | undefined
+  if (srcType === "match_loser") return tTour("boards_view.scorer_previous_loser")
+  if (srcType === "group_loser") return tTour("boards_view.scorer_group_loser")
+  if (srcType === "manual") return tTour("boards_view.scorer_tbd")
+  return tTour("boards_view.scorer_unknown")
+}
 const LEGACY_DEFAULT_BOARD_NAME_KEYS = new Set([
   "Club.create_tournament_modal.boards.default_board_name",
   "create_tournament_modal.boards.default_board_name",
@@ -85,11 +110,76 @@ const getBoardFallbackNextMatch = (tournament: any, boardNumber: number) => {
   return null;
 };
 
-export function TournamentBoardsView({ tournament: initialTournament, userClubRole }: TournamentBoardsViewProps) {
+function countNonFinishedMatchesOnBoard(tournament: any, boardNumber: number): number {
+  let n = 0;
+  const groups = Array.isArray(tournament?.groups) ? tournament.groups : [];
+  for (const group of groups) {
+    const matches = Array.isArray(group?.matches) ? group.matches : [];
+    for (const raw of matches) {
+      const match = unwrapMatch(raw);
+      if (!match || (match._id == null && !match.status)) continue;
+      if (!matchBelongsToBoard(match, boardNumber)) continue;
+      if (match.status && match.status !== "finished") n += 1;
+    }
+  }
+  const knockoutRounds = Array.isArray(tournament?.knockout) ? tournament.knockout : [];
+  for (const round of knockoutRounds) {
+    const matches = Array.isArray(round?.matches) ? round.matches : [];
+    for (const raw of matches) {
+      const match = unwrapMatch(raw);
+      if (!match || (match._id == null && !match.status)) continue;
+      if (!matchBelongsToBoard(match, boardNumber)) continue;
+      if (match.status && match.status !== "finished") n += 1;
+    }
+  }
+  return n;
+}
+
+function syncSourceLabel(
+  source: BoardsDataSyncSource | null | undefined,
+  t: (key: string) => string
+): string | null {
+  if (!source) return null;
+  switch (source) {
+    case "initial":
+      return t("boards_view.sync_source_initial");
+    case "full_resync":
+      return t("boards_view.sync_source_full_resync");
+    case "lite_resync":
+      return t("boards_view.sync_source_lite_resync");
+    case "sse_delta":
+      return t("boards_view.sync_source_sse_delta");
+    default:
+      return null;
+  }
+}
+
+export function TournamentBoardsView({
+  tournament: initialTournament,
+  userClubRole,
+  dataSyncedAt,
+  dataSyncSource,
+}: TournamentBoardsViewProps) {
   const tTour = useTranslations("Tournament");
   const boards = initialTournament?.boards || []
   const tournamentId = initialTournament?.tournamentId
   const tournamentPassword = initialTournament?.tournamentSettings?.password
+
+  const tournamentUpdatedMs = initialTournament?.updatedAt
+    ? new Date(initialTournament.updatedAt).getTime()
+    : null;
+  const usingClientBoardsSync = dataSyncedAt != null && Number.isFinite(dataSyncedAt);
+  const clientSyncMs = usingClientBoardsSync ? Number(dataSyncedAt) : null;
+  const referenceMs =
+    clientSyncMs != null
+      ? clientSyncMs
+      : tournamentUpdatedMs != null && Number.isFinite(tournamentUpdatedMs)
+        ? tournamentUpdatedMs
+        : null;
+  const relativeUpdated = useRelativeTimeAgo(referenceMs);
+  const syncHint = usingClientBoardsSync
+    ? syncSourceLabel(dataSyncSource ?? null, tTour)
+    : null;
 
   const statusMap: Record<string, { label: string; badgeClass: string; description: string; cardClass: string; accentClass: string; scoreClass: string }> = {
     idle: {
@@ -189,6 +279,7 @@ export function TournamentBoardsView({ tournament: initialTournament, userClubRo
 
         const currentMatch = board.currentMatch || getBoardFallbackCurrentMatch(initialTournament, board.boardNumber)
         const nextMatch = board.nextMatch || getBoardFallbackNextMatch(initialTournament, board.boardNumber)
+        const openMatchesOnBoard = countNonFinishedMatchesOnBoard(initialTournament, board.boardNumber)
 
         return (
           <Card
@@ -235,11 +326,11 @@ export function TournamentBoardsView({ tournament: initialTournament, userClubRo
                   <p className={cn("font-mono text-sm", statusInfo.scoreClass)}>
                     {tTour('boards_view.score_label', { p1: currentMatch.player1?.legsWon ?? 0, p2: currentMatch.player2?.legsWon ?? 0 })}
                   </p>
-                  {currentMatch.scorer?.name && (
-                    <p className="text-xs text-muted-foreground">
-                      {tTour('boards_view.scorer_label', { name: currentMatch.scorer.name })}
-                    </p>
-                  )}
+                  <p className="text-xs text-muted-foreground">
+                    {tTour('boards_view.scorer_label', {
+                      name: resolveScorerDisplayName(currentMatch, tTour),
+                    })}
+                  </p>
                 </div>
               ) : statusKey === "waiting" && nextMatch ? (
                 <div className="space-y-2">
@@ -251,11 +342,11 @@ export function TournamentBoardsView({ tournament: initialTournament, userClubRo
                     <span className="mx-1 text-muted-foreground">vs</span>
                     <span>{getPlayerName(nextMatch.player2)}</span>
                   </p>
-                  {nextMatch.scorer?.name && (
-                    <p className="text-xs text-muted-foreground">
-                      {tTour('boards_view.scorer_label', { name: nextMatch.scorer.name })}
-                    </p>
-                  )}
+                  <p className="text-xs text-muted-foreground">
+                    {tTour('boards_view.scorer_label', {
+                      name: resolveScorerDisplayName(nextMatch, tTour),
+                    })}
+                  </p>
                 </div>
               ) : (
                 <p className="text-muted-foreground">{tTour('boards_view.no_match_info')}</p>
@@ -266,18 +357,39 @@ export function TournamentBoardsView({ tournament: initialTournament, userClubRo
               <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
                 <div>
                   <p className="font-medium text-foreground">{tTour('boards_view.last_updated')}</p>
-                  <p>
-                    {board.updatedAt
-                      ? new Date(board.updatedAt).toLocaleTimeString('hu-HU', {
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })
-                      : '–'}
-                  </p>
+                  <p>{relativeUpdated ?? "–"}</p>
+                  {syncHint ? (
+                    <p className="text-[10px] text-muted-foreground/90 mt-0.5 leading-snug">{syncHint}</p>
+                  ) : null}
                 </div>
                 <div>
-                  <p className="font-medium text-foreground">{tTour('boards_view.active_matches')}</p>
-                  <p>{board.matchesInQueue ?? 0}</p>
+                  {statusKey === "playing" ? (
+                    nextMatch ? (
+                      <>
+                        <p className="font-medium text-foreground">{tTour("boards_view.next_match_footer")}</p>
+                        <p className="text-foreground font-medium leading-snug">
+                          <span>{getPlayerName(nextMatch.player1)}</span>
+                          <span className="mx-1 text-muted-foreground">vs</span>
+                          <span>{getPlayerName(nextMatch.player2)}</span>
+                        </p>
+                        <p className="text-[10px] text-muted-foreground mt-0.5 leading-snug">
+                          {tTour("boards_view.scorer_label", {
+                            name: resolveScorerDisplayName(nextMatch, tTour),
+                          })}
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <p className="font-medium text-foreground">{tTour("boards_view.next_match_footer")}</p>
+                        <p>{tTour("boards_view.next_match_none")}</p>
+                      </>
+                    )
+                  ) : (
+                    <>
+                      <p className="font-medium text-foreground">{tTour("boards_view.matches_on_board")}</p>
+                      <p>{openMatchesOnBoard}</p>
+                    </>
+                  )}
                 </div>
               </div>
 

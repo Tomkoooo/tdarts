@@ -1,5 +1,6 @@
-import { useEffect, useState, useRef } from 'react';
+import { useCallback, useEffect, useState, useRef } from 'react';
 import type { SseDeltaPayload } from '@/lib/events';
+import { isSseVerboseDebugEnabled } from '@/lib/sseDebug';
 
 type UseRealTimeUpdatesOptions = {
   tournamentId?: string;
@@ -16,13 +17,21 @@ type RealtimeUpdateEvent = {
 const DEFAULT_MAX_SESSION_AGE_MS = 96 * 60 * 60 * 1000; // 4 days
 const SSE_DEBUG = process.env.NEXT_PUBLIC_SSE_DEBUG === 'true';
 
+function sseLogVerbose(...args: unknown[]) {
+  if (isSseVerboseDebugEnabled()) {
+    console.log('[SSE][verbose]', ...args);
+  }
+}
+
 export const useRealTimeUpdates = (options?: UseRealTimeUpdatesOptions) => {
   const tournamentId = options?.tournamentId;
   const enabled = options?.enabled ?? true;
   const maxSessionAgeMs = options?.maxSessionAgeMs ?? DEFAULT_MAX_SESSION_AGE_MS;
   const [isConnected, setIsConnected] = useState(false);
-  const [lastEvent, setLastEvent] = useState<RealtimeUpdateEvent | null>(null);
+  /** Bumps when new SSE payloads arrive; consumers drain with `drainPendingSseEvents` so bursts are not collapsed. */
+  const [sseTick, setSseTick] = useState(0);
   const [sessionExpired, setSessionExpired] = useState(false);
+  const pendingEventsRef = useRef<RealtimeUpdateEvent[]>([]);
   const eventSourceRef = useRef<EventSource | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const reconnectAttemptsRef = useRef(0);
@@ -83,8 +92,8 @@ export const useRealTimeUpdates = (options?: UseRealTimeUpdatesOptions) => {
         tournamentId: tournamentCode,
         scope: 'group',
         action: 'standings-updated',
+        sectionHint: 'groups',
         data: payload,
-        requiresResync: true,
         emittedAt: new Date().toISOString(),
       };
     }
@@ -96,7 +105,8 @@ export const useRealTimeUpdates = (options?: UseRealTimeUpdatesOptions) => {
       scope: 'tournament',
       action: payload?.type === 'knockout-update' ? 'knockout-updated' : 'updated',
       data: payload,
-      requiresResync: payload?.type === 'knockout-update',
+      sectionHint:
+        payload?.type === 'knockout-update' ? ('boards+bracket' as const) : undefined,
       emittedAt: new Date().toISOString(),
     };
   };
@@ -111,8 +121,23 @@ export const useRealTimeUpdates = (options?: UseRealTimeUpdatesOptions) => {
         tournamentId: delta?.tournamentId,
       });
     }
-    setLastEvent({ type: eventType, data: payload, delta });
+    if (isSseVerboseDebugEnabled()) {
+      sseLogVerbose('incoming', {
+        eventType,
+        rawPayload: payload,
+        derivedDelta: delta,
+        subscribeTournamentId: tournamentId,
+      });
+    }
+    pendingEventsRef.current.push({ type: eventType, data: payload, delta });
+    setSseTick((n) => n + 1);
   };
+
+  const drainPendingSseEvents = useCallback((): RealtimeUpdateEvent[] => {
+    const out = pendingEventsRef.current;
+    pendingEventsRef.current = [];
+    return out;
+  }, []);
 
   const connect = () => {
     if (!enabled) return;
@@ -131,8 +156,8 @@ export const useRealTimeUpdates = (options?: UseRealTimeUpdatesOptions) => {
     query.set('maxConnectionMs', String(maxSessionAgeMs));
     const url = query.size > 0 ? `/api/updates?${query.toString()}` : '/api/updates';
 
-    if (SSE_DEBUG) {
-      console.log('SSE: Attempting to connect...', { tournamentId, maxSessionAgeMs });
+    if (SSE_DEBUG || isSseVerboseDebugEnabled()) {
+      console.log('[SSE] connecting', { url, tournamentId, maxSessionAgeMs });
     }
     const eventSource = new EventSource(url);
     eventSourceRef.current = eventSource;
@@ -186,14 +211,8 @@ export const useRealTimeUpdates = (options?: UseRealTimeUpdatesOptions) => {
         }
     });
 
-    //eslint-disable-next-line
-    eventSource.addEventListener('heartbeat', (event: any) => {
-        // Just to keep the connection alive, we can log it if needed
-        // console.log('Heartbeat received');
-        if (SSE_DEBUG) {
-          console.log('Heartbeat received');
-        }
-        
+    eventSource.addEventListener('heartbeat', () => {
+      // Connection alive; omit from verbose logs (noise). Data events use handleIncomingEvent.
     });
 
     eventSource.addEventListener('session-expired', () => {
@@ -245,7 +264,8 @@ export const useRealTimeUpdates = (options?: UseRealTimeUpdatesOptions) => {
     if (!enabled) {
       clearReconnectTimer();
       closeCurrentConnection();
-      setLastEvent(null);
+      pendingEventsRef.current = [];
+      setSseTick(0);
       return;
     }
 
@@ -258,5 +278,5 @@ export const useRealTimeUpdates = (options?: UseRealTimeUpdatesOptions) => {
     };
   }, [enabled, tournamentId, maxSessionAgeMs]);
 
-  return { isConnected, lastEvent, sessionExpired };
+  return { isConnected, sseTick, drainPendingSseEvents, sessionExpired };
 };

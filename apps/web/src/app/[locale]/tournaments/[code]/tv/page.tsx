@@ -38,7 +38,7 @@ import {
 } from "@/components/tournament/tv/slides";
 import { perfFlags } from "@/features/performance/lib/perfFlags";
 
-const LIVE_TOURNAMENT_STATUSES = new Set(['group-stage', 'knockout', 'ongoing', 'in_progress']);
+const LIVE_TOURNAMENT_STATUSES = new Set(['group-stage', 'knockout', 'ongoing', 'in_progress', 'active']);
 type RefreshViewMode = "boards" | "full";
 
 export default function TVModePage() {
@@ -288,26 +288,29 @@ export default function TVModePage() {
 
   // Real-time updates
   const isRealtimeEnabled = LIVE_TOURNAMENT_STATUSES.has(tournament?.tournamentSettings?.status);
-  const { lastEvent } = useRealTimeUpdates({
+  const { sseTick, drainPendingSseEvents } = useRealTimeUpdates({
     tournamentId: tournamentCode || undefined,
     enabled: isRealtimeEnabled,
   })
   useEffect(() => {
-    if (!lastEvent) return;
-    console.log('TV Mode - Received event:', lastEvent.type, lastEvent.data)
-    const delta = lastEvent.delta;
-    if (!delta) return;
-    if (delta.tournamentId && tournamentCode && delta.tournamentId !== tournamentCode) return;
-    const applied = applyTvDelta(delta);
-    const refreshMode = resolveRefreshMode(delta, applied)
-    if (!refreshMode) return
-    if (sseRefreshTimerRef.current) {
-      console.log('TV Mode - Coalescing refresh', { mode: refreshMode })
-    } else {
-      console.log('TV Mode - Triggering fallback resync', { mode: refreshMode })
+    const events = drainPendingSseEvents()
+    if (events.length === 0) return
+    for (const lastEvent of events) {
+      console.log('TV Mode - Received event:', lastEvent.type, lastEvent.data)
+      const delta = lastEvent.delta;
+      if (!delta) continue;
+      if (delta.tournamentId && tournamentCode && delta.tournamentId !== tournamentCode) continue;
+      const applied = applyTvDelta(delta);
+      const refreshMode = resolveRefreshMode(delta, applied)
+      if (!refreshMode) continue
+      if (sseRefreshTimerRef.current) {
+        console.log('TV Mode - Coalescing refresh', { mode: refreshMode })
+      } else {
+        console.log('TV Mode - Triggering fallback resync', { mode: refreshMode })
+      }
+      queueRefresh(refreshMode)
     }
-    queueRefresh(refreshMode)
-  }, [lastEvent, tournamentCode, applyTvDelta, queueRefresh, resolveRefreshMode])
+  }, [sseTick, drainPendingSseEvents, tournamentCode, applyTvDelta, queueRefresh, resolveRefreshMode])
 
   useEffect(() => {
     return () => {

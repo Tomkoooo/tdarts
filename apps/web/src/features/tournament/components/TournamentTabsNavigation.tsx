@@ -2,8 +2,15 @@
 
 import React from "react";
 import Link from "next/link";
-import { IconChevronLeft, IconChevronRight, IconDeviceDesktop, IconScreenShare } from "@tabler/icons-react";
+import {
+  IconChevronLeft,
+  IconChevronRight,
+  IconDeviceDesktop,
+  IconRefresh,
+  IconScreenShare,
+} from "@tabler/icons-react";
 import { TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
 
 export interface TournamentTab {
@@ -26,6 +33,10 @@ interface TournamentTabsNavigationProps {
   liveLabel?: string;
   liveEnabled?: boolean;
   mobileActionRow?: boolean;
+  /** Shown in the mobile action row (next to live when both exist). */
+  onMobileRefresh?: () => void | Promise<void>;
+  mobileRefreshLabel?: string;
+  mobileRefreshPending?: boolean;
 }
 
 function useFilteredTabs(
@@ -57,6 +68,9 @@ export function TournamentTabsNavigation({
   liveLabel = "Live",
   liveEnabled = false,
   mobileActionRow = false,
+  onMobileRefresh,
+  mobileRefreshLabel = "Refresh",
+  mobileRefreshPending = false,
 }: TournamentTabsNavigationProps) {
   const filteredTabs = useFilteredTabs(tabs, userClubRole, isGlobalAdmin, format);
   const tabsListRef = React.useRef<HTMLDivElement | null>(null);
@@ -88,7 +102,15 @@ export function TournamentTabsNavigation({
       element.removeEventListener("scroll", syncScrollState);
       window.removeEventListener("resize", syncScrollState);
     };
-  }, [syncScrollState, tabs.length, filteredTabs.length, scorerHref, liveHref, liveEnabled]);
+  }, [
+    syncScrollState,
+    tabs.length,
+    filteredTabs.length,
+    scorerHref,
+    liveHref,
+    liveEnabled,
+    onMobileRefresh,
+  ]);
 
   const shouldShowDesktopPills = Boolean(scorerHref || liveHref);
   const showDesktopPills = shouldShowDesktopPills && !mobileActionRow;
@@ -203,27 +225,50 @@ export function TournamentTabsNavigation({
                 {scorerLabel}
               </Link>
             ) : null}
-            {liveHref ? (
-              liveEnabled ? (
-                <Link
-                  href={liveHref}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex h-12 w-full items-center justify-center gap-2 rounded-xl border border-primary/35 bg-primary/10 px-4 text-sm font-semibold text-primary transition-colors hover:bg-primary/20"
-                >
-                  <IconScreenShare className="h-4 w-4" />
-                  {liveLabel}
-                </Link>
-              ) : (
-                <button
-                  type="button"
-                  disabled
-                  className="flex h-12 w-full items-center justify-center gap-2 rounded-xl border border-border/60 bg-muted/25 px-4 text-sm font-semibold text-muted-foreground opacity-70"
-                >
-                  <IconScreenShare className="h-4 w-4" />
-                  {liveLabel}
-                </button>
-              )
+            {liveHref || onMobileRefresh ? (
+              <div
+                className={cn(
+                  "grid gap-2",
+                  liveHref && onMobileRefresh ? "grid-cols-2" : "grid-cols-1"
+                )}
+              >
+                {liveHref ? (
+                  liveEnabled ? (
+                    <Link
+                      href={liveHref}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex h-12 w-full min-w-0 items-center justify-center gap-2 rounded-xl border border-primary/35 bg-primary/10 px-3 text-sm font-semibold text-primary transition-colors hover:bg-primary/20"
+                    >
+                      <IconScreenShare className="h-4 w-4 shrink-0" />
+                      <span className="truncate">{liveLabel}</span>
+                    </Link>
+                  ) : (
+                    <button
+                      type="button"
+                      disabled
+                      className="flex h-12 w-full min-w-0 items-center justify-center gap-2 rounded-xl border border-border/60 bg-muted/25 px-3 text-sm font-semibold text-muted-foreground opacity-70"
+                    >
+                      <IconScreenShare className="h-4 w-4 shrink-0" />
+                      <span className="truncate">{liveLabel}</span>
+                    </button>
+                  )
+                ) : null}
+                {onMobileRefresh ? (
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    disabled={mobileRefreshPending}
+                    onClick={() => void onMobileRefresh()}
+                    className="h-12 w-full min-w-0 gap-2 rounded-xl px-3 text-sm font-semibold"
+                    aria-label={mobileRefreshLabel}
+                  >
+                    <IconRefresh className="h-4 w-4 shrink-0" />
+                    <span className="truncate">{mobileRefreshLabel}</span>
+                  </Button>
+                ) : null}
+              </div>
             ) : null}
           </div>
         ) : null}

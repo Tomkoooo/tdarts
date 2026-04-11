@@ -120,9 +120,10 @@ const TournamentPageClient: React.FC<TournamentPageClientProps> = ({
     userPlayerStatus,
     userPlayerId,
     fetchAll,
-    resyncLiteData,
     applySseDelta,
-    resyncFullData,
+    fetchSection,
+    boardsDataSyncedAt,
+    boardsDataSyncSource,
   } = useTournamentPageData(code, user, t("error.retry"), initialData, initialSections);
 
   const { isConnected: sseConnected, sessionExpired: sseSessionExpired, isRealtimeEnabled: sseEnabled } =
@@ -130,8 +131,7 @@ const TournamentPageClient: React.FC<TournamentPageClientProps> = ({
       tournament,
       typeof code === "string" ? code : undefined,
       applySseDelta,
-      resyncLiteData,
-      resyncFullData
+      fetchSection
     );
 
   const [tournamentShareModal, setTournamentShareModal] = useState(false);
@@ -445,6 +445,9 @@ const TournamentPageClient: React.FC<TournamentPageClientProps> = ({
                 liveLabel={t("header.live_open")}
                 liveEnabled={showLiveTvLinks}
                 mobileActionRow
+                onMobileRefresh={handleRefetch}
+                mobileRefreshLabel={t("header.refresh")}
+                mobileRefreshPending={loading}
               />
             </div>
             <header
@@ -582,7 +585,12 @@ const TournamentPageClient: React.FC<TournamentPageClientProps> = ({
             </TabsContent>
 
             <TabsContent value="boards" className="mt-0 space-y-4 rounded-2xl border border-border/60 bg-card/55 p-3 backdrop-blur-lg md:p-4">
-              <TournamentBoardsView tournament={tournament} userClubRole={userClubRole} />
+              <TournamentBoardsView
+                tournament={tournament}
+                userClubRole={userClubRole}
+                dataSyncedAt={boardsDataSyncedAt ?? undefined}
+                dataSyncSource={boardsDataSyncSource ?? undefined}
+              />
             </TabsContent>
 
             {tournament?.tournamentSettings?.format !== "knockout" && (

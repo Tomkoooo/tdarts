@@ -35,12 +35,14 @@ import {
   startBoardMatchAction,
   validateBoardPasswordAction,
 } from "@/features/board/actions/boardPage.action";
+import { deepMergeSseMatch } from "@/features/tournament/hooks/useTournamentPageData";
+import { isSseVerboseDebugEnabled } from "@/lib/sseDebug";
 
 interface BoardPageProps {
   params: Promise<{ tournamentId: string }>;
 }
 
-const LIVE_TOURNAMENT_STATUSES = new Set(['group-stage', 'knockout', 'ongoing', 'in_progress']);
+const LIVE_TOURNAMENT_STATUSES = new Set(['group-stage', 'knockout', 'ongoing', 'in_progress', 'active']);
 
 const BoardPage: React.FC<BoardPageProps> = (props) => {
   const t = useTranslations("Board");
@@ -53,18 +55,13 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
   const [boards, setBoards] = useState<Board[]>([]);
   const [selectedBoard, setSelectedBoard] = useState<Board | null>(null);
   const [matches, setMatches] = useState<Match[]>([]);
+  const matchesRef = useRef<Match[]>([]);
+  matchesRef.current = matches;
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
   const [userRole, setUserRole] = useState<UserRole | null>(null);
   const [tournamentData, setTournamentData] = useState<any>(null); // Add tournament data state
-  const isRealtimeEnabled =
-    isAuthenticated &&
-    LIVE_TOURNAMENT_STATUSES.has(tournamentData?.tournamentSettings?.status);
-  const { lastEvent } = useRealTimeUpdates({
-    tournamentId,
-    enabled: isRealtimeEnabled,
-  });
   
   // Match setup state
   const [showMatchSetup, setShowMatchSetup] = useState<boolean>(false);
@@ -95,6 +92,84 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
     const trimmed = password.trim();
     return trimmed ? trimmed : undefined;
   }, [password]);
+
+  const loadBoards = useCallback(async () => {
+    const requestId = ++boardsRequestIdRef.current;
+    setLoading(true);
+    try {
+      const response = await getBoardListAction({ tournamentId, password: accessPassword });
+      if (requestId !== boardsRequestIdRef.current) return;
+      if (response && typeof response === 'object' && 'boards' in response) {
+        setBoards((response as { boards: Board[] }).boards || []);
+      } else {
+        setBoards([]);
+      }
+    } catch (err: any) {
+      if (requestId !== boardsRequestIdRef.current) return;
+      setError(t("nem_sikerult_betolteni_a_px4t"));
+      showErrorToast(t("nem_sikerült_betölteni_72"), {
+        error: err?.response?.data?.error,
+        context: 'Táblák betöltése',
+        errorName: 'Táblák betöltése sikertelen',
+      });
+      console.error('Load boards error:', err);
+    } finally {
+      if (requestId === boardsRequestIdRef.current) {
+        setLoading(false);
+      }
+    }
+  }, [tournamentId, accessPassword, t]);
+
+  const loadMatches = useCallback(async () => {
+    if (!selectedBoard) return;
+
+    const requestId = ++matchesRequestIdRef.current;
+    setLoading(true);
+    try {
+      const response = await getBoardMatchesAction({
+        tournamentId,
+        boardNumber: Number(selectedBoard.boardNumber),
+        password: accessPassword,
+      });
+      if (requestId !== matchesRequestIdRef.current) return;
+      if (response && typeof response === 'object' && 'matches' in response) {
+        const nextMatches = ((response as { matches?: unknown }).matches || []) as unknown as Match[];
+        setMatches(nextMatches);
+      } else {
+        setMatches([]);
+      }
+    } catch (err: any) {
+      if (requestId !== matchesRequestIdRef.current) return;
+      setError(t("nem_sikerult_betolteni_a_qh0h"));
+      showErrorToast(t("nem_sikerült_betölteni_13"), {
+        error: err?.response?.data?.error,
+        context: 'Meccsek betöltése',
+        errorName: 'Meccsek betöltése sikertelen',
+      });
+      console.error('Load matches error:', err);
+    } finally {
+      if (requestId === matchesRequestIdRef.current) {
+        setLoading(false);
+      }
+    }
+  }, [tournamentId, accessPassword, selectedBoard, t]);
+
+  const loadUserRole = useCallback(async () => {
+    try {
+      const response = await getBoardUserRoleAction({ tournamentId, password: accessPassword });
+      setUserRole(response as UserRole);
+    } catch (err) {
+      console.error('Failed to load user role:', err);
+    }
+  }, [tournamentId, accessPassword]);
+
+  const isRealtimeEnabled =
+    isAuthenticated &&
+    LIVE_TOURNAMENT_STATUSES.has(tournamentData?.tournamentSettings?.status);
+  const { sseTick, drainPendingSseEvents } = useRealTimeUpdates({
+    tournamentId,
+    enabled: isRealtimeEnabled,
+  });
   
   const startingScoreOptions = [170, 201, 301, 401, 501, 601, 701];
   const getBoardLabel = (boardNumber: number, name?: string) =>
@@ -149,7 +224,7 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
     } finally {
       setLoading(false);
     }
-  }, [password, t, tournamentId]);
+  }, [password, t, tournamentId, loadBoards]);
 
   // Unified bootstrap: choose URL password first, then saved password, and run once.
   useEffect(() => {
@@ -218,29 +293,34 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
   // Load matches when board is selected
   useEffect(() => {
     if (selectedBoard?.boardNumber) {
-      loadMatches();
+      void loadMatches();
     }
-  }, [selectedBoard?.boardNumber, tournamentId]);
+  }, [selectedBoard?.boardNumber, tournamentId, loadMatches]);
 
   // Load user role when authenticated
   useEffect(() => {
     if (isAuthenticated) {
-      loadUserRole();
+      void loadUserRole();
     }
-  }, [isAuthenticated, tournamentId]);
+  }, [isAuthenticated, tournamentId, loadUserRole]);
 
   // Real-time updates via SSE
   useEffect(() => {
-    if (lastEvent && isAuthenticated) {
-      console.log('Board - Received SSE event:', lastEvent.type, lastEvent.data);
+    if (!isAuthenticated) return;
+    const events = drainPendingSseEvents();
+    if (events.length === 0) return;
 
-      const scheduleRefresh = (action: () => void) => {
-        if (sseRefreshTimerRef.current) {
-          clearTimeout(sseRefreshTimerRef.current);
-        }
-        // Merge bursts of events to avoid back-to-back expensive API calls.
-        sseRefreshTimerRef.current = setTimeout(action, 600);
-      };
+    const scheduleRefresh = (action: () => void) => {
+      if (sseRefreshTimerRef.current) {
+        clearTimeout(sseRefreshTimerRef.current);
+      }
+      sseRefreshTimerRef.current = setTimeout(action, 600);
+    };
+
+    for (const lastEvent of events) {
+      if (isSseVerboseDebugEnabled()) {
+        console.log('Board - Received SSE event:', lastEvent.type, lastEvent.data);
+      }
 
       const delta = lastEvent.delta;
       const eventTournamentId = delta?.tournamentId || lastEvent.data?.tournamentId;
@@ -248,62 +328,98 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
         !eventTournamentId ||
         eventTournamentId === tournamentId ||
         eventTournamentId === tournamentData?._id?.toString?.();
-      if (!isForTournament) return;
+      if (!isForTournament) continue;
 
-      let handled = false;
-
-      if (delta?.scope === 'match') {
-        const incomingMatch = delta.data?.match;
-        const incomingMatchId = incomingMatch?._id ? String(incomingMatch._id) : undefined;
-        const boardNumberFromDelta = Number(
-          delta.data?.boardNumber ?? incomingMatch?.boardReference
-        );
-
-        if (selectedBoard && Number.isFinite(boardNumberFromDelta) && boardNumberFromDelta === selectedBoard.boardNumber) {
-          if (incomingMatch && incomingMatchId) {
-            setMatches((prev) => {
-              const index = prev.findIndex((m) => String(m._id) === incomingMatchId);
-              if (index === -1) return prev;
-              const next = [...prev];
-              next[index] = { ...next[index], ...incomingMatch };
-              return next;
-            });
-            handled = true;
-          }
-        }
-
-        if (!selectedBoard && Number.isFinite(boardNumberFromDelta)) {
-          setBoards((prev) =>
-            prev.map((board) => {
-              if (board.boardNumber !== boardNumberFromDelta) return board;
-              const nextStatus =
-                delta.action === 'started'
-                  ? 'playing'
-                  : delta.action === 'finished'
-                    ? 'waiting'
-                    : board.status;
-              return { ...board, status: nextStatus };
-            })
-          );
-          handled = true;
-        }
+      if (!delta || delta.scope !== 'match') {
+        scheduleRefresh(() => {
+          void loadBoards();
+        });
+        continue;
       }
 
-      if (!handled || delta?.requiresResync) {
+      const incomingMatch = delta.data?.match;
+      const incomingMatchId = incomingMatch?._id ? String(incomingMatch._id) : undefined;
+      const boardNumberFromDelta = Number(
+        delta.boardPatch?.boardNumber ?? delta.data?.boardNumber ?? incomingMatch?.boardReference
+      );
+
+      const isSelectedBoard =
+        selectedBoard &&
+        Number.isFinite(boardNumberFromDelta) &&
+        boardNumberFromDelta === selectedBoard.boardNumber;
+
+      if (delta.action === 'started' && isSelectedBoard) {
+        scheduleRefresh(() => {
+          void loadMatches();
+        });
+        continue;
+      }
+
+      if (delta.action === 'finished' && isSelectedBoard) {
+        scheduleRefresh(() => {
+          void loadBoards();
+          void loadMatches();
+        });
+        continue;
+      }
+
+      if (delta.action === 'leg-finished' && isSelectedBoard && incomingMatch && incomingMatchId) {
+        const prev = matchesRef.current;
+        const index = prev.findIndex((m) => String(m._id) === incomingMatchId);
+        if (index === -1) {
+          scheduleRefresh(() => {
+            void loadMatches();
+          });
+          continue;
+        }
+        setMatches((p) => {
+          const i = p.findIndex((m) => String(m._id) === incomingMatchId);
+          if (i === -1) return p;
+          const next = [...p];
+          next[i] = deepMergeSseMatch(next[i], incomingMatch);
+          return next;
+        });
+        continue;
+      }
+
+      if (!selectedBoard && Number.isFinite(boardNumberFromDelta)) {
+        setBoards((prev) =>
+          prev.map((board) => {
+            if (board.boardNumber !== boardNumberFromDelta) return board;
+            const nextStatus =
+              delta.boardPatch?.status ??
+              (delta.action === 'started'
+                ? 'playing'
+                : delta.action === 'finished'
+                  ? 'waiting'
+                  : board.status);
+            return { ...board, status: nextStatus };
+          })
+        );
+      }
+
+      if (delta.requiresResync) {
         if (selectedBoard) {
-          console.log('Board - Resyncing selected board matches');
           scheduleRefresh(() => {
             void loadMatches();
           });
         } else {
-          console.log('Board - Resyncing board list');
           scheduleRefresh(() => {
             void loadBoards();
           });
         }
       }
     }
-  }, [lastEvent, isAuthenticated, selectedBoard, tournamentId, tournamentData?._id]);
+  }, [
+    sseTick,
+    drainPendingSseEvents,
+    isAuthenticated,
+    selectedBoard,
+    tournamentId,
+    tournamentData?._id,
+    loadMatches,
+    loadBoards,
+  ]);
 
   useEffect(() => {
     return () => {
@@ -312,78 +428,6 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
       }
     };
   }, []);
-
-
-
-  const loadBoards = async () => {
-    const requestId = ++boardsRequestIdRef.current;
-    setLoading(true);
-    try {
-      const response = await getBoardListAction({ tournamentId, password: accessPassword });
-      if (requestId !== boardsRequestIdRef.current) return;
-      if (response && typeof response === 'object' && 'boards' in response) {
-        setBoards((response as { boards: Board[] }).boards || []);
-      } else {
-        setBoards([]);
-      }
-    } catch (err: any) {
-      if (requestId !== boardsRequestIdRef.current) return;
-      setError(t("nem_sikerult_betolteni_a_px4t"));
-      showErrorToast(t("nem_sikerült_betölteni_72"), {
-        error: err?.response?.data?.error,
-        context: 'Táblák betöltése',
-        errorName: 'Táblák betöltése sikertelen',
-      });
-      console.error('Load boards error:', err);
-    } finally {
-      if (requestId === boardsRequestIdRef.current) {
-        setLoading(false);
-      }
-    }
-  };
-
-  const loadMatches = async () => {
-    if (!selectedBoard) return;
-
-    const requestId = ++matchesRequestIdRef.current;
-    setLoading(true);
-    try {
-      const response = await getBoardMatchesAction({
-        tournamentId,
-        boardNumber: Number(selectedBoard.boardNumber),
-        password: accessPassword,
-      });
-      if (requestId !== matchesRequestIdRef.current) return;
-      if (response && typeof response === 'object' && 'matches' in response) {
-        const nextMatches = ((response as { matches?: unknown }).matches || []) as unknown as Match[];
-        setMatches(nextMatches);
-      } else {
-        setMatches([]);
-      }
-    } catch (err: any) {
-      if (requestId !== matchesRequestIdRef.current) return;
-      setError(t("nem_sikerult_betolteni_a_qh0h"));
-      showErrorToast(t("nem_sikerült_betölteni_13"), {
-        error: err?.response?.data?.error,
-        context: 'Meccsek betöltése',
-        errorName: 'Meccsek betöltése sikertelen',
-      });
-      console.error('Load matches error:', err);
-    } finally {
-      if (requestId === matchesRequestIdRef.current) {
-        setLoading(false);
-      }
-    }
-  };
-
-  const loadUserRole = async () => {
-    try {
-      const response = await getBoardUserRoleAction({ tournamentId, password: accessPassword });
-      setUserRole(response as UserRole);
-    } catch (err) {
-      console.error('Failed to load user role:', err);
-    }
-  };
 
   const handleMatchSelect = (match: Match) => {
     if (match.status === 'pending') {

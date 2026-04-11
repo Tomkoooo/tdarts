@@ -223,6 +223,13 @@ export class MatchService {
                 tournamentId: canonicalTournamentId,
                 scope: 'match',
                 action: 'started',
+                sectionHint: 'boards',
+                boardPatch: {
+                    boardNumber: result.boardReference,
+                    status: 'playing',
+                    currentMatch: result,
+                    nextMatch: nextMatchForSse ?? undefined,
+                },
                 data: {
                     legacyType: 'started',
                     matchId,
@@ -845,7 +852,7 @@ export class MatchService {
                         tournamentId: tournament.tournamentId,
                         scope: 'group',
                         action: 'standings-updated',
-                        requiresResync: true,
+                        sectionHint: 'groups',
                         data: {
                             legacyType: 'standings-updated',
                         },
@@ -857,12 +864,36 @@ export class MatchService {
         // Emit match update event
         const tournament = await TournamentModel.findById(match.tournamentRef);
         if (tournament) {
+            const boardRow = tournament.boards?.find(
+                (b: { boardNumber?: number }) => b.boardNumber === match.boardReference,
+            );
+            const boardStatus: 'playing' | 'waiting' | 'idle' =
+                boardRow?.status === 'playing'
+                    ? 'playing'
+                    : boardRow?.status === 'waiting'
+                      ? 'waiting'
+                      : 'idle';
+            const sectionHint =
+                match.type === 'group' ? 'boards+groups' : 'boards+bracket';
+
             eventsBus.publish(
                 EVENTS.MATCH_UPDATE,
                 createSseDeltaPayload({
                     tournamentId: tournament.tournamentId,
                     scope: 'match',
                     action: 'finished',
+                    sectionHint,
+                    boardPatch: boardRow
+                        ? {
+                              boardNumber: match.boardReference,
+                              status: boardStatus,
+                              currentMatch: null,
+                              nextMatch:
+                                  match.type === 'group'
+                                      ? nextMatchForSse ?? undefined
+                                      : (boardRow as { nextMatch?: unknown }).nextMatch ?? undefined,
+                          }
+                        : undefined,
                     data: {
                         legacyType: 'finished',
                         matchId,
