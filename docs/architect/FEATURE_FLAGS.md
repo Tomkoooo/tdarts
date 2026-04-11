@@ -95,8 +95,8 @@ A `detailedStatistics` feature a következő logika szerint működik:
 A `liveMatchFollowing` feature a következő logika szerint működik:
 
 1. **ENV ki**: tiltott.
-2. **Paywall ki**: engedélyezett, ha `club.featureFlags.liveMatchFollowing === true`.
-3. **Paywall be**: ugyanígy a klub `liveMatchFollowing` flagje szükséges (tier helyett / mellett a flag az irányadó).
+2. **Paywall ki**: elég a `NEXT_PUBLIC_ENABLE_LIVE_MATCH_FOLLOWING`; klub flag nem szűr (lásd socket szekció).
+3. **Paywall be**: `NEXT_PUBLIC_ENABLE_LIVE_MATCH_FOLLOWING` mellett a klub `liveMatchFollowing` flagje kell legyen `true`.
 
 ### Socket Feature
 
@@ -104,13 +104,14 @@ A socket kapcsolat a következő logika szerint működik:
 
 1. **NEXT_PUBLIC_ENABLE_ALL = true**: engedélyezett.
 2. **NEXT_PUBLIC_ENABLE_SOCKET = false**: tiltott.
-3. **Egyébként**: ugyanaz a klub-szintű szabály, mint a live match following esetén: `club.featureFlags.liveMatchFollowing` kell legyen `true` (paywall állapottól függetlenül, ha az ENV engedélyezi a socketet).
+3. **Paywall be** (`NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED=true`): `NEXT_PUBLIC_ENABLE_SOCKET=true` mellett a klub `featureFlags.liveMatchFollowing` legyen `true`.
+4. **Paywall ki**: elég a globális socket ENV; a klub `liveMatchFollowing` flagje nem szűr (az előfizetéses upsellhez maradt, ha a paywall aktív).
 
 ## Subscription Model Logika
 
 A subscription model ellenőrzés a következő logika szerint működik:
 
-1. **`NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED` nem `true`** (hiányzik, `false`, stb.): nincs subscription-tier paywall; a feature-ekre továbbra is érvényes a megfelelő `NEXT_PUBLIC_ENABLE_*` és a klub `featureFlags`.
+1. **`NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED` nem `true`** (hiányzik, `false`, stb.): nincs subscription-tier paywall; a feature-ekre érvényes a megfelelő `NEXT_PUBLIC_ENABLE_*`, és (ahol van) klub flag — **kivétel**: élő követés / socket paywall nélkül csak ENV alapú (lásd fent).
 2. **NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED=true**: bekapcsolt paywall — a feature-típus szerint `subscriptionModel` és/vagy klub flag-ek szűrnek.
 
 ### Subscription Csomagok

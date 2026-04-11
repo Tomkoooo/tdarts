@@ -60,7 +60,8 @@ export class FeatureFlagService {
           return true;
         }
         if (featureKey === FEATURE_KEYS.SOCKET || featureKey === FEATURE_KEYS.LIVE_MATCH_FOLLOWING) {
-          return flags?.liveMatchFollowing === true;
+          // Paywall off: global env flags are the product gate; club.liveMatchFollowing is for subscription upsell only.
+          return true;
         }
         if (featureKey === FEATURE_KEYS.OAC_CREATION) {
           return true;

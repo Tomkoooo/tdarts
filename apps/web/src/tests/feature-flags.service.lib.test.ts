@@ -54,16 +54,15 @@ describe('FeatureFlagService (paywall + socket)', () => {
     await expect(FeatureFlagService.isSocketEnabled(clubId)).resolves.toBe(false);
   });
 
-  it('when paywall inactive, socket requires env and club liveMatchFollowing', async () => {
+  it('when paywall inactive, socket is on if env is on (ignores club liveMatchFollowing)', async () => {
     process.env.NEXT_PUBLIC_ENABLE_SOCKET = 'true';
-    mockClub({ featureFlags: { liveMatchFollowing: true }, subscriptionModel: 'free' });
+    mockClub({ featureFlags: { liveMatchFollowing: false }, subscriptionModel: 'free' });
     await expect(FeatureFlagService.isSocketEnabled(clubId)).resolves.toBe(true);
   });
 
-  it('when paywall inactive, socket denied without liveMatchFollowing', async () => {
+  it('when paywall inactive, socket still off if club is missing', async () => {
     process.env.NEXT_PUBLIC_ENABLE_SOCKET = 'true';
-    process.env.NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED = 'false';
-    mockClub({ featureFlags: { liveMatchFollowing: false }, subscriptionModel: 'free' });
+    mockClub(null);
     await expect(FeatureFlagService.isSocketEnabled(clubId)).resolves.toBe(false);
   });
 
