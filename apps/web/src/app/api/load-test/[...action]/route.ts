@@ -7,6 +7,10 @@ import { PlayerService } from '@/database/services/player.service';
 import { MatchService } from '@/database/services/match.service';
 import { MatchModel } from '@/database/models/match.model';
 import { isLoadTestEndpointsAllowedInCurrentEnvironment } from '@/lib/load-test-environment';
+import {
+  ENTRY_FEE_CURRENCY_CODES,
+  normalizeEntryFeeCurrency,
+} from '@tdarts/core/entry-fee-currency';
 
 type Params = { params: Promise<{ action: string[] }> };
 
@@ -17,6 +21,9 @@ const createTournamentSchema = z.object({
   format: z.enum(['group_knockout', 'knockout']).optional(),
   startingScore: z.number().int().min(101).max(1001).optional(),
   entryFee: z.number().min(0).optional(),
+  entryFeeCurrency: z
+    .enum([...ENTRY_FEE_CURRENCY_CODES] as [string, ...string[]])
+    .optional(),
   participationMode: z.enum(['individual', 'pair', 'team']).optional(),
   startDate: z.string().datetime().optional(),
   type: z.string().optional(),
@@ -134,6 +141,7 @@ function buildTournamentPayload(input: z.infer<typeof createTournamentSchema>) {
       startingScore: input.startingScore ?? 501,
       boardCount,
       entryFee: input.entryFee ?? 0,
+      entryFeeCurrency: normalizeEntryFeeCurrency(input.entryFeeCurrency),
       tournamentPassword: 'loadtest-password',
       location: null,
       type: input.type || 'amateur',

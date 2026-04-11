@@ -84,6 +84,7 @@ export interface Club {
       location?: string;
       type?: 'amateur' | 'open';
       entryFee?: number;
+      entryFeeCurrency?: string;
       maxPlayers?: number;
       registrationDeadline?: string;
       status: 'pending' | 'finished' | 'group-stage' | 'knockout';

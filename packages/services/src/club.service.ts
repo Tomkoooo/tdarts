@@ -791,6 +791,7 @@ export class ClubService {
             location: '$tournamentSettings.location',
             type: '$tournamentSettings.type',
             entryFee: '$tournamentSettings.entryFee',
+            entryFeeCurrency: '$tournamentSettings.entryFeeCurrency',
             maxPlayers: '$tournamentSettings.maxPlayers',
             registrationDeadline: '$tournamentSettings.registrationDeadline',
           },

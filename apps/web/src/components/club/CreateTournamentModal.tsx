@@ -36,6 +36,7 @@ import { Card, CardContent } from "@/components/ui/Card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Separator } from "@/components/ui/separator"
 import { useTranslations } from "next-intl"
+import { ENTRY_FEE_CURRENCY_CODES } from "@tdarts/core/entry-fee-currency"
 import { formatDateTimeLocalInput, parseDateTimeLocalInput } from "@/lib/date-time"
 
 interface CreateTournamentModalProps {
@@ -71,6 +72,7 @@ const defaultSettings: FormSettings = {
   description: "",
   startDate: new Date(),
   entryFee: 0,
+  entryFeeCurrency: "HUF",
   maxPlayers: 16,
   format: "group_knockout",
   startingScore: 501,
@@ -288,6 +290,7 @@ export default function CreateTournamentModal({
         description: settings.description,
         startDate: startDate.toISOString(),
         entryFee: settings.entryFee === '' as unknown as number ? 0 : settings.entryFee,
+        entryFeeCurrency: settings.entryFeeCurrency || "HUF",
         maxPlayers: settings.maxPlayers === '' as unknown as number ? 0 : settings.maxPlayers,
         format: settings.format,
         startingScore: settings.startingScore === '' as unknown as number ? 0 : settings.startingScore,
@@ -450,7 +453,7 @@ export default function CreateTournamentModal({
                     onChange={(event) => handleSettingsChange("location", event.target.value)}
                     icon={<IconMapPin className="h-5 w-5" />}
                   />
-                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                     <FormField
                       type="number"
                       label={t('details.fee_label')}
@@ -460,6 +463,20 @@ export default function CreateTournamentModal({
                       value={settings.entryFee ?? ''}
                       onChange={(event) => handleSettingsChange("entryFee", event.target.value === '' ? '' : Number(event.target.value))}
                     />
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">{t('details.fee_currency_label')}</label>
+                      <select
+                        value={settings.entryFeeCurrency || "HUF"}
+                        onChange={(event) => handleSettingsChange("entryFeeCurrency", event.target.value)}
+                        className="flex h-11 w-full rounded-lg bg-background/90 px-3 py-2 text-sm ring-1 ring-inset ring-white/10 focus:outline-none focus:ring-2 focus:ring-primary/40"
+                      >
+                        {ENTRY_FEE_CURRENCY_CODES.map((code) => (
+                          <option key={code} value={code}>
+                            {code}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
                     <div className="space-y-2">
                       <label className="text-sm font-medium">{t('details.type_label')}</label>
                       <select

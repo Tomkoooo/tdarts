@@ -1,4 +1,5 @@
-    import mongoose from 'mongoose';
+import mongoose from 'mongoose';
+import { ENTRY_FEE_CURRENCY_CODES } from '@tdarts/core/entry-fee-currency';
 import { TournamentDocument } from '@/interface/tournament.interface';
 import "@/database/models/club.model";
 import "@/database/models/player.model";
@@ -109,6 +110,11 @@ const tournamentSchema = new mongoose.Schema<TournamentDocument>({
         knockoutMethod: { type: String, enum: ['automatic', 'manual'], default: 'automatic' },
         boardCount: { type: Number, default: 2 },
         entryFee: { type: Number, default: 0 },
+        entryFeeCurrency: {
+            type: String,
+            enum: [...ENTRY_FEE_CURRENCY_CODES],
+            default: 'HUF',
+        },
         location: { type: String, default: null },
         locationData: {
             rawInput: { type: String, default: null },

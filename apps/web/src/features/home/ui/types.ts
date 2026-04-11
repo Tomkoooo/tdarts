@@ -12,6 +12,8 @@ export interface HomeTournament {
   currentPlayers?: number
   maxPlayers?: number
   entryFee?: number
+  /** ISO 4217; defaults to HUF when missing */
+  entryFeeCurrency?: string
   /** Amateur vs open */
   tournamentType?: HomeTournamentType
   /** Singles / pairs / teams */

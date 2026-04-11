@@ -1,4 +1,5 @@
 import { Document, Types } from 'mongoose';
+import type { EntryFeeCurrency } from '../lib/entry-fee-currency';
 import { BillingInfo } from './club.interface';
 import { StructuredLocation } from './location.interface';
 
@@ -87,6 +88,8 @@ export interface TournamentSettings {
   knockoutMethod?: 'automatic' | 'manual';
   boardCount: number;
   entryFee: number;
+  /** ISO 4217; defaults to HUF when missing (legacy documents). */
+  entryFeeCurrency?: EntryFeeCurrency;
   location?: string;
   locationData?: StructuredLocation;
   type: 'amateur' | 'open';

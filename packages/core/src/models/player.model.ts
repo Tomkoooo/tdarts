@@ -16,6 +16,8 @@ const PlayerSchema = new mongoose.Schema<PlayerDocument>({
     highestCheckout: { type: Number, default: 0 },
     avg: { type: Number, default: 0 },
     firstNineAvg: { type: Number, default: 0 },
+    /** Rolling mean of match averages from the last 10 finished closed tournaments (see tournament finish + backfill script). */
+    last10ClosedAvg: { type: Number, default: 0 },
     averagePosition: { type: Number, default: 0 },
     bestPosition: { type: Number, default: 999 },
     totalMatchesWon: { type: Number, default: 0 },

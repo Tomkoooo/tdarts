@@ -102,6 +102,7 @@ export async function getUserTournamentsAction(input: z.infer<typeof schema> = {
                 status: '$tournamentSettings.status',
                 maxPlayers: '$tournamentSettings.maxPlayers',
                 entryFee: '$tournamentSettings.entryFee',
+                entryFeeCurrency: '$tournamentSettings.entryFeeCurrency',
                 type: '$tournamentSettings.type',
                 participationMode: '$tournamentSettings.participationMode',
               },
@@ -204,6 +205,8 @@ export async function getUserTournamentsAction(input: z.infer<typeof schema> = {
             currentPlayers: Number(item.currentPlayers || 0),
             maxPlayers: Number(ts.maxPlayers || 0),
             entryFee: Number(ts.entryFee || 0),
+            entryFeeCurrency:
+              typeof ts.entryFeeCurrency === 'string' && ts.entryFeeCurrency ? ts.entryFeeCurrency : 'HUF',
             tournamentType: ts.type === 'open' ? 'open' : 'amateur',
             participationMode:
               ts.participationMode === 'pair' || ts.participationMode === 'team'

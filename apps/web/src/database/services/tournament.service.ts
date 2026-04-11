@@ -18,6 +18,7 @@ import { TournamentPlayerService } from './tournament-player.service';
 import { GeocodingService } from './geocoding.service';
 import { ErrorService } from './error.service';
 import { eventsBus, EVENTS, createSseDeltaPayload } from '@/lib/events';
+import { normalizeEntryFeeCurrency } from '@tdarts/core/entry-fee-currency';
 
 export class TournamentService {
     private static publishTournamentRefresh(
@@ -5538,7 +5539,34 @@ export class TournamentService {
                 tournamentAverageScore = totalAvg / playerStats.size;
             }
 
-            // Step 9: Update Player collection statistics with MMR (ONLY for non-sandbox)
+            // Step 9: Mark tournament finished in DB (and reset boards) BEFORE player updates.
+            // recalculateLast10ClosedAveragesBulk only counts matches whose tournament is already `finished`
+            // in MongoDB; doing this after player bulkWrite would exclude the tournament we are closing.
+            const persistFinishedUpdate: Record<string, unknown> = {
+                'tournamentSettings.status': 'finished',
+                tournamentPlayers: tournament.tournamentPlayers,
+            };
+
+            if (tournament.boards && tournament.boards.length > 0) {
+                tournament.boards = tournament.boards.map((board: any) => ({
+                    ...board,
+                    status: 'idle',
+                    currentMatch: undefined,
+                    nextMatch: undefined,
+                }));
+                persistFinishedUpdate.boards = tournament.boards;
+                console.log('✅ Resetting tournament boards to idle');
+            } else {
+                console.log('⚠️ Legacy tournament without boards array - skipping board reset');
+            }
+
+            const persistFinishedResult = await TournamentModel.updateOne(
+                { _id: tournament._id },
+                { $set: persistFinishedUpdate }
+            );
+            console.log('Persist finished tournament:', persistFinishedResult);
+
+            // Step 10: Update Player collection statistics with MMR (ONLY for non-sandbox)
             if (!tournament.isSandbox) {
                 const playerIds = Array.from(playerStats.keys());
                 const playerDocs = await PlayerModel.find({ _id: { $in: playerIds } });
@@ -5705,40 +5733,6 @@ export class TournamentService {
             } else {
                 console.log('🛡️ Sandbox tournament: Skipping global Player stats and MMR updates');
             }
-
-            // Step 10: Update tournament status to finished and reset boards
-
-            // Reset all boards to idle status (boards are now part of tournament)
-            // Handle both new (tournament.boards) and legacy (club.boards) approaches
-            const updateData: any = {
-                        'tournamentSettings.status': 'finished',
-                        'tournamentPlayers': tournament.tournamentPlayers
-            };
-
-            if (tournament.boards && tournament.boards.length > 0) {
-                // New approach: tournament has its own boards
-                tournament.boards = tournament.boards.map((board: any) => ({
-                    ...board,
-                    status: 'idle',
-                    currentMatch: undefined,
-                    nextMatch: undefined
-                }));
-                updateData['boards'] = tournament.boards;
-                console.log('✅ Resetting tournament boards to idle');
-            } else {
-                // Legacy approach: boards were in club
-                // No board reset needed, they're managed elsewhere
-                console.log('⚠️ Legacy tournament without boards array - skipping board reset');
-            }
-
-            const updateResult = await TournamentModel.updateOne(
-                { _id: tournament._id },
-                { $set: updateData }
-            );
-
-            console.log('Update result:', updateResult);
-            console.log('Modified count:', updateResult.modifiedCount);
-            console.log('Matched count:', updateResult.matchedCount);
 
             // Step 11: Calculate league points if tournament is attached to a league
             try {
@@ -6076,6 +6070,7 @@ export class TournamentService {
 
             // Update tournament settings (boards live on tournament root, not tournamentSettings)
             const updatedSettings = { ...tournament.tournamentSettings, ...settingsRest };
+            updatedSettings.entryFeeCurrency = normalizeEntryFeeCurrency(updatedSettings.entryFeeCurrency);
 
             if (typeof settingsRest.location === 'string' && settingsRest.location.trim()) {
                 const geocodeResult = await GeocodingService.geocodeAddress(settingsRest.location, 'user');
@@ -6108,7 +6103,7 @@ export class TournamentService {
                 throw new BadRequestError('Starting score must be at least 1');
             }
 
-            if (updatedSettings.entryFee && updatedSettings.entryFee < 0) {
+            if (updatedSettings.entryFee !== undefined && updatedSettings.entryFee < 0) {
                 throw new BadRequestError('Entry fee cannot be negative');
             }
 

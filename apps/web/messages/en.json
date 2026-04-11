@@ -3720,7 +3720,8 @@
         "deadline_label": "Registration deadline",
         "location_label": "Location",
         "location_placeholder": "E.g.: Budapest, Sports Club",
-        "fee_label": "Registration fee (HUF)",
+        "fee_label": "Registration fee (amount)",
+        "fee_currency_label": "Currency",
         "type_label": "Type",
         "type_amateur": "Amateur",
         "type_open": "Open"

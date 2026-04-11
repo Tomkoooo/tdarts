@@ -13,6 +13,7 @@ interface TournamentListProps {
       location?: string
       type?: 'amateur' | 'open'
       entryFee?: number
+      entryFeeCurrency?: string
       maxPlayers?: number
       registrationDeadline?: string
       status: 'pending' | 'group-stage' | 'knockout' | 'finished'

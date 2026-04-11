@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { ENTRY_FEE_CURRENCY_CODES } from '@tdarts/core/entry-fee-currency';
 
 // ---------------------------------------------------------------------------
 // Base validators (single source of truth for all validation messages)
@@ -142,6 +143,9 @@ export const createTournamentSchema = z.object({
     .min(1, 'Legalább egy tábla szükséges'),
   clubId: z.string().optional(),
   entryFee: nonNegativeNumberValidator.optional(),
+  entryFeeCurrency: z
+    .enum([...ENTRY_FEE_CURRENCY_CODES] as [string, ...string[]])
+    .optional(),
   participationMode: z.enum(['individual', 'team', 'doubles']).optional(),
 });
 export type CreateTournamentInput = z.infer<typeof createTournamentSchema>;

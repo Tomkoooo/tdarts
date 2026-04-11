@@ -1,4 +1,5 @@
 import { Document, Types } from 'mongoose';
+import type { EntryFeeCurrency } from '@tdarts/core/entry-fee-currency';
 import { BillingInfo } from './club.interface';
 import { StructuredLocation } from './location.interface';
 
@@ -87,6 +88,8 @@ export interface TournamentSettings {
     knockoutMethod?: 'automatic' | 'manual';
     boardCount: number;
     entryFee: number;
+    /** ISO 4217; missing on legacy documents defaults to HUF in UI. */
+    entryFeeCurrency?: EntryFeeCurrency;
     location?: string;
     locationData?: StructuredLocation;
     type: 'amateur' | 'open';

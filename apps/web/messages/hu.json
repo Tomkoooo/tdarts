@@ -3592,7 +3592,8 @@
         "deadline_label": "Nevezési határidő",
         "location_label": "Helyszín",
         "location_placeholder": "Pl.: Budapest, Sport Klub",
-        "fee_label": "Nevezési díj (Ft)",
+        "fee_label": "Nevezési díj (összeg)",
+        "fee_currency_label": "Pénznem",
         "type_label": "Típus",
         "type_amateur": "Amatőr",
         "type_open": "Open"

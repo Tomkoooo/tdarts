@@ -2,7 +2,8 @@
 
 import Link from "next/link"
 import { IconCalendarEvent, IconCoins, IconLayoutDashboard, IconTargetArrow, IconUsers } from "@tabler/icons-react"
-import { useLocale, useTranslations } from "next-intl"
+import { useFormatter, useLocale, useTranslations } from "next-intl"
+import { formatTournamentEntryFee } from "@/lib/format-entry-fee"
 import { Button } from "@/components/ui/Button"
 import { GlassmorphismCard } from "@/components/ui/glassmorphism-card"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -17,6 +18,7 @@ interface CurrentTournamentTileProps {
 export default function CurrentTournamentTile({ tournament, loading = false }: CurrentTournamentTileProps) {
   const t = useTranslations("HomeDashboard")
   const locale = useLocale()
+  const format = useFormatter()
 
   if (loading) {
     return (
@@ -83,7 +85,11 @@ export default function CurrentTournamentTile({ tournament, loading = false }: C
               {t("currentTournament.entryFee")}
             </p>
             <p className="mt-1 text-sm font-semibold">
-              {Number(tournament.entryFee || 0).toLocaleString(locale)} Ft
+              {formatTournamentEntryFee(
+                format.number,
+                Number(tournament.entryFee || 0),
+                tournament.entryFeeCurrency
+              )}
             </p>
           </div>
         </div>

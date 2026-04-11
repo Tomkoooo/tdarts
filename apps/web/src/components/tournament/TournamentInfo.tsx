@@ -3,7 +3,8 @@ import { Link } from '@/i18n/routing';
 import { IconScreenShare, IconRefresh, IconEdit, IconUserPlus, IconFileInvoice } from '@tabler/icons-react';
 import EditTournamentModal from './EditTournamentModal';
 import { toast } from 'react-hot-toast';
-import { useTranslations } from 'next-intl';
+import { useFormatter, useTranslations } from 'next-intl';
+import { formatTournamentEntryFee } from '@/lib/format-entry-fee';
 import { buildTournamentInvoiceDownloadUrl } from '@/features/tournaments/lib/readFlowPolicy';
 import { shouldShowTournamentLiveTvLinks } from '@/lib/local-calendar-date';
 
@@ -16,6 +17,7 @@ interface TournamentInfoProps {
 
 const TournamentInfo = ({ tournament, onRefetch, userRole, userId }: TournamentInfoProps) => {
   const tTour = useTranslations('Tournament')
+  const format = useFormatter();
   const t = (key: string, values?: any) => tTour(`info.${key}`, values);
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
@@ -70,7 +72,13 @@ const TournamentInfo = ({ tournament, onRefetch, userRole, userId }: TournamentI
         <span className="font-semibold">{t('format')}</span> {tournament.tournamentSettings?.format}<br />
         <span className="font-semibold">{t('start')}</span> {tournament.tournamentSettings?.startDate ? new Date(tournament.tournamentSettings.startDate).toLocaleString() : '-'}<br />
         <span className="font-semibold">{t('location')}</span> {tournament.tournamentSettings?.location || tournament.clubId?.location}<br />
-        <span className="font-semibold">{t('entry_fee')}</span> {tournament.tournamentSettings?.entryFee} Ft<br />
+        <span className="font-semibold">{t('entry_fee')}</span>{' '}
+        {formatTournamentEntryFee(
+          format.number,
+          Number(tournament.tournamentSettings?.entryFee ?? 0),
+          tournament.tournamentSettings?.entryFeeCurrency
+        )}
+        <br />
         <span className="font-semibold">{t('max_players')}</span> {tournament.tournamentSettings?.maxPlayers}<br />
         <span className="font-semibold">{t('starting_score')}</span> {tournament.tournamentSettings?.startingScore}<br />
         <span className="font-semibold">{t('description')}</span>{" "}

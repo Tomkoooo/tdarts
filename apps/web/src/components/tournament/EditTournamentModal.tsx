@@ -10,6 +10,7 @@ import { getMapSettingsTranslations } from '@/data/translations/map-settings';
 import { shouldPromptLocationReview } from '@/interface/location.interface';
 import { formatDateTimeLocalInput, parseDateTimeLocalInput } from '@/lib/date-time';
 import { updateTournamentSettingsAction } from '@/features/tournaments/actions/manageTournament.action';
+import { ENTRY_FEE_CURRENCY_CODES } from '@tdarts/core/entry-fee-currency';
 
 interface EditTournamentModalProps {
   isOpen: boolean;
@@ -331,15 +332,33 @@ export default function EditTournamentModal({
                 <p className="text-xs text-muted-foreground">Automatikusan frissül a táblák alapján</p>
               </div>
 
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Nevezési díj (Ft)</label>
-                <input
-                  type="number"
-                  value={settings.entryFee ?? ''}
-                  onChange={(e) => handleSettingsChange('entryFee', e.target.value === '' ? '' : parseInt(e.target.value))}
-                  className="w-full px-3 py-2 bg-muted/40 rounded-lg border border-border/40 outline-none focus:ring-2 ring-primary/20"
-                  min="0"
-                />
+              <div className="space-y-2 md:col-span-2">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Nevezési díj (összeg)</label>
+                    <input
+                      type="number"
+                      value={settings.entryFee ?? ''}
+                      onChange={(e) => handleSettingsChange('entryFee', e.target.value === '' ? '' : parseInt(e.target.value))}
+                      className="w-full px-3 py-2 bg-muted/40 rounded-lg border border-border/40 outline-none focus:ring-2 ring-primary/20"
+                      min="0"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Pénznem</label>
+                    <select
+                      value={settings.entryFeeCurrency || 'HUF'}
+                      onChange={(e) => handleSettingsChange('entryFeeCurrency', e.target.value)}
+                      className="w-full px-3 py-2 bg-muted/40 rounded-lg border border-border/40 outline-none focus:ring-2 ring-primary/20"
+                    >
+                      {ENTRY_FEE_CURRENCY_CODES.map((code) => (
+                        <option key={code} value={code}>
+                          {code}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
               </div>
             </div>
 

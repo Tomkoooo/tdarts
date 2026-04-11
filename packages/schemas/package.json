@@ -9,6 +9,9 @@
     "lint": "echo 'no lint configured'",
     "test": "echo 'no tests'"
   },
+  "dependencies": {
+    "@tdarts/core": "workspace:*"
+  },
   "peerDependencies": {
     "zod": ">=3"
   },

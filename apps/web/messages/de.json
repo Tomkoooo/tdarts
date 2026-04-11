@@ -2359,7 +2359,8 @@
         "deadline_label": "Anmeldeschluss",
         "location_label": "Standort",
         "location_placeholder": "Beispiel: Budapest, Sportverein",
-        "fee_label": "Anmeldegebühr (HUF)",
+        "fee_label": "Anmeldegebühr (Betrag)",
+        "fee_currency_label": "Währung",
         "type_label": "Typ",
         "type_amateur": "Amateur",
         "type_open": "Offen"

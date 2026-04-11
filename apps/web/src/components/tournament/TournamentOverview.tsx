@@ -19,6 +19,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/Card"
 import { Button } from "@/components/ui/Button"
 import { Separator } from "@/components/ui/separator"
 import { getUserTimeZone } from "@/lib/date-time"
+import { formatTournamentEntryFee } from "@/lib/format-entry-fee"
 
 interface TournamentOverviewProps {
   tournament: any
@@ -132,11 +133,11 @@ export function TournamentOverview({
       label: tTour('overview.details.entry_fee'),
       value:
         typeof tournament.tournamentSettings?.entryFee === "number"
-          ? format.number(tournament.tournamentSettings.entryFee, {
-              style: 'currency',
-              currency: 'HUF',
-              maximumFractionDigits: 0
-            })
+          ? formatTournamentEntryFee(
+              format.number,
+              tournament.tournamentSettings.entryFee,
+              tournament.tournamentSettings.entryFeeCurrency
+            )
           : "–",
     },
     {

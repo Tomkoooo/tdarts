@@ -23,6 +23,7 @@ import {
 import { cn } from '@/lib/utils'
 import { useFormatter, useTranslations } from 'next-intl'
 import { getUserTimeZone } from '@/lib/date-time'
+import { formatTournamentEntryFee } from '@/lib/format-entry-fee'
 
 interface TournamentCardProps {
   tournament: {
@@ -34,6 +35,7 @@ interface TournamentCardProps {
       location?: string
       type?: 'amateur' | 'open'
       entryFee?: number
+      entryFeeCurrency?: string
       maxPlayers?: number
       registrationDeadline?: string
       status?: 'pending' | 'group-stage' | 'knockout' | 'finished' | string
@@ -228,7 +230,14 @@ export default function TournamentCard({
         {entryFee > 0 && (
           <div className="flex items-center gap-2">
             <IconCoin className="w-4 h-4 text-warning" />
-            <span>{t('entry_fee')}: {entryFee} Ft</span>
+            <span>
+              {t('entry_fee')}:{' '}
+              {formatTournamentEntryFee(
+                format.number,
+                entryFee,
+                tournament.tournamentSettings?.entryFeeCurrency
+              )}
+            </span>
           </div>
         )}
       </CardContent>

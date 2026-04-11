@@ -54,6 +54,10 @@ function toHomeTournament(item: any): HomeTournament {
     currentPlayers: toSafeNumber(item?.currentPlayers),
     maxPlayers: toSafeNumber(item?.maxPlayers),
     entryFee: toSafeNumber(item?.entryFee),
+    entryFeeCurrency:
+      typeof item?.entryFeeCurrency === "string" && item.entryFeeCurrency.trim()
+        ? item.entryFeeCurrency.trim()
+        : "HUF",
     wins: toSafeNumber(item?.wins),
     losses: toSafeNumber(item?.losses),
     legsWon: toSafeNumber(item?.legsWon),

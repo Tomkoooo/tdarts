@@ -23,10 +23,18 @@ import {
   buildLocalizedClubUrl,
   resolvePaymentLocaleForServerAction,
 } from '@/features/payments/lib/verifyOacCheckout';
+import {
+  ENTRY_FEE_CURRENCY_CODES,
+  normalizeEntryFeeCurrency,
+} from '@tdarts/core/entry-fee-currency';
 
 const stripe = new Stripe(process.env.OAC_STRIPE_SECRET_KEY!, {
   apiVersion: '2024-12-18.acacia' as Stripe.LatestApiVersion,
 });
+
+const entryFeeCurrencySchema = z.enum(
+  [...ENTRY_FEE_CURRENCY_CODES] as [string, ...string[]]
+);
 
 const tournamentPayloadSchema = z.object({
   name: z.string().min(1),
@@ -36,6 +44,7 @@ const tournamentPayloadSchema = z.object({
   format: z.string().optional(),
   startingScore: z.number().optional(),
   entryFee: z.number().optional(),
+  entryFeeCurrency: entryFeeCurrencySchema.optional(),
   tournamentPassword: z.string().optional(),
   location: z.string().nullable().optional(),
   type: z.string().optional(),
@@ -156,6 +165,8 @@ export async function createTournamentAction(input: CreateTournamentInput): Prom
       }
 
       const now = new Date();
+      const entryFeeCurrency = normalizeEntryFeeCurrency(payload.entryFeeCurrency);
+
       const tournamentPayload: Record<string, unknown> = {
         clubId: club._id,
         league: payload.leagueId || undefined,
@@ -173,6 +184,7 @@ export async function createTournamentAction(input: CreateTournamentInput): Prom
           startingScore: payload.startingScore,
           boardCount: payload.boards?.length || 0,
           entryFee: payload.entryFee,
+          entryFeeCurrency,
           tournamentPassword: payload.tournamentPassword,
           location: payload.location || null,
           type: payload.type || 'amateur',

@@ -54,6 +54,14 @@ export {
 } from './lib/date-time';
 export type { TournamentStartDatePresetId } from './lib/date-time';
 
+export {
+  ENTRY_FEE_CURRENCY_CODES,
+  DEFAULT_ENTRY_FEE_CURRENCY,
+  isEntryFeeCurrency,
+  normalizeEntryFeeCurrency,
+} from './lib/entry-fee-currency';
+export type { EntryFeeCurrency } from './lib/entry-fee-currency';
+
 // Club location completeness
 export {
   clubHasCorrectAddress,

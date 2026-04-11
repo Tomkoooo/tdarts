@@ -16,6 +16,7 @@ export function mapWizardStateToPayload(
     format: state.format,
     startingScore: state.startingScore,
     entryFee: state.entryFee,
+    entryFeeCurrency: state.entryFeeCurrency || "HUF",
     tournamentPassword: state.tournamentPassword || undefined,
     location: state.location || null,
     type: state.type,

@@ -908,6 +908,8 @@ function TournamentsTab({ tournaments, canManage, clubId, leagueId, onTournament
                       location: tournament.tournamentSettings?.location || tournament.location,
                       type: tournament.tournamentSettings?.type || tournament.type,
                       entryFee: tournament.tournamentSettings?.entryFee || tournament.entryFee,
+                      entryFeeCurrency:
+                        tournament.tournamentSettings?.entryFeeCurrency || tournament.entryFeeCurrency,
                       maxPlayers: tournament.tournamentSettings?.maxPlayers || tournament.maxPlayers,
                       registrationDeadline:
                         tournament.tournamentSettings?.registrationDeadline || tournament.registrationDeadline,

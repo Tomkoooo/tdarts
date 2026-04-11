@@ -8,6 +8,7 @@ import { GlassmorphismCard } from "@/components/ui/glassmorphism-card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { HomeTournament } from "@/features/home/ui/types"
 import { formatTournamentDate, getUpcomingTournaments, parseTournamentDate } from "@/features/home/ui/homeUtils"
+import { formatTournamentEntryFee } from "@/lib/format-entry-fee"
 import { TournamentFormatBadges } from "@/components/tournament/TournamentFormatBadges"
 
 interface UpcomingCalendarTileProps {
@@ -113,7 +114,11 @@ export default function UpcomingCalendarTile({ tournaments, loading }: UpcomingC
                   <span className="inline-flex items-center gap-1">
                     <IconCoin className="h-3 w-3 shrink-0" />
                     {t("calendar.entryFeeLabel")}:{" "}
-                    {format.number(Number(tor.entryFee ?? 0), { style: "currency", currency: "HUF" })}
+                    {formatTournamentEntryFee(
+                      format.number,
+                      Number(tor.entryFee ?? 0),
+                      tor.entryFeeCurrency
+                    )}
                   </span>
                 </p>
               </div>

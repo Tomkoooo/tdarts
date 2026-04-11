@@ -29,6 +29,7 @@ export interface WizardFormState {
   startDate: Date;
   registrationDeadline: Date;
   entryFee: number;
+  entryFeeCurrency: string;
   maxPlayers: number;
   format: string;
   startingScore: number;
@@ -49,6 +50,7 @@ export const DEFAULT_WIZARD_STATE: WizardFormState = {
   startDate: new Date(),
   registrationDeadline: new Date(),
   entryFee: 0,
+  entryFeeCurrency: "HUF",
   maxPlayers: 16,
   format: "group_knockout",
   startingScore: 501,

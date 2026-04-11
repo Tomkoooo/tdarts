@@ -9,7 +9,8 @@ import {
   IconSwords,
   IconUsers,
 } from "@tabler/icons-react"
-import { useLocale, useTranslations } from "next-intl"
+import { useFormatter, useLocale, useTranslations } from "next-intl"
+import { formatTournamentEntryFee } from "@/lib/format-entry-fee"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/Button"
 import { GlassmorphismCard } from "@/components/ui/glassmorphism-card"
@@ -40,6 +41,7 @@ export default function HomeHeaderTile({
 }: HomeHeaderTileProps) {
   const t = useTranslations("HomeDashboard")
   const locale = useLocale()
+  const format = useFormatter()
   const daysUntil = getDaysUntil(activeOrNextTournament?.date)
   const hasTournament = Boolean(activeOrNextTournament?._id)
   const status = (activeOrNextTournament?.status || "").toLowerCase()
@@ -146,7 +148,11 @@ export default function HomeHeaderTile({
                     {t("header.entryFee")}
                   </p>
                   <p className="text-xs font-semibold">
-                    {Number(activeOrNextTournament?.entryFee || 0).toLocaleString(locale)} Ft
+                    {formatTournamentEntryFee(
+                      format.number,
+                      Number(activeOrNextTournament?.entryFee || 0),
+                      activeOrNextTournament?.entryFeeCurrency
+                    )}
                   </p>
                 </div>
               </div>
