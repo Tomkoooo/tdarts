@@ -1,5 +1,5 @@
-import { BoardDocument } from '../interfaces/board.interface';
-import { GenerateRandomHash } from '../lib/utils';
+import { BoardDocument } from '@tdarts/core';
+import { GenerateRandomHash } from '@tdarts/core';
 import mongoose from 'mongoose';
 
 export const BoardSchema = new mongoose.Schema<BoardDocument>({
@@ -14,8 +14,10 @@ export const BoardSchema = new mongoose.Schema<BoardDocument>({
   updatedAt: { type: Date, default: Date.now },
 }, { collection: 'boards' });
 
+// Indexek
 BoardSchema.index({ tournamentId: 1, boardId: 1 }, { unique: true });
 
+// Middleware az updatedAt frissítéséhez
 BoardSchema.pre('save', function (next) {
   this.updatedAt = new Date();
   next();

@@ -1,12 +1,15 @@
-import { AuthService } from '@/database/services/auth.service';
-import { UserModel } from '@/database/models/user.model';
+jest.mock('@tdarts/core', () => {
+  const actual = jest.requireActual('@tdarts/core');
+  return {
+    ...actual,
+    sendEmail: jest.fn().mockResolvedValue(true),
+  };
+});
+
+import { AuthService } from '@tdarts/services';
+import { UserModel } from '@tdarts/core';
 import { BadRequestError } from '@/middleware/errorHandle';
 import { connectMongo as connectToDatabase } from '@/lib/mongoose';
-
-// Mock email sending to avoid SMTP connection issues in tests
-jest.mock('@/lib/mailer', () => ({
-  sendEmail: jest.fn().mockResolvedValue(true)
-}));
 
 describe('AuthService', () => {
   beforeAll(async () => {

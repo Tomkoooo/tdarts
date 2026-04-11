@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { getServerSession } from "next-auth";
 import { cache } from "react";
-import { AuthService } from "@/database/services/auth.service";
+import { AuthService } from '@tdarts/services';
 import { findSessionUserByEmail } from "@/features/auth/lib/sessionUser.db";
 import { authOptions } from "@/lib/auth";
 

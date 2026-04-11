@@ -4,9 +4,7 @@ import { POST as generateGroups } from '@/app/api/tournaments/[code]/generateGro
 import { PATCH as movePlayerInGroup } from '@/app/api/tournaments/[code]/groups/[groupId]/move-player/route';
 import { POST as promoteWaitlist } from '@/app/api/tournaments/[code]/waitlist/promote/route';
 import { GET as getUserRole } from '@/app/api/tournaments/[code]/getUserRole/route';
-import { TournamentService } from '@/database/services/tournament.service';
-import { AuthService } from '@/database/services/auth.service';
-import { AuthorizationService } from '@/database/services/authorization.service';
+import { TournamentService, AuthService, AuthorizationService } from '@tdarts/services';
 import * as viewerContext from '@/lib/tournament-viewer-context';
 
 jest.mock('@/lib/api-telemetry', () => ({
@@ -15,9 +13,21 @@ jest.mock('@/lib/api-telemetry', () => ({
 jest.mock('@/lib/mongoose', () => ({
   connectMongo: jest.fn().mockResolvedValue(undefined),
 }));
-jest.mock('@/database/services/tournament.service');
-jest.mock('@/database/services/auth.service');
-jest.mock('@/database/services/authorization.service');
+jest.mock('@tdarts/services', () => ({
+  ...jest.requireActual('@tdarts/services'),
+  AuthService: {
+    verifyToken: jest.fn(),
+  },
+  TournamentService: {
+    finishTournament: jest.fn(),
+    getTournament: jest.fn(),
+    generateGroups: jest.fn(),
+    getTournamentRoleContext: jest.fn(),
+  },
+  AuthorizationService: {
+    checkAdminOrModerator: jest.fn(),
+  },
+}));
 jest.mock('@/lib/tournament-viewer-context');
 
 describe('API telemetry remediation routes', () => {

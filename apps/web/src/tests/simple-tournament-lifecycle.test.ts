@@ -1,15 +1,8 @@
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
-import { UserModel } from '@/database/models/user.model';
-import { ClubModel } from '@/database/models/club.model';
-import { PlayerModel } from '@/database/models/player.model';
-import { TournamentModel } from '@/database/models/tournament.model';
-import { MatchModel } from '@/database/models/match.model';
-import { LeagueModel } from '@/database/models/league.model';
-import { TournamentService } from '@/database/services/tournament.service';
-import { MatchService } from '@/database/services/match.service';
-import { LeagueService } from '@/database/services/league.service';
+import { UserModel, ClubModel, PlayerModel, TournamentModel, MatchModel, LeagueModel } from '@tdarts/core';
+import { TournamentService, MatchService, LeagueService } from '@tdarts/services';
 import { connectMongo } from '@/lib/mongoose';
 import { PointSystemId, POINT_SYSTEM_IDS, normalizePointSystemId } from '@/lib/leaguePointSystems';
 

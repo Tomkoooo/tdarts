@@ -17,7 +17,8 @@ jest.mock('@/features/flags/lib/eligibility', () => ({
   assertEligibilityResult: jest.fn(),
 }));
 
-jest.mock('@/database/services/player.service', () => ({
+jest.mock('@tdarts/services', () => ({
+  ...jest.requireActual('@tdarts/services'),
   PlayerService: {
     createPlayer: jest.fn(),
   },
@@ -26,7 +27,7 @@ jest.mock('@/database/services/player.service', () => ({
 import { createPlayerAction } from '@/features/players/actions/createPlayer.action';
 import { authorizeUserResult } from '@/features/auth/lib/authorizeUser';
 import { assertEligibilityResult } from '@/features/flags/lib/eligibility';
-import { PlayerService } from '@/database/services/player.service';
+import { PlayerService } from '@tdarts/services';
 
 describe('createPlayerAction guard chain', () => {
   beforeEach(() => {

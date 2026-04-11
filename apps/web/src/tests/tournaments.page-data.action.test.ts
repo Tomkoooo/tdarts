@@ -2,7 +2,8 @@ jest.mock('next/cache', () => ({
   unstable_cache: (fn: () => unknown) => fn,
 }));
 
-jest.mock('@/database/services/tournament.service', () => ({
+jest.mock('@tdarts/services', () => ({
+  ...jest.requireActual('@tdarts/services'),
   TournamentService: {
     getTournamentSummaryForPublicPage: jest.fn(),
     getTournamentSummaryOverviewForPublicPage: jest.fn(),
@@ -10,9 +11,6 @@ jest.mock('@/database/services/tournament.service', () => ({
     getPlayerStatusInTournament: jest.fn(),
     getTournamentLite: jest.fn(),
   },
-}));
-
-jest.mock('@/database/services/club.service', () => ({
   ClubService: {
     getUserRoleInClub: jest.fn(),
   },
@@ -34,8 +32,7 @@ jest.mock('@/shared/lib/serializeForClient', () => ({
 
 import { getTournamentPageDataAction } from '@/features/tournaments/actions/getTournamentPageData.action';
 import { authorizeUserResult } from '@/shared/lib/guards';
-import { TournamentService } from '@/database/services/tournament.service';
-import { ClubService } from '@/database/services/club.service';
+import { TournamentService, ClubService } from '@tdarts/services';
 
 describe('getTournamentPageDataAction auth boundary', () => {
   beforeEach(() => {

@@ -1,4 +1,4 @@
-import { ClubService } from "@/database/services/club.service";
+import { ClubService } from '@tdarts/services';
 import { ClubJsonLd } from "@/components/club/ClubJsonLd";
 import type { SupportedLocale } from "@/lib/seo";
 import ClubDetailClientPage, { type ClubInitialDataLevel } from "./ClubDetailClientPage";

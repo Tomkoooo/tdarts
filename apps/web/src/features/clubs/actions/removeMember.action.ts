@@ -1,7 +1,7 @@
 'use server';
 
-import { ClubService } from '@/database/services/club.service';
-import { PlayerModel } from '@/database/models/player.model';
+import { ClubService } from '@tdarts/services';
+import { PlayerModel } from '@tdarts/core';
 import { connectMongo } from '@/lib/mongoose';
 import { z } from 'zod';
 import { authorizeUserResult } from '@/shared/lib/guards';

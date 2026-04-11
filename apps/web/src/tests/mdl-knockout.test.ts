@@ -1,5 +1,5 @@
 
-import { TournamentService } from '../database/services/tournament.service';
+import { TournamentService } from '@tdarts/services';
 
 describe('MDL Knockout Generation', () => {
     // Helper to create mock players

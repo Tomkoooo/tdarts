@@ -8,7 +8,8 @@ jest.mock('@/lib/admin-auth', () => ({
   ensureAdmin: jest.fn(),
 }));
 
-jest.mock('@/database/services/stress-run.service', () => ({
+jest.mock('@tdarts/services', () => ({
+  ...jest.requireActual('@tdarts/services'),
   StressRunService: {
     getRun: jest.fn(),
     getRunSamples: jest.fn(),
@@ -17,7 +18,7 @@ jest.mock('@/database/services/stress-run.service', () => ({
 
 import { GET as exportRun } from '@/app/api/admin/stress-runs/[id]/export/route';
 import { ensureAdmin } from '@/lib/admin-auth';
-import { StressRunService } from '@/database/services/stress-run.service';
+import { StressRunService } from '@tdarts/services';
 
 describe('GET /api/admin/stress-runs/[id]/export', () => {
   beforeEach(() => {

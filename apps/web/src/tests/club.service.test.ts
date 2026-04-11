@@ -1,9 +1,5 @@
-import { ClubService } from '@/database/services/club.service';
-import { ClubModel } from '@/database/models/club.model';
-import { UserModel } from '@/database/models/user.model';
-import { PlayerModel } from '@/database/models/player.model';
-import { TournamentModel } from '@/database/models/tournament.model';
-import { ClubShareTokenModel } from '@/database/models/club-share-token.model';
+import { ClubService } from '@tdarts/services';
+import { ClubModel, UserModel, PlayerModel, TournamentModel, ClubShareTokenModel } from '@tdarts/core';
 import { BadRequestError, AuthorizationError } from '@/middleware/errorHandle';
 import { connectMongo as connectToDatabase } from '@/lib/mongoose';
 import { Types } from 'mongoose';

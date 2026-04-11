@@ -1,6 +1,6 @@
 'use server';
 
-import { GalleryService } from '@/database/services/gallery.service';
+import { GalleryService } from '@tdarts/services';
 import { z } from 'zod';
 import { authorizeUserResult, assertEligibilityResult } from '@/shared/lib/guards';
 import { BadRequestError } from '@/middleware/errorHandle';

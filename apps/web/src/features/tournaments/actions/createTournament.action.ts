@@ -2,16 +2,13 @@
 
 import Stripe from 'stripe';
 import { revalidateTag } from 'next/cache';
-import { TournamentService } from '@/database/services/tournament.service';
-import { ClubService } from '@/database/services/club.service';
-import { SubscriptionService } from '@/database/services/subscription.service';
-import { LeagueService } from '@/database/services/league.service';
+import { TournamentService, ClubService, SubscriptionService, LeagueService } from '@tdarts/services';
 import { z } from 'zod';
 import { parseIsoDateInput } from '@/lib/date-time';
 import { evaluateFeatureAccess } from '@/features/flags/lib/featureAccess';
 import { BadRequestError } from '@/middleware/errorHandle';
 import { withTelemetry } from '@/shared/lib/withTelemetry';
-import { AuthorizationService } from '@/database/services/authorization.service';
+import { AuthorizationService } from '@tdarts/services';
 import { resolveGuardAwareStatus } from '@/shared/lib/guards/result';
 import { GuardFailureResult } from '@/shared/lib/telemetry/types';
 import {

@@ -1,10 +1,11 @@
-import { AnnouncementService } from '@/database/services/announcement.service';
+import { AnnouncementService } from '@tdarts/services';
 
 jest.mock('@/lib/mongoose', () => ({
   connectMongo: jest.fn().mockResolvedValue(undefined),
 }));
 
-jest.mock('@/database/models/announcement.model', () => ({
+jest.mock('@tdarts/core', () => ({
+  ...jest.requireActual('@tdarts/core'),
   AnnouncementModel: {
     find: jest.fn(),
   },
@@ -12,7 +13,7 @@ jest.mock('@/database/models/announcement.model', () => ({
 
 describe('AnnouncementService locale visibility', () => {
   it('hides announcement in strict mode when locale text is missing', async () => {
-    const { AnnouncementModel } = await import('@/database/models/announcement.model');
+    const { AnnouncementModel } = await import('@tdarts/core');
     (AnnouncementModel.find as jest.Mock).mockReturnValue({
       sort: jest.fn().mockReturnValue({
         lean: jest.fn().mockResolvedValue([
@@ -34,7 +35,7 @@ describe('AnnouncementService locale visibility', () => {
   });
 
   it('falls back to english in fallback_en mode when locale text is missing', async () => {
-    const { AnnouncementModel } = await import('@/database/models/announcement.model');
+    const { AnnouncementModel } = await import('@tdarts/core');
     (AnnouncementModel.find as jest.Mock).mockReturnValue({
       sort: jest.fn().mockReturnValue({
         lean: jest.fn().mockResolvedValue([

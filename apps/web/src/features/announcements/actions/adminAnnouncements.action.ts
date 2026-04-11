@@ -1,8 +1,7 @@
 'use server';
 
 import { z } from 'zod';
-import { AnnouncementService } from '@/database/services/announcement.service';
-import { AuthorizationService } from '@/database/services/authorization.service';
+import { AnnouncementService, AuthorizationService } from '@tdarts/services';
 import { authorizeUserResult } from '@/shared/lib/guards';
 import { resolveGuardAwareStatus } from '@/shared/lib/guards/result';
 import { serializeForClient } from '@/shared/lib/serializeForClient';

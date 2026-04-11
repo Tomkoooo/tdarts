@@ -1,8 +1,8 @@
 'use server';
 
 import { authorizeUserResult } from '@/features/auth/lib/authorizeUser';
-import { AuthService } from '@/database/services/auth.service';
-import { UserModel } from '@/database/models/user.model';
+import { AuthService } from '@tdarts/services';
+import { UserModel } from '@tdarts/core';
 import { withTelemetry } from '@/shared/lib/withTelemetry';
 import { resolveGuardAwareStatus } from '@/shared/lib/guards/result';
 import { connectMongo } from '@/lib/mongoose';

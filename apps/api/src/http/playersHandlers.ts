@@ -17,10 +17,10 @@ export async function handlePlayerAvatarGet(playerId: string): Promise<Response>
       (typeof player.profilePicture === 'string' && player.profilePicture.trim() !== ''
         ? player.profilePicture
         : null) || null;
+    const userLean = await UserModel.findById(player.userRef).select('profilePicture').lean();
+    const userRow = Array.isArray(userLean) ? userLean[0] : userLean;
     const userImage =
-      playerImage || !player.userRef
-        ? null
-        : (await UserModel.findById(player.userRef).select('profilePicture').lean())?.profilePicture || null;
+      playerImage || !player.userRef ? null : userRow?.profilePicture || null;
     const imageUrl = playerImage || userImage;
 
     return json({ imageUrl }, 200);

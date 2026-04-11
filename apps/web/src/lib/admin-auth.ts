@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
-import { UserModel } from '@/database/models/user.model';
+import { UserModel } from '@tdarts/core';
 import { connectMongo } from '@/lib/mongoose';
 
 type JwtPayload = { id: string };

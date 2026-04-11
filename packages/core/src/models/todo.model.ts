@@ -6,15 +6,15 @@ export interface TodoDocument extends Document {
   priority: 'low' | 'medium' | 'high' | 'critical';
   status: 'pending' | 'in-progress' | 'completed' | 'cancelled';
   category: 'bug' | 'feature' | 'improvement' | 'maintenance' | 'other';
-  assignedTo?: mongoose.Types.ObjectId;
+  assignedTo?: mongoose.Types.ObjectId; // userId
   dueDate?: Date;
   tags: string[];
-  isPublic: boolean;
-  createdBy: mongoose.Types.ObjectId;
+  isPublic: boolean; // Ha true, akkor más adminok is látják
+  createdBy: mongoose.Types.ObjectId; // userId
   createdAt: Date;
   updatedAt: Date;
   completedAt?: Date;
-  completedBy?: mongoose.Types.ObjectId;
+  completedBy?: mongoose.Types.ObjectId; // userId
 }
 
 const todoSchema = new Schema<TodoDocument>({
@@ -75,6 +75,7 @@ const todoSchema = new Schema<TodoDocument>({
   timestamps: true
 });
 
+// Indexek a gyors kereséshez
 todoSchema.index({ status: 1, priority: 1 });
 todoSchema.index({ category: 1 });
 todoSchema.index({ assignedTo: 1 });
@@ -82,4 +83,5 @@ todoSchema.index({ dueDate: 1 });
 todoSchema.index({ tags: 1 });
 todoSchema.index({ isPublic: 1 });
 
+// Prevent model re-compilation in development
 export const TodoModel = mongoose.models.Todo || mongoose.model<TodoDocument>('Todo', todoSchema);

@@ -2,12 +2,7 @@
 
 import { NextRequest } from 'next/server';
 import { z } from 'zod';
-import { TournamentService } from '@/database/services/tournament.service';
-import { PlayerService } from '@/database/services/player.service';
-import { AuthService } from '@/database/services/auth.service';
-import { AuthorizationService } from '@/database/services/authorization.service';
-import { TeamInvitationService } from '@/database/services/teaminvitation.service';
-import { EmailTemplateService } from '@/database/services/emailtemplate.service';
+import { TournamentService, PlayerService, AuthService, AuthorizationService, TeamInvitationService, EmailTemplateService } from '@tdarts/services';
 import { sendEmail } from '@/lib/mailer';
 import { normalizeEmailLocale, renderMinimalEmailLayout, textToEmailHtml } from '@/lib/email-layout';
 import { authorizeUserResult, assertEligibilityResult } from '@/shared/lib/guards';

@@ -1,6 +1,6 @@
 import { connectMongo } from '@/lib/mongoose';
-import { LeagueModel } from '@/database/models/league.model';
-import { PlayerService } from '@/database/services/player.service';
+import { LeagueModel } from '@tdarts/core';
+import { PlayerService } from '@tdarts/services';
 import { serializeForClient } from '@/shared/lib/serializeForClient';
 
 export type LeagueHistoryEntry = {

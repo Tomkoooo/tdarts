@@ -2,7 +2,6 @@ import path from 'path';
 import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import dotenv from 'dotenv';
-import { ApiTelemetryService } from '@/database/services/api-telemetry.service';
 
 // Monorepo: load root .env (apps/web/src/tests -> ../../../)
 dotenv.config({ path: path.join(__dirname, '../../../.env') });
@@ -42,6 +41,7 @@ beforeAll(async () => {
 
 afterAll(async () => {
   try {
+    const { ApiTelemetryService } = await import('@tdarts/services');
     ApiTelemetryService.reset();
     await mongoose.disconnect();
     if (mongoServer) {

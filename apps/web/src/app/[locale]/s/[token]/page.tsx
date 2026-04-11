@@ -1,5 +1,5 @@
 import { redirect, notFound } from 'next/navigation';
-import { ClubService } from '@/database/services/club.service';
+import { ClubService } from '@tdarts/services';
 
 type ShortSharePageProps = {
   params: Promise<{ locale: string; token: string }>;

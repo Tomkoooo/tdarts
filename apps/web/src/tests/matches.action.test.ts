@@ -6,7 +6,8 @@ jest.mock('@/features/flags/lib/eligibility', () => ({
   assertEligibilityResult: jest.fn(),
 }));
 
-jest.mock('@/database/services/tournament.service', () => ({
+jest.mock('@tdarts/services', () => ({
+  ...jest.requireActual('@tdarts/services'),
   TournamentService: {
     updateBoardStatusAfterMatch: jest.fn(),
   },
@@ -15,7 +16,7 @@ jest.mock('@/database/services/tournament.service', () => ({
 import { updateBoardStatusAction } from '@/features/matches/actions/updateBoardStatus.action';
 import { authorizeUserResult } from '@/features/auth/lib/authorizeUser';
 import { assertEligibilityResult } from '@/features/flags/lib/eligibility';
-import { TournamentService } from '@/database/services/tournament.service';
+import { TournamentService } from '@tdarts/services';
 
 describe('updateBoardStatusAction', () => {
   beforeEach(() => {

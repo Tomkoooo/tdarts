@@ -1,5 +1,5 @@
 import mongoose, { Schema } from 'mongoose';
-import { ITeamInvitation } from '../interfaces/teaminvitation.interface';
+import { ITeamInvitation } from '@tdarts/core';
 
 const TeamInvitationSchema = new Schema<ITeamInvitation>({
   tournamentId: { type: Schema.Types.ObjectId, ref: 'Tournament', required: true },
@@ -8,10 +8,10 @@ const TeamInvitationSchema = new Schema<ITeamInvitation>({
   inviteeId: { type: Schema.Types.ObjectId, ref: 'User', required: false },
   inviteeEmail: { type: String, required: false, trim: true, lowercase: true },
   token: { type: String, required: true, unique: true },
-  status: {
-    type: String,
-    enum: ['pending', 'accepted', 'declined'],
-    default: 'pending'
+  status: { 
+    type: String, 
+    enum: ['pending', 'accepted', 'declined'], 
+    default: 'pending' 
   },
   createdAt: { type: Date, default: Date.now },
   expiresAt: { type: Date, required: true },
@@ -19,7 +19,8 @@ const TeamInvitationSchema = new Schema<ITeamInvitation>({
 
 TeamInvitationSchema.index({ inviteeId: 1, status: 1, expiresAt: 1 });
 TeamInvitationSchema.index({ inviteeEmail: 1, status: 1, expiresAt: 1 });
+// TTL index to automatically remove expired invitations
 TeamInvitationSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
-export const TeamInvitationModel = mongoose.models.TeamInvitation ||
+export const TeamInvitationModel = mongoose.models.TeamInvitation || 
   mongoose.model<ITeamInvitation>('TeamInvitation', TeamInvitationSchema);

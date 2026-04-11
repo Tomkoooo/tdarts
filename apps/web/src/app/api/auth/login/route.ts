@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { AuthService } from '@/database/services/auth.service';
+import { AuthService } from '@tdarts/services';
 import { withApiTelemetry } from '@/lib/api-telemetry';
 import { handleError } from '@/middleware/errorHandle';
 

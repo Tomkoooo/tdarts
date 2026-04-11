@@ -1,12 +1,19 @@
 import { NextRequest } from 'next/server';
 import { PUT as updateTournament } from '@/app/api/tournaments/[code]/route';
-import { TournamentService } from '@/database/services/tournament.service';
-import { SubscriptionService } from '@/database/services/subscription.service';
-import { AuthorizationService } from '@/database/services/authorization.service';
+import { TournamentService, SubscriptionService, AuthorizationService } from '@tdarts/services';
 
-jest.mock('@/database/services/tournament.service');
-jest.mock('@/database/services/subscription.service');
-jest.mock('@/database/services/authorization.service');
+jest.mock('@tdarts/services', () => ({
+  ...jest.requireActual('@tdarts/services'),
+  TournamentService: {
+    getTournament: jest.fn(),
+  },
+  SubscriptionService: {
+    canUpdateTournament: jest.fn(),
+  },
+  AuthorizationService: {
+    getUserIdFromRequest: jest.fn(),
+  },
+}));
 
 describe('Tournament PUT route guards', () => {
   beforeEach(() => {

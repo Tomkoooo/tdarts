@@ -2,10 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { withApiTelemetry } from '@/lib/api-telemetry';
 import { handleError } from '@/middleware/errorHandle';
-import { TournamentService } from '@/database/services/tournament.service';
-import { PlayerService } from '@/database/services/player.service';
-import { MatchService } from '@/database/services/match.service';
-import { MatchModel } from '@/database/models/match.model';
+import { TournamentService, PlayerService, MatchService } from '@tdarts/services';
+import { MatchModel } from '@tdarts/core';
 import { isLoadTestEndpointsAllowedInCurrentEnvironment } from '@/lib/load-test-environment';
 import {
   ENTRY_FEE_CURRENCY_CODES,

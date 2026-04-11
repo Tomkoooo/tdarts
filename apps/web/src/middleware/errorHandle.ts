@@ -1,6 +1,15 @@
-import { ErrorService, LogContext } from '@/database/services/error.service';
+import { ErrorService } from '@tdarts/services';
+import {
+  BadRequestError,
+  ValidationError,
+  AuthorizationError,
+  type LogContext,
+  type ErrorCategory,
+} from '@tdarts/core';
 import { sendEmail } from '@/lib/mailer';
 import { NextRequest } from 'next/server';
+
+export { BadRequestError, ValidationError, AuthorizationError, type LogContext, type ErrorCategory };
 
 const CRITICAL_RECIPIENTS = [
   'toth.tamas@sironic.hu',
@@ -9,16 +18,6 @@ const CRITICAL_RECIPIENTS = [
 
 const CRITICAL_PATTERNS = ['invalid token', 'foglalt user', 'foglal user', 'hibás adatok', 'hibas adatok'];
 const CRITICAL_TOURNAMENT_PATTERN = 'tournament not found';
-type ErrorCategory = 'auth' | 'club' | 'tournament' | 'player' | 'user' | 'api' | 'system' | 'database';
-
-interface AppErrorOptions {
-  category?: ErrorCategory;
-  context?: LogContext;
-  statusCode?: number;
-  errorCode?: string;
-  expected?: boolean;
-  operation?: string;
-}
 
 function shouldNotifyCriticalError(
   message: string,
@@ -62,81 +61,6 @@ async function notifyCriticalError(
     });
   } catch (emailError) {
     console.error('Failed to send critical error email', emailError);
-  }
-}
-
-export class BadRequestError extends Error {
-  public category: ErrorCategory;
-  public context?: LogContext;
-  public statusCode: number;
-  public errorCode: string;
-  public expected: boolean;
-  public operation?: string;
-
-  constructor(
-    message: string,
-    category: ErrorCategory = 'system',
-    context?: LogContext,
-    options?: Omit<AppErrorOptions, 'category' | 'context' | 'statusCode'>
-  ) {
-    super(message);
-    this.name = 'BadRequestError';
-    this.category = category;
-    this.context = context;
-    this.statusCode = 400;
-    this.errorCode = options?.errorCode || 'BAD_REQUEST';
-    this.expected = options?.expected ?? true;
-    this.operation = options?.operation;
-  }
-}
-
-export class ValidationError extends Error {
-  public category: ErrorCategory;
-  public context?: LogContext;
-  public statusCode: number;
-  public errorCode: string;
-  public expected: boolean;
-  public operation?: string;
-
-  constructor(
-    message: string,
-    category: ErrorCategory = 'system',
-    context?: LogContext,
-    options?: Omit<AppErrorOptions, 'category' | 'context' | 'statusCode'>
-  ) {
-    super(message);
-    this.name = 'ValidationError';
-    this.category = category;
-    this.context = context;
-    this.statusCode = 400;
-    this.errorCode = options?.errorCode || 'VALIDATION_ERROR';
-    this.expected = options?.expected ?? true;
-    this.operation = options?.operation;
-  }
-}
-
-export class AuthorizationError extends Error {
-  public category: ErrorCategory;
-  public context?: LogContext;
-  public statusCode: number;
-  public errorCode: string;
-  public expected: boolean;
-  public operation?: string;
-
-  constructor(
-    message: string,
-    category: ErrorCategory = 'auth',
-    context?: LogContext,
-    options?: Omit<AppErrorOptions, 'category' | 'context' | 'statusCode'>
-  ) {
-    super(message);
-    this.name = 'AuthorizationError';
-    this.category = category;
-    this.context = context;
-    this.statusCode = 403;
-    this.errorCode = options?.errorCode || 'AUTHORIZATION_ERROR';
-    this.expected = options?.expected ?? true;
-    this.operation = options?.operation;
   }
 }
 

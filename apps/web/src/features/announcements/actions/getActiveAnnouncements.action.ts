@@ -1,6 +1,6 @@
 'use server';
 
-import { AnnouncementService } from '@/database/services/announcement.service';
+import { AnnouncementService } from '@tdarts/services';
 import { serializeForClient } from '@/shared/lib/serializeForClient';
 import { withTelemetry } from '@/shared/lib/withTelemetry';
 import { unstable_cache } from 'next/cache';

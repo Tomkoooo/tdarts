@@ -1,5 +1,5 @@
 import mongoose, { Types } from 'mongoose';
-import { ClubDocument } from '../interfaces/club.interface';
+import { ClubDocument } from '@tdarts/core';
 
 const clubSchema = new mongoose.Schema<ClubDocument>(
   {
@@ -34,11 +34,12 @@ const clubSchema = new mongoose.Schema<ClubDocument>(
     moderators: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     tournamentPlayers: [{
       name: { type: String, required: true },
+      // Add other fields if necessary
     }],
-    subscriptionModel: {
-      type: String,
-      enum: ['free', 'basic', 'pro', 'enterprise'],
-      default: 'free'
+    subscriptionModel: { 
+      type: String, 
+      enum: ['free', 'basic', 'pro', 'enterprise'], 
+      default: 'free' 
     },
     featureFlags: {
       liveMatchFollowing: { type: Boolean, default: false },
@@ -67,7 +68,7 @@ const clubSchema = new mongoose.Schema<ClubDocument>(
       foregroundColor: { type: String },
       cardColor: { type: String },
       cardForegroundColor: { type: String },
-      logo: { type: String },
+      logo: { type: String }, // URL or Media ID
       coverImage: { type: String },
       aboutText: { type: String },
       aboutImages: [{ type: String }],
@@ -87,6 +88,7 @@ const clubSchema = new mongoose.Schema<ClubDocument>(
 
 clubSchema.pre('save', async function (next) {
   if (this.contact?.email) {
+    // Allow all valid email formats (not just gmail or .com)
     const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
     if (!emailRegex.test(this.contact.email)) {
       return next(new Error('Invalid contact email format'));
@@ -112,6 +114,7 @@ clubSchema.methods.toJSON = function () {
   return club;
 };
 
+// Virtual for tournaments belonging to the club
 clubSchema.virtual('tournaments', {
   ref: 'Tournament',
   localField: '_id',
@@ -120,6 +123,7 @@ clubSchema.virtual('tournaments', {
   options: { select: '_id name code status startDate' },
 });
 
+// Enable virtuals for toJSON and toObject
 clubSchema.set('toObject', { virtuals: true });
 clubSchema.set('toJSON', { virtuals: true });
 

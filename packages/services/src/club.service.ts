@@ -11,6 +11,7 @@ import { AuthorizationService } from './authorization.service';
 import { GeocodingService } from './geocoding.service';
 import { clubHasCorrectAddress, clubHasGeoLocationSynced } from '@tdarts/core';
 import type { StructuredLocation } from '@tdarts/core';
+import type { PlayerHonor } from '@tdarts/core';
 import { randomBytes } from 'node:crypto';
 
 //TODO a klubba és a tornákra ezentúl nem a user collectionből vesszük fel az emberekt.
@@ -527,10 +528,10 @@ export class ClubService {
     options?: { ttlDays?: number }
   ): Promise<string> {
     await connectMongo();
-    const normalizedTournamentIds = [...new Set(
+    const normalizedTournamentIds: string[] = [...new Set(
       (Array.isArray(tournamentIds) ? tournamentIds : [])
         .map((id) => String(id || '').trim())
-        .filter(Boolean)
+        .filter((id): id is string => id.length > 0)
     )];
 
     if (normalizedTournamentIds.length === 0) {
@@ -714,20 +715,18 @@ export class ClubService {
     if (roleOnlyUsers.length > 0) {
       const roleOnlyUserIds = this.sanitizeObjectIdStrings(roleOnlyUsers.map((user: any) => user?._id));
       if (roleOnlyUserIds.length > 0) {
-        const roleOnlyPlayersByUserRef = new Map(
-          (
-            await PlayerModel.find({ userRef: { $in: roleOnlyUserIds } })
-              .select('_id userRef')
-              .lean()
-          ).map((player: any) => [String(player.userRef), player])
+        const roleOnlyPlayers = await PlayerModel.find({ userRef: { $in: roleOnlyUserIds } })
+          .select('_id userRef')
+          .lean();
+        const roleOnlyPlayerByUserRef = new Map(
+          roleOnlyPlayers.map((player: any) => [String(player.userRef), String(player._id)])
         );
 
         for (const user of roleOnlyUsers) {
           const userId = String(user._id);
           if (!roleOnlyUserIds.includes(userId)) continue;
-          const player = roleOnlyPlayersByUserRef.get(userId);
           membersWithUsernames.push({
-            _id: player ? String(player._id) : userId,
+            _id: roleOnlyPlayerByUserRef.get(userId) || userId,
             name: user.name || '',
             userRef: userId,
             username: user.username || 'vendég',
@@ -842,7 +841,7 @@ export class ClubService {
       userRef?: string;
       username: string;
       role: 'admin' | 'moderator' | 'member';
-      honors?: any[];
+      honors?: PlayerHonor[];
       stats?: { last10ClosedAvg?: number };
     }>;
     admin: Array<{ _id: string; role: 'admin' }>;
@@ -886,7 +885,7 @@ export class ClubService {
       userRef?: string;
       username: string;
       role: 'admin' | 'moderator' | 'member';
-      honors?: any[];
+      honors?: PlayerHonor[];
       stats?: { last10ClosedAvg?: number };
     }> = rawMembers.map((player: any) => {
       const userRefStr = player?.userRef ? String(player.userRef) : '';
@@ -912,6 +911,7 @@ export class ClubService {
     const roleOnlyUserIds = this.sanitizeObjectIdStrings(
       [...new Set([...adminIds, ...moderatorIds])].filter((id) => !existingMemberUserRefs.has(id))
     );
+
     if (roleOnlyUserIds.length > 0) {
       const roleOnlyUsersFromPopulate = [...adminUsers, ...moderatorUsers]
         .map((user: any) => {
@@ -1045,7 +1045,9 @@ export class ClubService {
       return { clubs: [] };
     }
     const isGlobalAdmin = await AuthorizationService.checkAdminOnly(userId, clubs[0]?._id.toString());
-    const clubsWithRoles = clubs.map((club) => {
+    const clubsWithRoles: Array<
+      Record<string, unknown> & { _id: Types.ObjectId; userRole: 'admin' | 'moderator' | 'member' | 'none' }
+    > = clubs.map((club) => {
       const userRole: 'admin' | 'moderator' | 'member' | 'none' = club.admin.includes(userObjectId)
         ? 'admin'
         : club.moderators.includes(userObjectId)
@@ -1057,11 +1059,12 @@ export class ClubService {
               : 'none';
 
       return {
-        _id: club._id,
         ...(club.toObject() as Record<string, unknown>),
+        _id: club._id,
         userRole,
-      } as Record<string, unknown> & { _id: Types.ObjectId; userRole: 'admin' | 'moderator' | 'member' | 'none' };
+      };
     });
+
     return { clubs: clubsWithRoles };
   }
 
@@ -1180,13 +1183,14 @@ export class ClubService {
   }
 
   // --- SITEMAP SUPPORT ---
-  static async getAllClubs(): Promise<{ _id: string; updatedAt?: Date }[]> {
+  static async getAllClubs(): Promise<{ _id: string; code?: string; updatedAt?: Date }[]> {
     await connectMongo();
     const clubs = await ClubModel.find({ isActive: { $ne: false } })
-      .select('_id updatedAt')
+      .select('_id code updatedAt')
       .lean();
     return clubs.map((club: any) => ({
       _id: club._id.toString(),
+      code: typeof club.code === 'string' && club.code.trim() ? club.code.trim() : undefined,
       updatedAt: club.updatedAt
     }));
   }

@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import { MatchDocument } from '../interfaces/match.interface';
+import { MatchDocument } from '@tdarts/core';
 
 const throwSchema = new mongoose.Schema({
   score: { type: Number, required: true },
@@ -17,11 +17,11 @@ const legSchema = new mongoose.Schema({
   winnerId: { type: mongoose.Schema.Types.ObjectId, ref: 'Player' },
   checkoutScore: Number,
   checkoutDarts: Number,
-  winnerArrowCount: Number,
-  loserRemainingScore: Number,
+  winnerArrowCount: Number, // Hány nyílból szállt ki a győztes
+  loserRemainingScore: Number, // A vesztes játékos maradék pontjai
   doubleAttempts: Number,
-  player1TotalDarts: Number,
-  player2TotalDarts: Number,
+  player1TotalDarts: Number, // Total darts thrown by player 1 (accounts for checkout)
+  player2TotalDarts: Number, // Total darts thrown by player 2 (accounts for checkout)
   createdAt: { type: Date, default: Date.now },
 }, { _id: false });
 
@@ -40,17 +40,17 @@ const matchSchema = new mongoose.Schema<MatchDocument>({
   tournamentRef: { type: mongoose.Schema.Types.ObjectId, ref: 'Tournament', required: true },
   type: { type: String, enum: ['group', 'knockout'], required: true },
   round: { type: Number, required: true },
-  bracketPosition: Number,
-  scorerSource: {
+  bracketPosition: Number, // Position within the round for proper bracket display (0-indexed)
+  scorerSource: { // Dynamic scorer assignment for knockout
     type: { type: String, enum: ['group_loser', 'match_loser', 'manual'] },
-    sourceMatchId: { type: mongoose.Schema.Types.ObjectId, ref: 'Match' },
-    playerId: { type: mongoose.Schema.Types.ObjectId, ref: 'Player' }
+    sourceMatchId: { type: mongoose.Schema.Types.ObjectId, ref: 'Match' }, // Which match's loser
+    playerId: { type: mongoose.Schema.Types.ObjectId, ref: 'Player' } // Assigned player
   },
   player1: { type: matchPlayerSchema, required: false },
   player2: { type: matchPlayerSchema, required: false },
   scorer: { type: mongoose.Schema.Types.ObjectId, ref: 'Player', required: false },
-  legsToWin: { type: Number },
-  startingPlayer: { type: Number },
+  legsToWin: { type: Number},
+  startingPlayer: { type: Number},
   status: { type: String, enum: ['pending', 'ongoing', 'finished'], default: 'pending' },
   winnerId: { type: mongoose.Schema.Types.ObjectId, ref: 'Player' },
   legs: [legSchema],
@@ -66,9 +66,11 @@ const matchSchema = new mongoose.Schema<MatchDocument>({
   }
 }, { timestamps: true });
 
+// Automatikus winnerId számítás mentés előtt
 matchSchema.pre('save', function (this: MatchDocument, next) {
-  if (this.player1 && this.player2 &&
-      typeof this.player1.legsWon === 'number' &&
+  // Only calculate winner if both players exist and have legs data
+  if (this.player1 && this.player2 && 
+      typeof this.player1.legsWon === 'number' && 
       typeof this.player2.legsWon === 'number') {
     if (this.player1.legsWon > this.player2.legsWon) {
       this.winnerId = this.player1.playerId as any;
@@ -78,30 +80,40 @@ matchSchema.pre('save', function (this: MatchDocument, next) {
       this.winnerId = undefined;
     }
   } else {
+    // Handle bye matches (only one player exists)
     if (!this.player1 && this.player2) {
+      // Only player2 exists - player2 wins
       this.winnerId = this.player2.playerId as any;
       this.status = 'finished';
     } else if (this.player1 && !this.player2) {
+      // Only player1 exists - player1 wins
       this.winnerId = this.player1.playerId as any;
       this.status = 'finished';
-    } else if (this.player1 && this.player2 &&
-               (this.player1.playerId === null || this.player1.playerId === undefined ||
+    } else if (this.player1 && this.player2 && 
+               (this.player1.playerId === null || this.player1.playerId === undefined || 
                 this.player2.playerId === null || this.player2.playerId === undefined)) {
+      // One of the players has null/undefined playerId (bye match)
       if (this.player1.playerId && !this.player2.playerId) {
+        // Only player1 has valid playerId - player1 wins
         this.winnerId = this.player1.playerId as any;
         this.status = 'finished';
       } else if (!this.player1.playerId && this.player2.playerId) {
+        // Only player2 has valid playerId - player2 wins
         this.winnerId = this.player2.playerId as any;
         this.status = 'finished';
       } else {
+        // Both players have null/undefined playerId or both have valid playerId
         this.winnerId = undefined;
         this.status = 'pending';
       }
-    } else if (this.player1 && this.player2 &&
+    } else if (this.player1 && this.player2 && 
                this.player1.playerId && this.player2.playerId) {
+      // Both players exist and have valid playerIds - this is a regular match
+      // Don't set winner automatically, let it be determined by legs
       this.winnerId = undefined;
       this.status = 'pending';
     } else {
+      // If either player is missing, no winner can be determined
       this.winnerId = undefined;
       this.status = 'pending';
     }
@@ -109,6 +121,7 @@ matchSchema.pre('save', function (this: MatchDocument, next) {
   next();
 });
 
+// Indexes for efficient querying
 matchSchema.index({ tournamentRef: 1, manualOverride: 1 });
 matchSchema.index({ manualChangeType: 1 });
 matchSchema.index({ manualChangedBy: 1 });

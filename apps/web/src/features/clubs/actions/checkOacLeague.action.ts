@@ -1,6 +1,6 @@
 'use server';
 
-import { LeagueModel } from '@/database/models/league.model';
+import { LeagueModel } from '@tdarts/core';
 import { connectMongo } from '@/lib/mongoose';
 import { withTelemetry } from '@/shared/lib/withTelemetry';
 

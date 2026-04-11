@@ -1,9 +1,8 @@
 'use server';
 
 import { z } from 'zod';
-import { MatchService } from '@/database/services/match.service';
-import { MatchModel } from '@/database/models/match.model';
-import { TournamentModel } from '@/database/models/tournament.model';
+import { MatchService } from '@tdarts/services';
+import { MatchModel, TournamentModel } from '@tdarts/core';
 import { connectMongo } from '@/lib/mongoose';
 import { eventsBus, EVENTS, createSseDeltaPayload } from '@/lib/events';
 import { BadRequestError } from '@/middleware/errorHandle';

@@ -1,6 +1,6 @@
 import type { FilterQuery } from 'mongoose';
 
-import type { ILog } from '@/database/models/log.model';
+import type { ILog } from '@tdarts/core';
 
 /** Auth / user-flow errors that should not inflate admin dashboard metrics. */
 const DASHBOARD_EXCLUDED_ERROR_SHAPES: FilterQuery<ILog>[] = [

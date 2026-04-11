@@ -1,8 +1,7 @@
 'use server';
 
 import { unstable_cache } from 'next/cache';
-import { TournamentService } from '@/database/services/tournament.service';
-import { ClubService } from '@/database/services/club.service';
+import { TournamentService, ClubService } from '@tdarts/services';
 import { BadRequestError } from '@/middleware/errorHandle';
 import { withTelemetry } from '@/shared/lib/withTelemetry';
 import { authorizeUserResult } from '@/shared/lib/guards';

@@ -2,8 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withApiTelemetry } from '@/lib/api-telemetry';
 import { ensureAdmin } from '@/lib/admin-auth';
 import { StressLoadRunner } from '@/lib/stress-load-runner';
-import { StressRunService } from '@/database/services/stress-run.service';
-import { ErrorService } from '@/database/services/error.service';
+import { StressRunService, ErrorService } from '@tdarts/services';
 import { assertStressRunAdminSecret } from '@/lib/stress-run-admin-secret';
 
 async function __POST(

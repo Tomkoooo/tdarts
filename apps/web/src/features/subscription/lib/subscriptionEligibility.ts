@@ -1,4 +1,4 @@
-import { SubscriptionService } from '@/database/services/subscription.service';
+import { SubscriptionService } from '@tdarts/services';
 
 export async function canCreateTournamentForSubscription(
   clubId: string,

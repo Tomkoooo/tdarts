@@ -2,7 +2,7 @@ import React, { ReactNode } from "react";
 import { Metadata } from "next";
 import { unstable_cache } from "next/cache";
 import { getTranslations } from "next-intl/server";
-import { ClubService } from "@/database/services/club.service";
+import { ClubService } from '@tdarts/services';
 import "./layout.css";
 import { buildLocaleAlternates, getBaseUrl, type SupportedLocale } from "@/lib/seo";
 import { ogImageDimensionsForPath, pickClubOgImagePath, toAbsoluteImageUrl } from "@/lib/og-image";

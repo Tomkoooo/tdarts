@@ -2,12 +2,11 @@
 
 import { z } from 'zod';
 import { revalidateTag } from 'next/cache';
-import { TournamentService } from '@/database/services/tournament.service';
-import { MatchModel } from '@/database/models/match.model';
-import { PlayerService } from '@/database/services/player.service';
-import { UserModel } from '@/database/models/user.model';
-import { TeamInvitationService } from '@/database/services/teaminvitation.service';
-import { EmailTemplateService } from '@/database/services/emailtemplate.service';
+import { TournamentService } from '@tdarts/services';
+import { MatchModel } from '@tdarts/core';
+import { PlayerService } from '@tdarts/services';
+import { UserModel } from '@tdarts/core';
+import { TeamInvitationService, EmailTemplateService } from '@tdarts/services';
 import { sendEmail } from '@/lib/mailer';
 import {
   normalizeEmailLocale,
@@ -156,7 +155,7 @@ export async function registerTeamForTournamentClientAction(input: {
       const clubId =
         (tournament as any)?.clubId?._id?.toString?.() || (tournament as any)?.clubId?.toString?.();
       const canModerate = clubId
-        ? await (await import('@/database/services/authorization.service')).AuthorizationService.checkAdminOrModerator(
+        ? await (await import('@tdarts/services')).AuthorizationService.checkAdminOrModerator(
             userId,
             clubId
           )

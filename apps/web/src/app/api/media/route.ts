@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { authorizeUserResult } from '@/features/auth/lib/authorizeUser';
-import { MediaService } from '@/database/services/media.service';
+import { MediaService } from '@tdarts/services';
 import { handleError } from '@/middleware/errorHandle';
 
 export async function POST(request: NextRequest) {

@@ -1,8 +1,7 @@
 
 import { connectMongo } from '@/lib/mongoose';
-import { MatchModel } from '@/database/models/match.model';
-import { TournamentModel } from '@/database/models/tournament.model';
-import { TournamentService } from '@/database/services/tournament.service';
+import { MatchModel, TournamentModel } from '@tdarts/core';
+import { TournamentService } from '@tdarts/services';
 import mongoose from 'mongoose';
 
 describe('TournamentService Race Condition', () => {

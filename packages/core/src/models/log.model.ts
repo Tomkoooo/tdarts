@@ -46,37 +46,83 @@ const LogSchema = new Schema<ILog>({
     type: String,
     required: true
   },
-  errorType: { type: String },
-  errorCode: { type: String },
-  expected: { type: Boolean, default: false },
-  operation: { type: String },
-  entityType: { type: String },
-  entityId: { type: String },
-  requestId: { type: String },
-  httpStatus: { type: Number },
-  error: { type: String },
-  stack: { type: String },
-  userId: { type: String },
-  userRole: { type: String },
-  clubId: { type: String },
-  tournamentId: { type: String },
-  playerId: { type: String },
-  endpoint: { type: String },
-  method: { type: String },
-  ip: { type: String },
-  userAgent: { type: String },
-  requestBody: { type: Schema.Types.Mixed },
-  responseStatus: { type: Number },
+  errorType: {
+    type: String
+  },
+  errorCode: {
+    type: String
+  },
+  expected: {
+    type: Boolean,
+    default: false
+  },
+  operation: {
+    type: String
+  },
+  entityType: {
+    type: String
+  },
+  entityId: {
+    type: String
+  },
+  requestId: {
+    type: String
+  },
+  httpStatus: {
+    type: Number
+  },
+  error: {
+    type: String
+  },
+  stack: {
+    type: String
+  },
+  userId: {
+    type: String
+  },
+  userRole: {
+    type: String
+  },
+  clubId: {
+    type: String
+  },
+  tournamentId: {
+    type: String
+  },
+  playerId: {
+    type: String
+  },
+  endpoint: {
+    type: String
+  },
+  method: {
+    type: String
+  },
+  ip: {
+    type: String
+  },
+  userAgent: {
+    type: String
+  },
+  requestBody: {
+    type: Schema.Types.Mixed
+  },
+  responseStatus: {
+    type: Number
+  },
   timestamp: {
     type: Date,
     default: Date.now,
     required: true
   },
-  metadata: { type: Schema.Types.Mixed }
+  metadata: {
+    type: Schema.Types.Mixed
+  }
 }, {
   timestamps: true
 });
 
+// Index for efficient querying
 LogSchema.index({ timestamp: -1 });
 LogSchema.index({ level: 1 });
 LogSchema.index({ category: 1 });

@@ -3,7 +3,32 @@ import { UserModel } from '@tdarts/core';
 import { ClubModel } from '@tdarts/core';
 import { connectMongo } from '@tdarts/core';
 import { AuthService } from "./auth.service";
+
 type ClubRole = 'admin' | 'moderator' | 'member' | 'none';
+
+/** NextRequest, standard Fetch Request, or any object with headers (+ optional Next-style cookies). */
+type AuthRequestLike = {
+  headers: Headers;
+  cookies?: { get(name: string): { value: string } | undefined };
+};
+
+function readBearerOrTokenCookie(request: AuthRequestLike): string | undefined {
+  const auth = request.headers.get("authorization");
+  const bearer = auth?.startsWith("Bearer ") ? auth.slice(7).trim() : "";
+  if (bearer) return bearer;
+  const fromNextCookies = request.cookies?.get("token")?.value;
+  if (fromNextCookies) return fromNextCookies;
+  const rawCookie = request.headers.get("cookie");
+  if (!rawCookie) return undefined;
+  for (const part of rawCookie.split(";")) {
+    const idx = part.indexOf("=");
+    if (idx === -1) continue;
+    const name = part.slice(0, idx).trim();
+    if (name !== "token") continue;
+    return part.slice(idx + 1).trim() || undefined;
+  }
+  return undefined;
+}
 
 const ROLE_CACHE_TTL_MS = 10_000;
 
@@ -108,16 +133,10 @@ export class AuthorizationService {
     return role === 'admin' || role === 'moderator';
   }
 
-  static async getUserIdFromRequest(request: Request): Promise<string | null> {
+  static async getUserIdFromRequest(request: AuthRequestLike): Promise<string | null> {
     try {
-      let token = request.headers.get('authorization')?.split('Bearer ')[1];
-      if (!token) {
-        token = request.headers.get('cookie')?.split('; ').find(c => c.startsWith('token='))?.split('=')[1];
-      }
-
-      if (!token) {
-        return null;
-      }
+      const token = readBearerOrTokenCookie(request);
+      if (!token) return null;
 
       const user = await AuthService.verifyToken(token);
       return user._id.toString();

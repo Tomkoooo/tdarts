@@ -1,6 +1,6 @@
 'use server';
 
-import { ClubService } from '@/database/services/club.service';
+import { ClubService } from '@tdarts/services';
 import { z } from 'zod';
 import { authorizeUserResult } from '@/shared/lib/guards';
 import { BadRequestError } from '@/middleware/errorHandle';

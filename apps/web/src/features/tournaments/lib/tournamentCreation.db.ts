@@ -1,6 +1,4 @@
-import { LeagueModel } from '@/database/models/league.model';
-import { PendingTournamentModel } from '@/database/models/pendingTournament.model';
-import { TournamentModel } from '@/database/models/tournament.model';
+import { LeagueModel, PendingTournamentModel, TournamentModel } from '@tdarts/core';
 
 const CACHE_TTL_MS = 60_000;
 const leagueCache = new Map<string, { expiresAt: number; value: Awaited<ReturnType<typeof LeagueModel.findById>> }>();

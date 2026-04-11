@@ -1,14 +1,11 @@
 import sitemap from '@/app/sitemap';
-import { ClubService } from '@/database/services/club.service';
-import { TournamentService } from '@/database/services/tournament.service';
+import { ClubService, TournamentService } from '@tdarts/services';
 
-jest.mock('@/database/services/club.service', () => ({
+jest.mock('@tdarts/services', () => ({
+  ...jest.requireActual('@tdarts/services'),
   ClubService: {
     getAllClubs: jest.fn(),
   },
-}));
-
-jest.mock('@/database/services/tournament.service', () => ({
   TournamentService: {
     getAllTournaments: jest.fn(),
   },

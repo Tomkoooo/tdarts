@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withApiTelemetry } from '@/lib/api-telemetry';
 import { ensureAdmin } from '@/lib/admin-auth';
-import { StressRunService } from '@/database/services/stress-run.service';
+import { StressRunService } from '@tdarts/services';
 
 async function __GET(request: NextRequest) {
   const admin = await ensureAdmin(request);

@@ -4,9 +4,19 @@
  * This file tests the searchAction which replaced POST /api/search.
  */
 import { searchAction } from '@/features/search/actions/search.action';
-import { SearchService } from '@/database/services/search.service';
+import { SearchService } from '@tdarts/services';
 
-jest.mock('@/database/services/search.service');
+jest.mock('@tdarts/services', () => {
+  const actual = jest.requireActual('@tdarts/services');
+  return {
+    ...actual,
+    SearchService: {
+      searchTournaments: jest.fn(),
+      getTabCounts: jest.fn(),
+      getMetadata: jest.fn(),
+    },
+  };
+});
 
 describe('Search Action (replaces POST /api/search)', () => {
   beforeEach(() => {

@@ -7,7 +7,7 @@
 
 import * as dotenv from 'dotenv';
 import { connectMongo } from '@/lib/mongoose';
-import { EmailTemplateModel } from '@/database/models/emailtemplate.model';
+import { EmailTemplateModel } from '@tdarts/core';
 
 // Load environment variables
 dotenv.config();

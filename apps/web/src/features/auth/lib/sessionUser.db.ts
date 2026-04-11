@@ -1,4 +1,4 @@
-import { UserModel } from '@/database/models/user.model';
+import { UserModel } from '@tdarts/core';
 
 const SESSION_USER_SELECT = '_id username name email isVerified isAdmin profilePicture country locale';
 

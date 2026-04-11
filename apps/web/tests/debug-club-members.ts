@@ -1,9 +1,7 @@
 import dotenv from 'dotenv';
 import { connectMongo } from '@/lib/mongoose';
-import { ClubModel } from '@/database/models/club.model';
-import { PlayerModel } from '@/database/models/player.model';
-import { UserModel } from '@/database/models/user.model';
-import { ClubService } from '@/database/services/club.service';
+import { ClubModel, PlayerModel, UserModel } from '@tdarts/core';
+import { ClubService } from '@tdarts/services';
 
 async function main() {
   dotenv.config({ path: '../../.env' });

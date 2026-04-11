@@ -16,16 +16,17 @@ jest.mock('@/features/flags/lib/featureAccess', () => ({
   evaluateFeatureAccess: jest.fn(),
 }));
 
-jest.mock('@/database/services/club.service', () => ({
+jest.mock('@tdarts/services', () => ({
+  ...jest.requireActual('@tdarts/services'),
   ClubService: {
     getClub: jest.fn(),
     updateClub: jest.fn(),
   },
-}));
-
-jest.mock('@/database/services/subscription.service', () => ({
   SubscriptionService: {
     canCreateTournament: jest.fn(),
+  },
+  AuthorizationService: {
+    checkAdminOrModerator: jest.fn().mockResolvedValue(true),
   },
 }));
 
@@ -35,16 +36,9 @@ jest.mock('@/features/tournaments/lib/tournamentCreation.db', () => ({
   findLeagueById: jest.fn(),
 }));
 
-jest.mock('@/database/services/authorization.service', () => ({
-  AuthorizationService: {
-    checkAdminOrModerator: jest.fn().mockResolvedValue(true),
-  },
-}));
-
 import { createTournamentAction } from '@/features/tournaments/actions/createTournament.action';
 import { evaluateFeatureAccess } from '@/features/flags/lib/featureAccess';
-import { ClubService } from '@/database/services/club.service';
-import { SubscriptionService } from '@/database/services/subscription.service';
+import { ClubService, SubscriptionService } from '@tdarts/services';
 import {
   createPendingTournament,
   findExistingVerifiedTournamentForWeek,

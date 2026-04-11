@@ -4,7 +4,8 @@ jest.mock('@/lib/mongoose', () => ({
 
 const findOneMock = jest.fn();
 
-jest.mock('@/database/models/tournament.model', () => ({
+jest.mock('@tdarts/core', () => ({
+  ...jest.requireActual('@tdarts/core'),
   TournamentModel: {
     findOne: (...args: unknown[]) => findOneMock(...args),
   },
@@ -23,7 +24,7 @@ jest.mock('mongoose', () => {
   };
 });
 
-import { TournamentService } from '@/database/services/tournament.service';
+import { TournamentService } from '@tdarts/services';
 
 function buildNullQuery() {
   const query: any = {

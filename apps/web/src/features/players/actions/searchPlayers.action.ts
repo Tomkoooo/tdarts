@@ -1,8 +1,7 @@
 'use server';
 
 import { z } from 'zod';
-import { PlayerService } from '@/database/services/player.service';
-import { UserService } from '@/database/services/user.service';
+import { PlayerService, UserService } from '@tdarts/services';
 import { withTelemetry } from '@/shared/lib/withTelemetry';
 import { serializeForClient } from '@/shared/lib/serializeForClient';
 import { BadRequestError } from '@/middleware/errorHandle';

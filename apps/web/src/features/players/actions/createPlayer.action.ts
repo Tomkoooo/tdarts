@@ -1,6 +1,6 @@
 'use server';
 
-import { PlayerService } from '@/database/services/player.service';
+import { PlayerService } from '@tdarts/services';
 import { z } from 'zod';
 import { authorizeUserResult, assertEligibilityResult } from '@/shared/lib/guards';
 import { withTelemetry } from '@/shared/lib/withTelemetry';

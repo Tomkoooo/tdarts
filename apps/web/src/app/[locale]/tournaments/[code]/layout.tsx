@@ -1,6 +1,6 @@
 import React, { ReactNode } from "react";
 import { Metadata } from "next";
-import { TournamentService } from "@/database/services/tournament.service";
+import { TournamentService } from '@tdarts/services';
 import { TournamentDocument } from "@/interface/tournament.interface";
 import { buildLocaleAlternates, getBaseUrl } from "@/lib/seo";
 import {

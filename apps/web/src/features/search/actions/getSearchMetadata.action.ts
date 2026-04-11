@@ -1,7 +1,7 @@
 'use server';
 
-import { SearchService } from '@/database/services/search.service';
-import type { SearchFilters } from '@/database/services/search.service';
+import { SearchService } from '@tdarts/services';
+import type { SearchFilters } from '@tdarts/services';
 import { withTelemetry } from '@/shared/lib/withTelemetry';
 
 export type GetSearchMetadataActionInput = {

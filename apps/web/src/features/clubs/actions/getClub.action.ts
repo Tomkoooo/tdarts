@@ -1,6 +1,6 @@
 'use server';
 
-import { ClubService } from '@/database/services/club.service';
+import { ClubService } from '@tdarts/services';
 import { BadRequestError } from '@/middleware/errorHandle';
 import { withTelemetry } from '@/shared/lib/withTelemetry';
 import { serializeForClient } from '@/shared/lib/serializeForClient';

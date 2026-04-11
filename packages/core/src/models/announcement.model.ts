@@ -14,7 +14,7 @@ export interface AnnouncementDocument extends Document {
   showButton: boolean;
   buttonText?: string;
   buttonAction?: string;
-  duration: number;
+  duration: number; // milliszekundumban
   expiresAt: Date;
   createdAt: Date;
   updatedAt: Date;
@@ -76,9 +76,9 @@ const announcementSchema = new Schema<AnnouncementDocument>({
   },
   duration: {
     type: Number,
-    default: 10000,
-    min: 3000,
-    max: 60000
+    default: 10000, // 10 másodperc alapértelmezetten
+    min: 3000, // Minimum 3 másodperc
+    max: 60000 // Maximum 1 perc
   },
   expiresAt: {
     type: Date,
@@ -88,6 +88,7 @@ const announcementSchema = new Schema<AnnouncementDocument>({
   timestamps: true
 });
 
+// Index az aktív és nem lejárt announcement-okhoz
 announcementSchema.index({ isActive: 1, expiresAt: 1 });
 
 export const AnnouncementModel = mongoose.models.Announcement || mongoose.model<AnnouncementDocument>('Announcement', announcementSchema);

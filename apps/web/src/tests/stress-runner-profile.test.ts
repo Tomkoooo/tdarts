@@ -1,4 +1,4 @@
-import { StressRunService } from '@/database/services/stress-run.service';
+import { StressRunService } from '@tdarts/services';
 import { __stressRunnerTestUtils } from '@/lib/stress-load-runner';
 
 describe('Stress runner endpoint profiles', () => {

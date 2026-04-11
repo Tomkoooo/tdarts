@@ -1,12 +1,12 @@
 'use server';
 
 import { z } from 'zod';
-import { TournamentService } from '@/database/services/tournament.service';
+import { TournamentService } from '@tdarts/services';
 import { authorizeUserResult } from '@/shared/lib/guards';
 import { withTelemetry } from '@/shared/lib/withTelemetry';
 import { resolveGuardAwareStatus } from '@/shared/lib/guards/result';
 import { connectMongo } from '@/lib/mongoose';
-import { AuthorizationService } from '@/database/services/authorization.service';
+import { AuthorizationService } from '@tdarts/services';
 import { BadRequestError } from '@/middleware/errorHandle';
 import { serializeForClient } from '@/shared/lib/serializeForClient';
 import { revalidateTag } from 'next/cache';

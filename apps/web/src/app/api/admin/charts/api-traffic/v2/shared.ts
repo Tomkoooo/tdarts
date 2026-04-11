@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
-import { UserModel } from '@/database/models/user.model';
+import { UserModel } from '@tdarts/core';
 import { resolveGranularity, resolveRouteFilters, resolveTimeRange } from '@/lib/admin-telemetry';
 
 export async function ensureAdmin(request: NextRequest): Promise<NextResponse | null> {

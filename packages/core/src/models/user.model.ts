@@ -1,21 +1,22 @@
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
-import { UserDocument } from '../interfaces/user.interface';
-import { ValidationError } from '../errors/index';
+import { UserDocument } from '@tdarts/core';
+import { ValidationError } from '@tdarts/core';
 
 const userSchema = new mongoose.Schema<UserDocument>(
   {
     username: { type: String, required: true, unique: true },
     name: { type: String, required: true },
     email: { type: String, required: true, unique: true },
-    password: { type: String, required: false },
+    password: { type: String, required: false }, // OAuth esetén nem kötelező
     isVerified: { type: Boolean, default: false },
     isAdmin: { type: Boolean, default: false },
     createdAt: { type: Date, default: Date.now },
     updatedAt: { type: Date, default: Date.now },
     lastLogin: { type: Date, default: null },
     isDeleted: { type: Boolean, default: false },
+    // OAuth adatok
     googleId: { type: String, default: null },
     profilePicture: { type: String, default: null },
     authProvider: { type: String, enum: ['local', 'google'], default: 'local' },
@@ -31,18 +32,22 @@ const userSchema = new mongoose.Schema<UserDocument>(
 );
 
 userSchema.pre('save', async function (next) {
+  // Ensure username does not contain spaces
   const usernameRegex = /^[^\s]+$/;
   if (!usernameRegex.test(this.username)) {
     return next(new Error('Username cannot contain spaces'));
   }
+  // Verify email format
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(this.email)) {
     return next(new Error('Invalid email format'));
   }
+  // Hash password if modified and password exists (not OAuth user)
   if (this.isModified('password') && this.password) {
     this.password = await bcrypt.hash(this.password, 10);
   }
-
+  
+  // Keep linked player identity fields aligned with the user profile.
   if ((this.isModified('name') || this.isModified('country')) && !this.isNew) {
     try {
       const { PlayerModel } = await import('./player.model');
@@ -56,16 +61,17 @@ userSchema.pre('save', async function (next) {
       }
     } catch (error) {
       console.error('Error auto-updating player name:', error);
+      // Don't throw error to prevent user update from failing
     }
   }
-
+  
   this.updatedAt = new Date();
   next();
 });
 
 userSchema.methods.matchPassword = async function (password: string): Promise<boolean> {
   if (!this.password) {
-    return false;
+    return false; // OAuth felhasználóknál nincs jelszó
   }
   return await bcrypt.compare(password, this.password);
 };
@@ -116,7 +122,7 @@ userSchema.methods.resetPassword = async function (newPassword: string, code: st
     });
   }
 
-  this.password = newPassword;
+  this.password = newPassword; // Set the new password to trigger pre('save') hashing
   this.codes.reset_password = null;
   await this.save();
 };
@@ -142,5 +148,6 @@ userSchema.methods.toJSON = function () {
   return user;
 };
 
+// Export the User model, reusing it if already defined
 export const UserModel =
   mongoose.models.User || mongoose.model<UserDocument>('User', userSchema);

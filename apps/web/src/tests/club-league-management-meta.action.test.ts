@@ -6,7 +6,8 @@ jest.mock('@/lib/mongoose', () => ({
   connectMongo: jest.fn(),
 }));
 
-jest.mock('@/database/models/club.model', () => ({
+jest.mock('@tdarts/core', () => ({
+  ...jest.requireActual('@tdarts/core'),
   ClubModel: {
     findById: jest.fn(),
   },
@@ -22,17 +23,18 @@ jest.mock('@/features/auth/lib/authorizeUser', () => ({
   authorizeUserResult: jest.fn(),
 }));
 
-jest.mock('@/database/services/authorization.service', () => ({
+jest.mock('@tdarts/services', () => ({
+  ...jest.requireActual('@tdarts/services'),
   AuthorizationService: {
     isGlobalAdmin: jest.fn(),
   },
 }));
 
 import { getPublicClubLeagueManagementMetaAction } from '@/features/clubs/actions/getPublicClubLeagueManagementMeta.action';
-import { ClubModel } from '@/database/models/club.model';
+import { ClubModel } from '@tdarts/core';
 import { FeatureFlagService } from '@/features/flags/lib/featureFlags';
 import { authorizeUserResult } from '@/features/auth/lib/authorizeUser';
-import { AuthorizationService } from '@/database/services/authorization.service';
+import { AuthorizationService } from '@tdarts/services';
 
 describe('getPublicClubLeagueManagementMetaAction', () => {
   beforeEach(() => {

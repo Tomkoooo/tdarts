@@ -2,7 +2,8 @@ jest.mock('@/features/flags/lib/featureAccess', () => ({
   evaluateFeatureAccess: jest.fn(),
 }));
 
-jest.mock('@/database/services/league.service', () => ({
+jest.mock('@tdarts/services', () => ({
+  ...jest.requireActual('@tdarts/services'),
   LeagueService: {
     createLeague: jest.fn(),
   },
@@ -10,7 +11,7 @@ jest.mock('@/database/services/league.service', () => ({
 
 import { createLeagueAction } from '@/features/leagues/actions/createLeague.action';
 import { evaluateFeatureAccess } from '@/features/flags/lib/featureAccess';
-import { LeagueService } from '@/database/services/league.service';
+import { LeagueService } from '@tdarts/services';
 
 describe('createLeagueAction', () => {
   beforeEach(() => {

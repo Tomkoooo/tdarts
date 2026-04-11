@@ -1,7 +1,7 @@
 'use server';
 
 import { z } from 'zod';
-import { ClubService } from '@/database/services/club.service';
+import { ClubService } from '@tdarts/services';
 import { BadRequestError } from '@/middleware/errorHandle';
 import { withTelemetry } from '@/shared/lib/withTelemetry';
 

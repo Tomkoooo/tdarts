@@ -1,6 +1,6 @@
 'use server';
 
-import { ClubService } from '@/database/services/club.service';
+import { ClubService } from '@tdarts/services';
 import { withTelemetry } from '@/shared/lib/withTelemetry';
 
 export type GetUserRoleActionInput = {

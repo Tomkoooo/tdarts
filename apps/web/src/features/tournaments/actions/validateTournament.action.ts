@@ -1,6 +1,6 @@
 "use server";
 
-import { TournamentService } from "@/database/services/tournament.service";
+import { TournamentService } from '@tdarts/services';
 import { z } from "zod";
 import { BadRequestError } from "@/middleware/errorHandle";
 import { withTelemetry } from "@/shared/lib/withTelemetry";

@@ -1,9 +1,7 @@
 'use server';
 
 import { z } from 'zod';
-import { LeagueService } from '@/database/services/league.service';
-import { PlayerService } from '@/database/services/player.service';
-import { ClubService } from '@/database/services/club.service';
+import { LeagueService, PlayerService, ClubService } from '@tdarts/services';
 import type { PointSystemType } from '@/interface/league.interface';
 import { authorizeUserResult } from '@/shared/lib/guards';
 import { withTelemetry } from '@/shared/lib/withTelemetry';

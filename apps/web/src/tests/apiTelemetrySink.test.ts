@@ -1,7 +1,8 @@
-import { ApiTelemetryService } from '@/database/services/api-telemetry.service';
+import { ApiTelemetryService } from '@tdarts/services';
 import { normalizeRouteKey, recordAggregate, recordErrorEvent, scheduleFlush } from '@/shared/lib/telemetry/sinks/apiTelemetrySink';
 
-jest.mock('@/database/services/api-telemetry.service', () => ({
+jest.mock('@tdarts/services', () => ({
+  ...jest.requireActual('@tdarts/services'),
   ApiTelemetryService: {
     normalizeRouteKey: jest.fn((v: string) => v),
     record: jest.fn(),

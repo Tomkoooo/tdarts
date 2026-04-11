@@ -1,45 +1,54 @@
 import { NextRequest } from 'next/server';
 import { POST as addTournamentPlayerRoute } from '@/app/api/tournaments/[code]/players/route';
-import { TournamentService } from '@/database/services/tournament.service';
-import { PlayerService } from '@/database/services/player.service';
-import { TournamentModel } from '@/database/models/tournament.model';
-import { AuthService } from '@/database/services/auth.service';
-import { AuthorizationService } from '@/database/services/authorization.service';
+import { TournamentModel } from '@tdarts/core';
+import {
+  AuthService,
+  AuthorizationService,
+  PlayerService,
+  TournamentService,
+} from '@tdarts/services';
 
-jest.mock('@/database/services/tournament.service');
-jest.mock('@/database/services/player.service');
-jest.mock('@/database/services/auth.service');
-jest.mock('@/database/services/authorization.service');
-jest.mock('@/database/models/player.model', () => ({
-  PlayerModel: {
-    findById: jest.fn(),
-    find: jest.fn(),
+jest.mock('@tdarts/services', () => ({
+  ...jest.requireActual('@tdarts/services'),
+  TournamentService: {
+    addTournamentPlayer: jest.fn(),
   },
-}));
-jest.mock('@/database/models/tournament.model', () => ({
-  TournamentModel: {
-    findOne: jest.fn(),
-    findOneAndUpdate: jest.fn(),
+  PlayerService: {
+    findOrCreatePlayerByName: jest.fn(),
+    findOrCreateTeam: jest.fn(),
   },
-}));
-jest.mock('@/database/services/teaminvitation.service', () => ({
+  AuthService: {
+    verifyToken: jest.fn(),
+  },
+  AuthorizationService: {
+    checkAdminOrModerator: jest.fn(),
+  },
   TeamInvitationService: {
     createInvitation: jest.fn(),
   },
-}));
-jest.mock('@/database/services/emailtemplate.service', () => ({
   EmailTemplateService: {
     getRenderedTemplate: jest.fn(),
   },
 }));
-jest.mock('@/lib/mailer', () => ({
-  sendEmail: jest.fn(),
-}));
-jest.mock('@/database/models/user.model', () => ({
+
+jest.mock('@tdarts/core', () => ({
+  ...jest.requireActual('@tdarts/core'),
+  PlayerModel: {
+    findById: jest.fn(),
+    find: jest.fn(),
+  },
+  TournamentModel: {
+    findOne: jest.fn(),
+    findOneAndUpdate: jest.fn(),
+  },
   UserModel: {
     findById: jest.fn(),
     findOne: jest.fn(),
   },
+}));
+
+jest.mock('@/lib/mailer', () => ({
+  sendEmail: jest.fn(),
 }));
 
 describe('Tournament players POST regression coverage', () => {

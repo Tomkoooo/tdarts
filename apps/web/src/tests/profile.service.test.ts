@@ -1,13 +1,16 @@
-import { ProfileService } from '@/database/services/profile.service';
-import { UserModel } from '@/database/models/user.model';
+jest.mock('@tdarts/core', () => {
+  const actual = jest.requireActual('@tdarts/core');
+  return {
+    ...actual,
+    sendEmail: jest.fn().mockResolvedValue(true),
+  };
+});
+
+import { ProfileService } from '@tdarts/services';
+import { UserModel } from '@tdarts/core';
 import { BadRequestError, ValidationError } from '@/middleware/errorHandle';
 import { connectMongo as connectToDatabase } from '@/lib/mongoose';
 
-jest.mock('@/database/services/auth.service', () => ({
-  AuthService: {
-    sendVerificationEmail: jest.fn().mockResolvedValue(undefined),
-  },
-}));
 describe('ProfileService', () => {
   beforeAll(async () => {
     await connectToDatabase();

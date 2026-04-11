@@ -1,7 +1,5 @@
 import { Types } from 'mongoose';
-import { PlayerModel } from '@/database/models/player.model';
-import { TournamentModel } from '@/database/models/tournament.model';
-import { UserModel } from '@/database/models/user.model';
+import { PlayerModel, TournamentModel, UserModel } from '@tdarts/core';
 
 export async function findTournamentForAuth(code: string) {
   return TournamentModel.findOne({ tournamentId: code }).select('clubId tournamentSettings tournamentPlayers');

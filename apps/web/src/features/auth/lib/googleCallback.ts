@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { connectMongo } from '@/lib/mongoose';
-import { AuthService } from '@/database/services/auth.service';
+import { AuthService } from '@tdarts/services';
 import { findSessionUserByEmail, findSessionUserById } from '@/features/auth/lib/sessionUser.db';
 
 type SessionUserShape = {

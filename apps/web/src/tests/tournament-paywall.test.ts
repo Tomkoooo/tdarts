@@ -1,9 +1,7 @@
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import mongoose from 'mongoose';
-import { ClubModel } from '@/database/models/club.model';
-import { TournamentModel } from '@/database/models/tournament.model';  
-import { UserModel } from '@/database/models/user.model';
-import { SubscriptionService } from '@/database/services/subscription.service';
+import { ClubModel, TournamentModel, UserModel } from '@tdarts/core';
+import { SubscriptionService } from '@tdarts/services';
 
 describe('Tournament Paywall & OAC Limits', () => {
   let mongoServer: MongoMemoryServer;

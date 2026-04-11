@@ -11,7 +11,7 @@ import { ClubList } from "@/components/search/ClubList"
 import { LeagueList } from "@/components/search/LeagueList"
 import { Input } from "@/components/ui/Input"
 import { IconSearch, IconLoader2, IconFilter } from "@tabler/icons-react"
-import type { SearchFilters } from "@/database/services/search.service"
+import type { SearchFilters } from '@tdarts/services';
 import { Button } from "@/components/ui/Button"
 import { Link } from "@/i18n/routing"
 import { IconArrowLeft } from "@tabler/icons-react"

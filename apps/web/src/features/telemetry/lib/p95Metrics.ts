@@ -1,4 +1,4 @@
-import { ApiRequestMetricModel } from '@/database/models/api-request-metric.model';
+import { ApiRequestMetricModel } from '@tdarts/core';
 import { connectMongo } from '@/lib/mongoose';
 
 const LATENCY_BUCKET_BOUNDARIES_MS = [50, 100, 200, 300, 500, 800, 1200, 2000, 5000];

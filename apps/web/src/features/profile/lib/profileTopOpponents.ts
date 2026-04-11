@@ -1,7 +1,6 @@
 import { connectMongo } from '@/lib/mongoose';
-import { MatchModel } from '@/database/models/match.model';
-import { PlayerModel } from '@/database/models/player.model';
-import { PlayerService } from '@/database/services/player.service';
+import { MatchModel, PlayerModel } from '@tdarts/core';
+import { PlayerService } from '@tdarts/services';
 
 export type TopOpponentEntry = {
   opponent: { _id: string; name: string; country?: string | null };

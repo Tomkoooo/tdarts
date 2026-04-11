@@ -3,16 +3,24 @@ import {
   verifyEmailAction,
   getTicketsAction,
 } from '@/features/profile/actions';
-import { ProfileService } from '@/database/services/profile.service';
-import { AuthService } from '@/database/services/auth.service';
-import { FeedbackService } from '@/database/services/feedback.service';
-import { UserModel } from '@/database/models/user.model';
+import { ProfileService, AuthService, FeedbackService } from '@tdarts/services';
+import { UserModel } from '@tdarts/core';
 import { connectMongo as connectToDatabase } from '@/lib/mongoose';
 import { cookies } from 'next/headers';
 
-jest.mock('@/database/services/profile.service');
-jest.mock('@/database/services/auth.service');
-jest.mock('@/database/services/feedback.service');
+jest.mock('@tdarts/services', () => ({
+  ...jest.requireActual('@tdarts/services'),
+  ProfileService: {
+    updateProfile: jest.fn(),
+    verifyEmail: jest.fn(),
+  },
+  AuthService: {
+    verifyToken: jest.fn(),
+  },
+  FeedbackService: {
+    getFeedbackByUserId: jest.fn(),
+  },
+}));
 jest.mock('next/headers', () => ({
   cookies: jest.fn(),
 }));

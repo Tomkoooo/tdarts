@@ -1,7 +1,6 @@
 import { NextRequest } from 'next/server';
 import { cookies } from 'next/headers';
-import { AuthService } from '@/database/services/auth.service';
-import { AuthorizationService } from '@/database/services/authorization.service';
+import { AuthService, AuthorizationService } from '@tdarts/services';
 import { authorizeUser, authorizeUserResult } from '@/features/auth/lib/authorizeUser';
 
 const env = process.env as Record<string, string | undefined>;
@@ -10,13 +9,11 @@ jest.mock('next/headers', () => ({
   cookies: jest.fn(),
 }));
 
-jest.mock('@/database/services/auth.service', () => ({
+jest.mock('@tdarts/services', () => ({
+  ...jest.requireActual('@tdarts/services'),
   AuthService: {
     verifyToken: jest.fn(),
   },
-}));
-
-jest.mock('@/database/services/authorization.service', () => ({
   AuthorizationService: {
     getUserIdFromRequest: jest.fn(),
   },

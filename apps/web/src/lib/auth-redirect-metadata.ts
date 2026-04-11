@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
-import { ClubService } from '@/database/services/club.service';
-import { TournamentService } from '@/database/services/tournament.service';
+import { ClubService, TournamentService } from '@tdarts/services';
 import {
   DEFAULT_OG_PATH,
   type ClubOgLike,

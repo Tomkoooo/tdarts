@@ -1,6 +1,6 @@
 'use server';
 
-import { ClubService } from '@/database/services/club.service';
+import { ClubService } from '@tdarts/services';
 import { authorizeUserResult } from '@/shared/lib/guards';
 import { withTelemetry } from '@/shared/lib/withTelemetry';
 import { resolveGuardAwareStatus } from '@/shared/lib/guards/result';

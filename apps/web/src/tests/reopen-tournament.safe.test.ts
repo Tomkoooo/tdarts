@@ -1,12 +1,6 @@
 import bcrypt from 'bcryptjs';
-import { UserModel } from '@/database/models/user.model';
-import { ClubModel } from '@/database/models/club.model';
-import { PlayerModel } from '@/database/models/player.model';
-import { TournamentModel } from '@/database/models/tournament.model';
-import { MatchModel } from '@/database/models/match.model';
-import { LeagueModel } from '@/database/models/league.model';
-import { TournamentService } from '@/database/services/tournament.service';
-import { LeagueService } from '@/database/services/league.service';
+import { UserModel, ClubModel, PlayerModel, TournamentModel, MatchModel, LeagueModel } from '@tdarts/core';
+import { TournamentService, LeagueService } from '@tdarts/services';
 import { connectMongo } from '@/lib/mongoose';
 
 beforeEach(async () => {

@@ -1,11 +1,11 @@
 import os from 'os';
 import { monitorEventLoopDelay } from 'perf_hooks';
-import { ErrorService } from '@/database/services/error.service';
 import {
+  ErrorService,
   ResolvedStressRunConfig,
   StressRunService,
   StressSampleInput,
-} from '@/database/services/stress-run.service';
+} from '@tdarts/services';
 
 type EndpointKey =
   | 'tournament_get'

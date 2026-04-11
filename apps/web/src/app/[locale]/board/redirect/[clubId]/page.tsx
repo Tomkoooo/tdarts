@@ -1,5 +1,5 @@
 //server side component that will get the club active tournaments and show selection or redirect
-import { TournamentService } from "@/database/services/tournament.service";
+import { TournamentService } from '@tdarts/services';
 import { notFound, redirect } from "next/navigation";
 import TournamentSelectionPage from "./TournamentSelectionPage";
 

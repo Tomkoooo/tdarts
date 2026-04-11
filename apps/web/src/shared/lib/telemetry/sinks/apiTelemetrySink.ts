@@ -1,4 +1,4 @@
-import { ApiTelemetryService } from '@/database/services/api-telemetry.service';
+import { ApiTelemetryService } from '@tdarts/services';
 import { TelemetryAggregateSample, TelemetryErrorSample } from '@/shared/lib/telemetry/types';
 
 export function normalizeRouteKey(routeKey: string): string {

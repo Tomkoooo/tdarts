@@ -1,4 +1,4 @@
-import { OacMmrService } from '../database/services/oac-mmr.service';
+import { OacMmrService } from '@tdarts/services';
 
 describe('OacMmrService', () => {
     describe('calculateVerifiedAverage', () => {

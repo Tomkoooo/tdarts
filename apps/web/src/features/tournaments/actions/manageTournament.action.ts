@@ -2,14 +2,13 @@
 
 import { z } from 'zod';
 import { revalidateTag } from 'next/cache';
-import { TournamentService } from '@/database/services/tournament.service';
+import { TournamentService } from '@tdarts/services';
 import { authorizeUserResult } from '@/shared/lib/guards';
 import { withTelemetry } from '@/shared/lib/withTelemetry';
 import { resolveGuardAwareStatus } from '@/shared/lib/guards/result';
 import { serializeForClient } from '@/shared/lib/serializeForClient';
-import { AuthorizationService } from '@/database/services/authorization.service';
-import { UserModel } from '@/database/models/user.model';
-import { PlayerModel } from '@/database/models/player.model';
+import { AuthorizationService } from '@tdarts/services';
+import { UserModel, PlayerModel } from '@tdarts/core';
 import { sendEmail } from '@/lib/mailer';
 import { connectMongo } from '@/lib/mongoose';
 import type {

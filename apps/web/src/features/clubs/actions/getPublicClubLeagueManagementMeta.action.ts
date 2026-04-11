@@ -3,11 +3,11 @@
 import { z } from 'zod';
 import { connectMongo } from '@/lib/mongoose';
 import { BadRequestError } from '@/middleware/errorHandle';
-import { ClubModel } from '@/database/models/club.model';
+import { ClubModel } from '@tdarts/core';
 import { FeatureFlagService } from '@/features/flags/lib/featureFlags';
 import { withTelemetry } from '@/shared/lib/withTelemetry';
 import { authorizeUserResult } from '@/features/auth/lib/authorizeUser';
-import { AuthorizationService } from '@/database/services/authorization.service';
+import { AuthorizationService } from '@tdarts/services';
 
 const inputSchema = z.object({ clubId: z.string().min(1) });
 

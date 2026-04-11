@@ -12,12 +12,13 @@ const subscriptionSchema = new Schema<SubscriptionDocument>(
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     clubId: { type: Schema.Types.ObjectId, ref: 'Club', required: true },
   },
-  {
+  { 
     collection: 'subscriptions',
-    timestamps: true
+    timestamps: true 
   }
 );
 
+// Unique index to prevent duplicate subscriptions
 subscriptionSchema.index({ userId: 1, clubId: 1 }, { unique: true });
 
 export const SubscriptionModel =

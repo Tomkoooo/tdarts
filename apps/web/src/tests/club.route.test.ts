@@ -3,13 +3,18 @@
  * Original API routes were removed during Next.js 16 migration.
  */
 import { getClubAction } from '@/features/clubs/actions/getClub.action';
-import { ClubService } from '@/database/services/club.service';
+import { ClubService } from '@tdarts/services';
 import { connectMongo as connectToDatabase } from '@/lib/mongoose';
-import { UserModel } from '@/database/models/user.model';
-import { ClubModel } from '@/database/models/club.model';
+import { UserModel, ClubModel } from '@tdarts/core';
 import { Types } from 'mongoose';
 
-jest.mock('@/database/services/club.service');
+jest.mock('@tdarts/services', () => ({
+  ...jest.requireActual('@tdarts/services'),
+  ClubService: {
+    getClubByCode: jest.fn(),
+    getClub: jest.fn(),
+  },
+}));
 
 describe('Club Actions', () => {
   beforeAll(async () => {

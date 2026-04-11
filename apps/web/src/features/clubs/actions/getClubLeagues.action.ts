@@ -1,6 +1,6 @@
 'use server';
 
-import { LeagueService } from '@/database/services/league.service';
+import { LeagueService } from '@tdarts/services';
 import { BadRequestError } from '@/middleware/errorHandle';
 import { withTelemetry } from '@/shared/lib/withTelemetry';
 import { serializeForClient } from '@/shared/lib/serializeForClient';

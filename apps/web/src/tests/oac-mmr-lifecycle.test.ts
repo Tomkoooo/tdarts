@@ -1,12 +1,7 @@
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import mongoose from 'mongoose';
-import { UserModel } from '@/database/models/user.model';
-import { ClubModel } from '@/database/models/club.model';
-import { PlayerModel } from '@/database/models/player.model';
-import { TournamentModel } from '@/database/models/tournament.model';
-import { MatchModel } from '@/database/models/match.model';
-import { TournamentService } from '@/database/services/tournament.service';
-import { MatchService } from '@/database/services/match.service';
+import { UserModel, ClubModel, PlayerModel, TournamentModel, MatchModel } from '@tdarts/core';
+import { TournamentService, MatchService } from '@tdarts/services';
 import { connectMongo } from '@/lib/mongoose';
 import bcrypt from 'bcryptjs';
 

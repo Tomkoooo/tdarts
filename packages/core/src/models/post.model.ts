@@ -4,8 +4,8 @@ export interface PostDocument extends Document {
   clubId: mongoose.Types.ObjectId;
   authorId: mongoose.Types.ObjectId;
   title: string;
-  content: string;
-  images: string[];
+  content: string; // HTML/Rich Text
+  images: string[]; // URLs or Media IDs
   video?: string;
   tags: string[];
   createdAt: Date;

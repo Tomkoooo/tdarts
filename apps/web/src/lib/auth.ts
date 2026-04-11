@@ -3,7 +3,7 @@ import GoogleProvider from 'next-auth/providers/google';
 import { MongoDBAdapter } from '@auth/mongodb-adapter';
 import { MongoClient } from 'mongodb';
 import { connectMongo } from './mongoose';
-import { UserModel } from '@/database/models/user.model';
+import { UserModel } from '@tdarts/core';
 
 const client = new MongoClient(process.env.MONGODB_URI!);
 const clientPromise = client.connect();

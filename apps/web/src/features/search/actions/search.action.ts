@@ -1,7 +1,7 @@
 'use server';
 
 import { unstable_cache } from 'next/cache';
-import { SearchService } from '@/database/services/search.service';
+import { SearchService } from '@tdarts/services';
 import { withTelemetry } from '@/shared/lib/withTelemetry';
 import { getUserTimeZone } from '@/lib/date-time';
 import { serializeForClient } from '@/shared/lib/serializeForClient';

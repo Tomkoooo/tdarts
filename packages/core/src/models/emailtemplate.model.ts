@@ -2,17 +2,17 @@ import mongoose from 'mongoose';
 
 export interface IEmailTemplate {
   _id: mongoose.Types.ObjectId;
-  key: string;
+  key: string; // Unique identifier (e.g., 'tournament_spot_available')
   locale?: 'hu' | 'en' | 'de';
-  name: string;
-  description: string;
+  name: string; // Human-readable name
+  description: string; // Template purpose
   category: 'tournament' | 'club' | 'feedback' | 'admin' | 'system' | 'auth';
-  subject: string;
-  htmlContent: string;
-  textContent: string;
-  variables: string[];
+  subject: string; // Subject line with variable placeholders
+  htmlContent: string; // HTML body with variable placeholders
+  textContent: string; // Plain text fallback with variable placeholders
+  variables: string[]; // Available variables (e.g., ['userName', 'tournamentName'])
   isActive: boolean;
-  isDefault: boolean;
+  isDefault: boolean; // Whether this is a default system template
   lastModified: Date;
   modifiedBy?: mongoose.Types.ObjectId;
   createdAt: Date;
@@ -26,10 +26,11 @@ const EmailTemplateSchema = new mongoose.Schema<IEmailTemplate>(
       required: true,
       index: true,
       default: () => {
+        // Generate a random 4-character alphanumeric string (letters and numbers)
         const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
         let result = '';
         for (let i = 0; i < 4; i++) {
-          result += chars.charAt(Math.floor(Math.random() * chars.length));
+            result += chars.charAt(Math.floor(Math.random() * chars.length));
         }
         return result;
       }

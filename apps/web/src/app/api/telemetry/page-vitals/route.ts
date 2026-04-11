@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { ApiTelemetryService } from '@/database/services/api-telemetry.service';
+import { ApiTelemetryService } from '@tdarts/services';
 
 function normalizePath(pathname: string): string {
   return ApiTelemetryService.normalizeRouteKey(pathname || '/');

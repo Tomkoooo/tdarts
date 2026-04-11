@@ -1,18 +1,15 @@
-import { TournamentService } from "@/database/services/tournament.service";
-import { PlayerModel } from "@/database/models/player.model";
-import { MatchModel } from "@/database/models/match.model";
+import { TournamentService } from '@tdarts/services';
+import { PlayerModel, MatchModel } from '@tdarts/core';
 
 jest.mock("@/lib/mongoose", () => ({
   connectMongo: jest.fn().mockResolvedValue(undefined),
 }));
 
-jest.mock("@/database/models/player.model", () => ({
+jest.mock('@tdarts/core', () => ({
+  ...jest.requireActual('@tdarts/core'),
   PlayerModel: {
     findById: jest.fn(),
   },
-}));
-
-jest.mock("@/database/models/match.model", () => ({
   MatchModel: {
     find: jest.fn(),
   },

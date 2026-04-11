@@ -1,6 +1,6 @@
 'use server';
 
-import { PostService } from '@/database/services/post.service';
+import { PostService } from '@tdarts/services';
 import { BadRequestError } from '@/middleware/errorHandle';
 import { withTelemetry } from '@/shared/lib/withTelemetry';
 import { serializeForClient } from '@/shared/lib/serializeForClient';

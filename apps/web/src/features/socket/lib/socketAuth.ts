@@ -1,5 +1,5 @@
 import jwt from 'jsonwebtoken';
-import { AuthService } from '@/database/services/auth.service';
+import { AuthService } from '@tdarts/services';
 import { evaluateFeatureAccess } from '@/features/flags/lib/featureAccess';
 
 type SocketAuthResult =

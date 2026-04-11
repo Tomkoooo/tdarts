@@ -1,8 +1,7 @@
 'use server';
 
 import { z } from 'zod';
-import { TournamentService } from '@/database/services/tournament.service';
-import { MatchService } from '@/database/services/match.service';
+import { TournamentService, MatchService } from '@tdarts/services';
 import { authorizeUserResult } from '@/shared/lib/guards';
 import { withTelemetry } from '@/shared/lib/withTelemetry';
 import { resolveGuardAwareStatus } from '@/shared/lib/guards/result';

@@ -1,4 +1,4 @@
-import type { SearchFilters } from '@/database/services/search.service';
+import type { SearchFilters } from '@tdarts/services';
 import {
   getTournamentStartDateRangeFromCustomKeys,
   getTournamentStartDateRangeFromPreset,

@@ -1,6 +1,4 @@
-import { AuthService } from '@/database/services/auth.service';
-import { ClubService } from '@/database/services/club.service';
-import { TournamentService } from '@/database/services/tournament.service';
+import { AuthService, ClubService, TournamentService } from '@tdarts/services';
 
 export type TournamentViewerContext = {
   userClubRole: 'admin' | 'moderator' | 'member' | 'none';

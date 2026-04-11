@@ -2,11 +2,19 @@ import { POST as register } from '@/app/api/auth/register/route';
 import { POST as login } from '@/app/api/auth/login/route';
 import { POST as forgotPassword } from '@/app/api/auth/forgot-password/route';
 import { POST as resetPassword } from '@/app/api/auth/reset-password/route';
-import { AuthService } from '@/database/services/auth.service';
+import { AuthService } from '@tdarts/services';
 import { connectMongo as connectToDatabase } from '@/lib/mongoose';
-import { UserModel } from '@/database/models/user.model';
+import { UserModel } from '@tdarts/core';
 
-jest.mock('@/database/services/auth.service');
+jest.mock('@tdarts/services', () => ({
+  ...jest.requireActual('@tdarts/services'),
+  AuthService: {
+    register: jest.fn(),
+    login: jest.fn(),
+    forgotPassword: jest.fn(),
+    resetPassword: jest.fn(),
+  },
+}));
 
 describe('Auth Routes', () => {
   beforeAll(async () => {

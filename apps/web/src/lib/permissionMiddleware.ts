@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { AuthService } from '@/database/services/auth.service';
-import { TournamentService } from '@/database/services/tournament.service';
-import { ClubService } from '@/database/services/club.service';
+import { AuthService, TournamentService, ClubService } from '@tdarts/services';
 
 export interface PermissionResult {
   user: any;

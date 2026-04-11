@@ -1,6 +1,4 @@
-import { PendingTournamentModel } from '@/database/models/pendingTournament.model';
-import { TournamentModel } from '@/database/models/tournament.model';
-import { LeagueModel } from '@/database/models/league.model';
+import { PendingTournamentModel, TournamentModel, LeagueModel } from '@tdarts/core';
 
 export async function findTournamentByStripeSessionId(sessionId: string) {
   return TournamentModel.findOne({ stripeSessionId: sessionId });

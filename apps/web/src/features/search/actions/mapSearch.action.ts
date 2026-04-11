@@ -1,6 +1,6 @@
 'use server';
 
-import { SearchService } from '@/database/services/search.service';
+import { SearchService } from '@tdarts/services';
 import { withTelemetry } from '@/shared/lib/withTelemetry';
 import { serializeForClient } from '@/shared/lib/serializeForClient';
 

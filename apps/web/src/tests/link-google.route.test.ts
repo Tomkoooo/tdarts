@@ -1,6 +1,6 @@
 import { getServerSession } from 'next-auth';
-import { UserModel } from '@/database/models/user.model';
-import { AuthService } from '@/database/services/auth.service';
+import { UserModel } from '@tdarts/core';
+import { AuthService } from '@tdarts/services';
 
 jest.mock('next-auth', () => ({
   getServerSession: jest.fn(),
@@ -14,13 +14,15 @@ jest.mock('@/lib/auth', () => ({
   authOptions: {},
 }));
 
-jest.mock('@/database/models/user.model', () => ({
+jest.mock('@tdarts/core', () => ({
+  ...jest.requireActual('@tdarts/core'),
   UserModel: {
     findOne: jest.fn(),
   },
 }));
 
-jest.mock('@/database/services/auth.service', () => ({
+jest.mock('@tdarts/services', () => ({
+  ...jest.requireActual('@tdarts/services'),
   AuthService: {
     generateAuthToken: jest.fn(),
   },

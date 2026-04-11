@@ -1,8 +1,7 @@
 import { cookies } from 'next/headers';
 import { NextRequest } from 'next/server';
 import { cache } from 'react';
-import { AuthService } from '@/database/services/auth.service';
-import { AuthorizationService } from '@/database/services/authorization.service';
+import { AuthService, AuthorizationService } from '@tdarts/services';
 import { AuthorizationError } from '@/middleware/errorHandle';
 import { GuardResult } from '@/shared/lib/telemetry/types';
 import { isLoadTestEndpointsAllowedInCurrentEnvironment } from '@/lib/load-test-environment';

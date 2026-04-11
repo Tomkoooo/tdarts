@@ -1,8 +1,7 @@
 'use server';
 
 import { authorizeUserResult } from '@/features/auth/lib/authorizeUser';
-import { TournamentService } from '@/database/services/tournament.service';
-import { PlayerService } from '@/database/services/player.service';
+import { TournamentService, PlayerService } from '@tdarts/services';
 import { withTelemetry } from '@/shared/lib/withTelemetry';
 import { resolveGuardAwareStatus } from '@/shared/lib/guards/result';
 import { getProfileTopOpponents } from '../lib/profileTopOpponents';

@@ -1,9 +1,6 @@
 import { connectMongo } from '@/lib/mongoose';
-import { UserModel } from '@/database/models/user.model';
-import { PlayerModel } from '@/database/models/player.model';
-import { MatchModel } from '@/database/models/match.model';
-import { TournamentModel } from '@/database/models/tournament.model';
-import { PlayerService } from '@/database/services/player.service';
+import { UserModel, PlayerModel, MatchModel, TournamentModel } from '@tdarts/core';
+import { PlayerService } from '@tdarts/services';
 import { serializeForClient } from '@/shared/lib/serializeForClient';
 import mongoose from 'mongoose';
 import { unstable_cache } from 'next/cache';

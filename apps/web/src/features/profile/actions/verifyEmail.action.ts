@@ -2,7 +2,7 @@
 
 import { z } from 'zod';
 import { authorizeUserResult } from '@/features/auth/lib/authorizeUser';
-import { ProfileService } from '@/database/services/profile.service';
+import { ProfileService } from '@tdarts/services';
 import { withTelemetry } from '@/shared/lib/withTelemetry';
 import { resolveGuardAwareStatus } from '@/shared/lib/guards/result';
 

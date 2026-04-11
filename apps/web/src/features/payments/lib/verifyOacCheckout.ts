@@ -1,8 +1,7 @@
 import Stripe from 'stripe';
 import type { NextRequest } from 'next/server';
 import { cookies } from 'next/headers';
-import { TournamentService } from '@/database/services/tournament.service';
-import { LeagueService } from '@/database/services/league.service';
+import { TournamentService, LeagueService } from '@tdarts/services';
 import { SzamlazzService } from '@/lib/szamlazz';
 import { connectMongo } from '@/lib/mongoose';
 import type { SupportedLocale } from '@/lib/locale-mismatch';

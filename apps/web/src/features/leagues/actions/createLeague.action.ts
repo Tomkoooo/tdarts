@@ -1,9 +1,9 @@
 'use server';
 
-import { LeagueService } from '@/database/services/league.service';
+import { LeagueService } from '@tdarts/services';
 import { z } from 'zod';
 import { evaluateFeatureAccess } from '@/features/flags/lib/featureAccess';
-import { AuthorizationService } from '@/database/services/authorization.service';
+import { AuthorizationService } from '@tdarts/services';
 import { BadRequestError } from '@/middleware/errorHandle';
 import { withTelemetry } from '@/shared/lib/withTelemetry';
 import { resolveGuardAwareStatus } from '@/shared/lib/guards/result';

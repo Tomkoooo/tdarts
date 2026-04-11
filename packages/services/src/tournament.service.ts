@@ -17,7 +17,8 @@ import { TournamentStatsService, type UpdateGroupStandingOptions } from './tourn
 import { TournamentPlayerService } from './tournament-player.service';
 import { GeocodingService } from './geocoding.service';
 import { ErrorService } from './error.service';
-import { eventsBus, EVENTS, createSseDeltaPayload, normalizeEntryFeeCurrency } from '@tdarts/core';
+import { eventsBus, EVENTS, createSseDeltaPayload } from '@tdarts/core';
+import { normalizeEntryFeeCurrency } from '@tdarts/core';
 
 export class TournamentService {
     private static publishTournamentRefresh(
@@ -206,7 +207,6 @@ export class TournamentService {
 
         return result;
     }
-
     // Initialize indexes when the service is first used
     private static indexesInitialized = false;
     

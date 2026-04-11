@@ -1,7 +1,8 @@
-import { SubscriptionService } from '@/database/services/subscription.service';
+import { SubscriptionService } from '@tdarts/services';
 import { canCreateTournamentForSubscription } from '@/features/subscription/lib/subscriptionEligibility';
 
-jest.mock('@/database/services/subscription.service', () => ({
+jest.mock('@tdarts/services', () => ({
+  ...jest.requireActual('@tdarts/services'),
   SubscriptionService: {
     canCreateTournament: jest.fn(),
   },

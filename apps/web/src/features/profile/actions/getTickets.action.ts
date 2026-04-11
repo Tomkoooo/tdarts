@@ -10,7 +10,7 @@ function mapFeedbackStatusToTicketStatus(
   if (status === 'in-progress') return 'replied';
   return 'open';
 }
-import { FeedbackService } from '@/database/services/feedback.service';
+import { FeedbackService } from '@tdarts/services';
 import { withTelemetry } from '@/shared/lib/withTelemetry';
 import { resolveGuardAwareStatus } from '@/shared/lib/guards/result';
 import { serializeForClient } from '@/shared/lib/serializeForClient';

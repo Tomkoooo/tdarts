@@ -1,6 +1,5 @@
 import { MetadataRoute } from 'next';
-import { ClubService } from '@/database/services/club.service';
-import { TournamentService } from '@/database/services/tournament.service';
+import { ClubService, TournamentService } from '@tdarts/services';
 import { buildLocaleAlternates, getBaseUrl, localePath } from '@/lib/seo';
 
 /** ISR: refresh sitemap periodically; avoid conflicting with force-dynamic. */
