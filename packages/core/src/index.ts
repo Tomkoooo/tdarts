@@ -64,6 +64,8 @@ export {
 } from './lib/entry-fee-currency';
 export type { EntryFeeCurrency } from './lib/entry-fee-currency';
 
+export { isSubscriptionPaywallActive } from './lib/subscription-paywall';
+
 // Club location completeness
 export {
   clubHasCorrectAddress,

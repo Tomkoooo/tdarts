@@ -4,6 +4,26 @@
 
 A tDarts platform feature flag rendszere lehetővé teszi a funkciók dinamikus engedélyezését/tiltását környezet és előfizetési szint alapján.
 
+### Entitlement vs. subscription kvóták (két külön réteg)
+
+Ne keverjük össze a két ellenőrzést:
+
+1. **Entitlement (jogosultság / feature flag)** — „Használhatja-e a klub ezt a funkciót?” (ENV `NEXT_PUBLIC_ENABLE_*`, klub `featureFlags`, paywall mellett tier). Web: `FeatureFlagService`, `evaluateFeatureAccess`, kliens hookok.
+2. **Subscription kvóták (használat / limit)** — „Hány verseny hozható létre havonta, sandbox vs. éles, OAC szabályok?” Csak akkor futnak, ha a paywall aktív. Implementáció: `@tdarts/services` `SubscriptionService.canCreateTournament` / `canUpdateTournament`.
+
+A paywall kapcsoló **egy** helyen van definiálva: `isSubscriptionPaywallActive()` a `@tdarts/core` csomagban (`NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED === 'true'`). A web app a [`subscriptionPaywall.ts`](../../apps/web/src/features/flags/lib/subscriptionPaywall.ts) fájlon keresztül ugyanezt exportálja, így a flag-réteg és a havi limit logika nem csúszhat szét.
+
+Ha a paywall **ki**, kvóták nem érvényesülnek; versenylétrehozásnál a [`createTournament.action.ts`](../../apps/web/src/features/tournaments/actions/createTournament.action.ts) nem is hívja a limit ellenőrzést.
+
+### Automatikus ellenőrzés (tesztek)
+
+A dokumentált szabályok és a UI közötti eltérések elkerülésére:
+
+- [`apps/web/src/tests/feature-flags-subscription.matrix.lib.test.ts`](../../apps/web/src/tests/feature-flags-subscription.matrix.lib.test.ts) — `isSubscriptionPaywallActive`, valós `SubscriptionService` kvóták (paywall ki/be), `FeatureFlagService` mátrix (socket, ligák, premium).
+- [`apps/web/src/tests/createTournament.subscription-gate.lib.test.ts`](../../apps/web/src/tests/createTournament.subscription-gate.lib.test.ts) — `createTournamentAction` **nem mockolja** a `SubscriptionService`-t; ellenőrzi, hogy paywall ki esetén nem fut a havi limit hívás.
+
+Futtatás: `pnpm --filter web test:qa:unit` (tartalmazza a `*.lib.test.ts` fájlokat) vagy a `web` csomag `test` scriptje a fenti mátrix + gate teszteket is lefuttatja.
+
 ## Konfiguráció
 
 ### Environment Variables

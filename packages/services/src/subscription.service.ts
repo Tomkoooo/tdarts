@@ -2,6 +2,7 @@ import { connectMongo } from '@tdarts/core';
 import { ClubModel } from '@tdarts/core';
 import { BadRequestError } from '@tdarts/core';
 import { TournamentModel } from '@tdarts/core';
+import { isSubscriptionPaywallActive } from '@tdarts/core';
 
 export interface SubscriptionPlan {
   id: string;
@@ -101,11 +102,7 @@ export class SubscriptionService {
     errorMessage?: string;
   }> {
     try {
-      // Check if subscription feature is enabled
-      const isSubscriptionEnabled = process.env.NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED === 'true';
-      
-      if (!isSubscriptionEnabled) {
-        // If subscription is disabled, always allow
+      if (!isSubscriptionPaywallActive()) {
         return {
           canCreate: true,
           currentCount: 0,
@@ -215,11 +212,7 @@ export class SubscriptionService {
     errorMessage?: string;
   }> {
     try {
-      // Check if subscription feature is enabled
-      const isSubscriptionEnabled = process.env.NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED === 'true';
-      
-      if (!isSubscriptionEnabled) {
-        // If subscription is disabled, always allow
+      if (!isSubscriptionPaywallActive()) {
         return {
           canUpdate: true,
           currentCount: 0,

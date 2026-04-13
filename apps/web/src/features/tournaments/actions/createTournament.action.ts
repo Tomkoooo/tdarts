@@ -6,6 +6,7 @@ import { TournamentService, ClubService, SubscriptionService, LeagueService } fr
 import { z } from 'zod';
 import { parseIsoDateInput } from '@/lib/date-time';
 import { evaluateFeatureAccess } from '@/features/flags/lib/featureAccess';
+import { isSubscriptionPaywallActive } from '@/features/flags/lib/subscriptionPaywall';
 import { BadRequestError } from '@/middleware/errorHandle';
 import { withTelemetry } from '@/shared/lib/withTelemetry';
 import { AuthorizationService } from '@tdarts/services';
@@ -116,20 +117,22 @@ export async function createTournamentAction(input: CreateTournamentInput): Prom
       const isSandbox = payload.isSandbox || false;
       const isVerified = payload.verified || false;
 
-      const subscriptionCheck = await SubscriptionService.canCreateTournament(
-        clubId,
-        tournamentStartDate,
-        isSandbox,
-        isVerified
-      );
+      if (isSubscriptionPaywallActive()) {
+        const subscriptionCheck = await SubscriptionService.canCreateTournament(
+          clubId,
+          tournamentStartDate,
+          isSandbox,
+          isVerified
+        );
 
-      if (!subscriptionCheck.canCreate) {
-        return {
-          ok: false,
-          code: 'SUBSCRIPTION_REQUIRED',
-          status: 403,
-          message: subscriptionCheck.errorMessage || 'Subscription limit exceeded',
-        };
+        if (!subscriptionCheck.canCreate) {
+          return {
+            ok: false,
+            code: 'SUBSCRIPTION_REQUIRED',
+            status: 403,
+            message: subscriptionCheck.errorMessage || 'Subscription limit exceeded',
+          };
+        }
       }
 
       if (isVerified || payload.leagueId) {
