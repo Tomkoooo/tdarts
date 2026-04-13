@@ -4,7 +4,7 @@
  */
 import { ClubModel, TournamentModel } from '@tdarts/core';
 import { SubscriptionService } from '@tdarts/services';
-import { isSubscriptionPaywallActive } from '@tdarts/core';
+import { isSubscriptionPaywallActive } from '@tdarts/core/subscription-paywall';
 import { FeatureFlagService } from '@/features/flags/lib/featureFlags';
 
 const ENV_KEYS = [

@@ -11,7 +11,7 @@ Ne keverjük össze a két ellenőrzést:
 1. **Entitlement (jogosultság / feature flag)** — „Használhatja-e a klub ezt a funkciót?” (ENV `NEXT_PUBLIC_ENABLE_*`, klub `featureFlags`, paywall mellett tier). Web: `FeatureFlagService`, `evaluateFeatureAccess`, kliens hookok.
 2. **Subscription kvóták (használat / limit)** — „Hány verseny hozható létre havonta, sandbox vs. éles, OAC szabályok?” Csak akkor futnak, ha a paywall aktív. Implementáció: `@tdarts/services` `SubscriptionService.canCreateTournament` / `canUpdateTournament`.
 
-A paywall kapcsoló **egy** helyen van definiálva: `isSubscriptionPaywallActive()` a `@tdarts/core` csomagban (`NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED === 'true'`). A web app a [`subscriptionPaywall.ts`](../../apps/web/src/features/flags/lib/subscriptionPaywall.ts) fájlon keresztül ugyanezt exportálja, így a flag-réteg és a havi limit logika nem csúszhat szét.
+A paywall kapcsoló **egy** helyen van definiálva: `isSubscriptionPaywallActive()` a [`@tdarts/core/subscription-paywall`](../../packages/core/src/lib/subscription-paywall.ts) modulban (`NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED === 'true'`). A web a [`subscriptionPaywall.ts`](../../apps/web/src/features/flags/lib/subscriptionPaywall.ts) fájlon keresztül ezt a **subpath**-ot exportálja (ne a `@tdarts/core` barrel-t: kliens komponensek behúznák a mailer/nodemailer láncot és elrontják a Next buildet).
 
 Ha a paywall **ki**, kvóták nem érvényesülnek; versenylétrehozásnál a [`createTournament.action.ts`](../../apps/web/src/features/tournaments/actions/createTournament.action.ts) nem is hívja a limit ellenőrzést.
 

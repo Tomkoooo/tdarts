@@ -131,7 +131,7 @@ export async function createTournamentAction(input: CreateTournamentInput): Prom
             code: 'SUBSCRIPTION_REQUIRED',
             status: 403,
             message: subscriptionCheck.errorMessage || 'Subscription limit exceeded',
-          };
+          } satisfies GuardFailureResult;
         }
       }
 

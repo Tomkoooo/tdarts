@@ -52,7 +52,7 @@ export async function checkFeatureFlagAction(
         code: 'FEATURE_DISABLED',
         status: 403,
         message: `Feature disabled: ${payload.feature}`,
-      };
+      } satisfies GuardFailureResult;
     }
 
     const accessResult = await evaluateFeatureAccess({

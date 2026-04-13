@@ -2,7 +2,7 @@ import { connectMongo } from '@tdarts/core';
 import { ClubModel } from '@tdarts/core';
 import { BadRequestError } from '@tdarts/core';
 import { TournamentModel } from '@tdarts/core';
-import { isSubscriptionPaywallActive } from '@tdarts/core';
+import { isSubscriptionPaywallActive } from '@tdarts/core/subscription-paywall';
 
 export interface SubscriptionPlan {
   id: string;
