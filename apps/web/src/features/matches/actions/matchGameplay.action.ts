@@ -1,14 +1,15 @@
 'use server';
 
 import { z } from 'zod';
-import { MatchService } from '@tdarts/services';
+import { MatchService, AuthorizationService, TournamentService } from '@tdarts/services';
 import { MatchModel, TournamentModel } from '@tdarts/core';
 import { connectMongo } from '@/lib/mongoose';
 import { eventsBus, EVENTS, createSseDeltaPayload } from '@/lib/events';
-import { BadRequestError } from '@/middleware/errorHandle';
+import { BadRequestError, AuthorizationError } from '@/middleware/errorHandle';
 import { withTelemetry } from '@/shared/lib/withTelemetry';
 import { resolveGuardAwareStatus } from '@/shared/lib/guards/result';
 import { serializeForClient } from '@/shared/lib/serializeForClient';
+import { authorizeUserResult } from '@/shared/lib/guards';
 
 const finishLegSchema = z.object({
   matchId: z.string().min(1),
@@ -105,9 +106,15 @@ export async function updateMatchGameplaySettingsAction(input: z.infer<typeof up
 
       const data = parsed.data;
 
+      // Auth is always required — this action is admin/moderator only.
+      const authResult = await authorizeUserResult();
+      if (!authResult.ok) {
+        throw new AuthorizationError('Authentication required to update match settings');
+      }
+
       await connectMongo();
       const match = await MatchModel.findById(data.matchId).select(
-        '_id status tournamentRef legsToWin startingPlayer'
+        '_id status tournamentRef legsToWin startingPlayer type boardReference round'
       );
       if (!match) {
         throw new BadRequestError('Match not found');
@@ -115,6 +122,38 @@ export async function updateMatchGameplaySettingsAction(input: z.infer<typeof up
 
       if (match.status !== 'ongoing') {
         throw new BadRequestError('Can only update ongoing matches');
+      }
+
+      // Enforce legsToWin config: when a tournament organizer has configured a value
+      // for this match's group/round, only admins/moderators may change it.
+      if (data.legsToWin !== undefined) {
+        const tournament = (await TournamentModel.findById(match.tournamentRef)
+          .select('tournamentId tournamentSettings.legsConfig')
+          .lean()) as { tournamentId?: string; tournamentSettings?: { legsConfig?: any } } | null;
+
+        if (tournament) {
+          const legsConfig = tournament.tournamentSettings?.legsConfig;
+          const matchType = (match as any).type as 'group' | 'knockout';
+          const configuredValue: number | undefined =
+            legsConfig && matchType === 'group'
+              ? legsConfig.groups?.[(match as any).boardReference]
+              : legsConfig?.knockout?.[(match as any).round];
+
+          if (configuredValue !== undefined) {
+            const { clubId } = await TournamentService.getTournamentRoleContext(
+              tournament.tournamentId!
+            );
+            const [isPrivileged, isGlobalAdmin] = await Promise.all([
+              AuthorizationService.checkAdminOrModerator(authResult.data.userId, clubId),
+              AuthorizationService.isGlobalAdmin(authResult.data.userId),
+            ]);
+            if (!isPrivileged && !isGlobalAdmin) {
+              throw new AuthorizationError(
+                'Only admins and moderators can change legsToWin when a tournament config is set'
+              );
+            }
+          }
+        }
       }
 
       if (data.legsToWin !== undefined) {

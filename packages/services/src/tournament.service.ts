@@ -554,11 +554,12 @@ export class TournamentService {
         startingScore: number;
         isSandbox: boolean;
         boards: Array<{ boardNumber: number; isActive: boolean; status: string }>;
+        legsConfig?: { groups?: Record<number, number>; knockout?: Record<number, number> };
     }> {
         await connectMongo();
         const filter = this.buildCodeOrIdFilter(tournamentId);
         const doc: any = await TournamentModel.findOne(filter)
-            .select('_id tournamentId clubId isSandbox tournamentSettings.status tournamentSettings.format tournamentSettings.startingScore boards.boardNumber boards.isActive boards.status')
+            .select('_id tournamentId clubId isSandbox tournamentSettings.status tournamentSettings.format tournamentSettings.startingScore tournamentSettings.legsConfig boards.boardNumber boards.isActive boards.status')
             .lean();
         if (!doc) {
             throw new BadRequestError('Tournament not found', 'tournament', {
@@ -583,6 +584,7 @@ export class TournamentService {
                 isActive: b.isActive,
                 status: b.status || 'waiting',
             })),
+            legsConfig: doc.tournamentSettings?.legsConfig ?? undefined,
         };
     }
 

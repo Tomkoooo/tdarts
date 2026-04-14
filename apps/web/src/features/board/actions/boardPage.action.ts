@@ -2,6 +2,7 @@
 
 import { z } from 'zod';
 import { TournamentService, MatchService, ClubService, AuthorizationService } from '@tdarts/services';
+import { MatchModel } from '@tdarts/core';
 import { authorizeUserResult } from '@/shared/lib/guards';
 import { withTelemetry } from '@/shared/lib/withTelemetry';
 import { resolveGuardAwareStatus } from '@/shared/lib/guards/result';
@@ -32,7 +33,7 @@ const startBoardMatchSchema = z.object({
   tournamentId: z.string().min(1),
   boardNumber: z.number(),
   matchId: z.string().min(1),
-  legsToWin: z.number(),
+  legsToWin: z.number().int().min(1).max(9),
   startingPlayer: z.union([z.literal(1), z.literal(2)]),
   password: z.string().optional(),
 });
@@ -194,6 +195,7 @@ export async function getBoardTournamentAction(input: { tournamentId: string; pa
           status: tournament.status,
           format: tournament.format,
           startingScore: tournament.startingScore,
+          legsConfig: tournament.legsConfig ?? null,
         },
       });
     },
@@ -262,9 +264,17 @@ export async function getBoardUserRoleAction(input: { tournamentId: string; pass
       const parsed = boardAccessSchema.parse(payload);
       await assertBoardAccess({ tournamentId: parsed.tournamentId, password: parsed.password });
       const authResult = await authorizeUserResult();
-      if (!authResult.ok) return { clubRole: 'member' as const };
+      if (!authResult.ok) return serializeForClient({ clubRole: 'member' as const });
       const { clubId } = await TournamentService.getTournamentRoleContext(parsed.tournamentId);
-      const role = await ClubService.getUserRoleInClub(authResult.data.userId, clubId);
+      const [role, isGlobalAdmin] = await Promise.all([
+        ClubService.getUserRoleInClub(authResult.data.userId, clubId),
+        AuthorizationService.isGlobalAdmin(authResult.data.userId),
+      ]);
+      // Global admins are treated as club admins for board privilege purposes,
+      // mirroring the assertBoardAccess behavior.
+      if (isGlobalAdmin) {
+        return serializeForClient({ clubRole: 'admin' as const });
+      }
       return serializeForClient({ clubRole: role || 'member' });
     },
     {
@@ -274,6 +284,43 @@ export async function getBoardUserRoleAction(input: { tournamentId: string; pass
     }
   );
   return run(input);
+}
+
+async function resolveCallerPrivilege(
+  authResult: Awaited<ReturnType<typeof authorizeUserResult>>,
+  tournamentId: string
+): Promise<boolean> {
+  if (!authResult.ok) return false;
+  try {
+    const { clubId } = await TournamentService.getTournamentRoleContext(tournamentId);
+    const [isPrivileged, isGlobalAdmin] = await Promise.all([
+      AuthorizationService.checkAdminOrModerator(authResult.data.userId, clubId),
+      AuthorizationService.isGlobalAdmin(authResult.data.userId),
+    ]);
+    return isPrivileged || isGlobalAdmin;
+  } catch {
+    return false;
+  }
+}
+
+async function resolveConfiguredLegsToWin(
+  tournamentId: string,
+  matchId: string
+): Promise<number | undefined> {
+  const [tournament, match] = await Promise.all([
+    TournamentService.getTournamentLite(tournamentId),
+    MatchModel.findById(matchId).select('type boardReference round').lean() as Promise<{
+      type: 'group' | 'knockout';
+      boardReference: number;
+      round: number;
+    } | null>,
+  ]);
+  const legsConfig = tournament.legsConfig;
+  if (!legsConfig || !match) return undefined;
+  if (match.type === 'group') {
+    return legsConfig.groups?.[match.boardReference];
+  }
+  return legsConfig.knockout?.[match.round];
 }
 
 export async function startBoardMatchAction(input: {
@@ -296,6 +343,21 @@ export async function startBoardMatchAction(input: {
     }) => {
       const parsed = startBoardMatchSchema.parse(payload);
       await assertBoardAccess({ tournamentId: parsed.tournamentId, password: parsed.password });
+
+      const [configuredLegsToWin, authResult] = await Promise.all([
+        resolveConfiguredLegsToWin(parsed.tournamentId, parsed.matchId),
+        authorizeUserResult(),
+      ]);
+
+      if (configuredLegsToWin !== undefined) {
+        const isPrivileged = await resolveCallerPrivilege(authResult, parsed.tournamentId);
+        if (!isPrivileged && parsed.legsToWin !== configuredLegsToWin) {
+          throw new Error(
+            `legsToWin is set by the tournament organizer (${configuredLegsToWin}) and cannot be changed`
+          );
+        }
+      }
+
       const match = await MatchService.startMatch(
         parsed.tournamentId,
         parsed.matchId,
