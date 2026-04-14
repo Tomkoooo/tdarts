@@ -137,6 +137,7 @@ const tournamentSchema = new mongoose.Schema<TournamentDocument>({
         registrationDeadline: { type: Date, default: null },
         coverImage: { type: String, default: null },
         reminderSent: { type: Boolean, default: false },
+        legsConfig: { type: mongoose.Schema.Types.Mixed, default: undefined },
     },
     createdAt: { type: Date, default: Date.now },
     updatedAt: { type: Date, default: Date.now },

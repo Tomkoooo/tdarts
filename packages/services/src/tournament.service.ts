@@ -5937,6 +5937,14 @@ export class TournamentService {
             tournament.knockout = [];
             tournament.tournamentSettings.knockoutMethod = undefined;
 
+            // Clear knockout legs config — round numbering may shift if bracket is regenerated
+            // with a different player count, so stale keys must not silently apply wrong values.
+            if (tournament.tournamentSettings.legsConfig?.knockout) {
+                const { knockout: _removed, ...rest } = tournament.tournamentSettings.legsConfig;
+                tournament.tournamentSettings.legsConfig = Object.keys(rest).length > 0 ? rest : undefined;
+                tournament.markModified('tournamentSettings.legsConfig');
+            }
+
             // Reset tournament status based on format
             const format = tournament.tournamentSettings?.format || 'group_knockout';
             if (format === 'knockout') {

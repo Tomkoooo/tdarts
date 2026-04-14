@@ -74,6 +74,13 @@ export interface TournamentBoard {
   scoliaAccessToken?: string;
 }
 
+export interface LegsConfig {
+  /** Per-group legs-to-win, keyed by board number (e.g. { 1: 3, 2: 3 }). */
+  groups?: Record<number, number>;
+  /** Per-knockout-round legs-to-win, keyed by round number (e.g. { 1: 3, 2: 5, 3: 7 }). */
+  knockout?: Record<number, number>;
+}
+
 export interface TournamentSettings {
   status: 'pending' | 'active' | 'finished' | 'group-stage' | 'knockout';
   name: string;
@@ -95,6 +102,8 @@ export interface TournamentSettings {
   type: 'amateur' | 'open';
   registrationDeadline: Date;
   coverImage?: string;
+  /** Organizer-configured legs-to-win per group (by board number) and per knockout round. */
+  legsConfig?: LegsConfig;
 }
 
 export interface PlayerDocument extends Omit<Document, 'toJSON' | '_id'> {
