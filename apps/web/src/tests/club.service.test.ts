@@ -1210,4 +1210,83 @@ describe('ClubService', () => {
       ClubService.createSelectedTournamentsShareToken(club._id.toString(), ['missing_tournament'])
     ).rejects.toThrow(BadRequestError);
   }, 30000);
+
+  it('adds club competition avg band to club summary tournaments', async () => {
+    const admin = await UserModel.create({
+      email: 'club-band-admin@example.com',
+      password: 'password123',
+      username: 'club_band_admin',
+      name: 'Club Band Admin',
+      isVerified: true,
+    });
+
+    const playerA = await PlayerModel.create({ name: 'Player A', isRegistered: false });
+    const playerB = await PlayerModel.create({ name: 'Player B', isRegistered: false });
+    const playerC = await PlayerModel.create({ name: 'Player C', isRegistered: false });
+
+    const club: ClubDocument = await ClubService.createClub(admin._id.toString(), {
+      name: 'Club Band',
+      description: 'Competition band test',
+      location: 'Budapest',
+    });
+
+    await TournamentModel.create({
+      clubId: club._id,
+      tournamentId: 'band_1',
+      tournamentSettings: {
+        name: 'Band One',
+        startDate: new Date('2026-01-01T10:00:00.000Z'),
+        status: 'finished',
+        maxPlayers: 16,
+        format: 'group',
+        startingScore: 501,
+        tournamentPassword: 'test-pass',
+      },
+      tournamentPlayers: [
+        { playerReference: playerA._id, status: 'winner', stats: { avg: 40, oneEightiesCount: 2 } },
+        { playerReference: playerB._id, status: 'eliminated', stats: { avg: 50, oneEightiesCount: 1 } },
+      ],
+      isDeleted: false,
+      isArchived: false,
+      isSandbox: false,
+    });
+
+    await TournamentModel.create({
+      clubId: club._id,
+      tournamentId: 'band_2',
+      tournamentSettings: {
+        name: 'Band Two',
+        startDate: new Date('2026-01-02T10:00:00.000Z'),
+        status: 'finished',
+        maxPlayers: 16,
+        format: 'group',
+        startingScore: 501,
+        tournamentPassword: 'test-pass',
+      },
+      tournamentPlayers: [
+        { playerReference: playerB._id, status: 'winner', stats: { avg: 60, oneEightiesCount: 3 } },
+        { playerReference: playerC._id, status: 'eliminated', stats: { avg: 70, oneEightiesCount: 0 } },
+      ],
+      isDeleted: false,
+      isArchived: false,
+      isSandbox: false,
+    });
+
+    const summary = await ClubService.getClubSummary(club._id.toString());
+    expect(Array.isArray(summary.tournaments)).toBe(true);
+    expect(summary.tournaments.length).toBe(2);
+
+    for (const tournament of summary.tournaments) {
+      expect(tournament.clubCompetitionAvgBand).toEqual({
+        minAvg: 45,
+        maxAvg: 65,
+        sampleSize: 2,
+      });
+      expect(tournament.clubOneEightiesStats).toEqual({
+        avgPerTournament: 3,
+        total: 6,
+        sampleSize: 2,
+      });
+    }
+  }, 30000);
 });

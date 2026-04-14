@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/Button"
 import { Separator } from "@/components/ui/separator"
 import { getUserTimeZone } from "@/lib/date-time"
 import { formatTournamentEntryFee } from "@/lib/format-entry-fee"
+import ScoreBadge from "@/components/player/ScoreBadge"
 
 interface TournamentOverviewProps {
   tournament: any
@@ -69,6 +70,8 @@ const formatDescription = (text: string) => {
   return parts
 }
 
+const roundToNearest5 = (value: number) => Math.round(value / 5) * 5
+
 export function TournamentOverview({
   tournament,
   userRole,
@@ -102,6 +105,17 @@ export function TournamentOverview({
   const canShowRegistrationCta = registrationOpen && userPlayerStatus === "none"
   const registrationTarget = `/tournaments/${tournament.tournamentId}?tab=players&autoJoin=1`
   const loginRedirectTarget = `/auth/login?redirect=${encodeURIComponent(registrationTarget)}`
+  const clubCompetitionAvgBand = tournament?.clubCompetitionAvgBand
+  const expectedMin = typeof clubCompetitionAvgBand?.minAvg === "number" ? roundToNearest5(clubCompetitionAvgBand.minAvg) : null
+  const expectedMax = typeof clubCompetitionAvgBand?.maxAvg === "number" ? roundToNearest5(clubCompetitionAvgBand.maxAvg) : null
+  const expectedMid =
+    expectedMin !== null && expectedMax !== null
+      ? (expectedMin + expectedMax) / 2
+      : null
+  const currentTournamentAvg = typeof tournament?.currentTournamentAvg === "number"
+    ? Number(tournament.currentTournamentAvg.toFixed(2))
+    : null
+  const showCurrentTournamentAvg = status === "finished" && currentTournamentAvg !== null
 
   const details = [
     {
@@ -203,6 +217,23 @@ export function TournamentOverview({
             </div>
           ))}
         </div>
+
+        {clubCompetitionAvgBand ? (
+          <div className="rounded-xl border border-border/50 bg-muted/15 p-3">
+            <h4 className="text-sm font-semibold text-foreground">{tTour('card.stats.statistics')}</h4>
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <span className="text-xs text-muted-foreground">{tTour('card.stats.expected_avg')}</span>
+              <ScoreBadge score={Math.max(expectedMid ?? 10, 10)} label={`${expectedMin}-${expectedMax}`} />
+              {showCurrentTournamentAvg ? (
+                <>
+                  <span className="text-xs text-muted-foreground">|</span>
+                  <span className="text-xs text-muted-foreground">{tTour('card.stats.current_avg')}</span>
+                  <ScoreBadge score={Math.max(currentTournamentAvg ?? 10, 10)} label={currentTournamentAvg?.toFixed(2)} />
+                </>
+              ) : null}
+            </div>
+          </div>
+        ) : null}
 
         <div className="rounded-xl border border-border/50 bg-muted/15 p-3">
           <h4 className="text-sm font-semibold text-foreground">{tTour('overview.description_label')}</h4>

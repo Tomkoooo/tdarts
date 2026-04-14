@@ -2079,7 +2079,15 @@
       },
       "sandbox_sb17": "SANDBOX",
       "invoice": "Invoice",
-      "invoice_label": "Invoice ID:"
+      "invoice_label": "Invoice ID:",
+      "stats": {
+        "statistics": "Statistics",
+        "expected_avg": "Expected tournament avg",
+        "current_avg": "Current avg",
+        "current_180": "Current",
+        "avg_180_per_tournament": "Avg/tournament",
+        "total_180": "Total"
+      }
     },
     "info": {
       "id_label": "Tournament ID:",

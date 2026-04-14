@@ -1854,7 +1854,15 @@
       },
       "sandbox_sb17": "SANDBOX",
       "invoice": "Számla",
-      "invoice_label": "Számla ID:"
+      "invoice_label": "Számla ID:",
+      "stats": {
+        "statistics": "Statisztika",
+        "expected_avg": "Expected tournament avg",
+        "current_avg": "Aktuális átlag",
+        "current_180": "Aktuális",
+        "avg_180_per_tournament": "Átl./torna",
+        "total_180": "Összes"
+      }
     },
     "info": {
       "id_label": "Torna azonosító:",

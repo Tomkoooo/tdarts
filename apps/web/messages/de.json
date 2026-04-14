@@ -891,7 +891,15 @@
       },
       "sandbox_sb17": "SANDKASTEN",
       "invoice": "Rechnung",
-      "invoice_label": "Rechnungs-ID:"
+      "invoice_label": "Rechnungs-ID:",
+      "stats": {
+        "statistics": "Statistik",
+        "expected_avg": "Expected tournament avg",
+        "current_avg": "Aktueller Avg",
+        "current_180": "Aktuell",
+        "avg_180_per_tournament": "Ø/Turnier",
+        "total_180": "Gesamt"
+      }
     },
     "info": {
       "id_label": "Turnier-ID:",

@@ -53,6 +53,74 @@ export interface SearchResult {
 }
 
 export class SearchService {
+    private static roundTo2(value: number): number {
+        return Number(value.toFixed(2));
+    }
+
+    private static extractTournamentAverageFromPlayers(tournament: any): number | null {
+        const players = Array.isArray(tournament?.tournamentPlayers) ? tournament.tournamentPlayers : [];
+        const validPlayerAverages = players
+            .map((player: any) => Number(player?.stats?.avg || 0))
+            .filter((avg: number) => Number.isFinite(avg) && avg > 0);
+        if (validPlayerAverages.length === 0) return null;
+        const total = validPlayerAverages.reduce((sum: number, avg: number) => sum + avg, 0);
+        return total / validPlayerAverages.length;
+    }
+
+    private static extractClubId(value: any): string | null {
+        if (!value) return null;
+        if (typeof value === 'string') return value;
+        if (value?._id) return String(value._id);
+        return null;
+    }
+
+    private static extractTournamentOneEighties(tournament: any): number {
+        const players = Array.isArray(tournament?.tournamentPlayers) ? tournament.tournamentPlayers : [];
+        return players.reduce((sum: number, player: any) => {
+            const value = Number(player?.stats?.oneEightiesCount || 0);
+            return sum + (Number.isFinite(value) && value > 0 ? value : 0);
+        }, 0);
+    }
+
+    private static buildClubCompetitionAvgBandFromTournaments(tournaments: any[], excludeTournamentId: string): {
+        minAvg: number;
+        maxAvg: number;
+        sampleSize: number;
+    } | null {
+        const averages = tournaments
+            .filter((t) => String(t.tournamentId) !== String(excludeTournamentId))
+            .map((t) => this.extractTournamentAverageFromPlayers(t))
+            .filter((avg: number | null): avg is number => typeof avg === 'number');
+        if (averages.length === 0) return null;
+        return {
+            minAvg: this.roundTo2(Math.min(...averages)),
+            maxAvg: this.roundTo2(Math.max(...averages)),
+            sampleSize: averages.length,
+        };
+    }
+
+    private static buildClubOneEightiesStatsFromTournaments(tournaments: any[], excludeTournamentId: string): {
+        avgPerTournament: number;
+        total: number;
+        sampleSize: number;
+    } | null {
+        const totals = tournaments
+            .filter((t) => String(t.tournamentId) !== String(excludeTournamentId))
+            .map((t) => {
+                const players = Array.isArray(t?.tournamentPlayers) ? t.tournamentPlayers : [];
+                return players.reduce((sum: number, player: any) => {
+                    const value = Number(player?.stats?.oneEightiesCount || 0);
+                    return sum + (Number.isFinite(value) && value > 0 ? value : 0);
+                }, 0);
+            });
+        if (totals.length === 0) return null;
+        const total = totals.reduce((sum: number, value: number) => sum + value, 0);
+        return {
+            avgPerTournament: this.roundTo2(total / totals.length),
+            total,
+            sampleSize: totals.length,
+        };
+    }
     
     // --- SPECIALIZED SEARCH METHODS ---
 
@@ -134,6 +202,30 @@ export class SearchService {
             { path: 'tournamentPlayers.playerReference', select: 'name' }
         ]);
 
+        const clubIds = [...new Set(
+            hydratedTournaments
+                .map((t: any) => this.extractClubId(t.club || t.clubId))
+                .filter((id: string | null): id is string => Boolean(id))
+        )];
+        const relatedFinishedByClub = new Map<string, any[]>();
+        if (clubIds.length > 0) {
+            const relatedFinished = await TournamentModel.find({
+                clubId: { $in: clubIds },
+                isDeleted: { $ne: true },
+                isArchived: { $ne: true },
+                'tournamentSettings.status': 'finished',
+            })
+                .select('clubId tournamentId tournamentPlayers.stats.avg tournamentPlayers.stats.oneEightiesCount')
+                .lean();
+            for (const tournament of relatedFinished as any[]) {
+                const clubId = this.extractClubId(tournament.clubId);
+                if (!clubId) continue;
+                const list = relatedFinishedByClub.get(clubId) || [];
+                list.push(tournament);
+                relatedFinishedByClub.set(clubId, list);
+            }
+        }
+
         const results = hydratedTournaments.map((t: any) => {
             const startDate = t.tournamentSettings?.startDate;
             const now = new Date();
@@ -141,6 +233,12 @@ export class SearchService {
             if (startDate) {
                  registrationOpen = now < new Date(startDate);
             }
+            const clubId = this.extractClubId(t.club || t.clubId);
+            const related = clubId ? (relatedFinishedByClub.get(clubId) || []) : [];
+            const status = String(t?.tournamentSettings?.status || 'pending');
+            const currentAvgRaw = this.extractTournamentAverageFromPlayers(t);
+            const currentTournamentAvg = status !== 'finished' || currentAvgRaw === null ? null : this.roundTo2(currentAvgRaw);
+            const currentTournamentOneEighties = status === 'pending' ? null : this.extractTournamentOneEighties(t);
 
             return {
                 registrationOpen,
@@ -149,7 +247,11 @@ export class SearchService {
                     clubId: t.club, 
                     isVerified: t.isVerified,
                     isOac: t.isOac,
-                    city: t.city
+                    city: t.city,
+                    currentTournamentAvg,
+                    currentTournamentOneEighties,
+                    clubCompetitionAvgBand: this.buildClubCompetitionAvgBandFromTournaments(related, String(t.tournamentId)),
+                    clubOneEightiesStats: this.buildClubOneEightiesStatsFromTournaments(related, String(t.tournamentId)),
                 }
             };
         });

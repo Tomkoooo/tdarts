@@ -10,6 +10,9 @@ import {
   IconEdit,
   IconTrash,
   IconShieldCheck,
+  IconChartBar,
+  IconBolt,
+  IconFlame,
 } from '@tabler/icons-react'
 import { Badge } from '@/components/ui/Badge'
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/Card"
@@ -24,6 +27,9 @@ import { cn } from '@/lib/utils'
 import { useFormatter, useTranslations } from 'next-intl'
 import { getUserTimeZone } from '@/lib/date-time'
 import { formatTournamentEntryFee } from '@/lib/format-entry-fee'
+import ScoreBadge from '@/components/player/ScoreBadge'
+
+const roundToNearest5 = (value: number) => Math.round(value / 5) * 5
 
 interface TournamentCardProps {
   tournament: {
@@ -53,6 +59,18 @@ interface TournamentCardProps {
     verified?: boolean
     isOac?: boolean
     city?: string
+    clubCompetitionAvgBand?: {
+      minAvg: number
+      maxAvg: number
+      sampleSize: number
+    } | null
+    clubOneEightiesStats?: {
+      avgPerTournament: number
+      total: number
+      sampleSize: number
+    } | null
+    currentTournamentAvg?: number | null
+    currentTournamentOneEighties?: number | null
   }
   userRole?: 'admin' | 'moderator' | 'member' | 'none'
   showActions?: boolean
@@ -95,6 +113,18 @@ export default function TournamentCard({
   const maxPlayers = tournament.tournamentSettings?.maxPlayers || 0
   const isFull = maxPlayers > 0 && playerCount >= maxPlayers
   const entryFee = tournament.tournamentSettings?.entryFee || 0
+  const clubBand = tournament.clubCompetitionAvgBand
+  const oneEightiesStats = tournament.clubOneEightiesStats
+  const expectedMin = typeof clubBand?.minAvg === 'number' ? roundToNearest5(clubBand.minAvg) : null
+  const expectedMax = typeof clubBand?.maxAvg === 'number' ? roundToNearest5(clubBand.maxAvg) : null
+  const expectedMid = expectedMin !== null && expectedMax !== null ? (expectedMin + expectedMax) / 2 : null
+  const currentTournamentAvg = typeof tournament.currentTournamentAvg === 'number'
+    ? Number(tournament.currentTournamentAvg.toFixed(2))
+    : null
+  const currentTournamentOneEighties = typeof tournament.currentTournamentOneEighties === 'number'
+    ? tournament.currentTournamentOneEighties
+    : null
+  const showCurrentTournamentAvg = status === 'finished' && currentTournamentAvg !== null
   const tournamentId = tournament.tournamentId || tournament._id
 
   const handleCardClick = (e: React.MouseEvent) => {
@@ -238,6 +268,53 @@ export default function TournamentCard({
                 tournament.tournamentSettings?.entryFeeCurrency
               )}
             </span>
+          </div>
+        )}
+
+        {(clubBand || oneEightiesStats) && (
+          <div className="rounded-lg border border-border/40 bg-muted/15 px-3 py-2 space-y-2">
+            <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+              <IconChartBar className="w-3.5 h-3.5 text-primary" />
+              {t('stats.statistics')}
+            </div>
+            {clubBand && (
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-xs text-muted-foreground flex items-center gap-1">
+                  <IconBolt className="w-3 h-3 text-warning" />
+                  {t('stats.expected_avg')}
+                </span>
+                <ScoreBadge score={Math.max(expectedMid ?? 10, 10)} label={`${expectedMin}-${expectedMax}`} />
+                {showCurrentTournamentAvg && (
+                  <>
+                    <span className="text-xs text-muted-foreground">|</span>
+                    <span className="text-xs text-muted-foreground">{t('stats.current_avg')}</span>
+                    <ScoreBadge score={Math.max(currentTournamentAvg ?? 10, 10)} label={currentTournamentAvg?.toFixed(2)} />
+                  </>
+                )}
+              </div>
+            )}
+            {oneEightiesStats && (
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-xs text-muted-foreground flex items-center gap-1">
+                  <IconFlame className="w-3 h-3 text-error" />
+                  180s
+                </span>
+                {status !== 'pending' && currentTournamentOneEighties !== null && (
+                  <Badge variant="outline" className="text-xs border-muted/40 bg-muted/15">
+                    {t('stats.current_180')} {currentTournamentOneEighties}
+                  </Badge>
+                )}
+                {status !== 'pending' && currentTournamentOneEighties !== null && (
+                  <span className="text-xs text-muted-foreground">|</span>
+                )}
+                <Badge variant="outline" className="text-xs border-muted/40 bg-muted/15">
+                  {t('stats.avg_180_per_tournament')} {oneEightiesStats.avgPerTournament.toFixed(2)}
+                </Badge>
+                <Badge variant="outline" className="text-xs border-muted/40 bg-muted/15">
+                  {t('stats.total_180')} {oneEightiesStats.total}
+                </Badge>
+              </div>
+            )}
           </div>
         )}
       </CardContent>

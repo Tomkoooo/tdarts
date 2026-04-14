@@ -31,6 +31,96 @@ export type ManagedClubLocationCompletenessRow = {
 export class ClubService {
   private static readonly MANUAL_GEOCODE_COOLDOWN_MS = 24 * 60 * 60 * 1000;
   private static readonly SHARE_TOKEN_DEFAULT_TTL_DAYS = 60;
+  private static roundTo2(value: number): number {
+    return Number(value.toFixed(2));
+  }
+
+  private static buildClubCompetitionAvgBand(tournaments: any[]): {
+    minAvg: number;
+    maxAvg: number;
+    sampleSize: number;
+  } | null {
+    const tournamentAverages: number[] = [];
+
+    for (const tournament of tournaments) {
+      const players = Array.isArray(tournament?.tournamentPlayers) ? tournament.tournamentPlayers : [];
+      const validPlayerAverages = players
+        .map((player: any) => Number(player?.stats?.avg || 0))
+        .filter((avg: number) => Number.isFinite(avg) && avg > 0);
+
+      if (validPlayerAverages.length === 0) {
+        continue;
+      }
+
+      const total = validPlayerAverages.reduce((sum: number, avg: number) => sum + avg, 0);
+      tournamentAverages.push(total / validPlayerAverages.length);
+    }
+
+    if (tournamentAverages.length === 0) {
+      return null;
+    }
+
+    const minAvg = Math.min(...tournamentAverages);
+    const maxAvg = Math.max(...tournamentAverages);
+    return {
+      minAvg: this.roundTo2(minAvg),
+      maxAvg: this.roundTo2(maxAvg),
+      sampleSize: tournamentAverages.length,
+    };
+  }
+
+  private static getCurrentTournamentAverage(tournament: any): number | null {
+    const players = Array.isArray(tournament?.tournamentPlayers) ? tournament.tournamentPlayers : [];
+    const validPlayerAverages = players
+      .map((player: any) => Number(player?.stats?.avg || 0))
+      .filter((avg: number) => Number.isFinite(avg) && avg > 0);
+
+    if (validPlayerAverages.length === 0) {
+      return null;
+    }
+
+    const total = validPlayerAverages.reduce((sum: number, avg: number) => sum + avg, 0);
+    return this.roundTo2(total / validPlayerAverages.length);
+  }
+
+  private static getCurrentTournamentOneEighties(tournament: any): number {
+    const players = Array.isArray(tournament?.tournamentPlayers) ? tournament.tournamentPlayers : [];
+    return players.reduce((sum: number, player: any) => {
+      const value = Number(player?.stats?.oneEightiesCount || 0);
+      return sum + (Number.isFinite(value) && value > 0 ? value : 0);
+    }, 0);
+  }
+
+  private static buildClubOneEightiesStats(tournaments: any[]): {
+    avgPerTournament: number;
+    total: number;
+    sampleSize: number;
+  } | null {
+    const tournamentOneEightiesTotals: number[] = [];
+
+    for (const tournament of tournaments) {
+      const players = Array.isArray(tournament?.tournamentPlayers) ? tournament.tournamentPlayers : [];
+      const tournamentTotal = players.reduce((sum: number, player: any) => {
+        const value = Number(player?.stats?.oneEightiesCount || 0);
+        return sum + (Number.isFinite(value) && value > 0 ? value : 0);
+      }, 0);
+      tournamentOneEightiesTotals.push(tournamentTotal);
+    }
+
+    if (tournamentOneEightiesTotals.length === 0) {
+      return null;
+    }
+
+    const total = tournamentOneEightiesTotals.reduce((sum: number, value: number) => sum + value, 0);
+    const avgPerTournament = total / tournamentOneEightiesTotals.length;
+
+    return {
+      avgPerTournament: this.roundTo2(avgPerTournament),
+      total,
+      sampleSize: tournamentOneEightiesTotals.length,
+    };
+  }
+
   private static sanitizeObjectIdStrings(values: unknown[]): string[] {
     const normalized = values
       .map((value) => (value == null ? '' : String(value).trim()))
@@ -662,6 +752,16 @@ export class ClubService {
     // Lekérjük a klubhoz tartozó tornákat külön
     const tournaments = await TournamentModel.find({ clubId: club._id })
       .select('_id tournamentId tournamentSettings code tournamentPlayers isSandbox isDeleted invoiceId verified')
+    const finishedTournaments = await TournamentModel.find({
+      clubId: club._id,
+      isDeleted: { $ne: true },
+      isArchived: { $ne: true },
+      'tournamentSettings.status': 'finished',
+    })
+      .select('tournamentPlayers.stats.avg tournamentPlayers.stats.oneEightiesCount')
+      .lean();
+    const clubCompetitionAvgBand = this.buildClubCompetitionAvgBand(finishedTournaments as any[]);
+    const clubOneEightiesStats = this.buildClubOneEightiesStats(finishedTournaments as any[]);
 
     // Válasz: minden szereplőhöz role mező
     // For members, always include name, userRef, and username ("vendég" if not registered)
@@ -751,6 +851,16 @@ export class ClubService {
       })),
       members: membersWithUsernames,
       tournaments: tournaments.map((t: any) => ({
+        ...(function () {
+          const status = String(t?.tournamentSettings?.status || 'pending');
+          const currentTournamentAvg = status !== 'finished'
+            ? null
+            : ClubService.getCurrentTournamentAverage(t);
+          const currentTournamentOneEighties = status === 'pending'
+            ? null
+            : ClubService.getCurrentTournamentOneEighties(t);
+          return { currentTournamentAvg, currentTournamentOneEighties };
+        })(),
         _id: t._id.toString(),
         tournamentSettings: t.tournamentSettings,
         tournamentId: t.tournamentId,
@@ -759,6 +869,8 @@ export class ClubService {
         isDeleted: t.isDeleted,
         invoiceId: t.invoiceId,
         verified: t.verified,
+        clubOneEightiesStats,
+        clubCompetitionAvgBand,
       })),
     };
     return result;
@@ -799,9 +911,20 @@ export class ClubService {
           invoiceId: 1,
           verified: 1,
           playerCount: { $size: { $ifNull: ['$tournamentPlayers', []] } },
+          tournamentPlayers: 1,
         },
       },
     ]);
+    const finishedTournaments = await TournamentModel.find({
+      clubId: (club as any)._id,
+      isDeleted: { $ne: true },
+      isArchived: { $ne: true },
+      'tournamentSettings.status': 'finished',
+    })
+      .select('tournamentPlayers.stats.avg tournamentPlayers.stats.oneEightiesCount')
+      .lean();
+    const clubCompetitionAvgBand = this.buildClubCompetitionAvgBand(finishedTournaments as any[]);
+    const clubOneEightiesStats = this.buildClubOneEightiesStats(finishedTournaments as any[]);
     const membersCount = Array.isArray((club as any).members) ? (club as any).members.length : 0;
 
     const summaryResult = {
@@ -820,6 +943,16 @@ export class ClubService {
       members: [],
       membersCount,
       tournaments: tournaments.map((t: any) => ({
+        ...(function () {
+          const status = String(t?.tournamentSettings?.status || 'pending');
+          const currentTournamentAvg = status !== 'finished'
+            ? null
+            : ClubService.getCurrentTournamentAverage(t);
+          const currentTournamentOneEighties = status === 'pending'
+            ? null
+            : ClubService.getCurrentTournamentOneEighties(t);
+          return { currentTournamentAvg, currentTournamentOneEighties };
+        })(),
         _id: String(t._id),
         tournamentSettings: t.tournamentSettings,
         tournamentId: t.tournamentId,
@@ -828,6 +961,8 @@ export class ClubService {
         invoiceId: t.invoiceId,
         verified: t.verified,
         playerCount: Number(t.playerCount || 0),
+        clubOneEightiesStats,
+        clubCompetitionAvgBand,
       })),
     };
     this.logTiming('getClubSummary', startedAt, requestId, { clubId });

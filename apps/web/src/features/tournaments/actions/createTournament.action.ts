@@ -26,9 +26,20 @@ import {
   normalizeEntryFeeCurrency,
 } from '@tdarts/core/entry-fee-currency';
 
-const stripe = new Stripe(process.env.OAC_STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-12-18.acacia' as Stripe.LatestApiVersion,
-});
+let _stripeClient: Stripe | null = null;
+
+function getOacStripeClient(): Stripe {
+  if (!_stripeClient) {
+    const key = process.env.OAC_STRIPE_SECRET_KEY?.trim();
+    if (!key) {
+      throw new Error('OAC_STRIPE_SECRET_KEY is not configured');
+    }
+    _stripeClient = new Stripe(key, {
+      apiVersion: '2024-12-18.acacia' as Stripe.LatestApiVersion,
+    });
+  }
+  return _stripeClient;
+}
 
 const entryFeeCurrencySchema = z.enum(
   [...ENTRY_FEE_CURRENCY_CODES] as [string, ...string[]]
@@ -206,6 +217,7 @@ export async function createTournamentAction(input: CreateTournamentInput): Prom
       if (payload.verified) {
         const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
         const locale = await resolvePaymentLocaleForServerAction(request);
+        const stripe = getOacStripeClient();
         const checkoutSession = await stripe.checkout.sessions.create({
           payment_method_types: ['card'],
           line_items: [

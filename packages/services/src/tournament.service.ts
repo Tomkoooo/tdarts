@@ -60,6 +60,100 @@ export class TournamentService {
         };
     }
 
+    private static roundTo2(value: number): number {
+        return Number(value.toFixed(2));
+    }
+
+    private static extractTournamentAverageFromPlayers(tournament: any): number | null {
+        const players = Array.isArray(tournament?.tournamentPlayers) ? tournament.tournamentPlayers : [];
+        const validPlayerAverages = players
+            .map((player: any) => Number(player?.stats?.avg || 0))
+            .filter((avg: number) => Number.isFinite(avg) && avg > 0);
+
+        if (validPlayerAverages.length === 0) {
+            return null;
+        }
+
+        const total = validPlayerAverages.reduce((sum, avg) => sum + avg, 0);
+        return total / validPlayerAverages.length;
+    }
+
+    private static async getClubCompetitionAvgBand(clubId: string, excludeTournamentCode: string): Promise<{
+        minAvg: number;
+        maxAvg: number;
+        sampleSize: number;
+    } | null> {
+        const relatedTournaments = await TournamentModel.find({
+            clubId,
+            tournamentId: { $ne: excludeTournamentCode },
+            isDeleted: { $ne: true },
+            isArchived: { $ne: true },
+            'tournamentSettings.status': 'finished',
+        })
+            .select('tournamentPlayers.stats.avg')
+            .lean();
+
+        const tournamentAverages = relatedTournaments
+            .map((relatedTournament: any) => this.extractTournamentAverageFromPlayers(relatedTournament))
+            .filter((avg: number | null): avg is number => typeof avg === 'number');
+
+        if (tournamentAverages.length === 0) {
+            return null;
+        }
+
+        const minAvg = Math.min(...tournamentAverages);
+        const maxAvg = Math.max(...tournamentAverages);
+        return {
+            minAvg: this.roundTo2(minAvg),
+            maxAvg: this.roundTo2(maxAvg),
+            sampleSize: tournamentAverages.length,
+        };
+    }
+
+    private static getCurrentTournamentAverage(tournament: any): number | null {
+        const avg = this.extractTournamentAverageFromPlayers(tournament);
+        if (avg === null) return null;
+        return this.roundTo2(avg);
+    }
+
+    private static getCurrentTournamentOneEighties(tournament: any): number {
+        const players = Array.isArray(tournament?.tournamentPlayers) ? tournament.tournamentPlayers : [];
+        return players.reduce((sum: number, player: any) => {
+            const value = Number(player?.stats?.oneEightiesCount || 0);
+            return sum + (Number.isFinite(value) && value > 0 ? value : 0);
+        }, 0);
+    }
+
+    private static buildClubOneEightiesStats(tournaments: any[]): {
+        avgPerTournament: number;
+        total: number;
+        sampleSize: number;
+    } | null {
+        const tournamentOneEightiesTotals: number[] = [];
+
+        for (const tournament of tournaments) {
+            const players = Array.isArray(tournament?.tournamentPlayers) ? tournament.tournamentPlayers : [];
+            const tournamentTotal = players.reduce((sum: number, player: any) => {
+                const value = Number(player?.stats?.oneEightiesCount || 0);
+                return sum + (Number.isFinite(value) && value > 0 ? value : 0);
+            }, 0);
+            tournamentOneEightiesTotals.push(tournamentTotal);
+        }
+
+        if (tournamentOneEightiesTotals.length === 0) {
+            return null;
+        }
+
+        const total = tournamentOneEightiesTotals.reduce((sum: number, value: number) => sum + value, 0);
+        const avgPerTournament = total / tournamentOneEightiesTotals.length;
+
+        return {
+            avgPerTournament: this.roundTo2(avgPerTournament),
+            total,
+            sampleSize: tournamentOneEightiesTotals.length,
+        };
+    }
+
     private static async recalculateCurrentSeasonAverages(playerId: string): Promise<{ avg: number; firstNineAvg: number }> {
         const results = await this.recalculateCurrentSeasonAveragesBulk([playerId]);
         return results.get(playerId) || { avg: 0, firstNineAvg: 0 };
@@ -893,7 +987,7 @@ export class TournamentService {
 
         const tournament: any = await TournamentModel.findOne(filter)
             .select(
-                'tournamentId clubId tournamentPlayers.playerReference tournamentPlayers.status waitingList.playerReference waitingList.addedAt boards.boardNumber boards.name boards.status boards.isActive tournamentSettings createdAt updatedAt isActive isDeleted isArchived isCancelled isSandbox verified paymentStatus'
+                'tournamentId clubId tournamentPlayers.playerReference tournamentPlayers.status tournamentPlayers.stats.avg tournamentPlayers.stats.oneEightiesCount waitingList.playerReference waitingList.addedAt boards.boardNumber boards.name boards.status boards.isActive tournamentSettings createdAt updatedAt isActive isDeleted isArchived isCancelled isSandbox verified paymentStatus'
             )
             .populate('clubId', 'name location contact')
             .populate({
@@ -918,6 +1012,37 @@ export class TournamentService {
                 entityId: tournamentId,
             });
         }
+
+        const resolvedClubId = typeof tournament.clubId === 'object' && tournament.clubId?._id
+            ? String(tournament.clubId._id)
+            : String(tournament.clubId || '');
+        if (resolvedClubId) {
+            const relatedFinishedTournaments = await TournamentModel.find({
+                clubId: resolvedClubId,
+                tournamentId: { $ne: String(tournament.tournamentId) },
+                isDeleted: { $ne: true },
+                isArchived: { $ne: true },
+                'tournamentSettings.status': 'finished',
+            })
+                .select('tournamentPlayers.stats.oneEightiesCount')
+                .lean();
+            tournament.clubCompetitionAvgBand = await this.getClubCompetitionAvgBand(
+                resolvedClubId,
+                String(tournament.tournamentId)
+            );
+            tournament.clubOneEightiesStats = this.buildClubOneEightiesStats(relatedFinishedTournaments as any[]);
+        } else {
+            tournament.clubCompetitionAvgBand = null;
+            tournament.clubOneEightiesStats = null;
+        }
+
+        const status = String(tournament?.tournamentSettings?.status || 'pending');
+        tournament.currentTournamentAvg = status !== 'finished'
+            ? null
+            : this.getCurrentTournamentAverage(tournament);
+        tournament.currentTournamentOneEighties = status === 'pending'
+            ? null
+            : this.getCurrentTournamentOneEighties(tournament);
 
         return tournament;
     }

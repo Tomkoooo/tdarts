@@ -13,9 +13,20 @@ import {
   setTournamentInvoiceId,
 } from '@/features/payments/lib/paymentVerification.db';
 
-const stripe = new Stripe(process.env.OAC_STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-12-18.acacia' as Stripe.LatestApiVersion,
-});
+let _stripeClient: Stripe | null = null;
+
+function getOacStripeClient(): Stripe {
+  if (!_stripeClient) {
+    const key = process.env.OAC_STRIPE_SECRET_KEY?.trim();
+    if (!key) {
+      throw new Error('OAC_STRIPE_SECRET_KEY is not configured');
+    }
+    _stripeClient = new Stripe(key, {
+      apiVersion: '2024-12-18.acacia' as Stripe.LatestApiVersion,
+    });
+  }
+  return _stripeClient;
+}
 
 export type VerifyOacCheckoutResult =
   | { kind: 'redirect'; location: string }
@@ -77,6 +88,8 @@ export async function verifyOacTournamentCheckout(
   locale: SupportedLocale
 ): Promise<VerifyOacCheckoutResult> {
   await connectMongo();
+
+  const stripe = getOacStripeClient();
 
   let session: Stripe.Response<Stripe.Checkout.Session>;
   try {
