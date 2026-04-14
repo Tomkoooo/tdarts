@@ -3770,6 +3770,9 @@
     "unread_messages": "{count} olvasatlan üzeneted"
   },
   "Board": {
+    "legs_set_by_organizer": "Szervező beállította: {legs} leg",
+    "legs_override_notice": "Felülírás — szervező {legs} leget állított be",
+    "legs_organizer_config": "Szervező konfigurációja: {legs} leg",
     "a_bull_t": "A bull-t a bal oldali játékos kezdi",
     "vissza": "Vissza",
     "mégse": "Mégse",

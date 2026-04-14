@@ -429,9 +429,23 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
     };
   }, []);
 
+  const getConfiguredLegsToWin = (match: Match): number | undefined => {
+    const legsConfig = tournamentData?.tournamentSettings?.legsConfig;
+    if (!legsConfig) return undefined;
+    if (match.type === 'group') {
+      return legsConfig.groups?.[match.boardReference];
+    }
+    return legsConfig.knockout?.[match.round];
+  };
+
   const handleMatchSelect = (match: Match) => {
     if (match.status === 'pending') {
       setSelectedMatch(match);
+      // Pre-fill legsToWin from organizer config when available
+      const configured = getConfiguredLegsToWin(match);
+      if (configured !== undefined) {
+        setLegsToWin(configured);
+      }
       setShowMatchSetup(true);
     } else if (match.status === 'ongoing') {
       setSelectedMatch(match);
@@ -987,6 +1001,7 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
   }
 
   if (showMatchSetup && selectedMatch) {
+    const configuredLegsToWin = getConfiguredLegsToWin(selectedMatch);
     return (
       <BoardMatchSetupScreen
         match={selectedMatch}
@@ -1018,6 +1033,11 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
         boardLabel={t("tábla")}
         playersLabel={t("játékosok_86")}
         saveLabel={t("indítás")}
+        configuredLegsToWin={configuredLegsToWin}
+        isPrivileged={isAdminOrModerator}
+        legsSetByOrganizerLabel={t("legs_set_by_organizer")}
+        legsOverrideNoticeLabel={t("legs_override_notice")}
+        legsOrganizerConfigLabel={t("legs_organizer_config")}
       />
     );
   }

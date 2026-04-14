@@ -3898,6 +3898,9 @@
     "unread_messages": "Your message {count} is unread"
   },
   "Board": {
+    "legs_set_by_organizer": "Set by organizer: {legs} leg(s)",
+    "legs_override_notice": "Override — organizer set {legs} leg(s)",
+    "legs_organizer_config": "Organizer config: {legs} leg(s)",
     "a_bull_t": "The bull starts with the player on the left",
     "vissza": "Back",
     "mégse": "Cancel",

@@ -3712,6 +3712,9 @@
     }
   },
   "Board": {
+    "legs_set_by_organizer": "Vom Veranstalter festgelegt: {legs} Leg(s)",
+    "legs_override_notice": "Überschreibung — Veranstalter hat {legs} Leg(s) festgelegt",
+    "legs_organizer_config": "Veranstalter-Konfiguration: {legs} Leg(s)",
     "a_bull_t": "Der Stier beginnt mit dem Spieler auf der linken Seite",
     "vissza": "Zurück",
     "mégse": "Abbrechen",
