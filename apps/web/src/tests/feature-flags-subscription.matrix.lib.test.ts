@@ -1,90 +1,70 @@
 /**
- * Contract tests aligned with docs/architect/FEATURE_FLAGS.md and UI expectations.
- * Uses real @tdarts/services SubscriptionService + in-memory Mongo (global Jest setup).
+ * Feature flag tests aligned with the feature registry and TIER_CONFIG.
+ * All env vars set explicitly -- NO reliance on .env or NEXT_PUBLIC_ENABLE_ALL.
  */
-import { ClubModel, TournamentModel } from '@tdarts/core';
-import { SubscriptionService } from '@tdarts/services';
-import { isSubscriptionPaywallActive } from '@tdarts/core/subscription-paywall';
+import { ClubModel } from '@tdarts/core';
 import { FeatureFlagService } from '@/features/flags/lib/featureFlags';
+import { isSubscriptionPaywallActive } from '@tdarts/core/subscription-paywall';
+import { FEATURE_REGISTRY } from '@/features/flags/lib/featureRegistry';
+import { FEATURE_KEYS } from '@/features/flags/lib/featureKeys';
 
-const ENV_KEYS = [
+const ALL_ENV_KEYS = [
   'NEXT_PUBLIC_ENABLE_ALL',
   'NEXT_PUBLIC_ENABLE_SOCKET',
   'NEXT_PUBLIC_ENABLE_LEAGUES',
-  'NEXT_PUBLIC_ENABLE_PREMIUM_TOURNAMENTS',
   'NEXT_PUBLIC_ENABLE_LIVE_MATCH_FOLLOWING',
   'NEXT_PUBLIC_ENABLE_DETAILED_STATISTICS',
+  'NEXT_PUBLIC_ENABLE_ADVANCED_STATISTICS',
+  'NEXT_PUBLIC_ENABLE_OAC_CREATION',
   'NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED',
 ] as const;
 
-function snapshotEnv(): Record<string, string | undefined> {
+function snapshotEnv() {
   const s: Record<string, string | undefined> = {};
-  for (const k of ENV_KEYS) {
-    s[k] = process.env[k];
-  }
+  for (const k of ALL_ENV_KEYS) s[k] = process.env[k];
   return s;
 }
 
 function restoreEnv(s: Record<string, string | undefined>) {
-  for (const k of ENV_KEYS) {
-    const v = s[k];
-    if (v === undefined) Reflect.deleteProperty(process.env, k);
-    else process.env[k] = v;
+  for (const k of ALL_ENV_KEYS) {
+    if (s[k] === undefined) Reflect.deleteProperty(process.env, k);
+    else process.env[k] = s[k];
   }
 }
 
-function tournamentDoc(clubId: unknown, startDate: Date, id: string) {
-  return {
-    tournamentId: id,
-    clubId,
-    tournamentPlayers: [],
-    groups: [],
-    knockout: [],
-    boards: [],
-    tournamentSettings: {
-      status: 'pending',
-      name: `T ${id}`,
-      startDate,
-      maxPlayers: 16,
-      format: 'group',
-      startingScore: 501,
-      tournamentPassword: 'test',
-      boardCount: 1,
-      entryFee: 0,
-      location: 'Test',
-      type: 'amateur',
-      registrationDeadline: startDate,
-    },
-    isSandbox: false,
-    verified: false,
-    isDeleted: false,
-  };
+function clearAllFeatureEnvs() {
+  for (const k of ALL_ENV_KEYS) Reflect.deleteProperty(process.env, k);
 }
 
-describe('Paywall switch (single source: @tdarts/core isSubscriptionPaywallActive)', () => {
+const PROD_ENV: Record<string, string> = {
+  NEXT_PUBLIC_ENABLE_LEAGUES: 'true',
+  NEXT_PUBLIC_ENABLE_SOCKET: 'true',
+  NEXT_PUBLIC_ENABLE_OAC_CREATION: 'true',
+  NEXT_PUBLIC_ENABLE_DETAILED_STATISTICS: 'true',
+  NEXT_PUBLIC_ENABLE_LIVE_MATCH_FOLLOWING: 'true',
+  NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED: 'false',
+};
+
+function applyProdEnv() {
+  clearAllFeatureEnvs();
+  for (const [k, v] of Object.entries(PROD_ENV)) {
+    process.env[k] = v;
+  }
+}
+
+describe('isSubscriptionPaywallActive', () => {
   let snap: Record<string, string | undefined>;
+  beforeEach(() => { snap = snapshotEnv(); });
+  afterEach(() => { restoreEnv(snap); });
 
-  beforeEach(() => {
-    snap = snapshotEnv();
-  });
-
-  afterEach(() => {
-    restoreEnv(snap);
-  });
-
-  it('active only for exact string "true" (prod must match)', () => {
+  it('active only for exact "true"', () => {
     process.env.NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED = 'true';
     expect(isSubscriptionPaywallActive()).toBe(true);
   });
 
-  it.each([
-    ['false', false],
-    ['', false],
-    ['True', false],
-    ['1', false],
-  ])('inactive for %p', (value, expected) => {
-    process.env.NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED = value;
-    expect(isSubscriptionPaywallActive()).toBe(expected);
+  it.each(['false', '', 'True', '1'])('inactive for %p', (val) => {
+    process.env.NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED = val;
+    expect(isSubscriptionPaywallActive()).toBe(false);
   });
 
   it('inactive when unset', () => {
@@ -93,173 +73,210 @@ describe('Paywall switch (single source: @tdarts/core isSubscriptionPaywallActiv
   });
 });
 
-describe('SubscriptionService quotas vs FEATURE_FLAGS (paywall off = no monthly cap, like UI)', () => {
+describe('Feature registry completeness', () => {
+  it('every FEATURE_KEY has a registry entry', () => {
+    for (const key of Object.values(FEATURE_KEYS)) {
+      expect(FEATURE_REGISTRY[key]).toBeDefined();
+    }
+  });
+
+  it('every registry entry has a valid envVar', () => {
+    for (const def of Object.values(FEATURE_REGISTRY)) {
+      expect(def.envVar).toMatch(/^NEXT_PUBLIC_ENABLE_/);
+    }
+  });
+
+  it('PREMIUM_TOURNAMENTS does not exist in registry or keys', () => {
+    expect((FEATURE_KEYS as Record<string, string>)['PREMIUM_TOURNAMENTS']).toBeUndefined();
+    expect(FEATURE_REGISTRY['PREMIUM_TOURNAMENTS' as keyof typeof FEATURE_REGISTRY]).toBeUndefined();
+  });
+});
+
+describe('Production env mirror (no ENABLE_ALL)', () => {
   let snap: Record<string, string | undefined>;
 
   beforeEach(async () => {
     snap = snapshotEnv();
-    await ClubModel.deleteMany({ name: /^matrix-quota-/ });
-    await TournamentModel.deleteMany({ tournamentId: /^matrix-quota-/ });
+    applyProdEnv();
+    await ClubModel.deleteMany({ name: /^ff-prod-/ });
   });
 
   afterEach(async () => {
-    await ClubModel.deleteMany({ name: /^matrix-quota-/ });
-    await TournamentModel.deleteMany({ tournamentId: /^matrix-quota-/ });
+    await ClubModel.deleteMany({ name: /^ff-prod-/ });
     restoreEnv(snap);
   });
 
-  it('paywall off: free club with 2 real tournaments in month still canCreate (matches disabled paywall UI)', async () => {
-    Reflect.deleteProperty(process.env, 'NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED');
+  it('ENABLE_ALL is NOT set', () => {
+    expect(process.env.NEXT_PUBLIC_ENABLE_ALL).toBeUndefined();
+  });
+
+  it('SOCKET enabled at env level', () => {
+    expect(FeatureFlagService.isEnvFeatureEnabled('SOCKET')).toBe(true);
+  });
+
+  it('LEAGUES enabled at env level', () => {
+    expect(FeatureFlagService.isEnvFeatureEnabled('LEAGUES')).toBe(true);
+  });
+
+  it('DETAILED_STATISTICS enabled at env level', () => {
+    expect(FeatureFlagService.isEnvFeatureEnabled('DETAILED_STATISTICS')).toBe(true);
+  });
+
+  it('LIVE_MATCH_FOLLOWING enabled at env level', () => {
+    expect(FeatureFlagService.isEnvFeatureEnabled('LIVE_MATCH_FOLLOWING')).toBe(true);
+  });
+
+  it('OAC_CREATION enabled at env level', () => {
+    expect(FeatureFlagService.isEnvFeatureEnabled('OAC_CREATION')).toBe(true);
+  });
+
+  it('paywall off: socket enabled for any club without liveMatchFollowing flag', async () => {
     const club = await ClubModel.create({
-      name: 'matrix-quota-free',
+      name: 'ff-prod-socket',
+      description: 'Test',
+      location: 'Test',
+      subscriptionModel: 'free',
+      featureFlags: { liveMatchFollowing: false, advancedStatistics: false },
+      admin: [],
+    });
+    await expect(FeatureFlagService.isSocketEnabled(club._id.toString())).resolves.toBe(true);
+  });
+
+  it('paywall off: leagues enabled for free club', async () => {
+    const club = await ClubModel.create({
+      name: 'ff-prod-leagues',
       description: 'Test',
       location: 'Test',
       subscriptionModel: 'free',
       admin: [],
     });
-    const startDate = new Date();
-    await TournamentModel.create(tournamentDoc(club._id, startDate, 'matrix-quota-a'));
-    await TournamentModel.create(tournamentDoc(club._id, startDate, 'matrix-quota-b'));
+    await expect(FeatureFlagService.isFeatureEnabled('LEAGUES', club._id.toString())).resolves.toBe(true);
+  });
+});
 
-    const check = await SubscriptionService.canCreateTournament(
-      club._id.toString(),
-      startDate,
-      false,
-      false
-    );
-    expect(check.canCreate).toBe(true);
-    expect(check.maxAllowed).toBe(-1);
+describe('Feature flags with paywall ON - tier-based entitlements', () => {
+  let snap: Record<string, string | undefined>;
+
+  beforeEach(async () => {
+    snap = snapshotEnv();
+    clearAllFeatureEnvs();
+    process.env.NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED = 'true';
+    process.env.NEXT_PUBLIC_ENABLE_LEAGUES = 'true';
+    process.env.NEXT_PUBLIC_ENABLE_SOCKET = 'true';
+    process.env.NEXT_PUBLIC_ENABLE_DETAILED_STATISTICS = 'true';
+    process.env.NEXT_PUBLIC_ENABLE_LIVE_MATCH_FOLLOWING = 'true';
+    await ClubModel.deleteMany({ name: /^ff-tier-/ });
   });
 
-  it('paywall on: basic tier blocked when monthly non-sandbox cap reached (subscription UI)', async () => {
-    process.env.NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED = 'true';
+  afterEach(async () => {
+    await ClubModel.deleteMany({ name: /^ff-tier-/ });
+    restoreEnv(snap);
+  });
+
+  it('free club cannot access leagues', async () => {
     const club = await ClubModel.create({
-      name: 'matrix-quota-basic-on',
+      name: 'ff-tier-free-leagues',
+      description: 'Test',
+      location: 'Test',
+      subscriptionModel: 'free',
+      admin: [],
+    });
+    await expect(FeatureFlagService.isFeatureEnabled('LEAGUES', club._id.toString())).resolves.toBe(false);
+  });
+
+  it('basic club can access leagues', async () => {
+    const club = await ClubModel.create({
+      name: 'ff-tier-basic-leagues',
       description: 'Test',
       location: 'Test',
       subscriptionModel: 'basic',
       admin: [],
     });
-    const startDate = new Date();
-    for (let i = 0; i < 3; i++) {
-      await TournamentModel.create(tournamentDoc(club._id, startDate, `matrix-quota-d${i}`));
-    }
+    await expect(FeatureFlagService.isFeatureEnabled('LEAGUES', club._id.toString())).resolves.toBe(true);
+  });
 
-    const check = await SubscriptionService.canCreateTournament(
-      club._id.toString(),
-      startDate,
-      false,
-      false
-    );
-    expect(check.canCreate).toBe(false);
-    expect(check.currentCount).toBe(3);
-    expect(check.maxAllowed).toBe(3);
+  it('free club cannot access socket (liveTracking not in free tier)', async () => {
+    const club = await ClubModel.create({
+      name: 'ff-tier-free-socket',
+      description: 'Test',
+      location: 'Test',
+      subscriptionModel: 'free',
+      admin: [],
+    });
+    await expect(FeatureFlagService.isSocketEnabled(club._id.toString())).resolves.toBe(false);
+  });
+
+  it('enterprise club can access socket', async () => {
+    const club = await ClubModel.create({
+      name: 'ff-tier-ent-socket',
+      description: 'Test',
+      location: 'Test',
+      subscriptionModel: 'enterprise',
+      admin: [],
+    });
+    await expect(FeatureFlagService.isSocketEnabled(club._id.toString())).resolves.toBe(true);
+  });
+
+  it('pro club can access detailed statistics with advancedStatistics flag', async () => {
+    const club = await ClubModel.create({
+      name: 'ff-tier-pro-stats',
+      description: 'Test',
+      location: 'Test',
+      subscriptionModel: 'pro',
+      featureFlags: { advancedStatistics: true, liveMatchFollowing: false },
+      admin: [],
+    });
+    await expect(FeatureFlagService.isFeatureEnabled('DETAILED_STATISTICS', club._id.toString())).resolves.toBe(true);
+  });
+
+  it('pro club without advancedStatistics flag cannot access detailed statistics', async () => {
+    const club = await ClubModel.create({
+      name: 'ff-tier-pro-stats-no',
+      description: 'Test',
+      location: 'Test',
+      subscriptionModel: 'pro',
+      featureFlags: { advancedStatistics: false, liveMatchFollowing: false },
+      admin: [],
+    });
+    await expect(FeatureFlagService.isFeatureEnabled('DETAILED_STATISTICS', club._id.toString())).resolves.toBe(false);
+  });
+
+  it('free club cannot access detailed statistics even with advancedStatistics flag', async () => {
+    const club = await ClubModel.create({
+      name: 'ff-tier-free-stats',
+      description: 'Test',
+      location: 'Test',
+      subscriptionModel: 'free',
+      featureFlags: { advancedStatistics: true, liveMatchFollowing: false },
+      admin: [],
+    });
+    await expect(FeatureFlagService.isFeatureEnabled('DETAILED_STATISTICS', club._id.toString())).resolves.toBe(false);
   });
 });
 
-describe('FeatureFlagService matrix (docs/architect/FEATURE_FLAGS.md)', () => {
+describe('Feature flags with missing env vars', () => {
   let snap: Record<string, string | undefined>;
-  let clubPaywallOnId: string;
-  let clubPaywallOffId: string;
 
-  beforeEach(async () => {
+  beforeEach(() => {
     snap = snapshotEnv();
-    process.env.NEXT_PUBLIC_ENABLE_ALL = 'false';
-
-    await ClubModel.deleteMany({ name: /^matrix-flag-/ });
-
-    const on = await ClubModel.create({
-      name: 'matrix-flag-on',
-      description: 'Test',
-      location: 'Test',
-      subscriptionModel: 'pro',
-      featureFlags: {
-        liveMatchFollowing: true,
-        advancedStatistics: true,
-        premiumTournaments: true,
-      },
-      admin: [],
-    });
-    clubPaywallOnId = on._id.toString();
-
-    const off = await ClubModel.create({
-      name: 'matrix-flag-off',
-      description: 'Test',
-      location: 'Test',
-      subscriptionModel: 'free',
-      featureFlags: {
-        liveMatchFollowing: false,
-        advancedStatistics: true,
-        premiumTournaments: true,
-      },
-      admin: [],
-    });
-    clubPaywallOffId = off._id.toString();
+    clearAllFeatureEnvs();
   });
 
-  afterEach(async () => {
-    await ClubModel.deleteMany({ name: /^matrix-flag-/ });
-    restoreEnv(snap);
+  afterEach(() => { restoreEnv(snap); });
+
+  it('SOCKET disabled when env var missing', () => {
+    expect(FeatureFlagService.isEnvFeatureEnabled('SOCKET')).toBe(false);
   });
 
-  it('paywall off + ENABLE_SOCKET: socket on for club without liveMatchFollowing (live page / UI)', async () => {
-    Reflect.deleteProperty(process.env, 'NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED');
-    process.env.NEXT_PUBLIC_ENABLE_SOCKET = 'true';
-    await expect(FeatureFlagService.isSocketEnabled(clubPaywallOffId)).resolves.toBe(true);
+  it('LEAGUES disabled when env var missing', () => {
+    expect(FeatureFlagService.isEnvFeatureEnabled('LEAGUES')).toBe(false);
   });
 
-  it('paywall on + ENABLE_SOCKET: socket requires liveMatchFollowing on club', async () => {
-    process.env.NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED = 'true';
-    process.env.NEXT_PUBLIC_ENABLE_SOCKET = 'true';
-    await expect(FeatureFlagService.isSocketEnabled(clubPaywallOnId)).resolves.toBe(true);
-
-    const noLive = await ClubModel.create({
-      name: 'matrix-flag-no-live',
-      description: 'Test',
-      location: 'Test',
-      subscriptionModel: 'pro',
-      featureFlags: {
-        liveMatchFollowing: false,
-        advancedStatistics: true,
-        premiumTournaments: true,
-      },
-      admin: [],
-    });
-    await expect(FeatureFlagService.isSocketEnabled(noLive._id.toString())).resolves.toBe(false);
+  it('OAC_CREATION defaults to true when env var missing', () => {
+    expect(FeatureFlagService.isEnvFeatureEnabled('OAC_CREATION')).toBe(true);
   });
 
-  it('paywall off + LEAGUES env: isFeatureEnabled true without paid tier', async () => {
-    Reflect.deleteProperty(process.env, 'NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED');
-    process.env.NEXT_PUBLIC_ENABLE_LEAGUES = 'true';
-    await expect(FeatureFlagService.isFeatureEnabled('LEAGUES', clubPaywallOffId)).resolves.toBe(true);
-  });
-
-  it('paywall on + LEAGUES env: free club denied', async () => {
-    process.env.NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED = 'true';
-    process.env.NEXT_PUBLIC_ENABLE_LEAGUES = 'true';
-    await expect(FeatureFlagService.isFeatureEnabled('LEAGUES', clubPaywallOffId)).resolves.toBe(false);
-    await expect(FeatureFlagService.isFeatureEnabled('LEAGUES', clubPaywallOnId)).resolves.toBe(true);
-  });
-
-  it('paywall off + PREMIUM_TOURNAMENTS: requires club premiumTournaments flag', async () => {
-    Reflect.deleteProperty(process.env, 'NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED');
-    process.env.NEXT_PUBLIC_ENABLE_PREMIUM_TOURNAMENTS = 'true';
-    await expect(FeatureFlagService.isFeatureEnabled('PREMIUM_TOURNAMENTS', clubPaywallOffId)).resolves.toBe(true);
-
-    const noPremium = await ClubModel.create({
-      name: 'matrix-flag-no-premium',
-      description: 'Test',
-      location: 'Test',
-      subscriptionModel: 'free',
-      featureFlags: {
-        liveMatchFollowing: false,
-        advancedStatistics: false,
-        premiumTournaments: false,
-      },
-      admin: [],
-    });
-    await expect(FeatureFlagService.isFeatureEnabled('PREMIUM_TOURNAMENTS', noPremium._id.toString())).resolves.toBe(
-      false
-    );
+  it('unknown feature returns false', () => {
+    expect(FeatureFlagService.isEnvFeatureEnabled('NONEXISTENT')).toBe(false);
   });
 });

@@ -3,5 +3,5 @@ export type SubscriptionEligibility = {
   errorMessage?: string;
   currentCount?: number;
   maxAllowed?: number;
-  planName?: string;
+  tierName?: string;
 };

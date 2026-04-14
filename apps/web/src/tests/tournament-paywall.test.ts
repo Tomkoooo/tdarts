@@ -34,8 +34,7 @@ describe('Tournament Paywall & OAC Limits', () => {
   });
 
   describe('Subscription Limits', () => {
-    it('should allow free tier to create 1 tournament per month', async () => {
-      // Create club with free subscription
+    it('should allow free tier to create up to 5 sandbox tournaments per month', async () => {
       const club = await ClubModel.create({
         name: 'Free Club',
         description: 'Test',
@@ -46,55 +45,27 @@ describe('Tournament Paywall & OAC Limits', () => {
 
       const startDate = new Date();
 
-      // First tournament should succeed (using sandbox as required by free tier)
       const check1 = await SubscriptionService.canCreateTournament(
         club._id.toString(),
         startDate,
-        true, // isSandbox: true
-        false  // not verified
+        true,
+        false
       );
       expect(check1.canCreate).toBe(true);
-      expect(check1.maxAllowed).toBe(1); // Free plan limit for sandboxes if we count them (though service skips counting, it returns maxAllowed)
+      expect(check1.maxAllowed).toBe(5);
 
-      // Create first tournament
-      await TournamentModel.create({
-        tournamentId: 'TEST1',
-        clubId: club._id,
-        tournamentPlayers: [],
-        groups: [],
-        knockout: [],
-        boards: [],
-        tournamentSettings: {
-          status: 'pending',
-          name: 'Test Tournament 1',
-          startDate,
-          maxPlayers: 16,
-          format: 'group',
-          startingScore: 501,
-          tournamentPassword: 'test',
-          boardCount: 1,
-          entryFee: 0,
-          location: 'Test',
-          type: 'amateur',
-          registrationDeadline: startDate
-        },
-        isSandbox: false,
-        verified: false
-      });
-
-      // Second tournament should fail
-      const check2 = await SubscriptionService.canCreateTournament(
+      // Free tier blocks live tournaments entirely
+      const checkLive = await SubscriptionService.canCreateTournament(
         club._id.toString(),
         startDate,
         false,
         false
       );
-      expect(check2.canCreate).toBe(false);
-      expect(check2.currentCount).toBe(0); // Early exit due to non-sandbox restriction returns 0
-      expect(check2.maxAllowed).toBe(0);   // Early exit returns 0
+      expect(checkLive.canCreate).toBe(false);
+      expect(checkLive.maxAllowed).toBe(0);
     });
 
-    it('should allow basic tier to create 2 tournaments per month', async () => {
+    it('should allow basic tier to create 2 live tournaments per month', async () => {
       const club = await ClubModel.create({
         name: 'Basic Club',
         description: 'Test',
@@ -105,36 +76,7 @@ describe('Tournament Paywall & OAC Limits', () => {
 
       const startDate = new Date();
 
-      // Create 2 tournaments
       for (let i = 0; i < 2; i++) {
-        await TournamentModel.create({
-          tournamentId: `TEST${i}`,
-          clubId: club._id,
-          tournamentPlayers: [],
-          groups: [],
-          knockout: [],
-          boards: [],
-          tournamentSettings: {
-            status: 'pending',
-            name: `Test Tournament ${i}`,
-            startDate,
-            maxPlayers: 16,
-            format: 'group',
-            startingScore: 501,
-            tournamentPassword: 'test',
-            boardCount: 1,
-            entryFee: 0,
-            location: 'Test',
-            type: 'amateur',
-            registrationDeadline: startDate
-          },
-          isSandbox: false,
-          verified: false
-        });
-      }
-
-      // Fourth tournament should fail (Basic tier limit is 3)
-      for (let i = 2; i < 3; i++) {
         await TournamentModel.create({
           tournamentId: `TEST${i}`,
           clubId: club._id,
@@ -168,8 +110,8 @@ describe('Tournament Paywall & OAC Limits', () => {
         false
       );
       expect(check.canCreate).toBe(false);
-      expect(check.currentCount).toBe(3);
-      expect(check.maxAllowed).toBe(3);
+      expect(check.currentCount).toBe(2);
+      expect(check.maxAllowed).toBe(2);
     });
 
     it('should allow enterprise tier unlimited tournaments', async () => {

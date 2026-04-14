@@ -42,7 +42,7 @@ export default function EditTournamentModal({
   const [subscriptionError, setSubscriptionError] = useState<{
     currentCount: number;
     maxAllowed: number;
-    planName: string;
+    tierName: string;
   } | null>(null);
   const reviewToastShown = useRef(false);
   const router = useRouter();
@@ -171,7 +171,7 @@ export default function EditTournamentModal({
               <p className="font-medium">{error}</p>
               {subscriptionError && (
                 <div className="mt-2 text-sm">
-                  <p>Jelenlegi csomag: <span className="font-semibold">{subscriptionError.planName}</span></p>
+                  <p>Jelenlegi csomag: <span className="font-semibold">{subscriptionError.tierName}</span></p>
                   <p>Havi versenyek: {subscriptionError.currentCount} / {subscriptionError.maxAllowed === -1 ? 'Korlátlan' : subscriptionError.maxAllowed}</p>
                 </div>
               )}

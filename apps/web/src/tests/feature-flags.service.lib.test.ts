@@ -66,14 +66,21 @@ describe('FeatureFlagService (paywall + socket)', () => {
     await expect(FeatureFlagService.isSocketEnabled(clubId)).resolves.toBe(false);
   });
 
-  it('when paywall active, socket uses liveMatchFollowing (not enterprise-only)', async () => {
+  it('when paywall active, enterprise tier with liveTracking can access socket', async () => {
     process.env.NEXT_PUBLIC_ENABLE_SOCKET = 'true';
     process.env.NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED = 'true';
-    mockClub({ featureFlags: { liveMatchFollowing: true }, subscriptionModel: 'basic' });
+    mockClub({ featureFlags: { liveMatchFollowing: true }, subscriptionModel: 'enterprise' });
     await expect(FeatureFlagService.isSocketEnabled(clubId)).resolves.toBe(true);
   });
 
-  it('when paywall active, socket off if liveMatchFollowing is false', async () => {
+  it('when paywall active, basic tier cannot access socket (liveTracking=false in tier)', async () => {
+    process.env.NEXT_PUBLIC_ENABLE_SOCKET = 'true';
+    process.env.NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED = 'true';
+    mockClub({ featureFlags: { liveMatchFollowing: true }, subscriptionModel: 'basic' });
+    await expect(FeatureFlagService.isSocketEnabled(clubId)).resolves.toBe(false);
+  });
+
+  it('when paywall active, pro tier cannot access socket (liveTracking=false in tier)', async () => {
     process.env.NEXT_PUBLIC_ENABLE_SOCKET = 'true';
     process.env.NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED = 'true';
     mockClub({ featureFlags: { liveMatchFollowing: false }, subscriptionModel: 'pro' });

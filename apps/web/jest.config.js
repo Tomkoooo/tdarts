@@ -9,6 +9,8 @@ module.exports = {
   moduleNameMapper: {
     '^@tdarts/core/subscription-paywall$':
       '<rootDir>/../../packages/core/src/lib/subscription-paywall.ts',
+    '^@tdarts/core/subscription-tiers$':
+      '<rootDir>/../../packages/core/src/lib/subscription-tiers.ts',
     '^@tdarts/core$': '<rootDir>/../../packages/core/src/index.ts',
     '^@tdarts/services$': '<rootDir>/../../packages/services/src/index.ts',
     '^@/database/services/(.*)$': '<rootDir>/../../packages/services/src/$1',

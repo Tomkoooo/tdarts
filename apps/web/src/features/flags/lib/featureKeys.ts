@@ -1,7 +1,6 @@
 export const FEATURE_KEYS = {
   LIVE_MATCH_FOLLOWING: 'LIVE_MATCH_FOLLOWING',
   ADVANCED_STATISTICS: 'ADVANCED_STATISTICS',
-  PREMIUM_TOURNAMENTS: 'PREMIUM_TOURNAMENTS',
   LEAGUES: 'LEAGUES',
   SOCKET: 'SOCKET',
   OAC_CREATION: 'OAC_CREATION',
@@ -15,8 +14,6 @@ const FEATURE_KEY_ALIASES: Record<string, FeatureKey> = {
   LIVEMATCHFOLLOWING: FEATURE_KEYS.LIVE_MATCH_FOLLOWING,
   ADVANCED_STATISTICS: FEATURE_KEYS.ADVANCED_STATISTICS,
   ADVANCEDSTATISTICS: FEATURE_KEYS.ADVANCED_STATISTICS,
-  PREMIUM_TOURNAMENTS: FEATURE_KEYS.PREMIUM_TOURNAMENTS,
-  PREMIUMTOURNAMENTS: FEATURE_KEYS.PREMIUM_TOURNAMENTS,
   LEAGUES: FEATURE_KEYS.LEAGUES,
   LEAGUESYSTEM: FEATURE_KEYS.LEAGUES,
   SOCKET: FEATURE_KEYS.SOCKET,
@@ -44,14 +41,12 @@ export function normalizeFeatureKey(featureName: string): FeatureKey | null {
   return FEATURE_KEY_ALIASES[normalizeLookupKey(raw)] ?? null;
 }
 
-export function toClubFeatureFlagKey(featureKey: FeatureKey): 'liveMatchFollowing' | 'advancedStatistics' | 'premiumTournaments' | null {
+export function toClubFeatureFlagKey(featureKey: FeatureKey): 'liveMatchFollowing' | 'advancedStatistics' | null {
   switch (featureKey) {
     case FEATURE_KEYS.LIVE_MATCH_FOLLOWING:
       return 'liveMatchFollowing';
     case FEATURE_KEYS.ADVANCED_STATISTICS:
       return 'advancedStatistics';
-    case FEATURE_KEYS.PREMIUM_TOURNAMENTS:
-      return 'premiumTournaments';
     case FEATURE_KEYS.LEAGUES:
     case FEATURE_KEYS.SOCKET:
     case FEATURE_KEYS.OAC_CREATION:

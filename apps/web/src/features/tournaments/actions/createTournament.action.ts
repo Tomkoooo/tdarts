@@ -5,7 +5,7 @@ import { revalidateTag } from 'next/cache';
 import { TournamentService, ClubService, SubscriptionService, LeagueService } from '@tdarts/services';
 import { z } from 'zod';
 import { parseIsoDateInput } from '@/lib/date-time';
-import { evaluateFeatureAccess } from '@/features/flags/lib/featureAccess';
+import { authorizeUserResult } from '@/features/auth/lib/authorizeUser';
 import { isSubscriptionPaywallActive } from '@/features/flags/lib/subscriptionPaywall';
 import { BadRequestError } from '@/middleware/errorHandle';
 import { withTelemetry } from '@/shared/lib/withTelemetry';
@@ -74,15 +74,16 @@ export async function createTournamentAction(input: CreateTournamentInput): Prom
     'tournaments.createTournament',
     async (params: CreateTournamentInput) => {
       const { clubId, request } = params;
-      const accessResult = await evaluateFeatureAccess({
-        request,
-        featureName: 'PREMIUM_TOURNAMENTS',
-        clubId,
-        requiresSubscription: true,
-        permissionCheck: async ({ userId }) => AuthorizationService.checkAdminOrModerator(userId, clubId),
-      });
-      if (!accessResult.ok) {
-        return accessResult;
+
+      const authResult = await authorizeUserResult(request ? { request } : undefined);
+      if (!authResult.ok) {
+        return { ok: false, code: 'LOGIN_REQUIRED', status: 401, message: authResult.message } satisfies GuardFailureResult;
+      }
+      const userId = authResult.data.userId;
+
+      const hasPermission = await AuthorizationService.checkAdminOrModerator(userId, clubId);
+      if (!hasPermission) {
+        return { ok: false, code: 'PERMISSION_REQUIRED', status: 403, message: 'Insufficient permissions' } satisfies GuardFailureResult;
       }
 
       const club = await ClubService.getClub(clubId);
@@ -97,7 +98,7 @@ export async function createTournamentAction(input: CreateTournamentInput): Prom
       const payload = parsedPayload.data;
 
       if (payload.billingInfo && payload.saveBillingInfo) {
-        await ClubService.updateClub(clubId, accessResult.data.userId, {
+        await ClubService.updateClub(clubId, userId, {
           billingInfo: payload.billingInfo,
         } as Record<string, unknown>);
       }
@@ -240,7 +241,7 @@ export async function createTournamentAction(input: CreateTournamentInput): Prom
           await LeagueService.attachTournamentToLeague(
             payload.leagueId,
             newTournament._id.toString(),
-            accessResult.data.userId
+            userId
           );
         } catch (error) {
           console.error('Error attaching tournament to league:', error);

@@ -5,76 +5,49 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Badge } from '@/components/ui/Badge';
 import { cn } from '@/lib/utils';
 import { useTranslations } from 'next-intl';
+import { TIER_CONFIG, type TierId } from '@tdarts/core/subscription-tiers';
+
+const TIER_META: Record<TierId, {
+  priceLabel: string;
+  periodKey: 'period_alt' | 'period';
+  nameKey: string;
+  descriptionKey: string;
+  tournamentTextKey: string;
+  popular: boolean;
+  icon: typeof IconStar;
+  variant: 'outline' | 'default';
+}> = {
+  free: { priceLabel: '0 Ft', periodKey: 'period_alt', nameKey: 'packages.free.name', descriptionKey: 'packages.free.description', tournamentTextKey: 'features.one_tournament', popular: false, icon: IconStar, variant: 'outline' },
+  basic: { priceLabel: '0', periodKey: 'period', nameKey: 'packages.basic.name', descriptionKey: 'packages.basic.description', tournamentTextKey: 'features.two_tournaments', popular: false, icon: IconTrophy, variant: 'outline' },
+  pro: { priceLabel: '0', periodKey: 'period', nameKey: 'packages.pro.name', descriptionKey: 'packages.pro.description', tournamentTextKey: 'features.four_tournaments', popular: true, icon: IconCrown, variant: 'default' },
+  enterprise: { priceLabel: '0', periodKey: 'period', nameKey: 'packages.enterprise.name', descriptionKey: 'packages.enterprise.description', tournamentTextKey: 'features.unlimited_tournaments', popular: false, icon: IconInfinity, variant: 'outline' },
+};
+
+const TIER_ORDER: TierId[] = ['free', 'basic', 'pro', 'enterprise'];
 
 const PricingSection = () => {
   const t = useTranslations('Pricing');
 
-  const packages = [
-    {
-      name: t('packages.free.name'),
-      price: '0 Ft',
-      period: t('period_alt'),
-      description: t('packages.free.description'),
+  const packages = TIER_ORDER.map((tierId) => {
+    const tier = TIER_CONFIG[tierId];
+    const meta = TIER_META[tierId];
+    return {
+      name: t(meta.nameKey),
+      price: meta.priceLabel,
+      period: meta.periodKey === 'period_alt' ? t('period_alt') : ` ${t('period')}`,
+      description: t(meta.descriptionKey),
       features: [
-        { text: t('features.one_tournament'), included: true },
+        { text: t(meta.tournamentTextKey), included: true },
         { text: t('features.unlimited_users'), included: true },
-        { text: t('features.live_tracking'), included: false },
-        { text: t('features.league_start'), included: false },
-        { text: t('features.detailed_stats'), included: false },
+        { text: t('features.live_tracking'), included: tier.features.liveTracking },
+        { text: t('features.league_start'), included: tier.features.leagues },
+        { text: t('features.detailed_stats'), included: tier.features.detailedStatistics },
       ],
-      popular: false,
-      icon: IconStar,
-      variant: 'outline' as const
-    },
-    {
-      name: t('packages.basic.name'),
-      price: '0',
-      period: ` ${t('period')}`,
-      description: t('packages.basic.description'),
-      features: [
-        { text: t('features.two_tournaments'), included: true },
-        { text: t('features.unlimited_users'), included: true },
-        { text: t('features.live_tracking'), included: false },
-        { text: t('features.league_start'), included: true },
-        { text: t('features.detailed_stats'), included: false },
-      ],
-      popular: false,
-      icon: IconTrophy,
-      variant: 'outline' as const
-    },
-    {
-      name: t('packages.pro.name'),
-      price: '0',
-      period: ` ${t('period')}`,
-      description: t('packages.pro.description'),
-      features: [
-        { text: t('features.four_tournaments'), included: true },
-        { text: t('features.unlimited_users'), included: true },
-        { text: t('features.live_tracking'), included: false },
-        { text: t('features.league_start'), included: true },
-        { text: t('features.detailed_stats'), included: true },
-      ],
-      popular: true,
-      icon: IconCrown,
-      variant: 'default' as const
-    },
-    {
-      name: t('packages.enterprise.name'),
-      price: '0',
-      period: ` ${t('period')}`,
-      description: t('packages.enterprise.description'),
-      features: [
-        { text: t('features.unlimited_tournaments'), included: true },
-        { text: t('features.unlimited_users'), included: true },
-        { text: t('features.live_tracking'), included: true },
-        { text: t('features.league_start'), included: true },
-        { text: t('features.detailed_stats'), included: true },
-      ],
-      popular: false,
-      icon: IconInfinity,
-      variant: 'outline' as const
-    }
-  ];
+      popular: meta.popular,
+      icon: meta.icon,
+      variant: meta.variant,
+    };
+  });
 
   return (
     <section id="pricing" className="py-20 sm:py-32 px-4 sm:px-6 lg:px-8 relative">

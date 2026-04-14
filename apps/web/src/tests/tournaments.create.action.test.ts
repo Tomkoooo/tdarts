@@ -12,8 +12,8 @@ jest.mock('@/lib/szamlazz', () => ({
   SzamlazzService: { createOacInvoice: jest.fn() },
 }));
 
-jest.mock('@/features/flags/lib/featureAccess', () => ({
-  evaluateFeatureAccess: jest.fn(),
+jest.mock('@/features/auth/lib/authorizeUser', () => ({
+  authorizeUserResult: jest.fn(),
 }));
 
 jest.mock('@tdarts/services', () => ({
@@ -37,7 +37,7 @@ jest.mock('@/features/tournaments/lib/tournamentCreation.db', () => ({
 }));
 
 import { createTournamentAction } from '@/features/tournaments/actions/createTournament.action';
-import { evaluateFeatureAccess } from '@/features/flags/lib/featureAccess';
+import { authorizeUserResult } from '@/features/auth/lib/authorizeUser';
 import { ClubService, SubscriptionService } from '@tdarts/services';
 import {
   createPendingTournament,
@@ -60,10 +60,8 @@ describe('createTournamentAction', () => {
   });
 
   it('returns auth denial before tournament orchestration', async () => {
-    (evaluateFeatureAccess as jest.Mock).mockResolvedValue({
+    (authorizeUserResult as jest.Mock).mockResolvedValue({
       ok: false,
-      code: 'LOGIN_REQUIRED',
-      status: 401,
       message: 'Unauthorized',
     });
 
@@ -84,9 +82,10 @@ describe('createTournamentAction', () => {
   });
 
   it('calls getClub before Stripe checkout when creating a verified (OAC) tournament', async () => {
-    (evaluateFeatureAccess as jest.Mock).mockResolvedValue({
+    (authorizeUserResult as jest.Mock).mockResolvedValue({
       ok: true,
       data: { userId: 'user-1' },
+      message: '',
     });
 
     const result = await createTournamentAction({

@@ -44,7 +44,6 @@ export interface Club {
   featureFlags?: {
     liveMatchFollowing: boolean;
     advancedStatistics: boolean;
-    premiumTournaments: boolean;
   };
   createdAt: Date;
   updatedAt: Date;

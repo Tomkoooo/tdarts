@@ -123,14 +123,6 @@ export async function addTournamentPlayerAction(input: { request: NextRequest; c
       }
 
       const { user, canModerate, tournament } = await getAuthContext(payload.code, token);
-      const eligibilityResult = await assertEligibilityResult({
-        featureName: 'PREMIUM_TOURNAMENTS',
-        clubId: tournament.clubId?.toString(),
-        allowPaidOverride: true,
-      });
-      if (!eligibilityResult.ok) {
-        return eligibilityResult;
-      }
 
       const parsedBody = addTournamentPlayerBodySchema.parse(await payload.request.json());
       const { playerId, userRef, name, members, partnerEmail } = parsedBody;
@@ -340,15 +332,6 @@ export async function updateTournamentPlayerStatusAction(input: { request: NextR
       const { canModerate, tournament } = await getAuthContext(payload.code, token);
       if (!canModerate) return unauthorized('Forbidden', 403);
 
-      const eligibilityResult = await assertEligibilityResult({
-        featureName: 'PREMIUM_TOURNAMENTS',
-        clubId: tournament.clubId?.toString(),
-        allowPaidOverride: true,
-      });
-      if (!eligibilityResult.ok) {
-        return eligibilityResult;
-      }
-
       const { playerId, status } = updateTournamentPlayerStatusBodySchema.parse(await payload.request.json());
       const success = await TournamentService.updateTournamentPlayerStatus(payload.code, playerId, status);
       return { success };
@@ -375,14 +358,6 @@ export async function removeTournamentPlayerAction(input: { request: NextRequest
       if (!token) return unauthorized('Unauthorized', 401);
 
       const { user, canModerate, tournament } = await getAuthContext(payload.code, token);
-      const eligibilityResult = await assertEligibilityResult({
-        featureName: 'PREMIUM_TOURNAMENTS',
-        clubId: tournament.clubId?.toString(),
-        allowPaidOverride: true,
-      });
-      if (!eligibilityResult.ok) {
-        return eligibilityResult;
-      }
 
       const { playerId } = removeTournamentPlayerBodySchema.parse(await payload.request.json());
       const canDeleteSelf = await isSelfPlayer(user._id.toString(), playerId);

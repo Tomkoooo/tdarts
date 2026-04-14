@@ -66,6 +66,9 @@ export type { EntryFeeCurrency } from './lib/entry-fee-currency';
 
 export { isSubscriptionPaywallActive } from './lib/subscription-paywall';
 
+export { TIER_CONFIG, getTierConfig } from './lib/subscription-tiers';
+export type { TierId, TierLimits, TierFeatures, TierDefinition } from './lib/subscription-tiers';
+
 // Club location completeness
 export {
   clubHasCorrectAddress,

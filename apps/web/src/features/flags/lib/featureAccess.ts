@@ -1,8 +1,9 @@
 import { AuthorizationService } from '@/database/services/authorization.service';
 import { authorizeUserResult } from '@/features/auth/lib/authorizeUser';
-import { FEATURE_KEYS, normalizeFeatureKey } from '@/features/flags/lib/featureKeys';
+import { normalizeFeatureKey } from '@/features/flags/lib/featureKeys';
 import { FeatureFlagService } from '@/features/flags/lib/featureFlags';
 import { isSubscriptionPaywallActive } from '@/features/flags/lib/subscriptionPaywall';
+import { PAYWALLED_FEATURE_KEYS } from '@/features/flags/lib/featureRegistry';
 import { GuardFailureResult, GuardResult } from '@/shared/lib/telemetry/types';
 
 type FeatureAccessParams = {
@@ -89,9 +90,4 @@ export async function evaluateFeatureAccess(params: FeatureAccessParams): Promis
   };
 }
 
-export const PAYWALLED_FEATURES = new Set<string>([
-  FEATURE_KEYS.LEAGUES,
-  FEATURE_KEYS.PREMIUM_TOURNAMENTS,
-  FEATURE_KEYS.SOCKET,
-  FEATURE_KEYS.DETAILED_STATISTICS,
-]);
+export const PAYWALLED_FEATURES = PAYWALLED_FEATURE_KEYS;

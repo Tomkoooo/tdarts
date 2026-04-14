@@ -26,7 +26,7 @@ describe('feature eligibility paid override', () => {
     process.env.NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED = 'false';
 
     const result = await assertEligibilityResult({
-      featureName: 'PREMIUM_TOURNAMENTS',
+      featureName: 'LEAGUES',
       clubId: 'club-1',
       allowPaidOverride: true,
     });
@@ -46,7 +46,7 @@ describe('feature eligibility paid override', () => {
     delete process.env.NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED;
 
     const result = await assertEligibilityResult({
-      featureName: 'PREMIUM_TOURNAMENTS',
+      featureName: 'LEAGUES',
       clubId: 'club-1',
       allowPaidOverride: true,
     });
@@ -69,7 +69,7 @@ describe('feature eligibility paid override', () => {
     (FeatureFlagService.isFeatureEnabled as jest.Mock).mockResolvedValue(false);
 
     const result = await assertEligibilityResult({
-      featureName: 'PREMIUM_TOURNAMENTS',
+      featureName: 'LEAGUES',
       clubId: 'club-1',
       allowPaidOverride: true,
     });
@@ -78,7 +78,7 @@ describe('feature eligibility paid override', () => {
       ok: false,
       code: 'FEATURE_DISABLED',
       status: 403,
-      message: 'Feature disabled: PREMIUM_TOURNAMENTS',
+      message: 'Feature disabled: LEAGUES',
     });
   });
 
@@ -95,8 +95,8 @@ describe('feature eligibility paid override', () => {
     process.env.NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED = 'true';
     process.env.NEXT_PUBLIC_ENABLE_ALL = 'false';
     (FeatureFlagService.isFeatureEnabled as jest.Mock).mockResolvedValue(false);
-    await expect(assertEligibility({ featureName: 'PREMIUM_TOURNAMENTS', clubId: 'club-1' })).rejects.toThrow(
-      'Feature disabled: PREMIUM_TOURNAMENTS'
+    await expect(assertEligibility({ featureName: 'LEAGUES', clubId: 'club-1' })).rejects.toThrow(
+      'Feature disabled: LEAGUES'
     );
   });
 });

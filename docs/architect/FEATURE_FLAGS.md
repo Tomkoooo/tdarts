@@ -1,189 +1,98 @@
-# Feature Flag Rendszer
+# Feature Flag & Subscription Tier System
 
-## Áttekintés
+## Architecture Overview
 
-A tDarts platform feature flag rendszere lehetővé teszi a funkciók dinamikus engedélyezését/tiltását környezet és előfizetési szint alapján.
+Two separate systems control access:
 
-### Entitlement vs. subscription kvóták (két külön réteg)
+1. **Feature flags** -- toggle product features (socket, leagues, statistics) via env vars + tier entitlements
+2. **Subscription quotas** -- limit tournament creation per month based on club tier + OAC weekly limit based on `club.verified`
 
-Ne keverjük össze a két ellenőrzést:
+These are independent. Tournament creation is NOT behind a feature flag.
 
-1. **Entitlement (jogosultság / feature flag)** — „Használhatja-e a klub ezt a funkciót?” (ENV `NEXT_PUBLIC_ENABLE_*`, klub `featureFlags`, paywall mellett tier). Web: `FeatureFlagService`, `evaluateFeatureAccess`, kliens hookok.
-2. **Subscription kvóták (használat / limit)** — „Hány verseny hozható létre havonta, sandbox vs. éles, OAC szabályok?” Csak akkor futnak, ha a paywall aktív. Implementáció: `@tdarts/services` `SubscriptionService.canCreateTournament` / `canUpdateTournament`.
+## Single Source of Truth: `TIER_CONFIG`
 
-A paywall kapcsoló **egy** helyen van definiálva: `isSubscriptionPaywallActive()` a [`@tdarts/core/subscription-paywall`](../../packages/core/src/lib/subscription-paywall.ts) modulban (`NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED === 'true'`). A web a [`subscriptionPaywall.ts`](../../apps/web/src/features/flags/lib/subscriptionPaywall.ts) fájlon keresztül ezt a **subpath**-ot exportálja (ne a `@tdarts/core` barrel-t: kliens komponensek behúznák a mailer/nodemailer láncot és elrontják a Next buildet).
+Defined in `packages/core/src/lib/subscription-tiers.ts`. Every tier's limits and feature entitlements come from here.
 
-Ha a paywall **ki**, kvóták nem érvényesülnek; versenylétrehozásnál a [`createTournament.action.ts`](../../apps/web/src/features/tournaments/actions/createTournament.action.ts) nem is hívja a limit ellenőrzést.
+| Tier       | Live/month | Sandbox/month | Leagues | Live Tracking | Detailed Stats |
+|------------|-----------|---------------|---------|---------------|----------------|
+| free       | 0         | 5             | no      | no            | no             |
+| basic      | 2         | unlimited     | yes     | no            | no             |
+| pro        | 4         | unlimited     | yes     | no            | yes            |
+| enterprise | unlimited | unlimited     | yes     | yes           | yes            |
 
-### Automatikus ellenőrzés (tesztek)
+Consumers: `SubscriptionService`, `FeatureFlagService`, `PricingSection.tsx`.
 
-A dokumentált szabályok és a UI közötti eltérések elkerülésére:
+## Tournament Creation Gating
 
-- [`apps/web/src/tests/feature-flags-subscription.matrix.lib.test.ts`](../../apps/web/src/tests/feature-flags-subscription.matrix.lib.test.ts) — `isSubscriptionPaywallActive`, valós `SubscriptionService` kvóták (paywall ki/be), `FeatureFlagService` mátrix (socket, ligák, premium).
-- [`apps/web/src/tests/createTournament.subscription-gate.lib.test.ts`](../../apps/web/src/tests/createTournament.subscription-gate.lib.test.ts) — `createTournamentAction` **nem mockolja** a `SubscriptionService`-t; ellenőrzi, hogy paywall ki esetén nem fut a havi limit hívás.
+Tournament creation uses auth + subscription quotas, NOT feature flags.
 
-Futtatás: `pnpm --filter web test:qa:unit` (tartalmazza a `*.lib.test.ts` fájlokat) vagy a `web` csomag `test` scriptje a fenti mátrix + gate teszteket is lefuttatja.
+Flow:
+1. **Auth + permission** -- user must be admin/moderator of the club
+2. **Subscription quota** (only when `NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED=true`):
+   - Free tier: sandbox only (max 5/month), live blocked
+   - Basic: 2 live/month, unlimited sandbox
+   - Pro: 4 live/month, unlimited sandbox
+   - Enterprise: unlimited
+3. **OAC/verified** -- based on `club.verified === true` (NOT tier), max 1 per week (Mon–Sat)
 
-## Konfiguráció
+OAC tournaments do not count toward live or sandbox monthly limits.
+
+## Feature Flag System
 
 ### Environment Variables
 
-A következő environment változókat lehet használni:
+Each feature has an env var defined in the feature registry (`apps/web/src/features/flags/lib/featureRegistry.ts`):
 
-```env
-# Ha true, akkor minden feature elérhető (fejlesztői mód)
-NEXT_PUBLIC_ENABLE_ALL=false
+| Feature              | Env Var                                  | Default |
+|----------------------|------------------------------------------|---------|
+| SOCKET               | `NEXT_PUBLIC_ENABLE_SOCKET`              | false   |
+| LIVE_MATCH_FOLLOWING | `NEXT_PUBLIC_ENABLE_LIVE_MATCH_FOLLOWING` | false   |
+| LEAGUES              | `NEXT_PUBLIC_ENABLE_LEAGUES`             | false   |
+| DETAILED_STATISTICS  | `NEXT_PUBLIC_ENABLE_DETAILED_STATISTICS`  | false   |
+| ADVANCED_STATISTICS  | `NEXT_PUBLIC_ENABLE_ADVANCED_STATISTICS`  | false   |
+| OAC_CREATION         | `NEXT_PUBLIC_ENABLE_OAC_CREATION`        | true    |
 
-# Socket kapcsolat engedélyezése
+`NEXT_PUBLIC_ENABLE_ALL=true` bypasses all individual env checks (dev only).
+
+### Paywall Off (NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED != 'true')
+
+When the paywall is off, each feature's `paywallOffBehavior` from the registry applies:
+- `allow` -- feature is available to everyone (SOCKET, LEAGUES, LIVE_MATCH_FOLLOWING, OAC_CREATION)
+- `check_club_flag` -- still checks `club.featureFlags` (DETAILED_STATISTICS, ADVANCED_STATISTICS)
+
+### Paywall On
+
+When the paywall is on, features check `TIER_CONFIG[club.subscriptionModel].features`:
+- If the tier doesn't include the feature entitlement, access is denied
+- If the feature also has a `clubFlagKey`, the club must have that flag set to `true`
+
+### Production Env Vars (.env.prod)
+
+```
+NEXT_PUBLIC_ENABLE_LEAGUES=true
 NEXT_PUBLIC_ENABLE_SOCKET=true
-
-# Live match following engedélyezése
+NEXT_PUBLIC_ENABLE_OAC_CREATION=true
+NEXT_PUBLIC_ENABLE_DETAILED_STATISTICS=true
 NEXT_PUBLIC_ENABLE_LIVE_MATCH_FOLLOWING=true
-
-# Advanced statistics engedélyezése
-NEXT_PUBLIC_ENABLE_ADVANCED_STATISTICS=true
-
-# Premium tournaments engedélyezése
-NEXT_PUBLIC_ENABLE_PREMIUM_TOURNAMENTS=true
-
-# Előfizetéses / paywall réteg — csak explicit `true` esetén aktív (billinggel egyezően).
-# Hiányzó, üres vagy `false` értéknél nincs subscription-tier ellenőrzés.
 NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED=false
 ```
 
-### Adatbázis alapú flag-ek
+## Adding a New Feature
 
-A Club modellben a következő mezők találhatók:
+1. Add the key to `FEATURE_KEYS` in `featureKeys.ts`
+2. Add a `FeatureDefinition` entry in `featureRegistry.ts` (env var, tier entitlement, club flag, paywall-off behavior)
+3. If the feature is tier-gated, add it to `TierFeatures` in `subscription-tiers.ts` and set values per tier
+4. Add the env var to `.env.prod` and `.env`
+5. Add tests in `feature-flags-subscription.matrix.lib.test.ts`
 
-```typescript
-interface Club {
-  subscriptionModel: 'free' | 'basic' | 'pro' | 'enterprise';
-  featureFlags: {
-    liveMatchFollowing: boolean;
-    advancedStatistics: boolean;
-    premiumTournaments: boolean;
-  };
-}
-```
+## Adding a New Tier
 
-## Használat
+1. Add the tier to `TierId` union and `TIER_CONFIG` in `subscription-tiers.ts`
+2. Add to club model's `subscriptionModel` enum
+3. Add to `TIER_META` in `PricingSection.tsx`
+4. Add tests in `subscription-tiers.test.ts`
 
-### Frontend Hook-ok
+## Tests
 
-```typescript
-import { useFeatureFlag, useSocketFeature } from '@/hooks/useFeatureFlag';
-
-// Általános feature flag
-const { isEnabled, isLoading, error } = useFeatureFlag('liveMatchFollowing', clubId);
-
-// Socket feature specifikus
-const { isSocketEnabled, isLoading, error } = useSocketFeature(clubId);
-```
-
-### Backend Service
-
-```typescript
-import { FeatureFlagService } from '@/features/flags/lib/featureFlags';
-
-// Feature flag ellenőrzés
-const enabled = await FeatureFlagService.isFeatureEnabled('liveMatchFollowing', clubId);
-
-// Socket feature ellenőrzés
-const socketEnabled = await FeatureFlagService.isSocketEnabled(clubId);
-```
-
-## Feature Flag Logika
-
-### Általános Logika
-
-A feature flag-ek a következő sorrendben ellenőrződnek:
-
-1. **ENV alapú ellenőrzés**: Ha a megfelelő `NEXT_PUBLIC_ENABLE_*` nincs `true`-ra állítva, a feature tiltott (`NEXT_PUBLIC_ENABLE_ALL=true` felülírja).
-2. **Paywall / subscription tier**: Csak ha `NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED=true`, akkor lépnek életbe az előfizetési szinthez kötött szabályok (pl. ligák, detailed statistics).
-3. **Klub feature flag-ek**: Paywall nélkül is a klub `featureFlags` mezője szűr (pl. `liveMatchFollowing`, `premiumTournaments`); paywall mellett ezek és/vagy a `subscriptionModel` együtt érvényesülnek a feature-típustól függően.
-
-### Detailed Statistics Feature
-
-A `detailedStatistics` feature a következő logika szerint működik:
-
-1. **ENV ki**: tiltott.
-2. **Paywall ki** (`NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED` nem `true`): engedélyezett, ha `club.featureFlags.advancedStatistics === true`.
-3. **Paywall be**: engedélyezett, ha a klub előfizetése nem `free` (tier alapú szabály).
-
-### Live Match Following Feature
-
-A `liveMatchFollowing` feature a következő logika szerint működik:
-
-1. **ENV ki**: tiltott.
-2. **Paywall ki**: elég a `NEXT_PUBLIC_ENABLE_LIVE_MATCH_FOLLOWING`; klub flag nem szűr (lásd socket szekció).
-3. **Paywall be**: `NEXT_PUBLIC_ENABLE_LIVE_MATCH_FOLLOWING` mellett a klub `liveMatchFollowing` flagje kell legyen `true`.
-
-### Socket Feature
-
-A socket kapcsolat a következő logika szerint működik:
-
-1. **NEXT_PUBLIC_ENABLE_ALL = true**: engedélyezett.
-2. **NEXT_PUBLIC_ENABLE_SOCKET = false**: tiltott.
-3. **Paywall be** (`NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED=true`): `NEXT_PUBLIC_ENABLE_SOCKET=true` mellett a klub `featureFlags.liveMatchFollowing` legyen `true`.
-4. **Paywall ki**: elég a globális socket ENV; a klub `liveMatchFollowing` flagje nem szűr (az előfizetéses upsellhez maradt, ha a paywall aktív).
-
-## Subscription Model Logika
-
-A subscription model ellenőrzés a következő logika szerint működik:
-
-1. **`NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED` nem `true`** (hiányzik, `false`, stb.): nincs subscription-tier paywall; a feature-ekre érvényes a megfelelő `NEXT_PUBLIC_ENABLE_*`, és (ahol van) klub flag — **kivétel**: élő követés / socket paywall nélkül csak ENV alapú (lásd fent).
-2. **NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED=true**: bekapcsolt paywall — a feature-típus szerint `subscriptionModel` és/vagy klub flag-ek szűrnek.
-
-### Subscription Csomagok
-
-- **free**: 1 verseny/hó
-- **basic**: 2 verseny/hó  
-- **pro**: 4 verseny/hó
-- **enterprise**: Korlátlan verseny/hó
-
-### Ellenőrzés Logika
-
-A rendszer a torna start date-je alapján határozza meg, hogy melyik hónaphoz tartozik a verseny, és ellenőrzi, hogy a klub nem lépte-e túl a havi limitet.
-
-## API Endpoint-ok
-
-### Feature Flag Ellenőrzés
-```
-GET /api/feature-flags/check?feature=liveMatchFollowing&clubId=123
-```
-
-### Socket Feature Ellenőrzés
-```
-GET /api/feature-flags/socket?clubId=123
-```
-
-## Implementáció példák
-
-### MatchGame komponens
-
-```typescript
-const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, clubId }) => {
-  const { socket, isConnected, emit } = useSocket({ 
-    matchId: match._id, 
-    clubId 
-  });
-
-  // Socket csak akkor működik, ha a feature flag engedélyezett
-  useEffect(() => {
-    if (!isConnected) return;
-    
-    emit('set-match-players', {
-      matchId: match._id,
-      player1Id: match.player1.playerId._id,
-      player2Id: match.player2.playerId._id
-    });
-  }, [isConnected, match._id, match.player1.playerId._id, match.player2.playerId._id, emit]);
-};
-```
-
-## Jövőbeli bővítések
-
-- Admin interface a feature flag-ek kezeléséhez
-- Cache rendszer a teljesítmény javításához
-- A/B tesztelés támogatása
-- Feature flag használat statisztikák 
+- `subscription-tiers.test.ts` -- tier config integrity, per-tier create/update limits, sandbox limits, OAC weekly limit
+- `feature-flags-subscription.matrix.lib.test.ts` -- feature registry completeness, production env mirror, tier-based entitlements, missing env var handling

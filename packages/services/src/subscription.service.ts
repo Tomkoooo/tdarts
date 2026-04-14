@@ -3,94 +3,21 @@ import { ClubModel } from '@tdarts/core';
 import { BadRequestError } from '@tdarts/core';
 import { TournamentModel } from '@tdarts/core';
 import { isSubscriptionPaywallActive } from '@tdarts/core/subscription-paywall';
-
-export interface SubscriptionPlan {
-  id: string;
-  name: string;
-  monthlyTournaments: number; // -1 for unlimited
-  allowNonSandbox: boolean;
-  allowVerified: boolean;
-  features: string[];
-}
-
-export const SUBSCRIPTION_PLANS: Record<string, SubscriptionPlan> = {
-  free: {
-    id: 'free',
-    name: 'Ingyenes',
-    monthlyTournaments: 1,
-    allowNonSandbox: false,
-    allowVerified: false,
-    features: ['1 verseny / hó', 'Csak Sandbox versenyek']
-  },
-  basic: {
-    id: 'basic',
-    name: 'Basic',
-    monthlyTournaments: 3,
-    allowNonSandbox: true,
-    allowVerified: false,
-    features: ['3 verseny / hó', 'Sandbox & Valódi versenyek']
-  },
-  pro: {
-    id: 'pro',
-    name: 'Pro',
-    monthlyTournaments: 10,
-    allowNonSandbox: true,
-    allowVerified: true,
-    features: ['10 verseny / hó', 'Sandbox & Valódi versenyek', 'OAC versenyek engedélyezése']
-  },
-  enterprise: {
-    id: 'enterprise',
-    name: 'Enterprise',
-    monthlyTournaments: -1,
-    allowNonSandbox: true,
-    allowVerified: true,
-    features: ['Korlátlan havi verseny', 'Korlátlan felhasználó', 'Elő meccs követés', 'Liga indítási lehetőség', 'Részletes leg statisztikák']
-  }
-};
+import { getTierConfig } from '@tdarts/core/subscription-tiers';
+import type { TierDefinition } from '@tdarts/core/subscription-tiers';
 
 export class SubscriptionService {
-  /**
-   * Get the subscription plan for a club
-   */
-  static async getClubSubscriptionPlan(clubId: string): Promise<SubscriptionPlan> {
-    try {
-      await connectMongo();
-      const club = await ClubModel.findById(clubId);
-      
-      if (!club) {
-        throw new BadRequestError('Club not found', 'club', {
-          clubId
-        });
-      }
-
-      // Get subscription plan from database
-      const subscriptionModel = club.subscriptionModel || 'free';
-      
-      // Map database values to subscription plans
-      switch (subscriptionModel) {
-        case 'basic':
-          return SUBSCRIPTION_PLANS.basic;
-        case 'pro':
-          return SUBSCRIPTION_PLANS.pro;
-        case 'enterprise':
-          return SUBSCRIPTION_PLANS.enterprise;
-        case 'free':
-        default:
-          return SUBSCRIPTION_PLANS.free;
-      }
-    } catch (error) {
-      console.error('Error getting club subscription plan:', error);
-      return SUBSCRIPTION_PLANS.free;
+  static async getClubTier(clubId: string): Promise<TierDefinition> {
+    await connectMongo();
+    const club = await ClubModel.findById(clubId);
+    if (!club) {
+      throw new BadRequestError('Club not found', 'club', { clubId });
     }
+    return getTierConfig(club.subscriptionModel || 'free');
   }
 
-  /**
-   * Check if a club can create a tournament in the given month
-   * @param isSandbox - Whether the tournament being created is sandbox
-   * @param isVerified - Whether the tournament being created is verified/OAC
-   */
   static async canCreateTournament(
-    clubId: string, 
+    clubId: string,
     tournamentStartDate: Date,
     isSandbox: boolean = false,
     isVerified: boolean = false
@@ -98,96 +25,82 @@ export class SubscriptionService {
     canCreate: boolean;
     currentCount: number;
     maxAllowed: number;
-    planName: string;
+    tierName: string;
     errorMessage?: string;
   }> {
     try {
       if (!isSubscriptionPaywallActive()) {
-        return {
-          canCreate: true,
-          currentCount: 0,
-          maxAllowed: -1,
-          planName: 'Korlátlan'
-        };
+        return { canCreate: true, currentCount: 0, maxAllowed: -1, tierName: 'Unlimited' };
       }
 
       await connectMongo();
-      
-      const subscriptionPlan = await this.getClubSubscriptionPlan(clubId);
-      
-      // Check sandbox restriction
-      if (!isSandbox && !isVerified && !subscriptionPlan.allowNonSandbox) {
+      const tier = await this.getClubTier(clubId);
+      const { limits } = tier;
+
+      if (!isSandbox && !isVerified && !limits.allowNonSandbox) {
         return {
           canCreate: false,
           currentCount: 0,
           maxAllowed: 0,
-          planName: subscriptionPlan.name,
-          errorMessage: `A ${subscriptionPlan.name} csomagban csak sandbox versenyek hozhatók létre. Frissítsd az előfizetésed a valódi versenyek létrehozásához.`
+          tierName: tier.id,
+          errorMessage: `A ${tier.id} csomagban csak sandbox versenyek hozhatók létre. Frissítsd az előfizetésed a valódi versenyek létrehozásához.`,
         };
       }
 
-      // Check verified tournament restriction
-      if (isVerified && !subscriptionPlan.allowVerified) {
-        return {
-          canCreate: false,
-          currentCount: 0,
-          maxAllowed: 0,
-          planName: subscriptionPlan.name,
-          errorMessage: `A ${subscriptionPlan.name} csomagban nem hozhatók létre OAC versenyek. Frissítsd az előfizetésed.`
-        };
+      if (isVerified) {
+        return { canCreate: true, currentCount: 0, maxAllowed: -1, tierName: tier.id };
       }
 
-      const maxAllowed = subscriptionPlan.monthlyTournaments;
-      
-      // Sandbox and verified tournaments don't count towards monthly limit
-      if (isSandbox || isVerified) {
-        return {
-          canCreate: true,
-          currentCount: 0,
-          maxAllowed,
-          planName: subscriptionPlan.name
-        };
-      }
-      
-      // If unlimited, always allow
-      if (maxAllowed === -1) {
-        return {
-          canCreate: true,
-          currentCount: 0,
-          maxAllowed: -1,
-          planName: subscriptionPlan.name
-        };
-      }
-
-      // Get the month and year of the tournament start date
       const tournamentMonth = tournamentStartDate.getMonth();
       const tournamentYear = tournamentStartDate.getFullYear();
-
-      // Count tournaments created in the same month
-      // Exclude sandbox and verified tournaments
       const startOfMonth = new Date(tournamentYear, tournamentMonth, 1);
       const endOfMonth = new Date(tournamentYear, tournamentMonth + 1, 0, 23, 59, 59, 999);
 
-      const tournamentsInMonth = await TournamentModel.countDocuments({
-        clubId: clubId,
-        'tournamentSettings.startDate': {
-          $gte: startOfMonth,
-          $lte: endOfMonth
-        },
+      if (isSandbox) {
+        const maxSandbox = limits.monthlySandboxTournaments;
+        if (maxSandbox === -1) {
+          return { canCreate: true, currentCount: 0, maxAllowed: -1, tierName: tier.id };
+        }
+
+        const sandboxCount = await TournamentModel.countDocuments({
+          clubId,
+          isSandbox: true,
+          isDeleted: false,
+          'tournamentSettings.startDate': { $gte: startOfMonth, $lte: endOfMonth },
+        });
+
+        return {
+          canCreate: sandboxCount < maxSandbox,
+          currentCount: sandboxCount,
+          maxAllowed: maxSandbox,
+          tierName: tier.id,
+          errorMessage: sandboxCount >= maxSandbox
+            ? `A ${tier.id} csomagban maximum ${maxSandbox} sandbox verseny hozható létre havonta. Jelenleg ${sandboxCount} sandbox verseny van ebben a hónapban.`
+            : undefined,
+        };
+      }
+
+      const maxLive = limits.monthlyLiveTournaments;
+      if (maxLive === -1) {
+        return { canCreate: true, currentCount: 0, maxAllowed: -1, tierName: tier.id };
+      }
+
+      const liveCount = await TournamentModel.countDocuments({
+        clubId,
         isDeleted: false,
         isSandbox: { $ne: true },
-        verified: { $ne: true } // Exclude verified OAC tournaments
+        verified: { $ne: true },
+        'tournamentSettings.startDate': { $gte: startOfMonth, $lte: endOfMonth },
       });
 
-      const canCreate = tournamentsInMonth < maxAllowed;
-
       return {
-        canCreate,
-        currentCount: tournamentsInMonth,
-        maxAllowed,
-        planName: subscriptionPlan.name,
-        errorMessage: canCreate ? undefined : 
-          `A ${subscriptionPlan.name} csomagban maximum ${maxAllowed} verseny hozható létre havonta. Jelenleg ${tournamentsInMonth} verseny van ebben a hónapban.`
+        canCreate: liveCount < maxLive,
+        currentCount: liveCount,
+        maxAllowed: maxLive,
+        tierName: tier.id,
+        errorMessage: liveCount >= maxLive
+          ? `A ${tier.id} csomagban maximum ${maxLive} verseny hozható létre havonta. Jelenleg ${liveCount} verseny van ebben a hónapban.`
+          : undefined,
       };
     } catch (error) {
       console.error('Error checking tournament creation permission:', error);
@@ -195,86 +108,64 @@ export class SubscriptionService {
         canCreate: false,
         currentCount: 0,
         maxAllowed: 0,
-        planName: 'Ismeretlen',
-        errorMessage: 'Hiba történt az előfizetés ellenőrzése során.'
+        tierName: 'unknown',
+        errorMessage: 'Hiba történt az előfizetés ellenőrzése során.',
       };
     }
   }
 
-  /**
-   * Check if a club can update a tournament (same logic as creation)
-   */
-  static async canUpdateTournament(clubId: string, tournamentStartDate: Date, excludeTournamentId?: string): Promise<{
+  static async canUpdateTournament(
+    clubId: string,
+    tournamentStartDate: Date,
+    excludeTournamentId?: string
+  ): Promise<{
     canUpdate: boolean;
     currentCount: number;
     maxAllowed: number;
-    planName: string;
+    tierName: string;
     errorMessage?: string;
   }> {
     try {
       if (!isSubscriptionPaywallActive()) {
-        return {
-          canUpdate: true,
-          currentCount: 0,
-          maxAllowed: -1,
-          planName: 'Korlátlan'
-        };
+        return { canUpdate: true, currentCount: 0, maxAllowed: -1, tierName: 'Unlimited' };
       }
 
       await connectMongo();
-      
-      const subscriptionPlan = await this.getClubSubscriptionPlan(clubId);
-      const maxAllowed = subscriptionPlan.monthlyTournaments;
-      
-      // If unlimited, always allow
-      if (maxAllowed === -1) {
-        return {
-          canUpdate: true,
-          currentCount: 0,
-          maxAllowed: -1,
-          planName: subscriptionPlan.name
-        };
+      const tier = await this.getClubTier(clubId);
+      const maxLive = tier.limits.monthlyLiveTournaments;
+
+      if (maxLive === -1) {
+        return { canUpdate: true, currentCount: 0, maxAllowed: -1, tierName: tier.id };
       }
 
-      // Get the month and year of the tournament start date
       const tournamentMonth = tournamentStartDate.getMonth();
       const tournamentYear = tournamentStartDate.getFullYear();
-
-      // Count tournaments created in the same month (excluding the current tournament if updating)
       const startOfMonth = new Date(tournamentYear, tournamentMonth, 1);
       const endOfMonth = new Date(tournamentYear, tournamentMonth + 1, 0, 23, 59, 59, 999);
 
-      const query: any = {
-        clubId: clubId,
+      const query: Record<string, unknown> = {
+        clubId,
         isDeleted: false,
         isSandbox: { $ne: true },
-        verified: { $ne: true } // Exclude verified OAC tournaments
+        verified: { $ne: true },
+        'tournamentSettings.startDate': { $gte: startOfMonth, $lte: endOfMonth },
       };
 
-      // Only check start date if it's being changed
-      if (tournamentStartDate) {
-        query['tournamentSettings.startDate'] = {
-          $gte: startOfMonth,
-          $lte: endOfMonth
-        };
-      }
-
-      // Exclude current tournament if updating
       if (excludeTournamentId) {
         query.tournamentId = { $ne: excludeTournamentId };
       }
 
-      const tournamentsInMonth = await TournamentModel.countDocuments(query);
-
-      const canUpdate = tournamentsInMonth < maxAllowed;
+      const liveCount = await TournamentModel.countDocuments(query);
+      const canUpdate = liveCount < maxLive;
 
       return {
         canUpdate,
-        currentCount: tournamentsInMonth,
-        maxAllowed,
-        planName: subscriptionPlan.name,
-        errorMessage: canUpdate ? undefined : 
-          `A ${subscriptionPlan.name} csomagban maximum ${maxAllowed} verseny hozható létre havonta. Jelenleg ${tournamentsInMonth} verseny van ebben a hónapban.`
+        currentCount: liveCount,
+        maxAllowed: maxLive,
+        tierName: tier.id,
+        errorMessage: canUpdate
+          ? undefined
+          : `A ${tier.id} csomagban maximum ${maxLive} verseny hozható létre havonta. Jelenleg ${liveCount} verseny van ebben a hónapban.`,
       };
     } catch (error) {
       console.error('Error checking tournament update permission:', error);
@@ -282,8 +173,8 @@ export class SubscriptionService {
         canUpdate: false,
         currentCount: 0,
         maxAllowed: 0,
-        planName: 'Ismeretlen',
-        errorMessage: 'Hiba történt az előfizetés ellenőrzése során.'
+        tierName: 'unknown',
+        errorMessage: 'Hiba történt az előfizetés ellenőrzése során.',
       };
     }
   }

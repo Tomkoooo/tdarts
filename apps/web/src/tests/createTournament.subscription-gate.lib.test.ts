@@ -18,8 +18,12 @@ jest.mock('next/cache', () => ({
   revalidateTag: jest.fn(),
 }));
 
-jest.mock('@/features/flags/lib/featureAccess', () => ({
-  evaluateFeatureAccess: jest.fn(),
+jest.mock('@/features/auth/lib/authorizeUser', () => ({
+  authorizeUserResult: jest.fn().mockResolvedValue({
+    ok: true,
+    data: { userId: 'user-1' },
+    message: '',
+  }),
 }));
 
 jest.mock('@/features/tournaments/lib/tournamentCreation.db', () => ({
@@ -49,7 +53,6 @@ jest.mock('@tdarts/services', () => {
 });
 
 import { createTournamentAction } from '@/features/tournaments/actions/createTournament.action';
-import { evaluateFeatureAccess } from '@/features/flags/lib/featureAccess';
 import { ClubService, SubscriptionService, TournamentService } from '@tdarts/services';
 
 describe('createTournamentAction subscription gate (UI parity)', () => {
@@ -71,10 +74,6 @@ describe('createTournamentAction subscription gate (UI parity)', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    (evaluateFeatureAccess as jest.Mock).mockResolvedValue({
-      ok: true,
-      data: { userId: 'user-1' },
-    });
     (ClubService.getClub as jest.Mock).mockResolvedValue({
       _id: { toString: () => 'club-gate-1' },
     });
@@ -107,7 +106,7 @@ describe('createTournamentAction subscription gate (UI parity)', () => {
       canCreate: false,
       currentCount: 3,
       maxAllowed: 3,
-      planName: 'Basic',
+      tierName: 'basic',
       errorMessage: 'Havi limit elerve',
     });
 
@@ -139,7 +138,7 @@ describe('createTournamentAction subscription gate (UI parity)', () => {
       canCreate: true,
       currentCount: 0,
       maxAllowed: 3,
-      planName: 'Basic',
+      tierName: 'basic',
     });
 
     await createTournamentAction({

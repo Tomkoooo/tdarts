@@ -44,7 +44,6 @@ const clubSchema = new mongoose.Schema<ClubDocument>(
     featureFlags: {
       liveMatchFollowing: { type: Boolean, default: false },
       advancedStatistics: { type: Boolean, default: false },
-      premiumTournaments: { type: Boolean, default: false },
     },
     createdAt: { type: Date, default: Date.now },
     updatedAt: { type: Date, default: Date.now },

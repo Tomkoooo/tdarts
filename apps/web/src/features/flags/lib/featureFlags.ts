@@ -1,10 +1,11 @@
-import { FEATURE_KEYS, normalizeFeatureKey, toClubFeatureFlagKey } from '@/features/flags/lib/featureKeys';
+import { FEATURE_KEYS, normalizeFeatureKey } from '@/features/flags/lib/featureKeys';
 import { isSubscriptionPaywallActive } from '@/features/flags/lib/subscriptionPaywall';
+import { getFeatureDefinition } from '@/features/flags/lib/featureRegistry';
+import { getTierConfig } from '@tdarts/core/subscription-tiers';
 
 export interface FeatureFlags {
   liveMatchFollowing: boolean;
   advancedStatistics: boolean;
-  premiumTournaments: boolean;
   leagues: boolean;
   oacCreation: boolean;
 }
@@ -12,92 +13,46 @@ export interface FeatureFlags {
 export class FeatureFlagService {
   static isEnvFeatureEnabled(featureName: string): boolean {
     const featureKey = normalizeFeatureKey(featureName);
-    if (!featureKey) {
-      return false;
-    }
-    if (process.env.NEXT_PUBLIC_ENABLE_ALL === 'true') {
-      return true;
-    }
+    if (!featureKey) return false;
 
-    switch (featureKey) {
-      case FEATURE_KEYS.LIVE_MATCH_FOLLOWING:
-        return process.env.NEXT_PUBLIC_ENABLE_LIVE_MATCH_FOLLOWING === 'true';
-      case FEATURE_KEYS.ADVANCED_STATISTICS:
-        return process.env.NEXT_PUBLIC_ENABLE_ADVANCED_STATISTICS === 'true';
-      case FEATURE_KEYS.PREMIUM_TOURNAMENTS:
-        return process.env.NEXT_PUBLIC_ENABLE_PREMIUM_TOURNAMENTS === 'true';
-      case FEATURE_KEYS.LEAGUES:
-        return process.env.NEXT_PUBLIC_ENABLE_LEAGUES === 'true';
-      case FEATURE_KEYS.SOCKET:
-        return process.env.NEXT_PUBLIC_ENABLE_SOCKET === 'true';
-      case FEATURE_KEYS.OAC_CREATION:
-        return process.env.NEXT_PUBLIC_ENABLE_OAC_CREATION === 'true' || process.env.NEXT_PUBLIC_ENABLE_OAC_CREATION === undefined;
-      case FEATURE_KEYS.DETAILED_STATISTICS:
-        return process.env.NEXT_PUBLIC_ENABLE_DETAILED_STATISTICS === 'true';
-      default:
-        return false;
-    }
+    if (process.env.NEXT_PUBLIC_ENABLE_ALL === 'true') return true;
+
+    const def = getFeatureDefinition(featureKey);
+    if (!def) return false;
+
+    const envValue = process.env[def.envVar];
+    if (envValue === undefined) return def.envDefault;
+    return envValue === 'true';
   }
 
   static async isClubFeatureEnabled(clubId: string, featureName: string): Promise<boolean> {
     const featureKey = normalizeFeatureKey(featureName);
-    if (!featureKey) {
-      return false;
-    }
+    if (!featureKey) return false;
+
+    const def = getFeatureDefinition(featureKey);
+    if (!def) return false;
 
     try {
       const { ClubModel } = await import('@/database/models/club.model');
       const club = await ClubModel.findById(clubId).select('featureFlags subscriptionModel');
       if (!club) return false;
 
-      const flags = club.featureFlags;
-
       if (!isSubscriptionPaywallActive()) {
-        if (featureKey === FEATURE_KEYS.DETAILED_STATISTICS) {
-          return flags?.advancedStatistics === true;
-        }
-        if (featureKey === FEATURE_KEYS.LEAGUES) {
-          return true;
-        }
-        if (featureKey === FEATURE_KEYS.SOCKET || featureKey === FEATURE_KEYS.LIVE_MATCH_FOLLOWING) {
-          // Paywall off: global env flags are the product gate; club.liveMatchFollowing is for subscription upsell only.
-          return true;
-        }
-        if (featureKey === FEATURE_KEYS.OAC_CREATION) {
-          return true;
-        }
-        if (!flags) {
-          return false;
-        }
-        const clubFeatureFlagKey = toClubFeatureFlagKey(featureKey);
-        if (!clubFeatureFlagKey) {
-          return false;
-        }
-        return flags[clubFeatureFlagKey] === true;
-      }
-
-      if (featureKey === FEATURE_KEYS.DETAILED_STATISTICS) {
-        return club.subscriptionModel !== 'free' && !!club.subscriptionModel;
-      }
-
-      if (featureKey === FEATURE_KEYS.LEAGUES) {
-        return club.subscriptionModel !== 'free';
-      }
-
-      if (featureKey === FEATURE_KEYS.SOCKET || featureKey === FEATURE_KEYS.LIVE_MATCH_FOLLOWING) {
-        return flags?.liveMatchFollowing === true;
-      }
-
-      if (!flags) {
+        if (def.paywallOffBehavior === 'allow') return true;
+        if (def.clubFlagKey) return club.featureFlags?.[def.clubFlagKey] === true;
         return false;
       }
 
-      const clubFeatureFlagKey = toClubFeatureFlagKey(featureKey);
-      if (!clubFeatureFlagKey) {
-        return false;
+      if (def.tierEntitlement) {
+        const tier = getTierConfig(club.subscriptionModel || 'free');
+        if (!tier.features[def.tierEntitlement]) return false;
       }
 
-      return flags[clubFeatureFlagKey] === true;
+      if (def.clubFlagKey) {
+        return club.featureFlags?.[def.clubFlagKey] === true;
+      }
+
+      return true;
     } catch (error) {
       console.error('Error checking club feature flag:', error);
       return false;
@@ -106,35 +61,26 @@ export class FeatureFlagService {
 
   static async isFeatureEnabled(featureName: string, clubId?: string): Promise<boolean> {
     const featureKey = normalizeFeatureKey(featureName);
-    if (!featureKey) {
-      return false;
-    }
+    if (!featureKey) return false;
+
+    const def = getFeatureDefinition(featureKey);
+    if (!def) return false;
 
     const envEnabled = this.isEnvFeatureEnabled(featureKey);
-    if (!envEnabled && featureKey !== FEATURE_KEYS.DETAILED_STATISTICS) {
-      return false;
-    }
+    if (!envEnabled && featureKey !== FEATURE_KEYS.DETAILED_STATISTICS) return false;
 
-    if (!clubId) {
-      return envEnabled;
-    }
+    if (!clubId) return envEnabled;
 
     return this.isClubFeatureEnabled(clubId, featureKey);
   }
 
   static async isSocketEnabled(clubId?: string): Promise<boolean> {
-    if (process.env.NEXT_PUBLIC_ENABLE_ALL === 'true') {
-      return true;
-    }
+    if (process.env.NEXT_PUBLIC_ENABLE_ALL === 'true') return true;
 
     const envSocketEnabled = this.isEnvFeatureEnabled(FEATURE_KEYS.SOCKET);
-    if (!envSocketEnabled) {
-      return false;
-    }
+    if (!envSocketEnabled) return false;
 
-    if (!clubId) {
-      return envSocketEnabled;
-    }
+    if (!clubId) return envSocketEnabled;
 
     return this.isClubFeatureEnabled(clubId, FEATURE_KEYS.SOCKET);
   }

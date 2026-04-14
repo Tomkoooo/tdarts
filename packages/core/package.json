@@ -7,7 +7,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./entry-fee-currency": "./src/lib/entry-fee-currency.ts",
-    "./subscription-paywall": "./src/lib/subscription-paywall.ts"
+    "./subscription-paywall": "./src/lib/subscription-paywall.ts",
+    "./subscription-tiers": "./src/lib/subscription-tiers.ts"
   },
   "scripts": {
     "build": "tsc --noEmit",
