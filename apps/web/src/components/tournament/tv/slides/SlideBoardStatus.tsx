@@ -1,4 +1,5 @@
 import { BoardSummary } from "@/lib/tv/slideshow";
+import { useTvSlideAutoScroll } from "@/components/tournament/tv/useTvSlideAutoScroll";
 import SlideFrame from "./SlideFrame";
 
 interface SlideBoardStatusProps {
@@ -8,6 +9,7 @@ interface SlideBoardStatusProps {
   waitingLabel: string;
   scorerLabel: string;
   scorerFallback: string;
+  onRequiredDisplayMsChange?: (ms: number) => void;
 }
 
 export default function SlideBoardStatus({
@@ -17,10 +19,20 @@ export default function SlideBoardStatus({
   waitingLabel,
   scorerLabel,
   scorerFallback,
+  onRequiredDisplayMsChange,
 }: SlideBoardStatusProps) {
   const waitingCards = boardSummary.waitingBoards;
   const gridColumnsClass =
     waitingCards.length >= 7 ? "xl:grid-cols-4" : waitingCards.length >= 4 ? "xl:grid-cols-3" : "xl:grid-cols-2";
+
+  const scrollResetKey = waitingCards.map((b) => `${b.boardNumber}:${b.player1Name}:${b.player2Name}`).join("|");
+
+  const { scrollRef, userInteractionHandlers } = useTvSlideAutoScroll({
+    resetKey: scrollResetKey,
+    mode: "vertical",
+    onRequiredDisplayMsChange,
+    enabled: waitingCards.length > 0,
+  });
 
   return (
     <SlideFrame
@@ -31,7 +43,11 @@ export default function SlideBoardStatus({
       {waitingCards.length === 0 ? (
         <div className="flex h-full items-center justify-center px-3 text-center text-lg text-slate-300 sm:text-2xl md:text-3xl">{emptyLabel}</div>
       ) : (
-        <div className={`grid h-full grid-cols-1 gap-3 overflow-y-auto pr-1 md:grid-cols-2 md:gap-4 ${gridColumnsClass}`}>
+        <div
+          ref={scrollRef}
+          className={`grid h-full grid-cols-1 gap-3 overflow-y-auto pr-1 md:grid-cols-2 md:gap-4 ${gridColumnsClass}`}
+          {...userInteractionHandlers}
+        >
           {waitingCards.map((board) => (
             <div key={board.boardNumber} className="rounded-2xl border border-amber-300/45 bg-slate-900/70 p-4 sm:p-5">
               <div className="mb-3 flex items-center justify-between">

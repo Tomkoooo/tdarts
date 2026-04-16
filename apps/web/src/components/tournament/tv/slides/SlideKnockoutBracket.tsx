@@ -1,5 +1,5 @@
-import { useEffect, useRef } from "react";
 import { KnockoutRoundDisplay } from "@/lib/tv/slideshow";
+import { useTvSlideAutoScroll } from "@/components/tournament/tv/useTvSlideAutoScroll";
 import SlideFrame from "./SlideFrame";
 
 interface SlideKnockoutBracketProps {
@@ -27,92 +27,19 @@ export default function SlideKnockoutBracket({
   scorerFallback,
   onRequiredDisplayMsChange,
 }: SlideKnockoutBracketProps) {
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const userInterruptedAutoScrollRef = useRef(false);
   const cardHeightPx = 132;
   const baseGapPx = 12;
 
-  useEffect(() => {
-    const container = scrollRef.current;
-    if (!container) return;
+  const scrollResetKey = rounds
+    .map((r) => `${r.id}:${r.matches.map((m) => `${m.id}:${m.player1Legs}-${m.player2Legs}:${m.status}`).join(",")}`)
+    .join("|");
 
-    container.scrollTop = 0;
-    container.scrollLeft = 0;
-    userInterruptedAutoScrollRef.current = false;
-
-    let intervalId: ReturnType<typeof setInterval> | null = null;
-    const rafId = window.requestAnimationFrame(() => {
-      const maxScrollX = Math.max(0, container.scrollWidth - container.clientWidth);
-      const maxScrollY = Math.max(0, container.scrollHeight - container.clientHeight);
-      if (maxScrollX <= 0 && maxScrollY <= 0) return;
-
-      const speedPxX = 1;
-      const speedPxY = 1;
-      const stepMs = 50;
-      const endTolerancePx = 1;
-      const pauseAtEndMs = 1500;
-      let phase: "forward" | "pause" = "forward";
-      let pauseStartedAt = 0;
-
-      intervalId = window.setInterval(() => {
-        if (userInterruptedAutoScrollRef.current) return;
-
-        if (phase === "pause") {
-          if (Date.now() - pauseStartedAt >= pauseAtEndMs) {
-            container.scrollLeft = 0;
-            container.scrollTop = 0;
-            phase = "forward";
-          }
-          return;
-        }
-
-        if (maxScrollX > 0) {
-          container.scrollLeft = Math.min(maxScrollX, container.scrollLeft + speedPxX);
-        }
-
-        if (maxScrollY > 0) {
-          container.scrollTop = Math.min(maxScrollY, container.scrollTop + speedPxY);
-        }
-
-        const atX = maxScrollX <= 0 || container.scrollLeft >= maxScrollX - endTolerancePx;
-        const atY = maxScrollY <= 0 || container.scrollTop >= maxScrollY - endTolerancePx;
-        if (atX && atY) {
-          phase = "pause";
-          pauseStartedAt = Date.now();
-        }
-      }, stepMs);
-    });
-
-    return () => {
-      window.cancelAnimationFrame(rafId);
-      if (intervalId) window.clearInterval(intervalId);
-    };
-  }, [rounds]);
-
-  const stopAutoScrollForUser = () => {
-    userInterruptedAutoScrollRef.current = true;
-  };
-
-  useEffect(() => {
-    const container = scrollRef.current;
-    if (!container) return;
-
-    const verticalSpeedPxPerMs = 1 / 50;
-    const horizontalSpeedPxPerMs = 1 / 50;
-    let maxRequiredMs = 0;
-
-    const horizontalMaxScroll = container.scrollWidth - container.clientWidth;
-    if (horizontalMaxScroll > 0) {
-      maxRequiredMs = Math.max(maxRequiredMs, horizontalMaxScroll / horizontalSpeedPxPerMs);
-    }
-
-    const verticalMaxScroll = container.scrollHeight - container.clientHeight;
-    if (verticalMaxScroll > 0) {
-      maxRequiredMs = Math.max(maxRequiredMs, verticalMaxScroll / verticalSpeedPxPerMs);
-    }
-
-    onRequiredDisplayMsChange?.(maxRequiredMs > 0 ? Math.ceil(maxRequiredMs + 400) : 0);
-  }, [rounds, onRequiredDisplayMsChange]);
+  const { scrollRef, userInteractionHandlers } = useTvSlideAutoScroll({
+    resetKey: scrollResetKey,
+    mode: "both",
+    onRequiredDisplayMsChange,
+    enabled: rounds.length > 0,
+  });
 
   return (
     <SlideFrame title={title} subtitle={sideLabel} accentClassName="from-violet-500/25 via-transparent to-transparent">
@@ -122,10 +49,7 @@ export default function SlideKnockoutBracket({
         <div
           ref={scrollRef}
           className="flex h-full items-stretch gap-3 overflow-x-auto pb-2"
-          onWheel={stopAutoScrollForUser}
-          onTouchStart={stopAutoScrollForUser}
-          onPointerDown={stopAutoScrollForUser}
-          onMouseDown={stopAutoScrollForUser}
+          {...userInteractionHandlers}
         >
           {rounds.map((round, roundIndex) => {
             const factor = Math.pow(2, roundIndex);

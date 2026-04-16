@@ -8,6 +8,7 @@ import { IconAdjustments, IconGripVertical, IconPlayerPause, IconPlayerPlay, Ico
 import { useRealTimeUpdates } from "@/hooks/useRealTimeUpdates"
 import type { SseDeltaPayload } from "@/lib/events";
 import { getTournamentPageDataAction } from "@/features/tournaments/actions/getTournamentPageData.action"
+import { getTournamentTvRankingLegContextAction } from "@/features/tournaments/actions/getTournamentTvRankingLegContext.action"
 import QRCode from 'react-qr-code'
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -25,6 +26,7 @@ import {
   getRankings180,
   getRankingsCheckout,
   TvBaseSlideType,
+  TvLegMatchLite,
   urgentEventToSlide,
 } from "@/lib/tv/slideshow";
 import {
@@ -64,17 +66,40 @@ export default function TVModePage() {
   const controlsHideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [slideProgress, setSlideProgress] = useState(0);
   const slideStartRef = useRef<number>(Date.now());
-  const [knockoutRequiredDisplayMs, setKnockoutRequiredDisplayMs] = useState(0);
+  const [verticalScrollRequiredMs, setVerticalScrollRequiredMs] = useState(0);
   const holdTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const holdAppliedSlideIdRef = useRef<string>("");
   const tournamentRef = useRef<any>(null);
   const tournamentCode = typeof code === "string" ? code : "";
   const { settings, setSettings, resetSettings, loaded: settingsLoaded } = useTvSettingsLocal(tournamentCode);
   const settingsRef = useRef(settings);
   const urgentQueue = useUrgentQueue({ cooldownMs: 20000, maxQueueSize: 30 });
 
-  const rankings180 = useMemo(() => getRankings180(tournament), [tournament]);
-  const rankingsCheckout = useMemo(() => getRankingsCheckout(tournament), [tournament]);
+  const [tvLegMatches, setTvLegMatches] = useState<TvLegMatchLite[]>([]);
+  const lastTvLegFetchAtRef = useRef(0);
+
+  /** Throttled (~25s) so coalesced SSE silent refreshes do not hit Mongo for legs on every tick. */
+  const fetchTvLegContext = useCallback(
+    async (force: boolean) => {
+      if (!code) return;
+      const now = Date.now();
+      if (!force && now - lastTvLegFetchAtRef.current < 25_000) return;
+      lastTvLegFetchAtRef.current = now;
+      try {
+        const res = await getTournamentTvRankingLegContextAction(String(code));
+        const raw =
+          res && typeof res === "object" && "matches" in res
+            ? (res as { matches?: TvLegMatchLite[] }).matches
+            : null;
+        setTvLegMatches(Array.isArray(raw) ? raw : []);
+      } catch (error) {
+        console.error("TV leg context fetch error:", error);
+      }
+    },
+    [code],
+  );
+
+  const rankings180 = useMemo(() => getRankings180(tournament, 10, tvLegMatches), [tournament, tvLegMatches]);
+  const rankingsCheckout = useMemo(() => getRankingsCheckout(tournament, 10, tvLegMatches), [tournament, tvLegMatches]);
   const groupsDisplay = useMemo(() => getGroupsDisplay(tournament), [tournament]);
   const boardSummary = useMemo(() => getBoardSummary(tournament), [tournament]);
   const knockoutDisplay = useMemo(
@@ -159,6 +184,7 @@ export default function TVModePage() {
         }
       }
       tournamentRef.current = nextTournament;
+      void fetchTvLegContext(false);
     } catch (error) {
       console.error('Silent refresh error:', error)
     } finally {
@@ -169,7 +195,7 @@ export default function TVModePage() {
         void silentRefreshRef.current(queuedMode)
       }
     }
-  }, [code, urgentQueue, scheduler])
+  }, [code, urgentQueue, scheduler, fetchTvLegContext])
 
   const applyTvDelta = useCallback((delta: SseDeltaPayload<any>) => {
     if (delta.kind !== "delta" || delta.schemaVersion !== 1) return false;
@@ -285,6 +311,11 @@ export default function TVModePage() {
   useEffect(() => {
     fetchTournament()
   }, [fetchTournament])
+
+  useEffect(() => {
+    if (!code || !tournament?._id) return;
+    void fetchTvLegContext(true);
+  }, [code, tournament?._id, tournament?.tournamentId, fetchTvLegContext]);
 
   // Real-time updates
   const isRealtimeEnabled = LIVE_TOURNAMENT_STATUSES.has(tournament?.tournamentSettings?.status);
@@ -407,20 +438,24 @@ export default function TVModePage() {
   useEffect(() => {
     slideStartRef.current = Date.now();
     setSlideProgress(0);
+    setVerticalScrollRequiredMs(0);
   }, [activeSlide.id]);
 
+  const configuredSlideDurationMs =
+    activeSlide.durationMs ??
+    (activeSlide.kind === "urgent" ? settings.urgentIntervalMs : settings.baseIntervalMs);
+
+  const effectiveSlideDurationMs = Math.max(configuredSlideDurationMs, verticalScrollRequiredMs || 0);
+
   useEffect(() => {
-    const durationMs =
-      activeSlide.durationMs ??
-      (activeSlide.kind === "urgent" ? settings.urgentIntervalMs : settings.baseIntervalMs);
-    if (durationMs <= 0 || scheduler.isPaused || settings.freezeBaseRotation) {
+    if (effectiveSlideDurationMs <= 0 || scheduler.isPaused || settings.freezeBaseRotation) {
       setSlideProgress(0);
       return;
     }
 
     const tick = () => {
       const elapsed = Date.now() - slideStartRef.current;
-      const ratio = Math.min(1, elapsed / durationMs);
+      const ratio = Math.min(1, elapsed / effectiveSlideDurationMs);
       setSlideProgress(ratio);
     };
     tick();
@@ -430,11 +465,17 @@ export default function TVModePage() {
     activeSlide.id,
     activeSlide.kind,
     activeSlide.durationMs,
+    effectiveSlideDurationMs,
     scheduler.isPaused,
     settings.freezeBaseRotation,
     settings.baseIntervalMs,
     settings.urgentIntervalMs,
+    verticalScrollRequiredMs,
   ]);
+
+  const onVerticalScrollRequirement = useCallback((ms: number) => {
+    setVerticalScrollRequiredMs(ms);
+  }, []);
 
   useEffect(() => {
     if (holdTimeoutRef.current) {
@@ -442,9 +483,7 @@ export default function TVModePage() {
       holdTimeoutRef.current = null;
     }
 
-    const isKnockoutBracketSlide = activeSlide.type === "knockoutLeft" || activeSlide.type === "knockoutRight";
-    if (!isKnockoutBracketSlide || settings.freezeBaseRotation) {
-      holdAppliedSlideIdRef.current = "";
+    if (settings.freezeBaseRotation) {
       scheduler.resume();
       return;
     }
@@ -453,20 +492,16 @@ export default function TVModePage() {
       activeSlide.durationMs ??
       (activeSlide.kind === "urgent" ? settings.urgentIntervalMs : settings.baseIntervalMs);
 
-    if (knockoutRequiredDisplayMs <= baseDuration) {
-      holdAppliedSlideIdRef.current = "";
+    if (verticalScrollRequiredMs <= baseDuration) {
       scheduler.resume();
       return;
     }
-
-    if (holdAppliedSlideIdRef.current === activeSlide.id) return;
-    holdAppliedSlideIdRef.current = activeSlide.id;
 
     scheduler.pause();
     holdTimeoutRef.current = setTimeout(() => {
       scheduler.resume();
       scheduler.nextSlide();
-    }, knockoutRequiredDisplayMs);
+    }, verticalScrollRequiredMs);
 
     return () => {
       if (holdTimeoutRef.current) {
@@ -475,8 +510,10 @@ export default function TVModePage() {
       }
     };
   }, [
-    activeSlide,
-    knockoutRequiredDisplayMs,
+    activeSlide.id,
+    activeSlide.kind,
+    activeSlide.durationMs,
+    verticalScrollRequiredMs,
     scheduler,
     settings.baseIntervalMs,
     settings.urgentIntervalMs,
@@ -524,6 +561,7 @@ export default function TVModePage() {
             title180={tTour("tv_slideshow.rankings_180_title")}
             titleCheckout={tTour("tv_slideshow.rankings_checkout_title")}
             emptyLabel={tTour("tv_views.rankings_checkout.no_data")}
+            onRequiredDisplayMsChange={onVerticalScrollRequirement}
           />
         );
       case "groups":
@@ -532,6 +570,7 @@ export default function TVModePage() {
             groups={groupsDisplay}
             title={tTour("tv_slideshow.groups_title")}
             emptyLabel={tTour("tv_views.groups.no_groups")}
+            onRequiredDisplayMsChange={onVerticalScrollRequirement}
           />
         );
       case "boardStatus":
@@ -544,6 +583,7 @@ export default function TVModePage() {
             waitingLabel={tTour("tv_slideshow.waiting_label")}
             scorerLabel={tTour("tv_slideshow.scorer_label")}
             scorerFallback={tTour("tv_slideshow.scorer_fallback")}
+            onRequiredDisplayMsChange={onVerticalScrollRequirement}
           />
         );
       case "knockoutLeft":
@@ -563,7 +603,7 @@ export default function TVModePage() {
             emptyLabel={tTour("tv_slideshow.no_knockout")}
             scorerLabel={tTour("tv_slideshow.scorer_label")}
             scorerFallback={tTour("tv_slideshow.scorer_fallback")}
-            onRequiredDisplayMsChange={setKnockoutRequiredDisplayMs}
+            onRequiredDisplayMsChange={onVerticalScrollRequirement}
           />
         );
       case "knockoutRight":
@@ -575,7 +615,7 @@ export default function TVModePage() {
             emptyLabel={tTour("tv_slideshow.no_knockout")}
             scorerLabel={tTour("tv_slideshow.scorer_label")}
             scorerFallback={tTour("tv_slideshow.scorer_fallback")}
-            onRequiredDisplayMsChange={setKnockoutRequiredDisplayMs}
+            onRequiredDisplayMsChange={onVerticalScrollRequirement}
           />
         );
       case "knockoutFinal":

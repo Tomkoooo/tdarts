@@ -983,6 +983,30 @@ export class TournamentService {
         return tournament;
     }
 
+    /**
+     * TV-only: lean match docs (legs + player ids) for ranking timestamps.
+     * Kept off the hot getTournamentSummaryForPublicPage path.
+     */
+    static async getTvRankingLegMatches(tournamentId: string): Promise<any[]> {
+        await connectMongo();
+        const filter = this.buildCodeOrIdFilter(tournamentId);
+        const tournament: any = await TournamentModel.findOne(filter).select('_id').lean();
+        if (!tournament) {
+            throw new BadRequestError('Tournament not found', 'tournament', {
+                tournamentId,
+                errorCode: 'TOURNAMENT_NOT_FOUND',
+                expected: true,
+                operation: 'tournament.getTvRankingLegMatches',
+                entityType: 'tournament',
+                entityId: tournamentId,
+            });
+        }
+
+        return MatchModel.find({ tournamentRef: tournament._id })
+            .select('player1.playerId player2.playerId legs')
+            .lean();
+    }
+
     static async getTournamentSummaryOverviewForPublicPage(tournamentId: string): Promise<any> {
         await connectMongo();
         const filter = this.buildCodeOrIdFilter(tournamentId);

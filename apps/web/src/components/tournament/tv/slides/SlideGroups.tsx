@@ -1,19 +1,36 @@
 import { GroupDisplay } from "@/lib/tv/slideshow";
+import { useTvSlideAutoScroll } from "@/components/tournament/tv/useTvSlideAutoScroll";
 import SlideFrame from "./SlideFrame";
 
 interface SlideGroupsProps {
   groups: GroupDisplay[];
   title: string;
   emptyLabel: string;
+  onRequiredDisplayMsChange?: (ms: number) => void;
 }
 
-export default function SlideGroups({ groups, title, emptyLabel }: SlideGroupsProps) {
+export default function SlideGroups({ groups, title, emptyLabel, onRequiredDisplayMsChange }: SlideGroupsProps) {
+  const scrollResetKey = groups
+    .map((g) => `${g.id}:${g.rows.map((r) => `${r.playerId}:${r.standing}:${r.points}`).join(",")}`)
+    .join("|");
+
+  const { scrollRef, userInteractionHandlers } = useTvSlideAutoScroll({
+    resetKey: scrollResetKey,
+    mode: "vertical",
+    onRequiredDisplayMsChange,
+    enabled: groups.length > 0,
+  });
+
   return (
     <SlideFrame title={title} accentClassName="from-cyan-400/30 via-transparent to-transparent">
       {groups.length === 0 ? (
         <div className="flex h-full items-center justify-center px-3 text-center text-lg text-slate-300 sm:text-2xl md:text-3xl">{emptyLabel}</div>
       ) : (
-        <div className="grid h-full grid-cols-1 gap-3 overflow-y-auto pr-1 sm:grid-cols-2 xl:grid-cols-3">
+        <div
+          ref={scrollRef}
+          className="grid h-full grid-cols-1 gap-3 overflow-y-auto pr-1 sm:grid-cols-2 xl:grid-cols-3"
+          {...userInteractionHandlers}
+        >
           {groups.map((group) => (
             <div key={group.id} className="rounded-2xl border border-cyan-300/30 bg-slate-900/70 p-3 sm:p-4">
               <div className="mb-3 flex items-end justify-between border-b border-slate-700/50 pb-2">

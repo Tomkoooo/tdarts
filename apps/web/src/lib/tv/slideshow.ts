@@ -43,7 +43,22 @@ export interface PlayerRankingRow {
   playerId: string;
   name: string;
   value: number;
+  /** Local wall time, e.g. (14:05) */
+  timeLabel?: string;
 }
+
+/** Lean match shape from getTvRankingLegMatches (serialized to client). */
+export type TvLegMatchLite = {
+  player1?: { playerId?: unknown };
+  player2?: { playerId?: unknown };
+  legs?: Array<{
+    createdAt?: string | Date;
+    player1Throws?: Array<{ score?: number }>;
+    player2Throws?: Array<{ score?: number }>;
+    winnerId?: unknown;
+    checkoutScore?: number;
+  }>;
+};
 
 export interface BoardWaitingRow {
   boardNumber: number;
@@ -122,6 +137,87 @@ const toRoundLabel = (index: number, totalRounds: number) => {
   return `Round ${index + 1}`;
 };
 
+export function normalizeMongoId(ref: unknown): string {
+  if (ref == null) return "";
+  if (typeof ref === "string") return ref;
+  if (typeof ref === "object" && ref !== null && "_id" in ref) {
+    const id = (ref as { _id?: unknown })._id;
+    return id != null ? String(id) : "";
+  }
+  return String(ref);
+}
+
+function legTimeMs(leg: { createdAt?: string | Date }): number {
+  const t = leg.createdAt;
+  if (t == null) return Number.NaN;
+  const ms = new Date(t as string | Date).getTime();
+  return Number.isFinite(ms) ? ms : Number.NaN;
+}
+
+function formatBracketedHm(ms: number): string {
+  const d = new Date(ms);
+  return `(${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")})`;
+}
+
+/** Per Player ObjectId: sorted 180 timestamps and checkout events (by time). */
+export function buildTvPlayerLegMeta(matches: TvLegMatchLite[] | undefined | null): Map<
+  string,
+  { times180: number[]; checkouts: Array<{ score: number; t: number }> }
+> {
+  const byPlayer = new Map<string, { times180: number[]; checkouts: Array<{ score: number; t: number }> }>();
+
+  const bump = (playerKey: string) => {
+    if (!byPlayer.has(playerKey)) {
+      byPlayer.set(playerKey, { times180: [], checkouts: [] });
+    }
+    return byPlayer.get(playerKey)!;
+  };
+
+  for (const match of matches || []) {
+    const p1 = normalizeMongoId(match?.player1?.playerId);
+    const p2 = normalizeMongoId(match?.player2?.playerId);
+    for (const leg of match.legs || []) {
+      const t = legTimeMs(leg);
+      if (!Number.isFinite(t)) continue;
+
+      if (p1) {
+        for (const th of leg.player1Throws || []) {
+          if (Number(th?.score) === 180) bump(p1).times180.push(t);
+        }
+      }
+      if (p2) {
+        for (const th of leg.player2Throws || []) {
+          if (Number(th?.score) === 180) bump(p2).times180.push(t);
+        }
+      }
+
+      const wid = normalizeMongoId(leg.winnerId);
+      const cs = Number(leg.checkoutScore);
+      if (wid && Number.isFinite(cs) && cs > 0) {
+        bump(wid).checkouts.push({ score: cs, t });
+      }
+    }
+  }
+
+  for (const meta of byPlayer.values()) {
+    meta.times180.sort((a, b) => a - b);
+    meta.checkouts.sort((a, b) => a.t - b.t);
+  }
+
+  return byPlayer;
+}
+
+function tournamentPlayerRefId(player: any): string {
+  return (
+    normalizeMongoId(player?.playerReference?._id) ||
+    normalizeMongoId(player?.playerReference) ||
+    ""
+  );
+}
+
+type RankingRowWork180 = PlayerRankingRow & { tieMs: number };
+type RankingRowWorkCo = PlayerRankingRow & { tieMs: number };
+
 export const getDefaultTvSettings = (): TvSettings => ({
   enabledSlides: {
     rankings: true,
@@ -143,27 +239,97 @@ export const getDefaultTvSettings = (): TvSettings => ({
   showQr: true,
 });
 
-export const getRankings180 = (tournament: any, limit = 10): PlayerRankingRow[] =>
-  (tournament?.tournamentPlayers || [])
-    .map((player: any) => ({
-      playerId: asString(player?._id) || `${player?.playerReference?._id || player?.playerReference?.name || "player"}`,
-      name: playerNameFromRef(player?.playerReference, "Unknown"),
-      value: Number(player?.stats?.oneEightiesCount || 0),
-    }))
-    .filter((row: PlayerRankingRow) => row.value > 0)
-    .sort((a: PlayerRankingRow, b: PlayerRankingRow) => b.value - a.value)
-    .slice(0, limit);
+export const getRankings180 = (
+  tournament: any,
+  limit = 10,
+  legMatches?: TvLegMatchLite[] | null,
+): PlayerRankingRow[] => {
+  const metaMap = buildTvPlayerLegMeta(legMatches ?? undefined);
 
-export const getRankingsCheckout = (tournament: any, limit = 10): PlayerRankingRow[] =>
-  (tournament?.tournamentPlayers || [])
-    .map((player: any) => ({
-      playerId: asString(player?._id) || `${player?.playerReference?._id || player?.playerReference?.name || "player"}`,
-      name: playerNameFromRef(player?.playerReference, "Unknown"),
-      value: Number(player?.stats?.highestCheckout || 0),
-    }))
-    .filter((row: PlayerRankingRow) => row.value > 0)
-    .sort((a: PlayerRankingRow, b: PlayerRankingRow) => b.value - a.value)
-    .slice(0, limit);
+  const rows: RankingRowWork180[] = (tournament?.tournamentPlayers || [])
+    .map((player: any) => {
+      const refId = tournamentPlayerRefId(player);
+      const count = Number(player?.stats?.oneEightiesCount || 0);
+      const meta = refId ? metaMap.get(refId) : undefined;
+      const times180 = meta?.times180 ?? [];
+
+      let timeLabel: string | undefined;
+      let tieMs = Number.POSITIVE_INFINITY;
+
+      if (count > 0 && times180.length > 0) {
+        const lastT = times180[times180.length - 1];
+        if (Number.isFinite(lastT)) {
+          timeLabel = formatBracketedHm(lastT);
+        }
+        const idx = count - 1;
+        if (idx >= 0 && idx < times180.length) {
+          tieMs = times180[idx];
+        }
+      }
+
+      return {
+        playerId: asString(player?._id) || `${player?.playerReference?._id || player?.playerReference?.name || "player"}`,
+        name: playerNameFromRef(player?.playerReference, "Unknown"),
+        value: count,
+        timeLabel,
+        tieMs,
+      };
+    })
+    .filter((row: RankingRowWork180) => row.value > 0);
+
+  rows.sort((a: RankingRowWork180, b: RankingRowWork180) => {
+    if (b.value !== a.value) return b.value - a.value;
+    if (a.tieMs !== b.tieMs) return a.tieMs - b.tieMs;
+    return a.name.localeCompare(b.name);
+  });
+
+  return rows.slice(0, limit).map(({ tieMs: _t, ...rest }) => rest);
+};
+
+export const getRankingsCheckout = (
+  tournament: any,
+  limit = 10,
+  legMatches?: TvLegMatchLite[] | null,
+): PlayerRankingRow[] => {
+  const metaMap = buildTvPlayerLegMeta(legMatches ?? undefined);
+
+  const rows: RankingRowWorkCo[] = (tournament?.tournamentPlayers || [])
+    .map((player: any) => {
+      const refId = tournamentPlayerRefId(player);
+      const high = Number(player?.stats?.highestCheckout || 0);
+      const meta = refId ? metaMap.get(refId) : undefined;
+      const checkouts = meta?.checkouts ?? [];
+
+      let timeLabel: string | undefined;
+      let tieMs = Number.POSITIVE_INFINITY;
+
+      if (high > 0 && checkouts.length > 0) {
+        const atHigh = checkouts.filter((c) => c.score === high);
+        if (atHigh.length > 0) {
+          tieMs = atHigh[0].t;
+          const lastT = atHigh[atHigh.length - 1].t;
+          timeLabel = formatBracketedHm(lastT);
+        }
+      }
+
+      return {
+        playerId: asString(player?._id) || `${player?.playerReference?._id || player?.playerReference?.name || "player"}`,
+        name: playerNameFromRef(player?.playerReference, "Unknown"),
+        value: high,
+        timeLabel,
+        tieMs,
+      };
+    })
+    .filter((row: RankingRowWorkCo) => row.value > 0);
+
+  rows.sort((a: RankingRowWorkCo, b: RankingRowWorkCo) => {
+    if (b.value !== a.value) return b.value - a.value;
+    if (a.tieMs !== b.tieMs) return a.tieMs - b.tieMs;
+    return a.name.localeCompare(b.name);
+  });
+
+  return rows.slice(0, limit).map(({ tieMs: _t, ...rest }) => rest);
+};
 
 export const getBoardSummary = (tournament: any): BoardSummary => {
   const boards = tournament?.boards || [];
