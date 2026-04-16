@@ -62,6 +62,7 @@ describe('handleSocketAuthPost', () => {
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.socketToken).toBe('socket-jwt');
+    expect(body.token).toBe('socket-jwt');
     expect(AuthService.issueSocketToken).toHaveBeenCalledWith('user-abc');
   });
 

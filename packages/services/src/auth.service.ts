@@ -104,13 +104,40 @@ export class AuthService {
   }
 
   /**
+   * Secret for socket handshake JWTs. Prefer SOCKET_JWT_SECRET so standalone Socket.IO
+   * servers can verify without sharing the main login JWT_SECRET.
+   */
+  private static socketTokenSigningSecret(): string {
+    const secret = process.env.SOCKET_JWT_SECRET || process.env.JWT_SECRET;
+    if (!secret) {
+      throw new BadRequestError(
+        'Missing JWT secret for socket token (set SOCKET_JWT_SECRET or JWT_SECRET)',
+        'auth',
+        {
+          errorCode: 'AUTH_CONFIG',
+          expected: false,
+          operation: 'auth.socketTokenSigningSecret',
+        },
+      );
+    }
+    return secret;
+  }
+
+  /**
    * Short-lived JWT for WebSocket / realtime handshakes (claim `purpose: 'socket'`).
+   * Includes `userId` / `userRole` for legacy Socket.IO servers that read those claims.
    */
   static issueSocketToken(userId: string): { token: string; expiresInSec: number } {
     const expiresInSec = Number(process.env.SOCKET_TOKEN_TTL_SEC ?? 600);
+    const secret = AuthService.socketTokenSigningSecret();
     const token = jwt.sign(
-      { id: userId, purpose: 'socket' as const },
-      process.env.JWT_SECRET!,
+      {
+        id: userId,
+        purpose: 'socket' as const,
+        userId,
+        userRole: 'user' as const,
+      },
+      secret,
       { expiresIn: expiresInSec },
     );
     return { token, expiresInSec };
@@ -118,7 +145,8 @@ export class AuthService {
 
   static verifySocketToken(token: string): { userId: string } {
     try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET!) as {
+      const secret = AuthService.socketTokenSigningSecret();
+      const decoded = jwt.verify(token, secret) as {
         id?: string;
         purpose?: string;
       };

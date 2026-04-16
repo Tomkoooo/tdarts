@@ -3,9 +3,12 @@
 import axios from "axios";
 
 type SocketAuthResponse = {
-  token: string;
+  token?: string;
+  /** Native/shared REST handler field (same value as `token`). */
+  socketToken?: string;
   expiresAt?: number;
   ttlSeconds?: number;
+  expiresInSec?: number;
 };
 
 type GetSocketAuthTokenOptions = {
@@ -26,6 +29,9 @@ function resolveExpiryMs(payload: SocketAuthResponse): number {
   }
   if (typeof payload.ttlSeconds === "number" && Number.isFinite(payload.ttlSeconds)) {
     return Date.now() + payload.ttlSeconds * 1000;
+  }
+  if (typeof payload.expiresInSec === "number" && Number.isFinite(payload.expiresInSec)) {
+    return Date.now() + payload.expiresInSec * 1000;
   }
   return Date.now() + DEFAULT_FALLBACK_TTL_MS;
 }
@@ -56,10 +62,11 @@ export async function getSocketAuthToken(options?: GetSocketAuthTokenOptions): P
         throw new Error("Socket authentication not configured");
       }
       const payload = response.data as SocketAuthResponse;
-      if (!payload?.token) {
+      const token = payload.token ?? payload.socketToken;
+      if (!token) {
         throw new Error("Missing socket auth token");
       }
-      cachedToken = payload.token;
+      cachedToken = token;
       tokenExpiresAtMs = resolveExpiryMs(payload);
       return cachedToken;
     })

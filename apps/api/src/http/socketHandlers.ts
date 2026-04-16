@@ -13,5 +13,6 @@ export async function handleSocketAuthPost(
   const userId = await resolveAuthedUserId(req, opts.mode);
   if (!userId) return unauthorizedUser();
   const { token, expiresInSec } = AuthService.issueSocketToken(userId);
-  return json({ socketToken: token, expiresInSec });
+  // `token` — legacy web client; `socketToken` — native clients (see nativeRestHandlers tests).
+  return json({ token, socketToken: token, expiresInSec });
 }
