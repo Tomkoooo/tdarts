@@ -40,7 +40,15 @@ export default defineConfig({
   webServer: {
     command: 'pnpm run start',
     url: baseURL,
-    reuseExistingServer: true,
+    reuseExistingServer: !process.env.CI,
     timeout: 120_000,
+    env: {
+      ...process.env,
+      ALLOW_E2E_SSE_TEST: process.env.ALLOW_E2E_SSE_TEST ?? '',
+      JWT_SECRET: process.env.JWT_SECRET ?? 'ci-test-secret-not-for-production',
+      MONGODB_URI: process.env.MONGODB_URI ?? 'mongodb://127.0.0.1:27017/tdarts_ci',
+      MONGODB_DB_NAME: process.env.MONGODB_DB_NAME ?? 'tdarts_ci',
+      SKIP_ENV_VALIDATION: process.env.SKIP_ENV_VALIDATION ?? '1',
+    },
   },
 });

@@ -9,16 +9,18 @@ declare global {
   var tournamentEventEmitter: EventEmitter | undefined;
 }
 
-export const eventEmitter = global.tournamentEventEmitter || new EventEmitter();
+// Always pin the emitter on `global` in production too. Next/server bundles can load this
+// module from more than one chunk; without a process-global, each copy gets its own
+// EventEmitter — SSE stays "alive" (heartbeats are local timers) but publishes never arrive.
+const eventEmitter = global.tournamentEventEmitter ?? new EventEmitter();
+global.tournamentEventEmitter = eventEmitter;
+
+export { eventEmitter };
 
 const maxListenersFromEnv = Number(process.env.SSE_EVENT_EMITTER_MAX_LISTENERS ?? '200');
 if (Number.isFinite(maxListenersFromEnv) && maxListenersFromEnv > 0) {
   // SSE fan-out attaches one listener per client connection by design.
   eventEmitter.setMaxListeners(maxListenersFromEnv);
-}
-
-if (process.env.NODE_ENV !== 'production') {
-  global.tournamentEventEmitter = eventEmitter;
 }
 
 export const EVENTS = {
