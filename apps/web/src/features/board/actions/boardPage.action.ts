@@ -165,6 +165,7 @@ export async function validateBoardPasswordAction(input: {
             status: tournament.status,
             format: tournament.format,
             startingScore: tournament.startingScore,
+            legsConfig: tournament.legsConfig ?? null,
           },
         },
         boards,

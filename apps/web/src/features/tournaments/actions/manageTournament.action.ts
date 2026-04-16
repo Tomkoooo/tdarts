@@ -524,3 +524,42 @@ export async function sendTournamentPlayerNotificationAction(input: {
   );
   return run(input);
 }
+
+const updateLegsConfigSchema = z.object({
+  code: z.string().min(1),
+  legsConfig: z
+    .object({
+      groups: z.record(z.string(), z.number().int().min(1).max(9)).optional(),
+      knockout: z.record(z.string(), z.number().int().min(1).max(9)).optional(),
+    })
+    .nullable(),
+});
+
+export async function updateLegsConfigAction(input: {
+  code: string;
+  legsConfig: { groups?: Record<string, number>; knockout?: Record<string, number> } | null;
+}) {
+  const run = withTelemetry(
+    'tournaments.updateLegsConfig',
+    async (payload: typeof input) => {
+      const parsed = updateLegsConfigSchema.parse(payload);
+      const authResult = await authorizeUserResult();
+      if (!authResult.ok) return authResult;
+
+      await TournamentService.updateLegsConfig(
+        parsed.code,
+        authResult.data.userId,
+        parsed.legsConfig
+      );
+
+      revalidateTournamentTags(parsed.code);
+      return { success: true };
+    },
+    {
+      method: 'ACTION',
+      metadata: { feature: 'tournaments', actionName: 'updateLegsConfig' },
+      resolveStatus: resolveGuardAwareStatus,
+    }
+  );
+  return run(input);
+}

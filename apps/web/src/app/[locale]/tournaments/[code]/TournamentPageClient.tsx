@@ -39,6 +39,9 @@ const TournamentKnockoutBracket = dynamic(
 const TournamentStatusChanger = dynamic(
   () => import("@/components/tournament/TournamentStatusChanger")
 );
+const LegsConfigPanel = dynamic(
+  () => import("@/components/tournament/LegsConfigPanel")
+);
 
 type TournamentPageClientProps = {
   initialData?: any;
@@ -634,6 +637,11 @@ const TournamentPageClient: React.FC<TournamentPageClientProps> = ({
                 userClubRole={userClubRole}
                 onRefetch={handleTournamentRefreshFresh}
                 section="all"
+              />
+              <LegsConfigPanel
+                tournament={tournament}
+                userClubRole={userClubRole}
+                onRefetch={handleTournamentRefreshFresh}
               />
             </TabsContent>
           </div>

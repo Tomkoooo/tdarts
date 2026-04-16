@@ -3021,7 +3021,22 @@
       "top_players": "top players",
       "total_players": "total players"
     },
-    "organized_by": "organized by"
+    "organized_by": "organized by",
+    "legs_config": {
+      "title": "Legs Configuration",
+      "subtitle": "Set how many legs a player must win per match. Each group and each knockout round can have a different value — groups with more players may warrant more legs. Scorers cannot change locked values.",
+      "group_section": "Group Stage",
+      "knockout_section": "Knockout Rounds",
+      "not_set": "Not set (player choice)",
+      "bulk_set_label": "Set all to:",
+      "bulk_apply": "Apply",
+      "saved": "Saved",
+      "save_error": "Save failed",
+      "groups_not_generated": "Generate groups first to configure per-group legs.",
+      "knockout_not_generated": "Generate the knockout bracket first to configure per-round legs.",
+      "finished_note": "Tournament is finished — legs configuration is read-only.",
+      "knockout_cleared_notice": "Knockout legs config was cleared when the bracket was cancelled. Re-generate the bracket and reconfigure if needed."
+    }
   },
   "Map": {
     "title": "Tournament Map",

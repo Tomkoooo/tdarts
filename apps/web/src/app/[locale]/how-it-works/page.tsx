@@ -6,6 +6,7 @@ import {
   IconBuilding, 
   IconTrophy, 
   IconTarget, 
+  IconLock,
   IconShare,
   IconChartLine,
   IconPlayerPlay,
@@ -22,6 +23,7 @@ import { Link } from '@/i18n/routing';
 import { useRouter, useSearchParams } from 'next/navigation';
 import howItWorksHu from '@/data/how-it-works/hu.json';
 import howItWorksEn from '@/data/how-it-works/en.json';
+import howItWorksDe from '@/data/how-it-works/de.json';
 import ContentRenderer from '@/components/how-it-works/ContentRenderer';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -34,6 +36,7 @@ const iconMap: { [key: string]: any } = {
   IconBuilding,
   IconTrophy,
   IconTarget,
+  IconLock,
   IconShare,
   IconChartLine,
   IconPlayerPlay,
@@ -149,7 +152,9 @@ const HowItWorksContent = () => {
   const locale = useLocale();
 
   const howItWorksData = useMemo(() => {
-    return locale === 'hu' ? howItWorksHu : howItWorksEn;
+    if (locale === 'hu') return howItWorksHu;
+    if (locale === 'de') return howItWorksDe;
+    return howItWorksEn;
   }, [locale]);
 
   const [activeStep, setActiveStep] = useState<number | null>(
@@ -259,7 +264,7 @@ const HowItWorksContent = () => {
 
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               {filteredSteps.map((step: any) => {
-                const Icon = iconMap[step.icon];
+                const Icon = iconMap[step.icon] || IconBook;
                 const color = stepColors[step.id % stepColors.length];
                 
                 return (
@@ -335,7 +340,7 @@ const HowItWorksContent = () => {
                     "w-16 h-16 md:w-20 md:h-20 rounded-2xl flex items-center justify-center shrink-0",
                     currentColor.bg
                   )}>
-                    {React.createElement(iconMap[howItWorksData.steps[activeStep].icon], {
+                    {React.createElement(iconMap[howItWorksData.steps[activeStep].icon] || IconBook, {
                       className: cn("w-8 h-8 md:w-10 md:h-10", currentColor.icon)
                     })}
                   </div>

@@ -170,6 +170,66 @@
     },
     {
       "id": 3,
+      "title": "Leg konfiguráció (Admin fül)",
+      "icon": "IconLock",
+      "description": "Csoportonkénti és köronkénti leg beállítás a csoportgenerálás után",
+      "content": {
+        "sections": [
+          {
+            "type": "text",
+            "content": "A csoportok vagy a kieséses tábla generálása után az adminok és moderátorok beállíthatják, hogy hány leget kell nyerni az egyes meccseken. Ez a verseny oldal <strong>Admin fülén</strong> érhető el."
+          },
+          {
+            "type": "subsection",
+            "title": "Miért generálás után kell beállítani?",
+            "content": [
+              "A csoport mérete változó — 6-7 fős csoportokban általában több leg szükséges, mint 3-4 fős csoportokban.",
+              "A kieséses körök csak a tábla generálása után jönnek létre, így azokat is csak ezután lehet konfigurálni.",
+              "Ez a megközelítés valós adatok alapján teszi lehetővé a helyes döntés meghozatalát."
+            ]
+          },
+          {
+            "type": "subsection",
+            "title": "Csoportonkénti leg konfiguráció",
+            "content": [
+              "Az Admin fülön a Leg konfiguráció panelen minden táblához tartozik egy sor.",
+              "Minden tábla kaphat más értéket — pl. az 1. tábla 3 leg, a 2. tábla 5 leg.",
+              "A 'Mindent beállít' tömeges akcióval egyszerre állíthatod be az összes csoportot.",
+              "Üres sor esetén a táblakezelő szabadon választhatja meg a leg számát."
+            ],
+            "note": {
+              "type": "info",
+              "content": "A változtatások automatikusan mentésre kerülnek a kiválasztáskor. Minden sor jelzi a mentés eredményét."
+            }
+          },
+          {
+            "type": "subsection",
+            "title": "Körönkénti leg konfiguráció (Kieséses)",
+            "content": [
+              "A tábla generálása után megjelenik a Kieséses körök szekció ugyanabban a panelben.",
+              "Minden kör (negyeddöntő, elődöntő, döntő stb.) eltérő leg értéket kaphat.",
+              "Ha a tábla visszavonásra kerül és újragenerálódik, a kieséses leg konfiguráció automatikusan törlődik a félrevezető körszám-egyezések megelőzéséhez.",
+              "Új tábla generálása után konfiguráld újra a kieséses legeket."
+            ]
+          },
+          {
+            "type": "subsection",
+            "title": "Kikényszerítés",
+            "content": [
+              "Ha egy csoporthoz vagy körhöz be van állítva a leg érték, a táblakezelő képernyőn a leg-választó le van zárva az egyszerű táblavezetők előtt.",
+              "Adminok és moderátorok felülírhatják az értéket a táblán — egy jelzés mutatja a szervező által beállított értéket.",
+              "A szerver érvényesíti a konfigurált értéket: ha egy nem-admin táblakezelő más értéket ad meg, hibaüzenetet kap."
+            ],
+            "note": {
+              "type": "important",
+              "content": "A konfiguráció az összes még el nem indított meccsre vonatkozik a csoportban vagy körben. A már folyamatban lévő meccsek visszamenőlegesen nem változnak."
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 4,
       "title": "Játékosok és verseny napi működés",
       "icon": "IconSword",
       "description": "Nevezés, check-in, csoportok, kieséses ág",
@@ -206,7 +266,7 @@
       }
     },
     {
-      "id": 4,
+      "id": 5,
       "title": "Író program és pontszám rögzítés",
       "icon": "IconTarget",
       "description": "Aktuális belépési pontok és megerősítési logika",
@@ -251,7 +311,7 @@
       }
     },
     {
-      "id": 5,
+      "id": 6,
       "title": "Liga kezelés és pontozási rendszerek",
       "icon": "IconChartLine",
       "description": "Aktuális pontrendszerek és verseny-hozzárendelés",
@@ -301,7 +361,7 @@
       }
     },
     {
-      "id": 6,
+      "id": 7,
       "title": "Mindennapi ajánlott munkafolyamat",
       "icon": "IconPlayerPlay",
       "description": "Egyszerű rutin versenynapokra",
@@ -339,7 +399,7 @@
       }
     },
     {
-      "id": 7,
+      "id": 8,
       "title": "Gyakori hibák és elkerülésük",
       "icon": "IconFlagCheck",
       "description": "Rövid hibamegelőzési útmutató",
@@ -372,7 +432,7 @@
       }
     },
     {
-      "id": 8,
+      "id": 9,
       "title": "Megosztás: klubok, versenyek, galériák",
       "icon": "IconShare",
       "description": "Klubok és versenyek megosztása QR kóddal és linkekkel",
@@ -422,7 +482,7 @@
       }
     },
     {
-      "id": 9,
+      "id": 10,
       "title": "MMR Rangsor Rendszer",
       "icon": "IconChartLine",
       "description": "Teljesítmény alapú játékos rangsor",
@@ -500,7 +560,7 @@
       }
     },
     {
-      "id": 10,
+      "id": 11,
       "title": "Helyi meccs (Local Match)",
       "icon": "IconPlayerPlay",
       "description": "Gyors gyakorlás vagy ad-hoc meccs verseny nélkül",
@@ -546,7 +606,7 @@
       }
     },
     {
-      "id": 11,
+      "id": 12,
       "title": "PWA telepítés",
       "icon": "IconDeviceMobile",
       "description": "Mobilalkalmazásként való használat",

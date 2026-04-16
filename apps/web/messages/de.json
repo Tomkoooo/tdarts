@@ -1833,7 +1833,22 @@
       "top_players": "top players",
       "total_players": "total players"
     },
-    "organized_by": "organized by"
+    "organized_by": "organized by",
+    "legs_config": {
+      "title": "Leg-Konfiguration",
+      "subtitle": "Lege fest, wie viele Legs ein Spieler pro Spiel gewinnen muss. Jede Gruppe und jede K.o.-Runde kann einen anderen Wert erhalten — Gruppen mit mehr Spielern können mehr Legs rechtfertigen. Scorer können gesperrte Werte nicht ändern.",
+      "group_section": "Gruppenphase",
+      "knockout_section": "K.o.-Runden",
+      "not_set": "Nicht festgelegt (Spielerwahl)",
+      "bulk_set_label": "Alle setzen auf:",
+      "bulk_apply": "Anwenden",
+      "saved": "Gespeichert",
+      "save_error": "Speicherfehler",
+      "groups_not_generated": "Erstelle zuerst die Gruppen, um die Leg-Konfiguration pro Gruppe einzustellen.",
+      "knockout_not_generated": "Erstelle zuerst das K.o.-Bracket, um die Runden-Konfiguration einzustellen.",
+      "finished_note": "Das Turnier ist beendet — die Leg-Konfiguration ist schreibgeschützt.",
+      "knockout_cleared_notice": "Die K.o.-Leg-Konfiguration wurde gelöscht, als das Bracket abgebrochen wurde. Erstelle das Bracket neu und konfiguriere es bei Bedarf."
+    }
   },
   "Club": {
     "seo": {

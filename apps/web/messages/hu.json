@@ -2796,7 +2796,22 @@
       "top_players": "top players",
       "total_players": "total players"
     },
-    "organized_by": "organized by"
+    "organized_by": "organized by",
+    "legs_config": {
+      "title": "Leg konfiguráció",
+      "subtitle": "Állítsd be, hány leget kell nyerni egy meccsen. Minden csoport és kieséses kör eltérő értéket kaphat — a több játékossal rendelkező csoportoknak érdemes több leget beállítani. A táblakezelők nem módosíthatják a zárolt értéket.",
+      "group_section": "Csoportkör",
+      "knockout_section": "Kieséses körök",
+      "not_set": "Nincs megadva (játékos dönti el)",
+      "bulk_set_label": "Mindent beállít:",
+      "bulk_apply": "Alkalmaz",
+      "saved": "Mentve",
+      "save_error": "Mentési hiba",
+      "groups_not_generated": "Először generáld a csoportokat a csoportonkénti leg konfiguráció beállításához.",
+      "knockout_not_generated": "Először generáld az egyenes kiesési táblát a körönkénti konfiguráció beállításához.",
+      "finished_note": "A verseny befejeződött — a leg konfiguráció csak olvasható.",
+      "knockout_cleared_notice": "A kieséses leg konfiguráció törlésre került, amikor a tábla visszavonásra került. Generáld újra a táblát és konfiguráld újra, ha szükséges."
+    }
   },
   "Map": {
     "title": "Torna térkép",

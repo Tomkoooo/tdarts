@@ -6258,6 +6258,40 @@ export class TournamentService {
         }
     }
 
+    static async updateLegsConfig(
+        tournamentId: string,
+        requesterId: string,
+        legsConfig: { groups?: Record<string, number>; knockout?: Record<string, number> } | null
+    ): Promise<void> {
+        await connectMongo();
+        const tournament = await TournamentModel.findOne({
+            tournamentId,
+            isDeleted: { $ne: true },
+            isArchived: { $ne: true },
+        }).populate('clubId');
+
+        if (!tournament) {
+            throw new BadRequestError('Tournament not found');
+        }
+
+        const resolvedClubId =
+            (tournament as any)?.clubId?._id?.toString?.() ||
+            (tournament as any)?.clubId?.toString?.();
+        if (!resolvedClubId) {
+            throw new BadRequestError('Tournament is missing a valid club reference');
+        }
+
+        const isAuthorized = await AuthorizationService.checkAdminOrModerator(requesterId, resolvedClubId);
+        if (!isAuthorized) {
+            throw new BadRequestError('Only club admins or moderators can update legs config');
+        }
+
+        tournament.tournamentSettings.legsConfig = legsConfig ?? undefined;
+        tournament.markModified('tournamentSettings.legsConfig');
+        tournament.updatedAt = new Date();
+        await tournament.save();
+    }
+
     static async getActiveTournamentsByClubId(clubId: string): Promise<any[]> {
         try {
             await connectMongo();

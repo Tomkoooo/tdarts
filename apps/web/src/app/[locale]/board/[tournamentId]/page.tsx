@@ -441,11 +441,9 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
   const handleMatchSelect = (match: Match) => {
     if (match.status === 'pending') {
       setSelectedMatch(match);
-      // Pre-fill legsToWin from organizer config when available
+      // Pre-fill from organizer config, or fall back to the match's stored value, or default 3
       const configured = getConfiguredLegsToWin(match);
-      if (configured !== undefined) {
-        setLegsToWin(configured);
-      }
+      setLegsToWin(configured ?? match.legsToWin ?? 3);
       setShowMatchSetup(true);
     } else if (match.status === 'ongoing') {
       setSelectedMatch(match);
@@ -797,7 +795,7 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
                         </div>
                         <div className="text-sm text-muted-foreground">
                           <p>{t("kezdő_pontszám_46")}{match.type === '501' ? '501' : match.type}</p>
-                          <p>{match.legsToWin || 3} {t("nyert_leg")}</p>
+                          <p>{(match.status === 'pending' ? (getConfiguredLegsToWin(match) ?? match.legsToWin) : match.legsToWin) || 3} {t("nyert_leg")}</p>
                         </div>
                         <div className="flex items-center justify-between">
                           <Badge variant={config.variant}>{config.label}</Badge>
@@ -1035,9 +1033,9 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
         saveLabel={t("indítás")}
         configuredLegsToWin={configuredLegsToWin}
         isPrivileged={isAdminOrModerator}
-        legsSetByOrganizerLabel={t("legs_set_by_organizer")}
-        legsOverrideNoticeLabel={t("legs_override_notice")}
-        legsOrganizerConfigLabel={t("legs_organizer_config")}
+        legsSetByOrganizerLabel={t("legs_set_by_organizer", { legs: configuredLegsToWin ?? legsToWin })}
+        legsOverrideNoticeLabel={t("legs_override_notice", { legs: configuredLegsToWin ?? legsToWin })}
+        legsOrganizerConfigLabel={t("legs_organizer_config", { legs: configuredLegsToWin ?? legsToWin })}
       />
     );
   }
