@@ -5,7 +5,7 @@ import {
   AuthorizationError,
   type LogContext,
   type ErrorCategory,
-} from '@tdarts/core';
+} from '@tdarts/core/errors';
 import { sendEmail } from '@/lib/mailer';
 import { NextRequest } from 'next/server';
 

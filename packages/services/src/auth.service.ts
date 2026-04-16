@@ -1,8 +1,16 @@
 import { UserModel } from '@tdarts/core';
 import { UserDocument as IUserDocument } from '@tdarts/core';
-import { BadRequestError, ValidationError } from '@tdarts/core';
+import {
+  BadRequestError,
+  ValidationError,
+  authPublicWebBaseUrl,
+  isUserCountryCompleteForOnboarding,
+} from '@tdarts/core';
 import jwt from 'jsonwebtoken';
 import { connectMongo } from '@tdarts/core';
+
+const MAGIC_LINK_COOLDOWN_MS = 60_000;
+const magicLinkCooldown = new Map<string, number>();
 
 // Utility function to mask email for privacy/GDPR compliance
 function maskEmail(email: string): string {
@@ -13,12 +21,34 @@ function maskEmail(email: string): string {
 }
 
 export class AuthService {
+  static isEmailRegistrationAllowed(): boolean {
+    const v = process.env.ALLOW_EMAIL_REGISTRATION;
+    if (v === undefined || v === '') return process.env.NODE_ENV !== 'production';
+    return v === 'true' || v === '1';
+  }
+
+  static needsProfileCompletion(user: {
+    termsAcceptedAt?: Date | null;
+    country?: string | null;
+  }): boolean {
+    if (!user.termsAcceptedAt) return true;
+    if (!isUserCountryCompleteForOnboarding(user.country)) return true;
+    return false;
+  }
+
   static async register(user: {
     email: string;
     name: string;
     username: string;
     password: string;
   }): Promise<string> {
+    if (!AuthService.isEmailRegistrationAllowed()) {
+      throw new BadRequestError('Email registration is disabled', 'auth', {
+        errorCode: 'AUTH_REGISTRATION_DISABLED',
+        expected: true,
+        operation: 'auth.register',
+      });
+    }
     await connectMongo();
     try {
       const existingUser = await UserModel.findOne({
@@ -33,6 +63,7 @@ export class AuthService {
       const newUser = await UserModel.create({
         ...user,
         country: null,
+        termsAcceptedAt: null,
       });
       return await this.sendVerificationEmail(newUser);
     } catch (error: any) {
@@ -46,7 +77,21 @@ export class AuthService {
     }
   }
 
-  static async login(email: string, password: string): Promise<{token: string, user: {_id: string, username: string, email: string, name: string, isAdmin: boolean, isVerified: boolean, country?: string | null, locale?: 'hu' | 'en' | 'de'}}> {
+  static async login(email: string, password: string): Promise<{
+    token: string;
+    user: {
+      _id: string;
+      username: string;
+      email: string;
+      name: string;
+      isAdmin: boolean;
+      isVerified: boolean;
+      country?: string | null;
+      locale?: 'hu' | 'en' | 'de';
+      termsAcceptedAt?: Date | null;
+      needsProfileCompletion: boolean;
+    };
+  }> {
     await connectMongo();
     const user = await UserModel.findOne({ email }).select('+password');
     if (!user || !(await user.matchPassword(password)) || user.isDeleted) {
@@ -59,12 +104,26 @@ export class AuthService {
     }
     await user.updateLastLogin();
     const token = await this.generateAuthToken(user);
-    return {token, user}
+    return {
+      token,
+      user: {
+        _id: String(user._id),
+        username: user.username,
+        email: user.email,
+        name: user.name,
+        isAdmin: user.isAdmin,
+        isVerified: user.isVerified,
+        country: user.country ?? null,
+        locale: user.locale ?? 'hu',
+        termsAcceptedAt: user.termsAcceptedAt ?? null,
+        needsProfileCompletion: AuthService.needsProfileCompletion(user),
+      },
+    };
   }
 
   static async verifyEmail(email: string, code: string): Promise<{user: IUserDocument, token: string}> {
     await connectMongo();
-    const user = await UserModel.findOne({ email });
+    const user = await UserModel.findOne({ email }).select('+codes');
     if (!user) {
       throw new BadRequestError('User not found', 'auth', {
         email: maskEmail(email),
@@ -78,16 +137,37 @@ export class AuthService {
     return { user, token };
   }
 
+  static async verifyEmailWithToken(token: string): Promise<{ user: IUserDocument; token: string }> {
+    await connectMongo();
+    const user = await UserModel.findOne({ 'codes.verify_email_token': token }).select('+codes');
+    if (!user) {
+      throw new BadRequestError('Invalid verification link', 'auth', {
+        errorCode: 'AUTH_INVALID_VERIFICATION_LINK',
+        expected: true,
+        operation: 'auth.verifyEmailWithToken',
+      });
+    }
+    await user.finalizeEmailVerificationFromLinkToken();
+    const jwtToken = await this.generateAuthToken(user);
+    return { user, token: jwtToken };
+  }
+
   static async sendVerificationEmail(user: IUserDocument): Promise<string> {
     const verificationCode = await user.generateVerifyEmailCode();
     const { MailerService } = await import('./mailer.service');
-    
+    const base = authPublicWebBaseUrl();
+    const linkToken = user.codes.verify_email_token;
+    const verificationLink = linkToken
+      ? `${base}/auth/verify-email?token=${encodeURIComponent(linkToken)}`
+      : '';
+
     await MailerService.sendVerificationEmail(user.email, {
       userName: user.name || user.username || 'Játékos',
       verificationCode,
+      verificationLink,
       locale: user.locale || 'hu',
     });
-    
+
     return verificationCode;
   }
 
@@ -173,7 +253,7 @@ export class AuthService {
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { id: string };
       const user = await UserModel.findById(decoded.id).select(
-        '_id username name email isVerified isAdmin profilePicture country locale isDeleted'
+        '_id username name email isVerified isAdmin profilePicture country locale isDeleted termsAcceptedAt'
       );
       if (!user) {
         throw new BadRequestError('User not found', 'auth', {
@@ -209,16 +289,23 @@ export class AuthService {
     const resetCode = await user.generateResetPasswordCode();
 
     const { MailerService } = await import('./mailer.service');
+    const base = authPublicWebBaseUrl();
+    const linkToken = user.codes.reset_password_token;
+    const resetLink = linkToken
+      ? `${base}/auth/reset-password?email=${encodeURIComponent(email)}&token=${encodeURIComponent(linkToken)}`
+      : '';
+
     await MailerService.sendPasswordResetEmail(email, {
       userName: user.name || user.username || 'Játékos',
       resetCode,
+      resetLink,
       locale: user.locale || 'hu',
     });
   }
 
-  static async resetPassword(email: string, code: string, newPassword: string): Promise<void> {
+  static async resetPassword(email: string, credential: string, newPassword: string): Promise<void> {
     await connectMongo();
-    const user = await UserModel.findOne({ email });
+    const user = await UserModel.findOne({ email }).select('+password +codes');
     if (!user) {
       throw new BadRequestError('User not found', 'auth', {
         email: maskEmail(email),
@@ -227,15 +314,84 @@ export class AuthService {
         operation: 'auth.resetPassword',
       });
     }
-    if (user.codes.reset_password !== code) {
-      throw new BadRequestError('Invalid reset code', 'auth', {
-        email: maskEmail(email),
-        errorCode: 'AUTH_INVALID_RESET_CODE',
+    await user.resetPassword(newPassword, credential);
+  }
+
+  static async requestMagicLogin(email: string): Promise<void> {
+    await connectMongo();
+    const key = email.toLowerCase();
+    const last = magicLinkCooldown.get(key) ?? 0;
+    if (Date.now() - last < MAGIC_LINK_COOLDOWN_MS) {
+      return;
+    }
+    magicLinkCooldown.set(key, Date.now());
+
+    const user = await UserModel.findOne({ email: key });
+    if (!user || user.isDeleted) {
+      return;
+    }
+    const token = await user.generateMagicLoginToken();
+    const base = authPublicWebBaseUrl();
+    const loginLink = `${base}/auth/magic-login?token=${encodeURIComponent(token)}`;
+    const { MailerService } = await import('./mailer.service');
+    await MailerService.sendMagicLoginEmail(user.email, {
+      userName: user.name || user.username || 'Játékos',
+      loginLink,
+      locale: user.locale || 'hu',
+    });
+  }
+
+  static async consumeMagicLoginToken(token: string): Promise<{ user: IUserDocument; token: string }> {
+    await connectMongo();
+    const user = await UserModel.findOne({ 'codes.magic_login_token': token }).select('+codes');
+    if (!user) {
+      throw new BadRequestError('Invalid sign-in link', 'auth', {
+        errorCode: 'AUTH_INVALID_MAGIC_LOGIN',
         expected: true,
-        operation: 'auth.resetPassword',
+        operation: 'auth.consumeMagicLoginToken',
       });
     }
-    await user.resetPassword(newPassword, code);
+    await user.finalizeMagicLoginFromToken();
+    await user.updateLastLogin();
+    const jwtToken = await this.generateAuthToken(user);
+    return { user, token: jwtToken };
+  }
+
+  static async completeLegalAndCountry(
+    userId: string,
+    input: { acceptTerms: boolean; country?: string | null },
+  ): Promise<IUserDocument> {
+    await connectMongo();
+    const user = await UserModel.findById(userId);
+    if (!user) {
+      throw new BadRequestError('User not found', 'auth', {
+        userId,
+        errorCode: 'AUTH_USER_NOT_FOUND',
+        expected: true,
+        operation: 'auth.completeLegalAndCountry',
+      });
+    }
+    if (!input.acceptTerms) {
+      throw new ValidationError('Terms must be accepted', 'auth', {
+        errorCode: 'AUTH_TERMS_REQUIRED',
+        expected: true,
+        operation: 'auth.completeLegalAndCountry',
+      });
+    }
+    const hasCountry = isUserCountryCompleteForOnboarding(user.country);
+    if (!hasCountry) {
+      if (input.country == null || !isUserCountryCompleteForOnboarding(input.country)) {
+        throw new ValidationError('Country is required', 'auth', {
+          errorCode: 'AUTH_COUNTRY_REQUIRED',
+          expected: true,
+          operation: 'auth.completeLegalAndCountry',
+        });
+      }
+      user.country = String(input.country).trim().toUpperCase();
+    }
+    user.termsAcceptedAt = new Date();
+    await user.save();
+    return user;
   }
 
   static async loginWithGoogleIdToken(idToken: string): Promise<{
@@ -249,6 +405,8 @@ export class AuthService {
       isVerified: boolean;
       country?: string | null;
       locale?: 'hu' | 'en' | 'de';
+      termsAcceptedAt?: Date | null;
+      needsProfileCompletion: boolean;
     };
   }> {
     await connectMongo();
@@ -339,6 +497,7 @@ export class AuthService {
         authProvider: 'google' as const,
         isVerified: true,
         country: null,
+        termsAcceptedAt: null,
       });
       await user.updateLastLogin();
     }
@@ -355,6 +514,8 @@ export class AuthService {
         isVerified: user.isVerified,
         country: user.country ?? null,
         locale: user.locale ?? 'hu',
+        termsAcceptedAt: user.termsAcceptedAt ?? null,
+        needsProfileCompletion: AuthService.needsProfileCompletion(user),
       },
     };
   }

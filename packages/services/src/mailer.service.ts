@@ -611,15 +611,21 @@ tDarts Csapat
         data: {
             userName: string;
             verificationCode: string;
+            verificationLink?: string;
             locale?: 'hu' | 'en' | 'de';
         }
     ): Promise<boolean> {
         try {
             const { EmailTemplateService } = await import('./emailtemplate.service');
-            
+            const { authEmailLinkTtlMinutes } = await import('@tdarts/core');
+            const expiresInMinutes = String(authEmailLinkTtlMinutes());
+            const link = data.verificationLink || '';
+
             const template = await EmailTemplateService.getRenderedTemplate('email_verification', {
                 userName: data.userName,
                 verificationCode: data.verificationCode,
+                verificationLink: link,
+                expiresInMinutes,
                 currentYear: new Date().getFullYear(),
             }, {
                 locale: data.locale,
@@ -636,6 +642,8 @@ tDarts Csapat
                         variables: {
                             userName: data.userName,
                             verificationCode: data.verificationCode,
+                            verificationLink: link,
+                            expiresInMinutes,
                             currentYear: new Date().getFullYear(),
                         },
                         locale: data.locale || template.locale,
@@ -645,10 +653,19 @@ tDarts Csapat
 
             const locale = normalizeEmailLocale(data.locale);
             const fallbackSubject = locale === 'en' ? '🎯 tDarts Email Verification' : '🎯 TDarts Email Verifikáció';
+            const linkLine =
+                link &&
+                (locale === 'en'
+                    ? `\n\nOr open this link (expires in ${expiresInMinutes} minutes):\n${link}`
+                    : `\n\nVagy nyisd meg ezt a linket (érvényes ${expiresInMinutes} percig):\n${link}`);
             const fallbackText =
                 locale === 'en'
-                    ? `Dear ${data.userName}!\n\nUse this verification code to confirm your email address:\n\n${data.verificationCode}`
-                    : `Kedves ${data.userName}!\n\nKérjük, erősítse meg email címét az alábbi verifikációs kóddal:\n\n${data.verificationCode}`;
+                    ? `Dear ${data.userName}!\n\nUse this verification code to confirm your email address:\n\n${data.verificationCode}${linkLine || ''}`
+                    : `Kedves ${data.userName}!\n\nKérjük, erősítse meg email címét az alábbi verifikációs kóddal:\n\n${data.verificationCode}${linkLine || ''}`;
+
+            const linkHtml =
+                link &&
+                `<p>${locale === 'en' ? 'Or verify in one click:' : 'Vagy erősítsd meg egy kattintással:'} <a href="${link}">${locale === 'en' ? 'Confirm email' : 'Email megerősítése'}</a> (${locale === 'en' ? 'expires in' : 'érvényes'} ${expiresInMinutes} ${locale === 'en' ? 'minutes' : 'percig'}).</p>`;
 
             // Fallback
             return await sendEmail({
@@ -658,7 +675,7 @@ tDarts Csapat
                     locale,
                     title: fallbackSubject,
                     heading: fallbackSubject,
-                    bodyHtml: `<p>${locale === 'en' ? `Dear ${data.userName}!` : `Kedves ${data.userName}!`}</p><p>${locale === 'en' ? 'Use this code to verify your email address:' : 'Kérjük, használd az alábbi kódot az email címed megerősítéséhez:'}</p><p style="font-size:24px;font-weight:700;letter-spacing:0.12em;">${data.verificationCode}</p>`,
+                    bodyHtml: `<p>${locale === 'en' ? `Dear ${data.userName}!` : `Kedves ${data.userName}!`}</p><p>${locale === 'en' ? 'Use this code to verify your email address:' : 'Kérjük, használd az alábbi kódot az email címed megerősítéséhez:'}</p><p style="font-size:24px;font-weight:700;letter-spacing:0.12em;">${data.verificationCode}</p>${linkHtml || ''}`,
                 }),
                 text: fallbackText,
                 resendContext: {
@@ -666,6 +683,8 @@ tDarts Csapat
                     variables: {
                         userName: data.userName,
                         verificationCode: data.verificationCode,
+                        verificationLink: link,
+                        expiresInMinutes,
                         currentYear: new Date().getFullYear(),
                     },
                     locale,
@@ -685,15 +704,21 @@ tDarts Csapat
         data: {
             userName: string;
             resetCode: string;
+            resetLink?: string;
             locale?: 'hu' | 'en' | 'de';
         }
     ): Promise<boolean> {
         try {
             const { EmailTemplateService } = await import('./emailtemplate.service');
-            
+            const { authEmailLinkTtlMinutes } = await import('@tdarts/core');
+            const expiresInMinutes = String(authEmailLinkTtlMinutes());
+            const link = data.resetLink || '';
+
             const template = await EmailTemplateService.getRenderedTemplate('password_reset', {
                 userName: data.userName,
                 resetCode: data.resetCode,
+                resetLink: link,
+                expiresInMinutes,
                 currentYear: new Date().getFullYear(),
             }, {
                 locale: data.locale,
@@ -710,6 +735,8 @@ tDarts Csapat
                         variables: {
                             userName: data.userName,
                             resetCode: data.resetCode,
+                            resetLink: link,
+                            expiresInMinutes,
                             currentYear: new Date().getFullYear(),
                         },
                         locale: data.locale || template.locale,
@@ -719,10 +746,19 @@ tDarts Csapat
 
             const locale = normalizeEmailLocale(data.locale);
             const fallbackSubject = locale === 'en' ? '🎯 tDarts Password Reset' : '🎯 TDarts Jelszó Visszaállítás';
+            const linkLine =
+                link &&
+                (locale === 'en'
+                    ? `\n\nOr reset via link (expires in ${expiresInMinutes} minutes):\n${link}`
+                    : `\n\nVagy állítsd vissza a linkkel (érvényes ${expiresInMinutes} percig):\n${link}`);
             const fallbackText =
                 locale === 'en'
-                    ? `Dear ${data.userName}!\n\nUse the following code to reset your password:\n\n${data.resetCode}`
-                    : `Kedves ${data.userName}!\n\nKérjük, használja az alábbi kódot a jelszó visszaállításához:\n\n${data.resetCode}`;
+                    ? `Dear ${data.userName}!\n\nUse the following code to reset your password:\n\n${data.resetCode}${linkLine || ''}`
+                    : `Kedves ${data.userName}!\n\nKérjük, használja az alábbi kódot a jelszó visszaállításához:\n\n${data.resetCode}${linkLine || ''}`;
+
+            const linkHtml =
+                link &&
+                `<p>${locale === 'en' ? 'Or reset in one click:' : 'Vagy állítsd vissza egy kattintással:'} <a href="${link}">${locale === 'en' ? 'Reset password' : 'Jelszó visszaállítása'}</a> (${locale === 'en' ? 'expires in' : 'érvényes'} ${expiresInMinutes} ${locale === 'en' ? 'minutes' : 'percig'}).</p>`;
 
             // Fallback
             return await sendEmail({
@@ -732,7 +768,7 @@ tDarts Csapat
                     locale,
                     title: fallbackSubject,
                     heading: fallbackSubject,
-                    bodyHtml: `<p>${locale === 'en' ? `Dear ${data.userName}!` : `Kedves ${data.userName}!`}</p><p>${locale === 'en' ? 'Use this code to reset your password:' : 'Kérjük, használd az alábbi kódot a jelszó visszaállításához:'}</p><p style="font-size:24px;font-weight:700;letter-spacing:0.12em;">${data.resetCode}</p>`,
+                    bodyHtml: `<p>${locale === 'en' ? `Dear ${data.userName}!` : `Kedves ${data.userName}!`}</p><p>${locale === 'en' ? 'Use this code to reset your password:' : 'Kérjük, használd az alábbi kódot a jelszó visszaállításához:'}</p><p style="font-size:24px;font-weight:700;letter-spacing:0.12em;">${data.resetCode}</p>${linkHtml || ''}`,
                 }),
                 text: fallbackText,
                 resendContext: {
@@ -740,6 +776,8 @@ tDarts Csapat
                     variables: {
                         userName: data.userName,
                         resetCode: data.resetCode,
+                        resetLink: link,
+                        expiresInMinutes,
                         currentYear: new Date().getFullYear(),
                     },
                     locale,
@@ -747,6 +785,82 @@ tDarts Csapat
             });
         } catch (error) {
             console.error('Failed to send password reset email:', error);
+            throw error;
+        }
+    }
+
+    static async sendMagicLoginEmail(
+        email: string,
+        data: {
+            userName: string;
+            loginLink: string;
+            locale?: 'hu' | 'en' | 'de';
+        }
+    ): Promise<boolean> {
+        try {
+            const { EmailTemplateService } = await import('./emailtemplate.service');
+            const { authEmailLinkTtlMinutes } = await import('@tdarts/core');
+            const expiresInMinutes = String(authEmailLinkTtlMinutes());
+
+            const template = await EmailTemplateService.getRenderedTemplate('magic_login', {
+                userName: data.userName,
+                loginLink: data.loginLink,
+                expiresInMinutes,
+                currentYear: new Date().getFullYear(),
+            }, {
+                locale: data.locale,
+            });
+
+            if (template) {
+                return await sendEmail({
+                    to: [email],
+                    subject: template.subject,
+                    text: template.text,
+                    html: template.html,
+                    resendContext: {
+                        templateKey: 'magic_login',
+                        variables: {
+                            userName: data.userName,
+                            loginLink: data.loginLink,
+                            expiresInMinutes,
+                            currentYear: new Date().getFullYear(),
+                        },
+                        locale: data.locale || template.locale,
+                    },
+                });
+            }
+
+            const locale = normalizeEmailLocale(data.locale);
+            const fallbackSubject =
+                locale === 'en' ? '🎯 tDarts sign-in link' : '🎯 TDarts bejelentkezési link';
+            const fallbackText =
+                locale === 'en'
+                    ? `Dear ${data.userName}!\n\nSign in to tDarts (link expires in ${expiresInMinutes} minutes):\n${data.loginLink}`
+                    : `Kedves ${data.userName}!\n\nJelentkezz be a tDarts-ba (a link ${expiresInMinutes} percig érvényes):\n${data.loginLink}`;
+
+            return await sendEmail({
+                to: [email],
+                subject: fallbackSubject,
+                html: renderMinimalEmailLayout({
+                    locale,
+                    title: fallbackSubject,
+                    heading: fallbackSubject,
+                    bodyHtml: `<p>${locale === 'en' ? `Dear ${data.userName}!` : `Kedves ${data.userName}!`}</p><p><a href="${data.loginLink}">${locale === 'en' ? 'Sign in to tDarts' : 'Bejelentkezés a tDarts-ba'}</a></p>`,
+                }),
+                text: fallbackText,
+                resendContext: {
+                    templateKey: 'magic_login',
+                    variables: {
+                        userName: data.userName,
+                        loginLink: data.loginLink,
+                        expiresInMinutes,
+                        currentYear: new Date().getFullYear(),
+                    },
+                    locale,
+                },
+            });
+        } catch (error) {
+            console.error('Failed to send magic login email:', error);
             throw error;
         }
     }

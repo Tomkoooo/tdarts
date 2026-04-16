@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
 import { router } from '../init';
-import { apiProcedure } from '../procedures';
+import { apiProcedure, userProcedure } from '../procedures';
 import { mapServiceError } from '../errors/mapServiceError';
 import { AuthService } from '@tdarts/services';
 import {
@@ -10,6 +10,10 @@ import {
   forgotPasswordSchema,
   resetPasswordSchema,
   verifyEmailSchema,
+  verifyEmailTokenSchema,
+  requestMagicLinkSchema,
+  consumeMagicLoginSchema,
+  completeLegalAndCountrySchema,
   googleIdTokenSchema,
 } from '@tdarts/schemas';
 
@@ -67,7 +71,7 @@ export const authRouter = router({
     }),
 
   /**
-   * Verify email address with the 4-digit code sent to the user.
+   * Verify email address with the 6-digit code sent to the user.
    */
   verifyEmail: apiProcedure
     .meta({ openapi: { method: 'POST', path: '/auth/verify-email', tags: ['auth'], protect: false } })
@@ -75,7 +79,98 @@ export const authRouter = router({
     .mutation(async ({ input }) => {
       try {
         const result = await AuthService.verifyEmail(input.email, input.code);
-        return { token: result.token };
+        return {
+          token: result.token,
+          user: {
+            _id: String(result.user._id),
+            username: result.user.username,
+            email: result.user.email,
+            name: result.user.name,
+            isAdmin: result.user.isAdmin,
+            isVerified: result.user.isVerified,
+          },
+        };
+      } catch (err) {
+        throw mapServiceError(err);
+      }
+    }),
+
+  verifyEmailFromToken: apiProcedure
+    .meta({
+      openapi: { method: 'POST', path: '/auth/verify-email-token', tags: ['auth'], protect: false },
+    })
+    .input(verifyEmailTokenSchema)
+    .mutation(async ({ input }) => {
+      try {
+        const result = await AuthService.verifyEmailWithToken(input.token);
+        return {
+          token: result.token,
+          user: {
+            _id: String(result.user._id),
+            username: result.user.username,
+            email: result.user.email,
+            name: result.user.name,
+            isAdmin: result.user.isAdmin,
+            isVerified: result.user.isVerified,
+          },
+        };
+      } catch (err) {
+        throw mapServiceError(err);
+      }
+    }),
+
+  requestMagicLink: apiProcedure
+    .meta({ openapi: { method: 'POST', path: '/auth/magic-link', tags: ['auth'], protect: false } })
+    .input(requestMagicLinkSchema)
+    .mutation(async ({ input }) => {
+      try {
+        await AuthService.requestMagicLogin(input.email);
+        return { ok: true as const };
+      } catch (err) {
+        throw mapServiceError(err);
+      }
+    }),
+
+  consumeMagicLogin: apiProcedure
+    .meta({
+      openapi: { method: 'POST', path: '/auth/magic-login', tags: ['auth'], protect: false },
+    })
+    .input(consumeMagicLoginSchema)
+    .mutation(async ({ input }) => {
+      try {
+        const result = await AuthService.consumeMagicLoginToken(input.token);
+        return {
+          token: result.token,
+          user: {
+            _id: String(result.user._id),
+            username: result.user.username,
+            email: result.user.email,
+            name: result.user.name,
+            isAdmin: result.user.isAdmin,
+            isVerified: result.user.isVerified,
+            country: result.user.country ?? null,
+            locale: result.user.locale ?? 'hu',
+            termsAcceptedAt: result.user.termsAcceptedAt ?? null,
+            needsProfileCompletion: AuthService.needsProfileCompletion(result.user),
+          },
+        };
+      } catch (err) {
+        throw mapServiceError(err);
+      }
+    }),
+
+  completeLegalAndCountry: userProcedure
+    .meta({
+      openapi: { method: 'POST', path: '/auth/complete-profile', tags: ['auth'], protect: true },
+    })
+    .input(completeLegalAndCountrySchema)
+    .mutation(async ({ ctx, input }) => {
+      try {
+        await AuthService.completeLegalAndCountry(ctx.userId, {
+          acceptTerms: input.acceptTerms,
+          country: input.country,
+        });
+        return { ok: true as const };
       } catch (err) {
         throw mapServiceError(err);
       }

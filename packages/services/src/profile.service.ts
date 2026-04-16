@@ -120,13 +120,20 @@ export class ProfileService {
 
   static async verifyEmail(userId: string, code: string): Promise<void> {
     await connectMongo();
-    const user = await UserModel.findById(userId);
+    const user = await UserModel.findById(userId).select('+codes');
     if (!user) {
       throw new BadRequestError('User not found', 'user', {
         userId
       });
     }
     await user.verifyEmail(code);
+  }
+
+  static async completeLegalAndCountry(
+    userId: string,
+    input: { acceptTerms: boolean; country?: string | null },
+  ): Promise<IUserDocument> {
+    return AuthService.completeLegalAndCountry(userId, input);
   }
 
   static async logout(userId: string): Promise<void> {

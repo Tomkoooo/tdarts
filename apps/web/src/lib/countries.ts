@@ -1,3 +1,7 @@
+import { INTERNATIONAL_COUNTRY_CODE } from '@tdarts/core/profile-country';
+
+export { INTERNATIONAL_COUNTRY_CODE };
+
 export interface CountryOption {
   value: string;
   label: string;
@@ -28,7 +32,9 @@ const COUNTRY_SET = new Set(REGION_CODES);
 
 export const isValidCountryCode = (code?: string | null): boolean => {
   if (!code) return false;
-  return COUNTRY_SET.has(code.toUpperCase());
+  const u = code.toUpperCase();
+  if (u === INTERNATIONAL_COUNTRY_CODE) return true;
+  return COUNTRY_SET.has(u);
 };
 
 export const getCountryOptions = (locale: string = 'en'): CountryOption[] => {
@@ -42,9 +48,23 @@ export const getCountryOptions = (locale: string = 'en'): CountryOption[] => {
     .sort((a, b) => a.label.localeCompare(b.label, locale));
 };
 
-export const getCountryLabel = (countryCode?: string | null, locale: string = 'en'): string => {
+/** International (XX) first, then alphabetical ISO regions — for onboarding / profile. */
+export const getCountryOptionsWithInternational = (
+  locale: string = 'en',
+  internationalLabel: string,
+): CountryOption[] => [
+  { value: INTERNATIONAL_COUNTRY_CODE, label: internationalLabel },
+  ...getCountryOptions(locale),
+];
+
+export const getCountryLabel = (
+  countryCode?: string | null,
+  locale: string = 'en',
+  internationalLabel: string = 'International',
+): string => {
   if (!countryCode) return '';
   const normalizedCode = countryCode.toUpperCase();
+  if (normalizedCode === INTERNATIONAL_COUNTRY_CODE) return internationalLabel;
   const displayNames = new Intl.DisplayNames([locale], { type: 'region' });
   return displayNames.of(normalizedCode) || normalizedCode;
 };
@@ -52,6 +72,7 @@ export const getCountryLabel = (countryCode?: string | null, locale: string = 'e
 export const getCountryFlagEmoji = (countryCode?: string | null): string => {
   if (!countryCode) return '';
   const normalizedCode = countryCode.trim().toUpperCase();
+  if (normalizedCode === INTERNATIONAL_COUNTRY_CODE) return '🌐';
   if (!isValidCountryCode(normalizedCode)) return '';
 
   // Convert ISO country code letters to regional indicator symbols.

@@ -1,5 +1,6 @@
 import { connectMongo } from '@/lib/mongoose';
 import { UserModel, PlayerModel, MatchModel, TournamentModel } from '@tdarts/core';
+import { isUserCountryCompleteForOnboarding } from '@tdarts/core/profile-country';
 import { PlayerService } from '@tdarts/services';
 import { serializeForClient } from '@/shared/lib/serializeForClient';
 import mongoose from 'mongoose';
@@ -13,7 +14,7 @@ function getMMRTier(mmr: number): { name: string; color: string } {
   return { name: 'Kezdő', color: 'text-base-content' };
 }
 
-export type ProfileCompletenessIssue = 'photo' | 'country';
+export type ProfileCompletenessIssue = 'photo' | 'country' | 'terms';
 
 export type ProfilePlayerStatsResult = {
   hasPlayer: boolean;
@@ -56,12 +57,36 @@ const getGlobalRankByMmr = unstable_cache(
   { revalidate: 300, tags: ['home:stats'] }
 );
 
+function userHasAcceptedTerms(termsRaw: unknown): boolean {
+  if (termsRaw == null) return false;
+  if (termsRaw instanceof Date) return !Number.isNaN(termsRaw.getTime());
+  if (typeof termsRaw === 'string' || typeof termsRaw === 'number') {
+    const d = new Date(termsRaw);
+    return !Number.isNaN(d.getTime());
+  }
+  return false;
+}
+
 export async function getProfilePlayerStats(userId: string): Promise<ProfilePlayerStatsResult> {
   await connectMongo();
 
   const player = await PlayerService.findPlayerByUserId(userId);
   if (!player) {
-    return { hasPlayer: false, profileCompleteness: { issues: [], count: 0 } };
+    const userOnly = await UserModel.findById(userId).select('country profilePicture termsAcceptedAt').lean();
+    const profileIssues: ProfileCompletenessIssue[] = [];
+    if (userOnly) {
+      if (!userHasAcceptedTerms(userOnly.termsAcceptedAt)) profileIssues.push('terms');
+      const uPic =
+        userOnly.profilePicture != null && String(userOnly.profilePicture).trim() !== ''
+          ? String(userOnly.profilePicture).trim()
+          : '';
+      if (!uPic) profileIssues.push('photo');
+      if (!isUserCountryCompleteForOnboarding(userOnly.country)) profileIssues.push('country');
+    }
+    return {
+      hasPlayer: false,
+      profileCompleteness: { issues: profileIssues, count: profileIssues.length },
+    };
   }
 
   const playerId = player._id.toString();
@@ -207,11 +232,7 @@ export async function getProfilePlayerStats(userId: string): Promise<ProfilePlay
 
   const tournamentHistory = (player.tournamentHistory || []) as unknown[];
 
-  const userDoc = await UserModel.findById(userId).select('country profilePicture').lean();
-  const userCountry =
-    userDoc && userDoc.country != null && String(userDoc.country).trim() !== ''
-      ? String(userDoc.country).trim()
-      : '';
+  const userDoc = await UserModel.findById(userId).select('country profilePicture termsAcceptedAt').lean();
   const userPic =
     userDoc && userDoc.profilePicture != null && String(userDoc.profilePicture).trim() !== ''
       ? String(userDoc.profilePicture).trim()
@@ -220,11 +241,13 @@ export async function getProfilePlayerStats(userId: string): Promise<ProfilePlay
   const profileIssues: ProfileCompletenessIssue[] = [];
   const pic = (player as { profilePicture?: string | null }).profilePicture;
   const playerPicTrim = pic == null || String(pic).trim() === '' ? '' : String(pic).trim();
-  const playerCountryTrim =
-    player.country == null || String(player.country).trim() === '' ? '' : String(player.country).trim();
 
   if (!playerPicTrim && !userPic) profileIssues.push('photo');
-  if (!playerCountryTrim && !userCountry) profileIssues.push('country');
+  const countryComplete =
+    isUserCountryCompleteForOnboarding(player.country) ||
+    isUserCountryCompleteForOnboarding(userDoc?.country as string | null | undefined);
+  if (!countryComplete) profileIssues.push('country');
+  if (userDoc && !userHasAcceptedTerms(userDoc.termsAcceptedAt)) profileIssues.push('terms');
 
   return serializeForClient({
     hasPlayer: true,

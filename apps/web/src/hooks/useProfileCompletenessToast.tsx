@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 
 import { useUserContext } from "@/hooks/useUser";
 import { getManagedClubsLocationCompletenessAction } from "@/features/clubs/actions/getManagedClubsLocationCompleteness.action";
+import { isUserCountryCompleteForOnboarding } from "@tdarts/core/profile-country";
 
 const DISMISS_KEY = "profileCompletenessToastDismissedUntil";
 const DISMISS_MS = 1000 * 60 * 60 * 6; // 6 hours
@@ -51,7 +52,8 @@ export const useProfileCompletenessToast = () => {
       if (!isHomePage && !isProfilePage) return;
       if (shouldSkipToast()) return;
 
-      const missingUserCountry = !user.country;
+      const missingLegalOrCountry = Boolean(user.needsProfileCompletion);
+      const missingUserCountry = !isUserCountryCompleteForOnboarding(user.country ?? null);
       let missingManagedClubLocation = false;
 
       try {
@@ -66,11 +68,13 @@ export const useProfileCompletenessToast = () => {
         // Non-blocking: if clubs cannot be loaded, still notify for user profile incompleteness.
       }
 
-      if (!missingUserCountry && !missingManagedClubLocation) return;
+      if (!missingLegalOrCountry && !missingUserCountry && !missingManagedClubLocation) return;
 
-      const message = missingUserCountry
-        ? "A profilod hiányos: add meg az országot a pontosabb találatokhoz."
-        : "A klub helyadatai nem teljesek: ellenőrizd a címet és a térképes geokód szinkront (klub beállítások).";
+      const message = missingLegalOrCountry
+        ? "A profilod hiányos: fogadd el a feltételeket és/vagy add meg az országot a profilban."
+        : missingUserCountry
+          ? "A profilod hiányos: add meg az országot a pontosabb találatokhoz."
+          : "A klub helyadatai nem teljesek: ellenőrizd a címet és a térképes geokód szinkront (klub beállítások).";
 
       toast(
         (t) => (
@@ -80,7 +84,8 @@ export const useProfileCompletenessToast = () => {
               <button
                 className="rounded-md bg-accent px-3 py-1.5 text-xs transition-colors hover:bg-accent/80"
                 onClick={() => {
-                  window.location.href = missingUserCountry ? "/profile?tab=details" : "/myclub";
+                  window.location.href =
+                    missingLegalOrCountry || missingUserCountry ? "/profile?tab=details" : "/myclub";
                   toast.dismiss(t.id);
                   dismissForWindow();
                 }}

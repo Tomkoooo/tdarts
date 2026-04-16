@@ -374,6 +374,11 @@
       "settings": "settings",
       "statistics": "statistics"
     },
+    "legal_completion": {
+      "section_title": "Feltételek és ország",
+      "section_description": "Fogadd el a jogi feltételeket és erősítsd meg az országodat a fiók befejezéséhez.",
+      "success_saved": "Sikeresen mentve."
+    },
     "countries": {
       "hu": "Magyarország",
       "at": "Ausztria",
@@ -617,18 +622,17 @@
       "language": "Nyelv",
       "success": "Sikeres bejelentkezés!",
       "error_generic": "Hiba történt a bejelentkezés során",
-      "emailLabel": "Email address",
-      "emailPlaceholder": "email@example.com",
-      "forgotPassword": "Forgot your password?",
-      "hidePassword": "Hide password",
-      "noAccount": "Don't have an account yet?",
-      "passwordLabel": "Password",
-      "registerLink": "Register here",
-      "showPassword": "Show password"
+      "error_credentials": "Hibás email vagy jelszó",
+      "email_password_toggle": "Email és jelszó",
+      "magic_link_toggle": "Bejelentkezés linkkel",
+      "magic_link_submit": "Link küldése",
+      "magic_link_sending": "Küldés…",
+      "magic_link_sent": "Ha létezik fiók ehhez az emailhez, elküldtük a bejelentkezési linket."
     },
     "register": {
       "title": "Regisztráció",
       "subtitle": "Hozd létre a tDarts fiókod",
+      "subtitle_google_only": "A regisztrációhoz használd a Google fiókod. A jelszavas regisztráció nem elérhető.",
       "username_label": "Felhasználónév",
       "username_placeholder": "felhasznalo123",
       "name_label": "Teljes név",
@@ -650,18 +654,7 @@
       "error_generic": "Hiba történt a regisztráció során",
       "error_google": "Hiba történt a Google regisztráció során",
       "loading": "Regisztráció folyamatban...",
-      "success": "Sikeres regisztráció! Ellenőrizd az email címedet a verifikációs kódért.",
-      "confirmPasswordLabel": "Confirm password",
-      "emailLabel": "Email address",
-      "emailPlaceholder": "email@example.com",
-      "errorGeneric": "An error occurred during registration",
-      "firstNameLabel": "First Name",
-      "hasAccount": "Already have an account?",
-      "hidePassword": "Hide password",
-      "lastNameLabel": "Last Name",
-      "loginLink": "Log in here",
-      "passwordLabel": "Password",
-      "showPassword": "Show password"
+      "success": "Sikeres regisztráció! Ellenőrizd az email címedet a verifikációs kódért."
     },
     "forgot_password": {
       "title": "Jelszó visszaállítás",
@@ -696,10 +689,10 @@
       "error_generic": "Hiba történt a jelszó visszaállítása során"
     },
     "verify": {
-      "title": "Email Verifikáció",
-      "subtitle": "Add meg a(z) {email} címre küldött verifikációs kódot",
+      "title": "Email megerősítése",
+      "subtitle": "Add meg a(z) {email} címre küldött 6 számjegyű kódot",
       "code_label": "Verifikációs kód",
-      "code_placeholder": "Kód",
+      "code_placeholder": "6 számjegy",
       "submit": "Verifikálás",
       "submitting": "Verifikálás...",
       "loading": "Verifikáció folyamatban...",
@@ -710,22 +703,32 @@
       "email_required": "Email cím kötelező",
       "email_invalid": "Érvényes email címet adj meg",
       "password_required": "Jelszó kötelező",
-      "password_min": "A jelszónak legalább 6 karakter hosszúnak kell lennie",
+      "password_min": "A jelszónak legalább 8 karakter hosszúnak kell lennie",
       "username_required": "Felhasználónév kötelező",
       "username_min": "A felhasználónévnek legalább 3 karakter hosszúnak kell lennie",
-      "username_invalid": "A felhasználónév csak betűket, számokat és aláhúzásokat tartalmazhat",
+      "username_invalid": "A felhasználónév csak betűket, számokat és aláhúzást tartalmazhat",
       "username_no_spaces": "A felhasználónév nem tartalmazhat szóközöket",
       "name_required": "Név kötelező",
       "name_min": "A névnek legalább 2 karakter hosszúnak kell lennie",
       "confirm_password_required": "Jelszó megerősítés kötelező",
       "passwords_mismatch": "A jelszavak nem egyeznek",
       "code_required": "Verifikációs kód kötelező",
-      "confirmPasswordRequired": "Password confirmation is required",
-      "emailInvalid": "Enter a valid email address",
-      "emailRequired": "Email is required",
-      "passwordMin": "Password must be at least 8 characters",
-      "passwordRequired": "Password is required",
-      "passwordsMismatch": "Passwords do not match"
+      "code_six_digits": "A kódnak pontosan 6 számjegyből kell állnia"
+    },
+    "complete_profile": {
+      "title": "Profil kitöltése",
+      "subtitle": "A folytatáshoz fogadd el a jogi feltételeket, és add meg az országod.",
+      "terms_intro": "Elfogadom az",
+      "terms_and": " és az ",
+      "terms_outro": " dokumentumokat.",
+      "terms_link": "Általános Szerződési Feltételeket",
+      "privacy_link": "adatvédelmi tájékoztatót (GDPR)",
+      "country_label": "Ország / régió",
+      "country_international": "Nemzetközi",
+      "submit": "Tovább",
+      "submitting": "Mentés…",
+      "success_saved": "Elmentve. Átirányítás…",
+      "error_generic": "Hiba történt. Próbáld újra."
     },
     "link": {
       "title": "Google fiók összekapcsolása",
@@ -4020,7 +4023,7 @@
       "nextScoringReminder": "Számlálóként vagy beírva ehhez a táblához — legyél kész.",
       "landingPage": "A tDarts bemutatója",
       "nextUnknown": "Még nincs következő tábla hozzárendelés",
-      "profileIncompleteWarning": "A profilod hiányos ({count} hiányzik)"
+      "profileIncompleteWarning": "A profilod figyelmet igényel ({count} tétel)"
     },
     "stats": {
       "matches": "Lejátszott meccsek",
@@ -4047,7 +4050,7 @@
       "spotAvailability": "Felszabaduló helyek",
       "spotHint": "{count} elérhető hely értesítés",
       "profileIncomplete": "Hiányos profil",
-      "profileIncompleteHint": "{count} adat hiányzik — tölts fel képet vagy add meg az országot a profilban"
+      "profileIncompleteHint": "{count} adat hiányzik — kép, ország vagy feltételek — nyisd meg a profilt"
     },
     "currentTournament": {
       "title": "Aktuális torna áttekintés",

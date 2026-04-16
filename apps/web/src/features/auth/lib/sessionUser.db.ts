@@ -1,6 +1,7 @@
 import { UserModel } from '@tdarts/core';
 
-const SESSION_USER_SELECT = '_id username name email isVerified isAdmin profilePicture country locale';
+const SESSION_USER_SELECT =
+  '_id username name email isVerified isAdmin profilePicture country locale authProvider termsAcceptedAt';
 
 export async function findSessionUserByEmail(email?: string | null) {
   if (!email) return null;

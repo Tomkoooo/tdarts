@@ -74,7 +74,7 @@ export class TournamentService {
             return null;
         }
 
-        const total = validPlayerAverages.reduce((sum, avg) => sum + avg, 0);
+        const total = validPlayerAverages.reduce((sum: number, avg: number) => sum + avg, 0);
         return total / validPlayerAverages.length;
     }
 

@@ -66,6 +66,13 @@ export type { EntryFeeCurrency } from './lib/entry-fee-currency';
 
 export { isSubscriptionPaywallActive } from './lib/subscription-paywall';
 
+export {
+  INTERNATIONAL_COUNTRY_CODE,
+  isUserCountryCompleteForOnboarding,
+} from './lib/profile-country';
+
+export { authEmailLinkTtlMinutes, authPublicWebBaseUrl } from './lib/auth-email-link';
+
 export { TIER_CONFIG, getTierConfig } from './lib/subscription-tiers';
 export type { TierId, TierLimits, TierFeatures, TierDefinition } from './lib/subscription-tiers';
 

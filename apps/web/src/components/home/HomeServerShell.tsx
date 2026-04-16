@@ -14,12 +14,21 @@ import type {
   HomeProfileCompletenessIssue,
   HomeTournament,
 } from "@/features/home/ui";
+import {
+  mergeHomeProfileCompletenessIssues,
+  sessionProfileGateIssues,
+} from "@/lib/sessionProfileCompleteness";
 
 interface HomeServerShellProps {
   locale: string;
   serverUserName?: string;
   serverUsername?: string;
   serverProfilePicture?: string;
+  /** Same-request JWT/session snapshot — keeps header & notification center aligned with toast */
+  sessionProfile?: {
+    termsAcceptedAt?: string | null;
+    country?: string | null;
+  };
 }
 
 interface Announcement {
@@ -123,6 +132,7 @@ export default async function HomeServerShell({
   serverUserName,
   serverUsername,
   serverProfilePicture,
+  sessionProfile,
 }: HomeServerShellProps) {
   const cookieStore = await cookies();
   const homeTournamentTimeZone = resolveHomeTournamentTimeZone(cookieStore.get("user-timezone")?.value);
@@ -166,6 +176,8 @@ export default async function HomeServerShell({
     initialData.tournaments = (tournamentsRes.value as any).data.map(toHomeTournament);
   }
 
+  let statsProfileIssues: HomeProfileCompletenessIssue[] = [];
+
   if (
     statsRes.status === "fulfilled" &&
     statsRes.value &&
@@ -177,12 +189,18 @@ export default async function HomeServerShell({
     initialData.metrics = toHomeMetrics(statsPayload);
     const pc = statsPayload?.profileCompleteness;
     if (pc && typeof pc === "object" && Array.isArray(pc.issues)) {
-      initialData.profileCompleteness = {
-        issues: pc.issues.filter((x: unknown) => x === "photo" || x === "country") as HomeProfileCompletenessIssue[],
-        count: typeof pc.count === "number" ? pc.count : pc.issues.length,
-      };
+      statsProfileIssues = pc.issues.filter(
+        (x: unknown): x is HomeProfileCompletenessIssue =>
+          x === "photo" || x === "country" || x === "terms"
+      );
     }
   }
+
+  const gateIssues = sessionProfileGateIssues({
+    termsAcceptedAt: sessionProfile?.termsAcceptedAt ?? null,
+    country: sessionProfile?.country ?? null,
+  });
+  initialData.profileCompleteness = mergeHomeProfileCompletenessIssues(statsProfileIssues, gateIssues);
 
   if (
     leaguesRes.status === "fulfilled" &&

@@ -21,10 +21,16 @@ import { Button } from "@/components/ui/Button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/Card"
 import { FormField } from "@/components/ui/form-field"
 import { Separator } from "@/components/ui/separator"
+import axios from "axios"
+import toast from "react-hot-toast"
 
 type LoginFormData = {
   email: string
   password: string
+}
+
+type MagicFormData = {
+  email: string
 }
 
 interface LoginFormNewProps {
@@ -42,18 +48,24 @@ const LoginFormNew: React.FC<LoginFormNewProps> = ({
 }) => {
   const [showPassword, setShowPassword] = useState(false)
   const [showEmailLogin, setShowEmailLogin] = useState(false)
+  const [showMagicLink, setShowMagicLink] = useState(false)
+  const [magicLoading, setMagicLoading] = useState(false)
   const t = useTranslations("Auth.login")
   const tv = useTranslations("Auth.validation")
 
   const loginSchema = z.object({
     email: z
       .string()
-      .min(1, tv("emailRequired"))
-      .email(tv("emailInvalid")),
+      .min(1, tv("email_required"))
+      .email(tv("email_invalid")),
     password: z
       .string()
-      .min(1, tv("passwordRequired"))
-      .min(8, tv("passwordMin")),
+      .min(1, tv("password_required"))
+      .min(8, tv("password_min")),
+  })
+
+  const magicSchema = z.object({
+    email: z.string().min(1, tv("email_required")).email(tv("email_invalid")),
   })
 
   const {
@@ -66,6 +78,11 @@ const LoginFormNew: React.FC<LoginFormNewProps> = ({
       email: "",
       password: "",
     },
+  })
+
+  const magicForm = useForm<MagicFormData>({
+    resolver: zodResolver(magicSchema),
+    defaultValues: { email: "" },
   })
 
   const onFormSubmit = async (data: LoginFormData) => {
@@ -89,6 +106,22 @@ const LoginFormNew: React.FC<LoginFormNewProps> = ({
     }
   }
 
+  const onMagicSubmit = async (data: MagicFormData) => {
+    setMagicLoading(true)
+    try {
+      await toast.promise(
+        axios.post("/api/auth/request-magic-link", { email: data.email }),
+        {
+          loading: t("magic_link_sending"),
+          success: t("magic_link_sent"),
+          error: t("error_generic"),
+        }
+      )
+    } finally {
+      setMagicLoading(false)
+    }
+  }
+
   return (
     <Card className="w-full max-w-md mx-auto">
       <CardHeader className="text-center space-y-4">
@@ -104,7 +137,6 @@ const LoginFormNew: React.FC<LoginFormNewProps> = ({
       </CardHeader>
 
       <CardContent className="space-y-4">
-        {/* Global error */}
         {error && (
           <div
             role="alert"
@@ -114,7 +146,6 @@ const LoginFormNew: React.FC<LoginFormNewProps> = ({
           </div>
         )}
 
-        {/* Google login */}
         <Button
           type="button"
           className="w-full"
@@ -126,7 +157,42 @@ const LoginFormNew: React.FC<LoginFormNewProps> = ({
           {t("google")}
         </Button>
 
-        {/* Toggle email login */}
+        <Button
+          type="button"
+          variant="outline"
+          className="w-full"
+          size="lg"
+          onClick={() => setShowMagicLink((p) => !p)}
+          disabled={isLoading}
+          aria-expanded={showMagicLink}
+        >
+          <IconMail className="w-5 h-5" aria-hidden />
+          {t("magic_link_toggle")}
+          {showMagicLink ? (
+            <IconChevronUp className="w-4 h-4 ml-auto" aria-hidden />
+          ) : (
+            <IconChevronDown className="w-4 h-4 ml-auto" aria-hidden />
+          )}
+        </Button>
+
+        {showMagicLink && (
+          <form onSubmit={magicForm.handleSubmit(onMagicSubmit)} className="space-y-3 rounded-lg border border-border p-4">
+            <FormField
+              {...magicForm.register("email")}
+              type="email"
+              label={t("email_label")}
+              placeholder={t("email_placeholder")}
+              error={magicForm.formState.errors.email?.message}
+              icon={<IconMail className="w-5 h-5" aria-hidden />}
+              disabled={magicLoading}
+              required
+            />
+            <Button type="submit" className="w-full" disabled={magicLoading}>
+              {magicLoading ? t("magic_link_sending") : t("magic_link_submit")}
+            </Button>
+          </form>
+        )}
+
         <Button
           type="button"
           variant="outline"
@@ -137,7 +203,7 @@ const LoginFormNew: React.FC<LoginFormNewProps> = ({
           aria-expanded={showEmailLogin}
         >
           <IconMail className="w-5 h-5" aria-hidden />
-          {showEmailLogin ? t("submit") : t("emailLabel")}
+          {showEmailLogin ? t("submit") : t("email_password_toggle")}
           {showEmailLogin ? (
             <IconChevronUp className="w-4 h-4 ml-auto" aria-hidden />
           ) : (
@@ -153,7 +219,7 @@ const LoginFormNew: React.FC<LoginFormNewProps> = ({
               </div>
               <div className="relative flex justify-center text-xs uppercase">
                 <span className="bg-card px-2 text-muted-foreground">
-                  {t("emailLabel")}
+                  {t("email_label")}
                 </span>
               </div>
             </div>
@@ -162,8 +228,8 @@ const LoginFormNew: React.FC<LoginFormNewProps> = ({
               <FormField
                 {...register("email")}
                 type="email"
-                label={t("emailLabel")}
-                placeholder={t("emailPlaceholder")}
+                label={t("email_label")}
+                placeholder={t("email_placeholder")}
                 error={errors.email?.message}
                 icon={<IconMail className="w-5 h-5" aria-hidden />}
                 disabled={isLoading}
@@ -174,7 +240,7 @@ const LoginFormNew: React.FC<LoginFormNewProps> = ({
                 <FormField
                   {...register("password")}
                   type={showPassword ? "text" : "password"}
-                  label={t("passwordLabel")}
+                  label={t("password_label")}
                   placeholder="••••••••"
                   error={errors.password?.message}
                   icon={<IconLock className="w-5 h-5" aria-hidden />}
@@ -190,12 +256,12 @@ const LoginFormNew: React.FC<LoginFormNewProps> = ({
                   {showPassword ? (
                     <>
                       <IconEyeOff className="w-4 h-4" aria-hidden />
-                      {t("hidePassword")}
+                      {t("hide_password")}
                     </>
                   ) : (
                     <>
                       <IconEye className="w-4 h-4" aria-hidden />
-                      {t("showPassword")}
+                      {t("show_password")}
                     </>
                   )}
                 </button>
@@ -206,7 +272,7 @@ const LoginFormNew: React.FC<LoginFormNewProps> = ({
                   href="/auth/forgot-password"
                   className="text-sm text-primary hover:text-primary/80 transition-colors underline-offset-4 hover:underline"
                 >
-                  {t("forgotPassword")}
+                  {t("forgot_password")}
                 </Link>
               </div>
 
@@ -232,12 +298,12 @@ const LoginFormNew: React.FC<LoginFormNewProps> = ({
 
       <CardFooter className="flex-col gap-2 text-sm text-muted-foreground">
         <p>
-          {t("noAccount")}{" "}
+          {t("no_account")}{" "}
           <Link
-            href={`/auth/register${redirectPath ? `?redirect=${redirectPath}` : ""}`}
+            href={`/auth/register${redirectPath ? `?redirect=${encodeURIComponent(redirectPath)}` : ""}`}
             className="text-primary font-medium hover:text-primary/80 transition-colors underline-offset-4 hover:underline"
           >
-            {t("registerLink")}
+            {t("register_link")}
           </Link>
         </p>
       </CardFooter>

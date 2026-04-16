@@ -22,6 +22,10 @@ export default async function AuthenticatedHomePage({ params }: Props) {
         serverUserName={user.name}
         serverUsername={user.username}
         serverProfilePicture={user.profilePicture}
+        sessionProfile={{
+          termsAcceptedAt: user.termsAcceptedAt ?? null,
+          country: user.country ?? null,
+        }}
       />
     </Suspense>
   );

@@ -33,10 +33,27 @@ export default function GoogleCallbackPageClient() {
           const response = await axios.post('/api/auth/google-callback');
 
           if (response.data.success) {
-            setUser(response.data.user);
+            const apiUser = response.data.user;
+            setUser({
+              _id: apiUser._id,
+              username: apiUser.username,
+              name: apiUser.name,
+              email: apiUser.email,
+              isAdmin: apiUser.isAdmin,
+              isVerified: apiUser.isVerified,
+              profilePicture: apiUser.profilePicture,
+              country: apiUser.country ?? null,
+              locale: apiUser.locale,
+              termsAcceptedAt: apiUser.termsAcceptedAt ?? null,
+              needsProfileCompletion: Boolean(apiUser.needsProfileCompletion),
+            });
 
-            const redirect = searchParams.get('redirect') || '/home';
-            router.push(redirect);
+            if (apiUser.needsProfileCompletion) {
+              router.push('/auth/complete-profile');
+            } else {
+              const redirect = searchParams.get('redirect') || '/home';
+              router.push(redirect);
+            }
           } else {
             setError(t('loginError'));
           }

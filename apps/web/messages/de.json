@@ -346,18 +346,17 @@
       "language": "Sprache",
       "success": "Erfolgreiche Anmeldung!",
       "error_generic": "Beim Anmelden ist ein Fehler aufgetreten",
-      "emailLabel": "Email address",
-      "emailPlaceholder": "email@example.com",
-      "forgotPassword": "Forgot your password?",
-      "hidePassword": "Hide password",
-      "noAccount": "Don't have an account yet?",
-      "passwordLabel": "Password",
-      "registerLink": "Register here",
-      "showPassword": "Show password"
+      "error_credentials": "Ungültige E-Mail oder Passwort",
+      "email_password_toggle": "E-Mail und Passwort",
+      "magic_link_toggle": "Mit E-Mail-Link anmelden",
+      "magic_link_submit": "Link senden",
+      "magic_link_sending": "Wird gesendet…",
+      "magic_link_sent": "Falls ein Konto existiert, haben wir einen Anmeldelink gesendet."
     },
     "register": {
       "title": "Anmeldung",
       "subtitle": "Erstellen Sie Ihr tDarts-Konto",
+      "subtitle_google_only": "Registrieren Sie sich mit Google. Die Registrierung per E-Mail und Passwort ist nicht verfügbar.",
       "username_label": "Benutzername",
       "username_placeholder": "Benutzer123",
       "name_label": "Vollständiger Name",
@@ -379,18 +378,7 @@
       "error_generic": "Bei der Registrierung ist ein Fehler aufgetreten",
       "error_google": "Bei der Google-Registrierung ist ein Fehler aufgetreten",
       "loading": "Anmeldung läuft...",
-      "success": "Erfolgreiche Registrierung! Überprüfen Sie Ihre E-Mail-Adresse auf den Bestätigungscode.",
-      "confirmPasswordLabel": "Confirm password",
-      "emailLabel": "Email address",
-      "emailPlaceholder": "email@example.com",
-      "errorGeneric": "An error occurred during registration",
-      "firstNameLabel": "First Name",
-      "hasAccount": "Already have an account?",
-      "hidePassword": "Hide password",
-      "lastNameLabel": "Last Name",
-      "loginLink": "Log in here",
-      "passwordLabel": "Password",
-      "showPassword": "Show password"
+      "success": "Erfolgreiche Registrierung! Überprüfen Sie Ihre E-Mail-Adresse auf den Bestätigungscode."
     },
     "forgot_password": {
       "title": "Passwort zurücksetzen",
@@ -426,9 +414,9 @@
     },
     "verify": {
       "title": "E-Mail-Verifizierung",
-      "subtitle": "Geben Sie den an {email} gesendeten Bestätigungscode ein.",
+      "subtitle": "Geben Sie den an {email} gesendeten 6-stelligen Code ein.",
       "code_label": "Bestätigungscode",
-      "code_placeholder": "Code",
+      "code_placeholder": "6 Ziffern",
       "submit": "Überprüfung",
       "submitting": "Überprüfung...",
       "loading": "Überprüfung läuft...",
@@ -439,7 +427,7 @@
       "email_required": "E-Mail-Adresse ist erforderlich",
       "email_invalid": "Geben Sie eine gültige E-Mail-Adresse ein",
       "password_required": "Passwort ist erforderlich",
-      "password_min": "Das Passwort muss mindestens 6 Zeichen lang sein",
+      "password_min": "Das Passwort muss mindestens 8 Zeichen lang sein",
       "username_required": "Benutzername ist erforderlich",
       "username_min": "Der Benutzername muss mindestens 3 Zeichen lang sein",
       "username_invalid": "Der Benutzername darf nur Buchstaben, Zahlen und Unterstriche enthalten",
@@ -449,12 +437,22 @@
       "confirm_password_required": "Die Bestätigung des Passworts ist obligatorisch",
       "passwords_mismatch": "Die Passwörter stimmen nicht überein",
       "code_required": "Ein Bestätigungscode ist erforderlich",
-      "confirmPasswordRequired": "Password confirmation is required",
-      "emailInvalid": "Enter a valid email address",
-      "emailRequired": "Email is required",
-      "passwordMin": "Password must be at least 8 characters",
-      "passwordRequired": "Password is required",
-      "passwordsMismatch": "Passwords do not match"
+      "code_six_digits": "Der Code muss genau 6 Ziffern haben"
+    },
+    "complete_profile": {
+      "title": "Profil vervollständigen",
+      "subtitle": "Akzeptieren Sie die rechtlichen Bedingungen und wählen Sie Ihr Land.",
+      "terms_intro": "Ich akzeptiere die",
+      "terms_and": " und die ",
+      "terms_outro": ".",
+      "terms_link": "Allgemeinen Geschäftsbedingungen",
+      "privacy_link": "Datenschutzerklärung (DSGVO)",
+      "country_label": "Land / Region",
+      "country_international": "International",
+      "submit": "Weiter",
+      "submitting": "Speichern…",
+      "success_saved": "Gespeichert. Weiterleitung…",
+      "error_generic": "Etwas ist schief gelaufen. Bitte erneut versuchen."
     },
     "link": {
       "title": "Verknüpfen Sie Ihr Google-Konto",
@@ -3503,6 +3501,11 @@
       "settings": "settings",
       "statistics": "statistics"
     },
+    "legal_completion": {
+      "section_title": "Bedingungen und Land",
+      "section_description": "Akzeptieren Sie die rechtlichen Bedingungen und bestätigen Sie Ihr Land, um Ihr Konto abzuschließen.",
+      "success_saved": "Gespeichert."
+    },
     "countries": {
       "hu": "Ungarn",
       "at": "Österreich",
@@ -3962,7 +3965,7 @@
       "nextScoringReminder": "Du bist als Schreiber für diesen Tisch eingeteilt — bleib bereit.",
       "landingPage": "Über tDarts",
       "nextUnknown": "Noch keine nächste Board-Zuweisung",
-      "profileIncompleteWarning": "Profil unvollständig ({count} fehlt)"
+      "profileIncompleteWarning": "Profil braucht Aufmerksamkeit ({count} Punkt(e))"
     },
     "stats": {
       "matches": "Gespielte Matches",
@@ -3989,7 +3992,7 @@
       "spotAvailability": "Freie Turnierplätze",
       "spotHint": "{count} Verfügbarkeitsmeldungen",
       "profileIncomplete": "Profil unvollständig",
-      "profileIncompleteHint": "{count} Angabe(n) fehlen — Foto oder Land im Profil ergänzen"
+      "profileIncompleteHint": "{count} Angabe(n) fehlen — Foto, Land oder AGB — Profil öffnen"
     },
     "currentTournament": {
       "title": "Aktuelle Turnierübersicht",

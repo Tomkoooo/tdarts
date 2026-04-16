@@ -30,9 +30,18 @@ export function ResetPasswordFormNew() {
       email: searchParams.get('email') || '',
       password: '',
       confirmPassword: '',
-      token: '',
+      token: searchParams.get('token') || '',
     },
   })
+
+  React.useEffect(() => {
+    form.reset({
+      email: searchParams.get('email') || '',
+      password: '',
+      confirmPassword: '',
+      token: searchParams.get('token') || '',
+    })
+  }, [searchParams, form])
 
   const onSubmit = async (data: ResetPasswordFormData) => {
     setIsLoading(true)

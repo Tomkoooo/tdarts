@@ -42,6 +42,7 @@ export const authOptions: NextAuthOptions = {
               profilePicture: user.image,
               authProvider: 'google',
               country: null,
+              termsAcceptedAt: null,
             });
             
             console.log('Google OAuth user created:', newUser._id);

@@ -4,7 +4,8 @@ import LoginFormNew from '@/components/auth/LoginFormNew';
 import ParallaxBackground from '@/components/homapage/ParallaxBackground';
 import axios from 'axios';
 import toast from 'react-hot-toast';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
+import { useRouter } from '@/i18n/routing';
 import { useUserContext } from '@/hooks/useUser';
 import { useTranslations } from 'next-intl';
 
@@ -41,9 +42,15 @@ export default function LoginPageClient() {
             email: user.email,
             isAdmin: user.isAdmin,
             isVerified: user.isVerified,
+            country: user.country ?? null,
+            locale: user.locale,
+            termsAcceptedAt: user.termsAcceptedAt ?? null,
+            needsProfileCompletion: Boolean(user.needsProfileCompletion),
           });
 
-          if (redirectPath) {
+          if (user.needsProfileCompletion) {
+            router.push('/auth/complete-profile');
+          } else if (redirectPath) {
             router.push(redirectPath);
           } else {
             router.push('/home');

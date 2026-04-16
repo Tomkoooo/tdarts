@@ -17,7 +17,7 @@ const VerifyEmail: React.FC<VerifyEmailProps> = ({ email, onSubmit, isLoading = 
   const tv = useTranslations('Auth.validation');
 
   const verifyEmailSchema = z.object({
-    code: z.string().min(1, tv('code_required')),
+    code: z.string().regex(/^\d{6}$/, tv('code_six_digits')),
   });
 
   const {
@@ -67,6 +67,9 @@ const VerifyEmail: React.FC<VerifyEmailProps> = ({ email, onSubmit, isLoading = 
           <input
             {...register('code')}
             type="text"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            maxLength={6}
             placeholder={t('code_placeholder')}
             className="w-full px-4 py-2 rounded-lg bg-background border border-border focus:ring-2 focus:ring-primary/20 outline-none transition-all"
             disabled={isLoading}

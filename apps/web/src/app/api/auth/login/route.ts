@@ -27,6 +27,12 @@ async function __POST(request: NextRequest) {
           isVerified: Boolean(user.isVerified),
           country: user.country || null,
           locale: user.locale || 'hu',
+          termsAcceptedAt: user.termsAcceptedAt
+            ? (user.termsAcceptedAt instanceof Date
+                ? user.termsAcceptedAt.toISOString()
+                : String(user.termsAcceptedAt))
+            : null,
+          needsProfileCompletion: user.needsProfileCompletion,
         },
       },
       { status: 200 }

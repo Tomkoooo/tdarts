@@ -6,6 +6,9 @@
   "types": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts",
+    "./errors": "./src/errors/index.ts",
+    "./profile-country": "./src/lib/profile-country.ts",
+    "./models/tournament": "./src/models/tournament.model.ts",
     "./entry-fee-currency": "./src/lib/entry-fee-currency.ts",
     "./subscription-paywall": "./src/lib/subscription-paywall.ts",
     "./subscription-tiers": "./src/lib/subscription-tiers.ts"

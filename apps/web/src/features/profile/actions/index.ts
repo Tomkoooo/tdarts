@@ -4,6 +4,7 @@ export { getUnreadTicketCountAction } from './getUnreadTicketCount.action';
 export { getLeagueHistoryAction } from './getLeagueHistory.action';
 export { updateProfileAction } from './updateProfile.action';
 export { verifyEmailAction } from './verifyEmail.action';
+export { completeProfileAction } from './completeProfile.action';
 export { resendVerificationAction } from './resendVerification.action';
 export { getAuthProvidersAction } from './getAuthProviders.action';
 export { getPendingInvitationsAction } from './getPendingInvitations.action';

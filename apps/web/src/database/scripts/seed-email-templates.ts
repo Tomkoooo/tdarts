@@ -544,14 +544,17 @@ tDarts Csapat`,
     description: 'Verification code sent to users after registration',
     category: 'auth',
     subject: '🎯 TDarts Email Verifikáció',
-    variables: ['userName', 'verificationCode', 'currentYear'],
+    variables: ['userName', 'verificationCode', 'verificationLink', 'expiresInMinutes', 'currentYear'],
     textContent: `Kedves {userName}!
 
 Köszönjük a regisztrációt a TDarts-ban! Kérjük, erősítse meg email címét az alábbi verifikációs kóddal:
 
 {verificationCode}
 
-Adja meg ezt a kódot a TDarts weboldalon az email cím megerősítéséhez.
+Vagy nyisd meg ezt a linket (érvényes {expiresInMinutes} percig):
+{verificationLink}
+
+Adja meg a kódot a TDarts weboldalon az email cím megerősítéséhez.
 
 Üdvözlettel,
 TDarts Csapat`,
@@ -577,6 +580,8 @@ TDarts Csapat`,
         
         <div class="code">{verificationCode}</div>
         
+        <p>Vagy erősítsd meg egy kattintással: <a href="{verificationLink}">Email megerősítése</a> (érvényes {expiresInMinutes} percig).</p>
+        
         <p>Ha nem te kezdeményezted a regisztrációt, kérjük, hagyd figyelmen kívül ezt az üzenetet.</p>
         
         <div class="footer">
@@ -594,12 +599,15 @@ TDarts Csapat`,
     description: 'Reset code sent to users who forgot their password',
     category: 'auth',
     subject: '🎯 TDarts Jelszó Visszaállítás',
-    variables: ['userName', 'resetCode', 'currentYear'],
+    variables: ['userName', 'resetCode', 'resetLink', 'expiresInMinutes', 'currentYear'],
     textContent: `Kedves {userName}!
 
 Jelszó visszaállítást kezdeményeztek a fiókjához. Kérjük, használja az alábbi kódot a jelszó visszaállításához:
 
 {resetCode}
+
+Vagy nyisd meg ezt a linket (érvényes {expiresInMinutes} percig):
+{resetLink}
 
 Adja meg ezt a kódot a TDarts weboldalon az új jelszó megadásához.
 
@@ -627,8 +635,54 @@ TDarts Csapat`,
         
         <div class="code">{resetCode}</div>
         
+        <p>Vagy állítsd vissza egy kattintással: <a href="{resetLink}">Jelszó visszaállítása</a> (érvényes {expiresInMinutes} percig).</p>
+        
         <p>Ha nem te kérted a visszaállítást, biztonsági okokból javasoljuk, hogy ellenőrizd a fiókod biztonságát.</p>
         
+        <div class="footer">
+            <p>© {currentYear} tDarts - Magyar Darts Versenyrendszer</p>
+        </div>
+    </div>
+</body>
+</html>`,
+    isActive: true,
+    isDefault: true,
+  },
+  {
+    key: 'magic_login',
+    name: 'Magic login',
+    description: 'Passwordless sign-in link',
+    category: 'auth',
+    subject: '🎯 TDarts bejelentkezési link',
+    variables: ['userName', 'loginLink', 'expiresInMinutes', 'currentYear'],
+    textContent: `Kedves {userName}!
+
+Jelentkezz be a tDarts-ba az alábbi linkkel (érvényes {expiresInMinutes} percig):
+{loginLink}
+
+Ha nem te kérted, hagyd figyelmen kívül ezt az üzenetet.
+
+Üdvözlettel,
+TDarts Csapat`,
+    htmlContent: `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { font-family: sans-serif; line-height: 1.6; color: #f2f2f2; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #0c1414; }
+        .container { background-color: #1a2424; border-radius: 8px; padding: 30px; border: 1px solid #333; }
+        .logo { font-size: 32px; font-weight: bold; color: #cc3333; margin-bottom: 20px; text-align: center; }
+        .footer { text-align: center; font-size: 14px; color: #888; margin-top: 30px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">🎯 TDarts</div>
+        <h2>Bejelentkezés</h2>
+        <p>Kedves {userName}!</p>
+        <p><a href="{loginLink}" style="color:#cc3333;font-weight:bold;">Bejelentkezés a tDarts-ba</a> (érvényes {expiresInMinutes} percig).</p>
+        <p>Ha nem te kérted ezt az emailt, hagyd figyelmen kívül.</p>
         <div class="footer">
             <p>© {currentYear} tDarts - Magyar Darts Versenyrendszer</p>
         </div>
@@ -865,15 +919,18 @@ const englishTemplateVariants = [
     description: 'English verification code email',
     category: 'auth',
     subject: '🎯 tDarts Email Verification',
-    variables: ['userName', 'verificationCode', 'currentYear'],
+    variables: ['userName', 'verificationCode', 'verificationLink', 'expiresInMinutes', 'currentYear'],
     textContent: `Dear {userName},
 
 Use this code to verify your email address:
 {verificationCode}
 
+Or open this link (expires in {expiresInMinutes} minutes):
+{verificationLink}
+
 Best regards,
 tDarts Team`,
-    htmlContent: `<p>Dear {userName},</p><p>Use this code to verify your email address:</p><p style="font-size:24px;font-weight:bold;letter-spacing:0.1em;">{verificationCode}</p><p>Best regards,<br/>tDarts Team</p>`,
+    htmlContent: `<p>Dear {userName},</p><p>Use this code to verify your email address:</p><p style="font-size:24px;font-weight:bold;letter-spacing:0.1em;">{verificationCode}</p><p>Or verify in one click: <a href="{verificationLink}">Confirm email</a> (expires in {expiresInMinutes} minutes).</p><p>Best regards,<br/>tDarts Team</p>`,
     isActive: true,
     isDefault: true,
   },
@@ -884,15 +941,39 @@ tDarts Team`,
     description: 'English password reset code email',
     category: 'auth',
     subject: '🎯 tDarts Password Reset',
-    variables: ['userName', 'resetCode', 'currentYear'],
+    variables: ['userName', 'resetCode', 'resetLink', 'expiresInMinutes', 'currentYear'],
     textContent: `Dear {userName},
 
 Use this code to reset your password:
 {resetCode}
 
+Or use this link (expires in {expiresInMinutes} minutes):
+{resetLink}
+
 Best regards,
 tDarts Team`,
-    htmlContent: `<p>Dear {userName},</p><p>Use this code to reset your password:</p><p style="font-size:24px;font-weight:bold;letter-spacing:0.1em;">{resetCode}</p><p>Best regards,<br/>tDarts Team</p>`,
+    htmlContent: `<p>Dear {userName},</p><p>Use this code to reset your password:</p><p style="font-size:24px;font-weight:bold;letter-spacing:0.1em;">{resetCode}</p><p>Or reset in one click: <a href="{resetLink}">Reset password</a> (expires in {expiresInMinutes} minutes).</p><p>Best regards,<br/>tDarts Team</p>`,
+    isActive: true,
+    isDefault: true,
+  },
+  {
+    key: 'magic_login',
+    locale: 'en',
+    name: 'Magic login (EN)',
+    description: 'English passwordless sign-in',
+    category: 'auth',
+    subject: '🎯 tDarts sign-in link',
+    variables: ['userName', 'loginLink', 'expiresInMinutes', 'currentYear'],
+    textContent: `Dear {userName},
+
+Sign in to tDarts (link expires in {expiresInMinutes} minutes):
+{loginLink}
+
+If you did not request this, ignore this email.
+
+Best regards,
+tDarts Team`,
+    htmlContent: `<p>Dear {userName},</p><p><a href="{loginLink}">Sign in to tDarts</a> (expires in {expiresInMinutes} minutes).</p><p>Best regards,<br/>tDarts Team</p>`,
     isActive: true,
     isDefault: true,
   },

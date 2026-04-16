@@ -28,6 +28,7 @@ import { useProfileCompletenessToast } from "@/hooks/useProfileCompletenessToast
 import { usePendingInvitesToast } from "@/hooks/usePendingInvitesToast";
 import { useTranslations } from "next-intl";
 import GoogleAuthSection from "@/components/profile/GoogleAuthSection";
+import { ProfileLegalCompletionSection } from "@/components/profile/ProfileLegalCompletionSection";
 import { useLogout } from "@/hooks/useLogout";
 import { getMatchByIdClientAction } from "@/features/tournaments/actions/tournamentRoster.action";
 import type { ServerUser } from "@/lib/getServerUser";
@@ -76,6 +77,8 @@ export function ProfilePageClient({ serverUser }: ProfilePageClientProps) {
           profilePicture: serverUser.profilePicture,
           country: serverUser.country ?? null,
           locale: serverUser.locale,
+          termsAcceptedAt: serverUser.termsAcceptedAt ?? null,
+          needsProfileCompletion: Boolean(serverUser.needsProfileCompletion),
         };
       }
       return {
@@ -88,6 +91,8 @@ export function ProfilePageClient({ serverUser }: ProfilePageClientProps) {
         profilePicture: serverUser.profilePicture ?? prev.profilePicture,
         country: serverUser.country ?? prev.country ?? null,
         locale: serverUser.locale ?? prev.locale,
+        termsAcceptedAt: serverUser.termsAcceptedAt ?? prev.termsAcceptedAt ?? null,
+        needsProfileCompletion: Boolean(serverUser.needsProfileCompletion),
       };
     });
   }, [serverUser, setUser]);
@@ -320,6 +325,7 @@ export function ProfilePageClient({ serverUser }: ProfilePageClientProps) {
 
         {activeTab === "details" && (
           <>
+            <ProfileLegalCompletionSection />
             <CurrentInfoSection user={user} />
             <ProfileEditForm
               defaultValues={{

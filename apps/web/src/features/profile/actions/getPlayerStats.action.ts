@@ -22,7 +22,7 @@ export async function getPlayerStatsAction() {
       }
       const cachedStats = unstable_cache(
         async () => getProfilePlayerStats(userId),
-        [`profile-player-stats:${userId}`],
+        [`profile-player-stats:v3:${userId}`],
         {
           revalidate: 60,
           tags: ['home:stats', `home:stats:${userId}`],

@@ -12,6 +12,8 @@ export interface SimplifiedUser {
   city?: string | null;
   country?: string | null;
   locale?: "hu" | "en" | "de";
+  termsAcceptedAt?: string | null;
+  needsProfileCompletion?: boolean;
 }
 
 interface UserContextType {

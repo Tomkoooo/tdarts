@@ -87,7 +87,8 @@ export const resetPasswordSchema = z
     email: emailValidator,
     password: passwordValidator,
     confirmPassword: z.string(),
-    token: z.string().min(1, 'Érvénytelen token'),
+    /** 6-digit code from email or opaque token from magic link */
+    token: z.string().min(6, 'Érvénytelen kód vagy link'),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: 'A jelszavak nem egyeznek',
@@ -97,9 +98,28 @@ export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
 
 export const verifyEmailSchema = z.object({
   email: emailValidator,
-  code: z.string().min(4, 'Érvénytelen kód'),
+  code: z.string().regex(/^\d{6}$/, 'A kódnak 6 számjegyből kell állnia'),
 });
 export type VerifyEmailInput = z.infer<typeof verifyEmailSchema>;
+
+export const verifyEmailTokenSchema = z.object({
+  token: z.string().min(16, 'Érvénytelen link'),
+});
+export type VerifyEmailTokenInput = z.infer<typeof verifyEmailTokenSchema>;
+
+export const requestMagicLinkSchema = z.object({ email: emailValidator });
+export type RequestMagicLinkInput = z.infer<typeof requestMagicLinkSchema>;
+
+export const consumeMagicLoginSchema = z.object({
+  token: z.string().min(16, 'Érvénytelen link'),
+});
+export type ConsumeMagicLoginInput = z.infer<typeof consumeMagicLoginSchema>;
+
+export const completeLegalAndCountrySchema = z.object({
+  acceptTerms: z.boolean().refine((v) => v === true, { message: 'Az elfogadás kötelező' }),
+  country: z.string().min(2).max(2).optional(),
+});
+export type CompleteLegalAndCountryInput = z.infer<typeof completeLegalAndCountrySchema>;
 
 // ---------------------------------------------------------------------------
 // Pagination

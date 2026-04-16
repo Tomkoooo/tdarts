@@ -42,7 +42,7 @@ export interface HomeMetrics {
   currentRanking: number | null
 }
 
-export type HomeProfileCompletenessIssue = "photo" | "country"
+export type HomeProfileCompletenessIssue = "photo" | "country" | "terms"
 
 export interface HomeNotifications {
   unreadTickets: number

@@ -8,7 +8,7 @@ jest.mock('@tdarts/core', () => {
 
 import { AuthService } from '@tdarts/services';
 import { UserModel } from '@tdarts/core';
-import { BadRequestError } from '@/middleware/errorHandle';
+import { BadRequestError, ValidationError } from '@/middleware/errorHandle';
 import { connectMongo as connectToDatabase } from '@/lib/mongoose';
 
 describe('AuthService', () => {
@@ -59,8 +59,9 @@ describe('AuthService', () => {
       username: 'test_user',
       name: 'Test User',
     });
-    const token = await AuthService.login('test@example.com', 'password123');
+    const { token, user } = await AuthService.login('test@example.com', 'password123');
     expect(token).toBeDefined();
+    expect(user?.email).toBe('test@example.com');
   }, 15000);
 
   it('should throw error for invalid login credentials', async () => {
@@ -109,10 +110,10 @@ describe('AuthService', () => {
     });
     await expect(
       AuthService.resetPassword('test@example.com', 'invalid_code', 'newpassword123')
-    ).rejects.toThrow(BadRequestError);
+    ).rejects.toThrow(ValidationError);
     await expect(
       AuthService.resetPassword('test@example.com', 'invalid_code', 'newpassword123')
-    ).rejects.toThrow('Invalid reset code');
+    ).rejects.toThrow('Invalid reset password code');
   }, 15000);
 
   it('should throw error if user does not exist for reset password', async () => {

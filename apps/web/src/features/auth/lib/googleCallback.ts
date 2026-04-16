@@ -16,6 +16,7 @@ type SessionUserShape = {
   country?: string | null;
   authProvider?: string;
   locale?: 'hu' | 'en' | 'de';
+  termsAcceptedAt?: Date | string | null;
 };
 
 function normalizeSessionUser(user: unknown): SessionUserShape | null {
@@ -87,6 +88,14 @@ export async function handleGoogleCallbackPost() {
   }
 
   const token = await AuthService.generateAuthToken(user);
+  const termsAt = (user as SessionUserShape).termsAcceptedAt;
+  const termsAcceptedAt =
+    termsAt instanceof Date ? termsAt : termsAt ? new Date(termsAt as string) : null;
+  const needsProfileCompletion = AuthService.needsProfileCompletion({
+    termsAcceptedAt,
+    country: user.country,
+  });
+
   const response = NextResponse.json({
     success: true,
     user: {
@@ -100,6 +109,8 @@ export async function handleGoogleCallbackPost() {
       country: user.country || null,
       authProvider: user.authProvider,
       locale: user.locale || 'hu',
+      termsAcceptedAt: termsAcceptedAt?.toISOString() ?? null,
+      needsProfileCompletion,
     },
   });
 
