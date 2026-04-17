@@ -1,5 +1,7 @@
 'use server';
 
+import { randomUUID } from 'crypto';
+import { Types } from 'mongoose';
 import { z } from 'zod';
 import { revalidateTag } from 'next/cache';
 import { TournamentService } from '@tdarts/services';
@@ -8,7 +10,11 @@ import { withTelemetry } from '@/shared/lib/withTelemetry';
 import { resolveGuardAwareStatus } from '@/shared/lib/guards/result';
 import { serializeForClient } from '@/shared/lib/serializeForClient';
 import { AuthorizationService } from '@tdarts/services';
-import { UserModel, PlayerModel } from '@tdarts/core';
+import {
+  UserModel,
+  PlayerModel,
+  TournamentNotificationDeliveryModel,
+} from '@tdarts/core';
 import { sendEmail } from '@/lib/mailer';
 import { connectMongo } from '@/lib/mongoose';
 import { buildTournamentNotificationEmailHtml } from '@/lib/tournament-notification-email';
@@ -469,6 +475,29 @@ const notifyPlayerSchema = z.object({
   tournamentName: z.string().optional(),
 });
 
+function isValidEmailAddress(value: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+}
+
+async function assertTournamentOrganizerOrGlobalAdmin(code: string, userId: string) {
+  const tournament = await TournamentService.getTournament(code);
+  if (!tournament) {
+    throw new Error('Tournament not found');
+  }
+  const clubId = getTournamentClubId(tournament);
+  if (!clubId) {
+    throw new Error('Tournament is missing club reference');
+  }
+  const [canModerate, isGlobalAdmin] = await Promise.all([
+    AuthorizationService.checkAdminOrModerator(userId, clubId),
+    AuthorizationService.isGlobalAdmin(userId),
+  ]);
+  if (!canModerate && !isGlobalAdmin) {
+    throw new Error('Forbidden');
+  }
+  return tournament;
+}
+
 export async function sendTournamentPlayerNotificationAction(input: {
   code: string;
   mode?: 'single' | 'selected';
@@ -494,58 +523,48 @@ export async function sendTournamentPlayerNotificationAction(input: {
       const parsed = notifyPlayerSchema.parse(payload);
       const authResult = await authorizeUserResult();
       if (!authResult.ok) return authResult;
-      const tournament = await TournamentService.getTournament(parsed.code);
-      if (!tournament) {
-        throw new Error('Tournament not found');
+
+      if (parsed.mode === 'single' && !parsed.playerId) {
+        throw new Error('Missing playerId for single notification');
       }
-      const clubId = getTournamentClubId(tournament);
-      if (!clubId) {
-        throw new Error('Tournament is missing club reference');
+      if (parsed.mode === 'selected' && (!parsed.playerIds || parsed.playerIds.length === 0)) {
+        throw new Error('No selected players provided');
       }
-      const [canModerate, isGlobalAdmin] = await Promise.all([
-        AuthorizationService.checkAdminOrModerator(authResult.data.userId, clubId),
-        AuthorizationService.isGlobalAdmin(authResult.data.userId),
-      ]);
-      if (!canModerate && !isGlobalAdmin) {
-        throw new Error('Forbidden');
-      }
+
+      await assertTournamentOrganizerOrGlobalAdmin(parsed.code, authResult.data.userId);
 
       await connectMongo();
 
-      let targetPlayerIds: string[] = [];
-      if (parsed.mode === 'single') {
-        if (!parsed.playerId) {
-          throw new Error('Missing playerId for single notification');
-        }
-        targetPlayerIds = [parsed.playerId];
-      } else if (parsed.mode === 'selected') {
-        targetPlayerIds = [...new Set(parsed.playerIds || [])];
-        if (targetPlayerIds.length === 0) {
-          throw new Error('No selected players provided');
-        }
-      } else {
-        targetPlayerIds = [...new Set(parsed.playerIds || [])];
-        if (targetPlayerIds.length === 0) {
-          throw new Error('No selected players provided');
-        }
-      }
+      const rawPlayerIds: string[] =
+        parsed.mode === 'single'
+          ? parsed.playerId
+            ? [parsed.playerId]
+            : []
+          : [...(parsed.playerIds || [])];
 
-      if (targetPlayerIds.length === 0) {
-        return {
-          success: true,
-          targetCount: 0,
-          sentCount: 0,
-          skippedNoUserCount: 0,
-          skippedNoEmailCount: 0,
-          failedCount: 0,
-        };
-      }
+      const selectedPlayerCount = rawPlayerIds.length;
+      const targetPlayerIds = [...new Set(rawPlayerIds)];
+      const uniqueSelectedPlayerCount = targetPlayerIds.length;
 
-      const players = await PlayerModel.find({ _id: { $in: targetPlayerIds } }).select('userRef name').lean();
+      const playerIdObjectIds = targetPlayerIds
+        .filter((id) => Types.ObjectId.isValid(id))
+        .map((id) => new Types.ObjectId(id));
+
+      const playersFound =
+        playerIdObjectIds.length > 0
+          ? await PlayerModel.find({ _id: { $in: playerIdObjectIds } })
+              .select('userRef name')
+              .lean()
+          : [];
+      const playersFoundCount = playersFound.length;
+      const playerById = new Map(
+        (playersFound as any[]).map((p) => [p._id.toString(), p])
+      );
+
       const userIds = [
         ...new Set(
-          players
-            .map((player) => (player as any)?.userRef?.toString?.())
+          (playersFound as any[])
+            .map((player) => player?.userRef?.toString?.())
             .filter((userId: string | undefined): userId is string => Boolean(userId))
         ),
       ];
@@ -553,27 +572,83 @@ export async function sendTournamentPlayerNotificationAction(input: {
       const users = userIds.length
         ? await UserModel.find({ _id: { $in: userIds } }).select('email name').lean()
         : [];
-      const userById = new Map(users.map((user: any) => [user._id.toString(), user]));
+      const userById = new Map((users as any[]).map((user) => [user._id.toString(), user]));
 
+      type Resolution = {
+        playerId: string;
+        playerName: string;
+        userId?: string;
+        emailNorm?: string;
+        emailTo?: string;
+        skipReason?: string;
+      };
+
+      const resolutions: Resolution[] = [];
+      let skippedPlayerNotFoundCount = 0;
       let skippedNoUserCount = 0;
       let skippedNoEmailCount = 0;
-      const recipientEmails: string[] = [];
 
-      for (const player of players as any[]) {
-        const userId = player?.userRef?.toString?.();
+      for (const pid of targetPlayerIds) {
+        const player = playerById.get(pid);
+        if (!player) {
+          skippedPlayerNotFoundCount += 1;
+          resolutions.push({
+            playerId: pid,
+            playerName: '',
+            skipReason: 'player_not_found',
+          });
+          continue;
+        }
+        const playerName = String((player as any).name || '');
+        const userId = (player as any).userRef?.toString?.();
         if (!userId) {
           skippedNoUserCount += 1;
+          resolutions.push({
+            playerId: pid,
+            playerName,
+            skipReason: 'no_user_ref',
+          });
           continue;
         }
         const user = userById.get(userId);
-        const email = user?.email?.trim?.();
-        if (!email) {
+        const emailTo = user?.email?.trim?.() || '';
+        const emailNorm = emailTo.toLowerCase();
+        if (!emailTo || !isValidEmailAddress(emailNorm)) {
           skippedNoEmailCount += 1;
+          resolutions.push({
+            playerId: pid,
+            playerName,
+            userId,
+            skipReason: 'no_email',
+          });
           continue;
         }
-        recipientEmails.push(email);
+        resolutions.push({
+          playerId: pid,
+          playerName,
+          userId,
+          emailNorm,
+          emailTo,
+        });
       }
-      const uniqueRecipientEmails = [...new Set(recipientEmails)];
+
+      const emailCanonicalPlayerId = new Map<string, string>();
+      for (const r of resolutions) {
+        if (!r.emailNorm || !r.emailTo || r.skipReason) continue;
+        if (!emailCanonicalPlayerId.has(r.emailNorm)) {
+          emailCanonicalPlayerId.set(r.emailNorm, r.playerId);
+        }
+      }
+
+      let skippedDuplicateEmailCount = 0;
+      for (const r of resolutions) {
+        if (!r.emailNorm || !r.emailTo || r.skipReason) continue;
+        const canonical = emailCanonicalPlayerId.get(r.emailNorm);
+        if (canonical && canonical !== r.playerId) {
+          r.skipReason = 'duplicate_email';
+          skippedDuplicateEmailCount += 1;
+        }
+      }
 
       const html = buildTournamentNotificationEmailHtml({
         subject: parsed.subject,
@@ -582,32 +657,190 @@ export async function sendTournamentPlayerNotificationAction(input: {
         language: parsed.language,
       });
 
-      const sendResults = await Promise.allSettled(
-        uniqueRecipientEmails.map((email) =>
-          sendEmail({
-            to: [email],
+      const emailsToAttempt = [...emailCanonicalPlayerId.keys()];
+      const uniqueEmailCount = emailsToAttempt.length;
+      const sendAttemptCount = uniqueEmailCount;
+
+      const sendOkByEmailNorm = new Map<string, boolean>();
+      const sendErrorByEmailNorm = new Map<string, string>();
+
+      for (const emailNorm of emailsToAttempt) {
+        const canonicalPlayerId = emailCanonicalPlayerId.get(emailNorm);
+        const canonical = resolutions.find(
+          (x) => x.playerId === canonicalPlayerId && x.emailNorm === emailNorm && !x.skipReason
+        );
+        const to = canonical?.emailTo || emailNorm;
+        try {
+          const ok = await sendEmail({
+            to: [to],
             subject: parsed.subject,
             text: parsed.message,
             html,
-          })
-        )
-      );
+          });
+          sendOkByEmailNorm.set(emailNorm, Boolean(ok));
+          if (!ok) {
+            sendErrorByEmailNorm.set(emailNorm, 'send_mail_returned_false');
+          }
+        } catch (err: any) {
+          sendOkByEmailNorm.set(emailNorm, false);
+          sendErrorByEmailNorm.set(emailNorm, err?.message || 'send_failed');
+        }
+      }
 
-      const sentCount = sendResults.filter((result) => result.status === 'fulfilled').length;
-      const failedCount = sendResults.length - sentCount;
+      let sentCount = 0;
+      let failedCount = 0;
+      for (const emailNorm of emailsToAttempt) {
+        if (sendOkByEmailNorm.get(emailNorm)) sentCount += 1;
+        else failedCount += 1;
+      }
+
+      const batchId = randomUUID();
+      const senderUserId = authResult.data.userId;
+      const now = new Date();
+
+      const results: Array<{
+        playerId: string;
+        playerName: string;
+        status: 'sent' | 'failed' | 'skipped';
+        reason?: string;
+        sentAt?: string | null;
+      }> = [];
+
+      const insertDocs: Array<Record<string, unknown>> = [];
+
+      for (const r of resolutions) {
+        let status: 'sent' | 'failed' | 'skipped' = 'skipped';
+        let reason = r.skipReason;
+        let sentAt: Date | undefined;
+
+        if (r.skipReason) {
+          status = 'skipped';
+        } else if (r.emailNorm && emailCanonicalPlayerId.get(r.emailNorm) === r.playerId) {
+          const ok = sendOkByEmailNorm.get(r.emailNorm);
+          if (ok) {
+            status = 'sent';
+            sentAt = now;
+          } else {
+            status = 'failed';
+            reason = sendErrorByEmailNorm.get(r.emailNorm) || 'send_failed';
+          }
+        }
+
+        results.push({
+          playerId: r.playerId,
+          playerName: r.playerName,
+          status,
+          reason,
+          sentAt: sentAt ? sentAt.toISOString() : null,
+        });
+
+        if (!Types.ObjectId.isValid(r.playerId)) {
+          continue;
+        }
+
+        insertDocs.push({
+          tournamentCode: parsed.code,
+          batchId,
+          playerId: new Types.ObjectId(r.playerId),
+          playerName: r.playerName || undefined,
+          userRef: r.userId && Types.ObjectId.isValid(r.userId) ? new Types.ObjectId(r.userId) : undefined,
+          email: r.emailTo || r.emailNorm || undefined,
+          subject: parsed.subject,
+          language: parsed.language,
+          senderUserId: new Types.ObjectId(senderUserId),
+          status,
+          reason,
+          sentAt: sentAt ?? undefined,
+        });
+      }
+
+      if (insertDocs.length > 0) {
+        await TournamentNotificationDeliveryModel.insertMany(insertDocs);
+      }
 
       return {
         success: true,
-        targetCount: targetPlayerIds.length,
-        sentCount,
+        batchId,
+        selectedPlayerCount,
+        uniqueSelectedPlayerCount,
+        playersFoundCount,
+        skippedPlayerNotFoundCount,
         skippedNoUserCount,
         skippedNoEmailCount,
+        skippedDuplicateEmailCount,
+        uniqueEmailCount,
+        sendAttemptCount,
+        sentCount,
         failedCount,
+        targetCount: uniqueSelectedPlayerCount,
+        results,
       };
     },
     {
       method: 'ACTION',
       metadata: { feature: 'tournaments', actionName: 'sendTournamentPlayerNotification' },
+      resolveStatus: resolveGuardAwareStatus,
+    }
+  );
+  return run(input);
+}
+
+const deliveriesLatestSchema = z.object({
+  code: z.string().min(1),
+});
+
+export async function getTournamentNotificationDeliveriesLatestAction(input: { code: string }) {
+  const run = withTelemetry(
+    'tournaments.notifications.deliveriesLatest',
+    async (payload: { code: string }) => {
+      const { code } = deliveriesLatestSchema.parse(payload);
+      const authResult = await authorizeUserResult();
+      if (!authResult.ok) return authResult;
+
+      await assertTournamentOrganizerOrGlobalAdmin(code, authResult.data.userId);
+
+      await connectMongo();
+
+      const latest = await TournamentNotificationDeliveryModel.aggregate([
+        { $match: { tournamentCode: code } },
+        { $sort: { createdAt: -1 } },
+        {
+          $group: {
+            _id: '$playerId',
+            doc: { $first: '$$ROOT' },
+          },
+        },
+      ]);
+
+      const latestByPlayerId: Record<
+        string,
+        {
+          status: string;
+          reason?: string;
+          sentAt?: string | null;
+          createdAt: string;
+          batchId: string;
+        }
+      > = {};
+
+      for (const row of latest as any[]) {
+        const id = row._id?.toString?.();
+        const d = row.doc;
+        if (!id || !d) continue;
+        latestByPlayerId[id] = {
+          status: d.status,
+          reason: d.reason,
+          sentAt: d.sentAt ? new Date(d.sentAt).toISOString() : null,
+          createdAt: new Date(d.createdAt).toISOString(),
+          batchId: String(d.batchId),
+        };
+      }
+
+      return serializeForClient({ success: true, latestByPlayerId });
+    },
+    {
+      method: 'ACTION',
+      metadata: { feature: 'tournaments', actionName: 'getTournamentNotificationDeliveriesLatest' },
       resolveStatus: resolveGuardAwareStatus,
     }
   );

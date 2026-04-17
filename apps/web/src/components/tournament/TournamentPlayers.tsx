@@ -3,7 +3,7 @@
 import React, { useCallback, useMemo, useState } from "react"
 import Link from "next/link"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
-import { useTranslations } from "next-intl"
+import { useLocale, useTranslations } from "next-intl"
 import {
   IconCheck,
   IconMail,
@@ -58,6 +58,7 @@ import {
   unsubscribeFromTournamentNotificationsClientAction,
   updateTournamentPlayerStatusClientAction,
 } from "@/features/tournaments/actions/tournamentRoster.action"
+import { getTournamentNotificationDeliveriesLatestAction } from "@/features/tournaments/actions/manageTournament.action"
 
 interface TournamentPlayersProps {
   tournament: any
@@ -112,6 +113,7 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
   onRefresh,
 }) => {
   const tTour = useTranslations("Tournament")
+  const locale = useLocale()
   const tCommon = useTranslations("Common")
   const hasCommonKey = (key: string) => (tCommon as unknown as { has?: (k: string) => boolean }).has?.(key) ?? false
   const tp = (key: string, values?: any) => tTour(`players.${key}`, values)
@@ -173,6 +175,18 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
   const [isSubscribing, setIsSubscribing] = useState(false)
   const [showTeamRegistrationModal, setShowTeamRegistrationModal] = useState(false)
   const [isModeratorRegistration, setIsModeratorRegistration] = useState(false)
+  const [latestDeliveries, setLatestDeliveries] = useState<
+    Record<
+      string,
+      {
+        status: string
+        reason?: string
+        sentAt?: string | null
+        createdAt: string
+        batchId: string
+      }
+    >
+  >({})
 
   const code = tournament?.tournamentId
 
@@ -726,6 +740,58 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
   const canManagePlayers = userClubRole === 'admin' || userClubRole === 'moderator'
   const isGlobalAdmin = user?.isAdmin === true
   const canManageOrganizerComms = canManagePlayers || isGlobalAdmin
+
+  const refreshNotificationDeliveries = useCallback(async () => {
+    if (!code || !canManageOrganizerComms) return
+    try {
+      const res = await getTournamentNotificationDeliveriesLatestAction({ code })
+      if (
+        res &&
+        typeof res === "object" &&
+        "success" in res &&
+        (res as { success?: boolean }).success &&
+        "latestByPlayerId" in res
+      ) {
+        const next = (res as { latestByPlayerId?: typeof latestDeliveries }).latestByPlayerId
+        setLatestDeliveries(next ?? {})
+      }
+    } catch (e) {
+      console.error(e)
+    }
+  }, [code, canManageOrganizerComms])
+
+  React.useEffect(() => {
+    void refreshNotificationDeliveries()
+  }, [refreshNotificationDeliveries])
+
+  const renderLastEmailCell = (playerId: string) => {
+    const d = latestDeliveries[playerId]
+    if (!d) {
+      return (
+        <span className="text-muted-foreground">{tTour("notification_modal.last_email_none")}</span>
+      )
+    }
+    const when = new Date(d.sentAt || d.createdAt).toLocaleString(locale)
+    if (d.status === "sent") {
+      return (
+        <span className="text-emerald-600 font-medium">
+          {tTour("notification_modal.last_email_sent", { date: when })}
+        </span>
+      )
+    }
+    if (d.status === "failed") {
+      return (
+        <span className="text-destructive font-medium" title={d.reason || undefined}>
+          {tTour("notification_modal.last_email_failed", { date: when })}
+        </span>
+      )
+    }
+    return (
+      <span className="text-muted-foreground" title={d.reason || undefined}>
+        {tTour("notification_modal.last_email_skipped", { date: when })}
+      </span>
+    )
+  }
   const displayedPlayers = useMemo(() => {
     return localPlayers
       .map((player, index) => ({ player, index }))
@@ -1022,6 +1088,11 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
                     ) : null}
                     <th className="px-6 py-4 font-headline text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground w-10 text-center">#</th>
                     <th className="px-6 py-4 font-headline text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground max-w-[200px] xl:max-w-none">Player</th>
+                    {canManageOrganizerComms ? (
+                      <th className="px-4 py-4 font-headline text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground hidden lg:table-cell max-w-[160px]">
+                        {tTour("notification_modal.last_email_header")}
+                      </th>
+                    ) : null}
                     <th className="px-6 py-4 font-headline text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground text-center hidden md:table-cell">Averages & Stats</th>
                     <th className="px-6 py-4 font-headline text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground text-right">Actions</th>
                   </tr>
@@ -1163,6 +1234,12 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
                               </div>
                             </div>
                           </td>
+
+                          {canManageOrganizerComms ? (
+                            <td className="px-4 py-4 align-top hidden lg:table-cell max-w-[160px]">
+                              {playerId ? renderLastEmailCell(playerId) : "—"}
+                            </td>
+                          ) : null}
 
                           {/* Averages & Stats */}
                           <td className="px-6 py-4 text-center hidden md:table-cell">
@@ -1387,6 +1464,7 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
           targetCount={notificationTarget.targetCount}
           tournamentCode={code || ""}
           tournamentName={tournament?.tournamentSettings?.name || tournament?.name || "Torna"}
+          onDeliveriesUpdated={refreshNotificationDeliveries}
         />
       ) : null}
 

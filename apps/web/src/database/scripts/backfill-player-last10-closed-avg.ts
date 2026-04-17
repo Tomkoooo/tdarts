@@ -130,7 +130,6 @@ async function runBackfill(): Promise<void> {
     const operations = playerIds.map((id) => ({
       updateOne: {
         filter: { _id: id },
-        // Only touch the new metric to keep the backfill fully backward-safe.
         update: { $set: { "stats.last10ClosedAvg": averages.get(id.toString()) ?? 0 } },
       },
     }));

@@ -245,4 +245,12 @@ export type { TodoDocument } from './models/todo.model';
 
 export { TournamentModel } from './models/tournament.model';
 
+export {
+  TournamentNotificationDeliveryModel,
+} from './models/tournament-notification-delivery.model';
+export type {
+  TournamentNotificationDeliveryDocument,
+  TournamentNotificationDeliveryStatus,
+} from './models/tournament-notification-delivery.model';
+
 export { UserModel } from './models/user.model';

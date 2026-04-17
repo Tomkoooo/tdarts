@@ -218,17 +218,48 @@ export class TournamentService {
         return result;
     }
 
+    /**
+     * Build dotted-path $set fields for player stats so MongoDB keeps other keys under `stats`
+     * instead of replacing the whole subdocument.
+     */
+    private static buildPlayerGlobalStatsDottedUpdate(player: { stats?: Record<string, unknown> }): Record<string, unknown> {
+        const s = player.stats ?? {};
+        const last10Closed = s.last10ClosedAvg ?? 0;
+        return {
+            'stats.tournamentsPlayed': s.tournamentsPlayed,
+            'stats.matchesPlayed': s.matchesPlayed,
+            'stats.legsWon': s.legsWon,
+            'stats.legsLost': s.legsLost,
+            'stats.oneEightiesCount': s.oneEightiesCount,
+            'stats.highestCheckout': s.highestCheckout,
+            'stats.avg': s.avg,
+            'stats.firstNineAvg': s.firstNineAvg,
+            'stats.last10ClosedAvg': last10Closed,
+            'stats.averagePosition': s.averagePosition,
+            'stats.bestPosition': s.bestPosition,
+            'stats.totalMatchesWon': s.totalMatchesWon,
+            'stats.totalMatchesLost': s.totalMatchesLost,
+            'stats.totalLegsWon': s.totalLegsWon,
+            'stats.totalLegsLost': s.totalLegsLost,
+            'stats.total180s': s.total180s,
+            'stats.mmr': s.mmr,
+            'stats.oacMmr': s.oacMmr,
+        };
+    }
+
     private static async recalculateLast10ClosedAveragesBulk(playerIds: string[]): Promise<Map<string, number>> {
         const result = new Map<string, number>();
         if (playerIds.length === 0) return result;
 
-        const normalizedIds = Array.from(new Set(playerIds.map((id) => String(id))));
-        for (const playerId of normalizedIds) {
+        const normalizedIdStrings = Array.from(new Set(playerIds.map((id) => String(id))));
+        for (const playerId of normalizedIdStrings) {
             result.set(playerId, 0);
         }
 
+        const playerObjectIds = normalizedIdStrings.map((id) => new mongoose.Types.ObjectId(id));
+
         type AggregateRow = {
-            _id: string;
+            _id: mongoose.Types.ObjectId;
             values?: number[];
         };
 
@@ -237,8 +268,8 @@ export class TournamentService {
                 $match: {
                     status: 'finished',
                     $or: [
-                        { 'player1.playerId': { $in: normalizedIds } },
-                        { 'player2.playerId': { $in: normalizedIds } },
+                        { 'player1.playerId': { $in: playerObjectIds } },
+                        { 'player2.playerId': { $in: playerObjectIds } },
                     ],
                 },
             },
@@ -255,7 +286,7 @@ export class TournamentService {
             { $unwind: '$sides' },
             {
                 $match: {
-                    'sides.playerId': { $in: normalizedIds },
+                    'sides.playerId': { $in: playerObjectIds },
                     'sides.average': { $gt: 0 },
                 },
             },
@@ -5859,7 +5890,8 @@ export class TournamentService {
                             || { avg: 0, firstNineAvg: 0 };
                         player.stats.avg = seasonAverages.avg;
                         player.stats.firstNineAvg = seasonAverages.firstNineAvg;
-                        player.stats.last10ClosedAvg = recentClosedAveragesByPlayer.get(playerId) || 0;
+                        const last10Closed = recentClosedAveragesByPlayer.get(playerId) || 0;
+                        player.stats.last10ClosedAvg = last10Closed;
                         mutatedPlayers.add(playerId);
                     }
                 }
@@ -5873,7 +5905,7 @@ export class TournamentService {
                                     filter: { _id: player._id },
                                     update: {
                                         $set: {
-                                            stats: player.stats,
+                                            ...this.buildPlayerGlobalStatsDottedUpdate(player),
                                             tournamentHistory: player.tournamentHistory,
                                         },
                                     },
@@ -7279,7 +7311,8 @@ export class TournamentService {
                     const seasonAverages = seasonalAveragesByPlayer.get(playerId) || { avg: 0, firstNineAvg: 0 };
                     player.stats.avg = seasonAverages.avg;
                     player.stats.firstNineAvg = seasonAverages.firstNineAvg;
-                    player.stats.last10ClosedAvg = recentClosedAveragesByPlayer.get(playerId) || 0;
+                    const last10Closed = recentClosedAveragesByPlayer.get(playerId) || 0;
+                    player.stats.last10ClosedAvg = last10Closed;
                 }
 
                 const bulkOpts: mongoose.mongo.BulkWriteOptions = { ordered: false };
@@ -7292,7 +7325,7 @@ export class TournamentService {
                             filter: { _id: player._id },
                             update: {
                                 $set: {
-                                    stats: player.stats,
+                                    ...this.buildPlayerGlobalStatsDottedUpdate(player),
                                     tournamentHistory: player.tournamentHistory,
                                 },
                             },
