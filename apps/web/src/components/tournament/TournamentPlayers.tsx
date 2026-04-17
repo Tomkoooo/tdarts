@@ -131,6 +131,16 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
     isOpen: false,
     player: null,
   })
+  const [notificationTarget, setNotificationTarget] = useState<{
+    mode: "single" | "selected"
+    playerIds: string[]
+    targetCount: number
+  }>({
+    mode: "single",
+    playerIds: [],
+    targetCount: 0,
+  })
+  const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>([])
   const [legsModal, setLegsModal] = useState<{ isOpen: boolean; match: any }>({ isOpen: false, match: null })
   const [activeTab, setActiveTab] = useState<'registered' | 'waiting'>('registered')
   const [removeConfirm, setRemoveConfirm] = useState<{ isOpen: boolean; playerId?: string; playerName?: string }>({
@@ -217,6 +227,17 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
       })
     )
   }, [players, userPlayerStatus, userPlayerId, tournament?.waitingList, tournament?.notificationSubscribers, user?._id])
+
+  React.useEffect(() => {
+    setSelectedPlayerIds((prev) => {
+      const availableIds = new Set(
+        localPlayers
+          .map((player) => player?.playerReference?._id?.toString?.() || player?._id?.toString?.())
+          .filter((id: string | undefined): id is string => Boolean(id)),
+      )
+      return prev.filter((id) => availableIds.has(id))
+    })
+  }, [localPlayers])
 
   React.useEffect(() => {
     // Notification subscription check removed - feature not used
@@ -392,7 +413,47 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
   }
 
   const handleNotifyPlayer = (player: any) => {
+    setNotificationTarget({
+      mode: "single",
+      playerIds: [],
+      targetCount: 1,
+    })
     setNotificationModal({ isOpen: true, player })
+  }
+
+  const handleNotifySelectedPlayers = () => {
+    if (selectedPlayerIds.length === 0) {
+      toast.error(tTour("notification_modal.error_no_selected_players"))
+      return
+    }
+    setNotificationTarget({
+      mode: "selected",
+      playerIds: selectedPlayerIds,
+      targetCount: selectedPlayerIds.length,
+    })
+    setNotificationModal({ isOpen: true, player: null })
+  }
+
+  const togglePlayerSelection = (playerId: string, checked: boolean) => {
+    if (!playerId) return
+    setSelectedPlayerIds((prev) => {
+      if (checked) {
+        if (prev.includes(playerId)) return prev
+        return [...prev, playerId]
+      }
+      return prev.filter((id) => id !== playerId)
+    })
+  }
+
+  const toggleSelectAllPlayers = (checked: boolean) => {
+    if (!checked) {
+      setSelectedPlayerIds([])
+      return
+    }
+    const allPlayerIds = localPlayers
+      .map((player) => player?.playerReference?._id?.toString?.() || player?._id?.toString?.())
+      .filter((id: string | undefined): id is string => Boolean(id))
+    setSelectedPlayerIds([...new Set(allPlayerIds)])
   }
 
   const handleOpenMatches = (player: any) => {
@@ -663,6 +724,8 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
   }
 
   const canManagePlayers = userClubRole === 'admin' || userClubRole === 'moderator'
+  const isGlobalAdmin = user?.isAdmin === true
+  const canManageOrganizerComms = canManagePlayers || isGlobalAdmin
   const displayedPlayers = useMemo(() => {
     return localPlayers
       .map((player, index) => ({ player, index }))
@@ -708,7 +771,7 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
             </Button>
           )
         )}
-        {canManagePlayers && status === "pending" && (
+        {canManageOrganizerComms && status === "pending" && (
           <div className="flex items-center gap-1">
             <Button size="sm" variant="info" onClick={() => handleNotifyPlayer(player)} className="gap-1">
               <IconMail className="h-3 w-3" />
@@ -780,6 +843,27 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
           </CardContent>
         </Card>
       )}
+
+      {canManageOrganizerComms ? (
+        <Card className="border-dashed">
+          <CardHeader>
+            <CardTitle className="text-base">{tTour("notification_modal.bulk_title")}</CardTitle>
+            <CardDescription>{tTour("notification_modal.bulk_desc")}</CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-wrap items-center gap-2">
+            <Button
+              size="sm"
+              variant="info"
+              onClick={handleNotifySelectedPlayers}
+              disabled={selectedPlayerIds.length === 0}
+              className="gap-2"
+            >
+              <IconMail className="h-4 w-4" />
+              {tTour("notification_modal.send_selected", { count: selectedPlayerIds.length })}
+            </Button>
+          </CardContent>
+        </Card>
+      ) : null}
 
 
       {user && (
@@ -889,6 +973,7 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
               </Link>
             </Button>
           )}
+          <p className="basis-full text-xs text-muted-foreground">{tr("consent_note")}</p>
         </div>
       )}
 
@@ -925,6 +1010,16 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-muted/30 border-b border-border/50 sticky top-0 z-10 backdrop-blur-md">
+                    {canManageOrganizerComms ? (
+                      <th className="px-4 py-4 text-center w-10">
+                        <input
+                          type="checkbox"
+                          checked={localPlayers.length > 0 && selectedPlayerIds.length === localPlayers.length}
+                          onChange={(event) => toggleSelectAllPlayers(event.target.checked)}
+                          aria-label={tTour("notification_modal.select_all_players")}
+                        />
+                      </th>
+                    ) : null}
                     <th className="px-6 py-4 font-headline text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground w-10 text-center">#</th>
                     <th className="px-6 py-4 font-headline text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground max-w-[200px] xl:max-w-none">Player</th>
                     <th className="px-6 py-4 font-headline text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground text-center hidden md:table-cell">Averages & Stats</th>
@@ -935,7 +1030,7 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
                   {displayedPlayers
                     .map(({ player }, i) => {
                       const name = player.playerReference?.name || player.name || player._id
-                      const playerId = player.playerReference?._id?.toString() || player.playerReference?.toString() || player._id?.toString()
+                      const playerId = player.playerReference?._id?.toString() || player.playerReference?.toString() || player._id?.toString() || ""
                       const status = player.status || "applied"
                       const statusMeta = playerStatusBadge[status]
                       const isCurrentUser = localUserPlayerId && (player.playerReference?._id?.toString() === localUserPlayerId.toString() || player._id?.toString() === localUserPlayerId.toString())
@@ -952,6 +1047,17 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
                             isCurrentUser && "bg-primary/5"
                           )}
                         >
+                          {canManageOrganizerComms ? (
+                            <td className="px-4 py-4 text-center">
+                              <input
+                                type="checkbox"
+                                checked={playerId ? selectedPlayerIds.includes(playerId) : false}
+                                onChange={(event) => togglePlayerSelection(playerId, event.target.checked)}
+                                disabled={!playerId}
+                                aria-label={tTour("notification_modal.select_player", { player: name })}
+                              />
+                            </td>
+                          ) : null}
                           {/* Number / Status Icon */}
                           <td className="px-6 py-4 text-center">
                             {isCurrentUser ? (
@@ -1275,7 +1381,11 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
         <PlayerNotificationModal
           isOpen={notificationModal.isOpen}
           onClose={() => setNotificationModal({ isOpen: false, player: null })}
+          mode={notificationTarget.mode}
           player={notificationModal.player}
+          playerIds={notificationTarget.playerIds}
+          targetCount={notificationTarget.targetCount}
+          tournamentCode={code || ""}
           tournamentName={tournament?.tournamentSettings?.name || tournament?.name || "Torna"}
         />
       ) : null}

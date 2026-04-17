@@ -102,7 +102,7 @@ export function TournamentOverview({
     if (startDate) return now < new Date(startDate)
     return true
   }, [isPending, now, registrationDeadline, startDate])
-  const canShowRegistrationCta = registrationOpen && userPlayerStatus === "none"
+  const canShowRegistrationCta = registrationOpen && userPlayerStatus === "none" && !tournament?.isSandbox
   const registrationTarget = `/tournaments/${tournament.tournamentId}?tab=players&autoJoin=1`
   const loginRedirectTarget = `/auth/login?redirect=${encodeURIComponent(registrationTarget)}`
   const clubCompetitionAvgBand = tournament?.clubCompetitionAvgBand
@@ -186,6 +186,7 @@ export function TournamentOverview({
                 {tTour('overview.btn_register')}
               </Link>
             </Button>
+            <p className="mt-2 text-xs text-muted-foreground">{tTour("registration.consent_note")}</p>
           </div>
         ) : null}
 

@@ -11,6 +11,7 @@ import { AuthorizationService } from '@tdarts/services';
 import { UserModel, PlayerModel } from '@tdarts/core';
 import { sendEmail } from '@/lib/mailer';
 import { connectMongo } from '@/lib/mongoose';
+import { buildTournamentNotificationEmailHtml } from '@/lib/tournament-notification-email';
 import type {
   CreateManualGroupsRequest,
   ManualGroupsContextResponse,
@@ -458,7 +459,10 @@ export async function deleteTournamentAction(input: {
 }
 
 const notifyPlayerSchema = z.object({
-  playerId: z.string().min(1),
+  code: z.string().min(1),
+  mode: z.enum(['single', 'selected']).default('single'),
+  playerId: z.string().min(1).optional(),
+  playerIds: z.array(z.string().min(1)).optional(),
   subject: z.string().min(1),
   message: z.string().min(1),
   language: z.enum(['hu', 'en']).default('hu'),
@@ -466,7 +470,10 @@ const notifyPlayerSchema = z.object({
 });
 
 export async function sendTournamentPlayerNotificationAction(input: {
-  playerId: string;
+  code: string;
+  mode?: 'single' | 'selected';
+  playerId?: string;
+  playerIds?: string[];
   subject: string;
   message: string;
   language: 'hu' | 'en';
@@ -475,7 +482,10 @@ export async function sendTournamentPlayerNotificationAction(input: {
   const run = withTelemetry(
     'tournaments.notifications.player',
     async (payload: {
-      playerId: string;
+      code: string;
+      mode?: 'single' | 'selected';
+      playerId?: string;
+      playerIds?: string[];
       subject: string;
       message: string;
       language: 'hu' | 'en';
@@ -484,37 +494,116 @@ export async function sendTournamentPlayerNotificationAction(input: {
       const parsed = notifyPlayerSchema.parse(payload);
       const authResult = await authorizeUserResult();
       if (!authResult.ok) return authResult;
+      const tournament = await TournamentService.getTournament(parsed.code);
+      if (!tournament) {
+        throw new Error('Tournament not found');
+      }
+      const clubId = getTournamentClubId(tournament);
+      if (!clubId) {
+        throw new Error('Tournament is missing club reference');
+      }
+      const [canModerate, isGlobalAdmin] = await Promise.all([
+        AuthorizationService.checkAdminOrModerator(authResult.data.userId, clubId),
+        AuthorizationService.isGlobalAdmin(authResult.data.userId),
+      ]);
+      if (!canModerate && !isGlobalAdmin) {
+        throw new Error('Forbidden');
+      }
 
       await connectMongo();
-      const player = await PlayerModel.findById(parsed.playerId).select('userRef name');
-      if (!player?.userRef) {
-        throw new Error('Selected player has no linked user account');
-      }
-      const user = await UserModel.findById(player.userRef).select('email name');
-      if (!user?.email) {
-        throw new Error('Selected player has no email address');
+
+      let targetPlayerIds: string[] = [];
+      if (parsed.mode === 'single') {
+        if (!parsed.playerId) {
+          throw new Error('Missing playerId for single notification');
+        }
+        targetPlayerIds = [parsed.playerId];
+      } else if (parsed.mode === 'selected') {
+        targetPlayerIds = [...new Set(parsed.playerIds || [])];
+        if (targetPlayerIds.length === 0) {
+          throw new Error('No selected players provided');
+        }
+      } else {
+        targetPlayerIds = [...new Set(parsed.playerIds || [])];
+        if (targetPlayerIds.length === 0) {
+          throw new Error('No selected players provided');
+        }
       }
 
-      const html = `
-        <div style="font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;line-height:1.6;color:#111827;">
-          <h2 style="margin:0 0 12px;">${parsed.subject}</h2>
-          <p style="white-space:pre-wrap;margin:0 0 12px;">${parsed.message}</p>
-          ${
-            parsed.tournamentName
-              ? `<p style="margin:0;color:#6b7280;">tDarts - ${parsed.tournamentName}</p>`
-              : ''
-          }
-        </div>
-      `;
+      if (targetPlayerIds.length === 0) {
+        return {
+          success: true,
+          targetCount: 0,
+          sentCount: 0,
+          skippedNoUserCount: 0,
+          skippedNoEmailCount: 0,
+          failedCount: 0,
+        };
+      }
 
-      await sendEmail({
-        to: [user.email],
+      const players = await PlayerModel.find({ _id: { $in: targetPlayerIds } }).select('userRef name').lean();
+      const userIds = [
+        ...new Set(
+          players
+            .map((player) => (player as any)?.userRef?.toString?.())
+            .filter((userId: string | undefined): userId is string => Boolean(userId))
+        ),
+      ];
+
+      const users = userIds.length
+        ? await UserModel.find({ _id: { $in: userIds } }).select('email name').lean()
+        : [];
+      const userById = new Map(users.map((user: any) => [user._id.toString(), user]));
+
+      let skippedNoUserCount = 0;
+      let skippedNoEmailCount = 0;
+      const recipientEmails: string[] = [];
+
+      for (const player of players as any[]) {
+        const userId = player?.userRef?.toString?.();
+        if (!userId) {
+          skippedNoUserCount += 1;
+          continue;
+        }
+        const user = userById.get(userId);
+        const email = user?.email?.trim?.();
+        if (!email) {
+          skippedNoEmailCount += 1;
+          continue;
+        }
+        recipientEmails.push(email);
+      }
+      const uniqueRecipientEmails = [...new Set(recipientEmails)];
+
+      const html = buildTournamentNotificationEmailHtml({
         subject: parsed.subject,
-        text: parsed.message,
-        html,
+        message: parsed.message,
+        tournamentName: parsed.tournamentName,
+        language: parsed.language,
       });
 
-      return { success: true };
+      const sendResults = await Promise.allSettled(
+        uniqueRecipientEmails.map((email) =>
+          sendEmail({
+            to: [email],
+            subject: parsed.subject,
+            text: parsed.message,
+            html,
+          })
+        )
+      );
+
+      const sentCount = sendResults.filter((result) => result.status === 'fulfilled').length;
+      const failedCount = sendResults.length - sentCount;
+
+      return {
+        success: true,
+        targetCount: targetPlayerIds.length,
+        sentCount,
+        skippedNoUserCount,
+        skippedNoEmailCount,
+        failedCount,
+      };
     },
     {
       method: 'ACTION',

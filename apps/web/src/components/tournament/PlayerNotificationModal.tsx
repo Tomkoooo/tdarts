@@ -20,26 +20,41 @@ import { Badge } from "@/components/ui/Badge"
 import { Separator } from "@/components/ui/separator"
 import { showErrorToast } from "@/lib/toastUtils"
 import { sendTournamentPlayerNotificationAction } from "@/features/tournaments/actions/manageTournament.action"
+import { buildTournamentNotificationEmailHtml } from "@/lib/tournament-notification-email"
 
 interface PlayerNotificationModalProps {
   isOpen: boolean
   onClose: () => void
-  player: {
+  mode: "single" | "selected"
+  player?: {
     _id: string
     playerReference: {
       _id: string
       name: string
       userRef?: string
     }
-  }
+  } | null
+  playerIds?: string[]
+  targetCount?: number
+  tournamentCode: string
   tournamentName: string
 }
 
 const PANEL_SHADOW = "shadow-lg shadow-black/35"
 
-export default function PlayerNotificationModal({ isOpen, onClose, player, tournamentName }: PlayerNotificationModalProps) {
+export default function PlayerNotificationModal({
+  isOpen,
+  onClose,
+  mode,
+  player,
+  playerIds,
+  targetCount = 0,
+  tournamentCode,
+  tournamentName,
+}: PlayerNotificationModalProps) {
   const tTour = useTranslations("Tournament")
-  const t = (key: string) => tTour(`notification_modal.${key}`)
+  const t = (key: string, values?: Record<string, unknown>) =>
+    tTour(`notification_modal.${key}`, values)
   const [subject, setSubject] = useState("")
   const [message, setMessage] = useState("")
   const [language, setLanguage] = useState<"hu" | "en">("hu")
@@ -56,7 +71,10 @@ export default function PlayerNotificationModal({ isOpen, onClose, player, tourn
     try {
       setIsLoading(true)
       const response = await sendTournamentPlayerNotificationAction({
-        playerId: player.playerReference._id,
+        code: tournamentCode,
+        mode,
+        playerId: mode === "single" ? player?.playerReference?._id : undefined,
+        playerIds: mode === "selected" ? playerIds : undefined,
         subject: subject.trim(),
         message: message.trim(),
         language,
@@ -64,7 +82,16 @@ export default function PlayerNotificationModal({ isOpen, onClose, player, tourn
       })
 
       if ((response as any)?.success) {
-        toast.success(t("success"))
+        const result = response as any
+        toast.success(
+          t("success_summary", {
+            sent: result?.sentCount ?? 0,
+            total: result?.targetCount ?? targetCount,
+            noUser: result?.skippedNoUserCount ?? 0,
+            noEmail: result?.skippedNoEmailCount ?? 0,
+            failed: result?.failedCount ?? 0,
+          })
+        )
         setSubject("")
         setMessage("")
         onClose()
@@ -87,11 +114,12 @@ export default function PlayerNotificationModal({ isOpen, onClose, player, tourn
     }
   }
 
-  const previewHtml = `
-    <h3 style="margin:0 0 8px;font-weight:600;font-size:16px;">${subject || t("subject_placeholder")}</h3>
-    <p style="margin:0 0 12px;font-size:14px;line-height:20px;">${message || t("no_message")}</p>
-    <p style="margin:0;font-size:12px;color:#6b7280;">tDarts • ${tournamentName}</p>
-  `
+  const previewHtml = buildTournamentNotificationEmailHtml({
+    subject: subject || t("subject_placeholder"),
+    message: message || t("no_message"),
+    tournamentName,
+    language,
+  })
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => (!open ? onClose() : null)}>
@@ -99,10 +127,14 @@ export default function PlayerNotificationModal({ isOpen, onClose, player, tourn
         <DialogHeader className="space-y-3 bg-card/90 px-6 py-5 shrink-0 shadow-sm shadow-primary/5">
           <DialogTitle className="flex items-center gap-2 text-xl font-semibold">
             <IconMail className="h-5 w-5 text-primary" />
-            {t("title")}
+            {mode === "single"
+              ? t("title_single")
+              : t("title_selected")}
           </DialogTitle>
           <DialogDescription className="text-sm text-muted-foreground">
-            {t("desc")}
+            {mode === "single"
+              ? t("desc_single")
+              : t("desc_selected", { count: targetCount })}
           </DialogDescription>
         </DialogHeader>
 
@@ -171,9 +203,10 @@ export default function PlayerNotificationModal({ isOpen, onClose, player, tourn
               </Button>
             </div>
             {showPreview && (
-              <div
-                className="rounded-xl border border-border/40 bg-muted/20 p-4 text-sm text-muted-foreground"
-                dangerouslySetInnerHTML={{ __html: previewHtml }}
+              <iframe
+                title={t("preview")}
+                srcDoc={previewHtml}
+                className="h-80 w-full rounded-xl border border-border/40 bg-white"
               />
             )}
           </div>
