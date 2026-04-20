@@ -281,11 +281,31 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
       setCurrentKnockoutMethod(
         (tournament?.tournamentSettings?.knockoutMethod as "automatic" | "manual" | undefined) || knockoutMethod
       )
+      // Same sources as applyKnockoutViewData: without this, manual match / random pairing
+      // search stays empty when knockout is hydrated from the page tournament prop (no fetch).
+      const fromDoc = Array.isArray(tournament?.tournamentPlayers) ? tournament.tournamentPlayers : []
+      const fromPage = Array.isArray(tournamentPlayers) ? tournamentPlayers : []
+      if (fromDoc.length > 0) {
+        setAvailablePlayers(fromDoc)
+      } else if (fromPage.length > 0) {
+        setAvailablePlayers(fromPage)
+      } else {
+        setAvailablePlayers([])
+      }
       setLoading(false)
       return
     }
     void fetchKnockoutData()
-  }, [tournamentCode, tournament?.knockout, tournament?.boards, tournament?.tournamentSettings?.status, tournament?.tournamentSettings?.knockoutMethod, knockoutMethod])
+  }, [
+    tournamentCode,
+    tournament?.knockout,
+    tournament?.tournamentPlayers,
+    tournament?.boards,
+    tournament?.tournamentSettings?.status,
+    tournament?.tournamentSettings?.knockoutMethod,
+    knockoutMethod,
+    tournamentPlayers,
+  ])
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
