@@ -120,7 +120,13 @@ const mergeMatch = (prev: LiveFeedMatch, incoming: Partial<LiveFeedMatch>): Live
 export function useLiveMatchesFeed(tournamentCode: string) {
   const [matches, setMatches] = useState<LiveFeedMatch[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const { socket, isConnected } = useSocket({ tournamentId: tournamentCode });
+  const {
+    socket,
+    isConnected,
+    error: socketFeatureError,
+    socketFeatureDenialReason,
+    socketStatus,
+  } = useSocket({ tournamentId: tournamentCode });
   const [isPageVisible, setIsPageVisible] = useState(true);
 
   const refresh = useCallback(async () => {
@@ -239,7 +245,15 @@ export function useLiveMatchesFeed(tournamentCode: string) {
   }, [refresh, socket]);
 
   return useMemo(
-    () => ({ matches, isLoading, isConnected, refresh }),
-    [matches, isLoading, isConnected, refresh]
+    () => ({
+      matches,
+      isLoading,
+      isConnected,
+      refresh,
+      socketFeatureError,
+      socketFeatureDenialReason,
+      socketStatus,
+    }),
+    [matches, isLoading, isConnected, refresh, socketFeatureError, socketFeatureDenialReason, socketStatus],
   );
 }

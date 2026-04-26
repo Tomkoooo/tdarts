@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSocket } from '@/hooks/useSocket';
+import { LiveSocketConnectionLabel } from '@/components/tournament/LiveSocketConnectionLabel';
 import { getMatchState } from '@/lib/socketApi';
 import { IconEye, IconArrowLeft, IconPencil, IconShare } from '@tabler/icons-react';
 import { useTranslations } from 'next-intl';
@@ -87,9 +88,14 @@ const LiveMatchViewer: React.FC<LiveMatchViewerProps> = ({ matchId, tournamentCo
   const [matchData, setMatchData] = useState<MatchData | null>(null);
   const fetchInFlightRef = useRef(false);
 
-  const { socket } = useSocket({ 
-    tournamentId: tournamentCode, 
-    matchId: matchId 
+  const {
+    socket,
+    socketStatus,
+    socketFeatureDenialReason,
+    error: socketFeatureError,
+  } = useSocket({
+    tournamentId: tournamentCode,
+    matchId: matchId,
   });
 
   useEffect(() => {
@@ -329,6 +335,16 @@ const LiveMatchViewer: React.FC<LiveMatchViewerProps> = ({ matchId, tournamentCo
              <div className="flex items-center gap-1 text-xs text-muted-foreground uppercase tracking-wider font-semibold">
                {t("leg_1mum")}{matchState.currentLeg}
              </div>
+          </div>
+
+          <div className="flex justify-center py-1.5 bg-muted/15 border-b px-2">
+            <LiveSocketConnectionLabel
+              socketStatus={socketStatus}
+              denialReason={socketFeatureDenialReason}
+              featureError={socketFeatureError}
+              labelPrefix={tTour("live_matches.socket_status.a11y_status")}
+              className="max-w-full"
+            />
           </div>
 
           {/* Main Scoreboard Area - 3 Column Layout */}

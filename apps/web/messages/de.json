@@ -1330,6 +1330,18 @@
       "title": "Aktive Spiele",
       "connected": "Live-Verbindung",
       "connecting": "Verbinden...",
+      "socket_status": {
+        "a11y_status": "Status der Live-Verbindung",
+        "checking": "Live-Verbindung wird geprüft…",
+        "connecting": "Verbindung wird hergestellt…",
+        "live_off": "Live-Updates sind deaktiviert",
+        "login_required": "Zum Live-Update bitte anmelden",
+        "subscription_required": "Für Live-Updates ist ein Abonnement erforderlich",
+        "permission_required": "Keine Berechtigung für Live-Updates",
+        "feature_disabled": "Live-Updates sind in diesem Kontext nicht aktiviert",
+        "error": "Live-Verbindungseinstellungen konnten nicht geprüft werden",
+        "connection_failed": "Live-Verbindung nicht verfügbar (Authentifizierung oder Netzwerk)"
+      },
       "desc": "Wählen Sie eine Übereinstimmung aus, die Sie im Detail verfolgen möchten",
       "no_matches": "Derzeit finden keine Live-Spiele statt",
       "no_matches_auto": "Übereinstimmungen werden hier automatisch angezeigt",

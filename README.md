@@ -60,6 +60,8 @@ This repository is a [Turborepo](https://turbo.build/) monorepo using [pnpm work
 
 Keep `.env` / `.env.local` at the **repository root** (next to `apps/`). `apps/web/next.config.ts` loads them automatically for local builds.
 
+**Live Socket.IO (tournament / match streaming):** `pnpm dev` for the web app sets `NEXT_PUBLIC_ENABLE_SOCKET=true` in [`apps/web/package.json`](apps/web/package.json). Production images and hosts must define **`NEXT_PUBLIC_ENABLE_SOCKET=true`** (and rebuild) or the client will not open a socket; optionally set **`NEXT_PUBLIC_SOCKET_SERVER_URL`** if the default in [`apps/web/src/lib/socket.ts`](apps/web/src/lib/socket.ts) is wrong for your deployment.
+
 ### Docker / CI
 
 - **Web**: `.github/workflows/ci.yml` builds the root `Dockerfile` (Next.js `standalone`; entry `node apps/web/server.js`). Pushes to `main` / `new_ui` only run when relevant paths change (see workflow `paths:`). **Portainer / GHCR:** [docs/api/portainer-ghcr.md](docs/api/portainer-ghcr.md).

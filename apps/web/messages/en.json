@@ -2533,6 +2533,18 @@
       "title": "Active matches",
       "connected": "Live connection",
       "connecting": "Connecting...",
+      "socket_status": {
+        "a11y_status": "Live connection status",
+        "checking": "Checking live connection…",
+        "connecting": "Connecting…",
+        "live_off": "Live updates are turned off",
+        "login_required": "Sign in to use live updates",
+        "subscription_required": "Subscription required for live updates",
+        "permission_required": "No permission for live updates",
+        "feature_disabled": "Live updates are not enabled for this context",
+        "error": "Could not verify live connection settings",
+        "connection_failed": "Live connection unavailable (auth or network)"
+      },
       "desc": "Select a match to follow in detail",
       "no_matches": "There are currently no live matches",
       "no_matches_auto": "Matches will automatically appear here",

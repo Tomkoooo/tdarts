@@ -2298,6 +2298,18 @@
       "title": "Aktív meccsek",
       "connected": "Élő kapcsolat",
       "connecting": "Kapcsolódás...",
+      "socket_status": {
+        "a11y_status": "Élő kapcsolat állapota",
+        "checking": "Élő kapcsolat ellenőrzése…",
+        "connecting": "Kapcsolódás…",
+        "live_off": "Az élő frissítés ki van kapcsolva",
+        "login_required": "Az élő frissítéshez jelentkezz be",
+        "subscription_required": "Az élő frissítéshez előfizetés szükséges",
+        "permission_required": "Nincs jogosultság az élő frissítéshez",
+        "feature_disabled": "Az élő frissítés nincs engedélyezve ebben a kontextusban",
+        "error": "Nem sikerült ellenőrizni az élő kapcsolat beállításait",
+        "connection_failed": "Élő kapcsolat nem elérhető (azonosítás vagy hálózat)"
+      },
       "desc": "Válassz egy meccset a részletes követéshez",
       "no_matches": "Jelenleg nincs élő meccs",
       "no_matches_auto": "A meccsek automatikusan megjelennek itt",

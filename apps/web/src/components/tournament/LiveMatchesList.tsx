@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useLiveMatchesFeed } from '@/hooks/useLiveMatchesFeed';
+import { LiveSocketConnectionLabel } from '@/components/tournament/LiveSocketConnectionLabel';
 import { Badge } from '@/components/ui/Badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
@@ -18,7 +19,13 @@ const LiveMatchesList: React.FC<LiveMatchesListProps> = ({ tournamentCode, onMat
   const tTour = useTranslations('Tournament')
   const t = (key: string, values?: any) => tTour(`live_matches.${key}`, values);
   const [selectedMatch, setSelectedMatch] = useState<string | null>(selectedMatchId || null);
-  const { matches: liveMatches, isLoading, isConnected } = useLiveMatchesFeed(tournamentCode);
+  const {
+    matches: liveMatches,
+    isLoading,
+    socketFeatureError,
+    socketFeatureDenialReason,
+    socketStatus,
+  } = useLiveMatchesFeed(tournamentCode);
 
   const handleMatchSelect = (match: any) => {
     setSelectedMatch(match._id);
@@ -50,15 +57,13 @@ const LiveMatchesList: React.FC<LiveMatchesListProps> = ({ tournamentCode, onMat
             <IconDeviceGamepad2 className="w-5 h-5 text-primary" />
             {t('title')}
           </h3>
-          <div className="flex items-center gap-2">
-            <span className={cn(
-              "flex h-2 w-2 rounded-full",
-              isConnected ? "bg-green-500" : "bg-red-500"
-            )} />
-            <span className="text-xs text-muted-foreground hidden sm:inline-block">
-              {isConnected ? t('connected') : t('connecting')}
-            </span>
-          </div>
+          <LiveSocketConnectionLabel
+            socketStatus={socketStatus}
+            denialReason={socketFeatureDenialReason}
+            featureError={socketFeatureError}
+            labelPrefix={tTour('live_matches.socket_status.a11y_status')}
+            className="max-w-[min(100%,14rem)] sm:max-w-[min(100%,18rem)]"
+          />
         </div>
         <p className="text-xs text-muted-foreground">
           {t('desc')}
