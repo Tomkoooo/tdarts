@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "react-hot-toast";
 import { useTranslations } from "next-intl";
 import {
@@ -20,6 +20,7 @@ import {
 } from "@tabler/icons-react";
 
 import { Button } from "@/components/ui/Button";
+import { Badge } from "@/components/ui/Badge";
 import {
   Card,
   CardContent,
@@ -209,6 +210,18 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [showActionsInFullscreen, setShowActionsInFullscreen] = useState(true)
   const [tournamentStatus, setTournamentStatus] = useState<string | null>(null)
+  const [knockoutViewMeta, setKnockoutViewMeta] = useState<{
+    groups: any[]
+    format?: string
+    groupAdvancesToKnockout?: number | null
+  }>({ groups: [] })
+  const [lastManualAdd, setLastManualAdd] = useState<{
+    round: number
+    player1Name: string
+    player2Name: string
+    boardNumber: number | null
+    savedAt: number
+  } | null>(null)
 
   const applyKnockoutViewData = (response: any) => {
     if (!response || typeof response !== "object" || !("success" in response) || !response.success) {
@@ -252,6 +265,13 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
     } else {
       setAvailablePlayers([])
     }
+    setKnockoutViewMeta({
+      groups: Array.isArray((response as { groups?: any[] }).groups)
+        ? (response as { groups: any[] }).groups
+        : [],
+      format: (response as { format?: string }).format,
+      groupAdvancesToKnockout: (response as { groupAdvancesToKnockout?: number | null }).groupAdvancesToKnockout ?? null,
+    })
     return true
   }
 
@@ -292,6 +312,11 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
       } else {
         setAvailablePlayers([])
       }
+      setKnockoutViewMeta({
+        groups: Array.isArray(tournament?.groups) ? tournament.groups : [],
+        format: tournament?.tournamentSettings?.format,
+        groupAdvancesToKnockout: tournament?.tournamentSettings?.groupAdvancesToKnockout ?? null,
+      })
       setLoading(false)
       return
     }
@@ -301,8 +326,11 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
     tournament?.knockout,
     tournament?.tournamentPlayers,
     tournament?.boards,
+    tournament?.groups,
     tournament?.tournamentSettings?.status,
     tournament?.tournamentSettings?.knockoutMethod,
+    tournament?.tournamentSettings?.format,
+    tournament?.tournamentSettings?.groupAdvancesToKnockout,
     knockoutMethod,
     tournamentPlayers,
   ])
@@ -378,13 +406,64 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
     [knockoutData, currentKnockoutMethod]
   )
 
+  const bracketGroupMeta = useMemo(() => {
+    const groups =
+      Array.isArray(tournament?.groups) && tournament.groups.length > 0
+        ? tournament.groups
+        : knockoutViewMeta.groups
+    const format = tournament?.tournamentSettings?.format ?? knockoutViewMeta.format
+    const rawAdvance =
+      tournament?.tournamentSettings?.groupAdvancesToKnockout ?? knockoutViewMeta.groupAdvancesToKnockout
+    const groupAdvancesToKnockout =
+      typeof rawAdvance === "number" && Number.isFinite(rawAdvance) && rawAdvance > 0 ? rawAdvance : null
+    return { groups: Array.isArray(groups) ? groups : [], format, groupAdvancesToKnockout }
+  }, [
+    tournament?.groups,
+    tournament?.tournamentSettings?.format,
+    tournament?.tournamentSettings?.groupAdvancesToKnockout,
+    knockoutViewMeta.groups,
+    knockoutViewMeta.format,
+    knockoutViewMeta.groupAdvancesToKnockout,
+  ])
+
+  const applyRound1AdvanceFilter = useCallback(
+    (players: any[], roundNumber: number) => {
+      if (roundNumber !== 1) return players
+      if (bracketGroupMeta.format !== "group_knockout" || !bracketGroupMeta.groupAdvancesToKnockout) return players
+      const cap = bracketGroupMeta.groupAdvancesToKnockout
+      return players.filter((p) => {
+        if (!p?.groupId) return true
+        const st = p.groupStanding
+        if (typeof st !== "number" || !Number.isFinite(st)) return true
+        return st <= cap
+      })
+    },
+    [bracketGroupMeta]
+  )
+
+  const getGroupStandingBadgeText = useCallback(
+    (player: any): string | null => {
+      const groups = bracketGroupMeta.groups
+      const gid = player?.groupId
+      if (!gid || !groups.length) return null
+      const idStr =
+        typeof gid === "object" && gid !== null && "_id" in gid ? String((gid as { _id: unknown })._id) : String(gid)
+      const idx = groups.findIndex((g: any) => String(g?._id) === idStr)
+      const standing = player?.groupStanding
+      if (idx < 0 || typeof standing !== "number" || !Number.isFinite(standing)) return null
+      return `${idx + 1}/${standing}`
+    },
+    [bracketGroupMeta.groups]
+  )
+
   const filteredPlayers = useMemo(() => {
     const term = playerSearchTerm.toLowerCase()
-    return availablePlayers.filter((player: any) => {
+    const listed = availablePlayers.filter((player: any) => {
       const playerName = player.playerReference?.name || player.name || ""
       return playerName.toLowerCase().includes(term)
     })
-  }, [availablePlayers, playerSearchTerm])
+    return applyRound1AdvanceFilter(listed, selectedRound)
+  }, [availablePlayers, playerSearchTerm, selectedRound, applyRound1AdvanceFilter])
 
   const fetchKnockoutData = async () => {
     setLoading(true)
@@ -564,6 +643,14 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
       })
 
       if (response && typeof response === 'object' && 'success' in response && response.success) {
+        const boardNum = selectedBoard ? parseInt(selectedBoard, 10) : NaN
+        setLastManualAdd({
+          round: selectedRound,
+          player1Name: player1SearchTerm.trim() || resolvePlayerNameById(selectedPlayer1) || "—",
+          player2Name: player2SearchTerm.trim() || resolvePlayerNameById(selectedPlayer2) || "—",
+          boardNumber: Number.isFinite(boardNum) ? boardNum : null,
+          savedAt: Date.now(),
+        })
         await fetchKnockoutData()
         setShowAddMatchModal(false)
         setSelectedPlayer1("")
@@ -585,8 +672,12 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
         })
       }
     } catch (err: any) {
-      showErrorToast(err.response?.data?.error || "Nem sikerült hozzáadni a meccset.", {
-        error: err?.response?.data?.error,
+      const msg =
+        typeof err?.message === "string" && err.message.trim()
+          ? err.message.trim()
+          : err?.response?.data?.error || "Nem sikerült hozzáadni a meccset."
+      showErrorToast(msg, {
+        error: err?.response?.data?.error ?? err?.message,
         context: "Meccs hozzáadása",
         errorName: "Hozzáadás sikertelen",
       })
@@ -1097,6 +1188,15 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
     })
   }
 
+  const matchSettingsPlayerPool = useMemo(() => {
+    if (!editingMatchSettings?.matchReference || typeof editingMatchSettings.matchReference !== "object") {
+      return availablePlayers
+    }
+    const r = Number((editingMatchSettings.matchReference as { round?: number }).round)
+    const roundNum = Number.isFinite(r) && r > 0 ? r : 1
+    return applyRound1AdvanceFilter(availablePlayers, roundNum)
+  }, [editingMatchSettings, availablePlayers, applyRound1AdvanceFilter])
+
   const getRoundTitle = (roundIndex: number, matchCount: number, totalRounds: number) => {
     if (roundIndex === totalRounds - 1 && matchCount === 1) return "Döntő"
     if (roundIndex === totalRounds - 2 && matchCount === 2) return "Elődöntő"
@@ -1444,6 +1544,21 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
               </div>
             </div>
 
+            {isAdmin && lastManualAdd && currentKnockoutMethod === "manual" && (
+              <Alert className="border-border/50 bg-muted/25">
+                <AlertTitle>{tTour("knockout.last_manual_add_title")}</AlertTitle>
+                <AlertDescription>
+                  {tTour("knockout.last_manual_add_description", {
+                    round: lastManualAdd.round,
+                    p1: lastManualAdd.player1Name,
+                    p2: lastManualAdd.player2Name,
+                    board:
+                      lastManualAdd.boardNumber != null ? String(lastManualAdd.boardNumber) : "—",
+                  })}
+                </AlertDescription>
+              </Alert>
+            )}
+
             {isAdmin && (
               <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
                 <div className="flex flex-wrap gap-2">
@@ -1580,6 +1695,7 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                     const playerId = getTournamentPlayerId(player)
                     if (!playerId) return null
                     const playerName = getTournamentPlayerName(player)
+                    const groupTag = getGroupStandingBadgeText(player)
                     const selected = selectedPlayersForPairing.includes(playerId)
                     return (
                       <button
@@ -1587,14 +1703,21 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                         type="button"
                         onClick={() => handlePlayerSelectionForPairing(playerId)}
                         className={cn(
-                          "flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm",
+                          "flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-left text-sm",
                           selected
                             ? "bg-primary/15 text-primary"
                             : "bg-muted/15 text-foreground hover:bg-muted/25"
                         )}
                       >
-                        <span>{playerName}</span>
-                        {selected ? <IconCheck className="h-4 w-4" /> : null}
+                        <span className="flex min-w-0 flex-1 items-center gap-2">
+                          <span className="min-w-0 truncate">{playerName}</span>
+                          {groupTag ? (
+                            <Badge variant="secondary" className="shrink-0 font-mono text-[10px]">
+                              {groupTag}
+                            </Badge>
+                          ) : null}
+                        </span>
+                        {selected ? <IconCheck className="h-4 w-4 shrink-0" /> : null}
                       </button>
                     )
                   })}
@@ -1634,10 +1757,14 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                   <Card className="max-h-48 overflow-y-auto bg-card/95">
                     <CardContent className="p-0">
                       <div className="divide-y divide-border/30">
-                        {getAvailablePlayersForSelection(player1SearchTerm, getAvailablePlayersForRound(selectedRound)).map((player: any) => {
+                        {getAvailablePlayersForSelection(
+                          player1SearchTerm,
+                          applyRound1AdvanceFilter(getAvailablePlayersForRound(selectedRound), selectedRound),
+                        ).map((player: any) => {
                           const playerId = getTournamentPlayerId(player)
                           if (!playerId) return null
                           const playerName = getTournamentPlayerName(player)
+                          const groupTag = getGroupStandingBadgeText(player)
                           return (
                             <button
                               key={playerId}
@@ -1647,9 +1774,14 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                                 setPlayer1SearchTerm(playerName)
                                 setShowPlayer1Dropdown(false)
                               }}
-                              className="w-full px-3 py-2 text-left text-sm hover:bg-muted/20"
+                              className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm hover:bg-muted/20"
                             >
-                              {playerName}
+                              <span className="min-w-0 truncate">{playerName}</span>
+                              {groupTag ? (
+                                <Badge variant="secondary" className="shrink-0 font-mono text-[10px]">
+                                  {groupTag}
+                                </Badge>
+                              ) : null}
                             </button>
                           )
                         })}
@@ -1675,10 +1807,14 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                   <Card className="max-h-48 overflow-y-auto bg-card/95">
                     <CardContent className="p-0">
                       <div className="divide-y divide-border/30">
-                        {getAvailablePlayersForSelection(player2SearchTerm, getAvailablePlayersForRound(selectedRound)).map((player: any) => {
+                        {getAvailablePlayersForSelection(
+                          player2SearchTerm,
+                          applyRound1AdvanceFilter(getAvailablePlayersForRound(selectedRound), selectedRound),
+                        ).map((player: any) => {
                           const playerId = getTournamentPlayerId(player)
                           if (!playerId) return null
                           const playerName = getTournamentPlayerName(player)
+                          const groupTag = getGroupStandingBadgeText(player)
                           return (
                             <button
                               key={playerId}
@@ -1688,9 +1824,14 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                                 setPlayer2SearchTerm(playerName)
                                 setShowPlayer2Dropdown(false)
                               }}
-                              className="w-full px-3 py-2 text-left text-sm hover:bg-muted/20"
+                              className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm hover:bg-muted/20"
                             >
-                              {playerName}
+                              <span className="min-w-0 truncate">{playerName}</span>
+                              {groupTag ? (
+                                <Badge variant="secondary" className="shrink-0 font-mono text-[10px]">
+                                  {groupTag}
+                                </Badge>
+                              ) : null}
                             </button>
                           )
                         })}
@@ -1720,6 +1861,7 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                           const playerId = getTournamentPlayerId(player)
                           if (!playerId) return null
                           const playerName = getTournamentPlayerName(player)
+                          const groupTag = getGroupStandingBadgeText(player)
                           return (
                             <button
                               key={playerId}
@@ -1729,9 +1871,14 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                                 setScorerSearchTerm(playerName)
                                 setShowScorerDropdown(false)
                               }}
-                              className="w-full px-3 py-2 text-left text-sm hover:bg-muted/20"
+                              className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm hover:bg-muted/20"
                             >
-                              {playerName}
+                              <span className="min-w-0 truncate">{playerName}</span>
+                              {groupTag ? (
+                                <Badge variant="outline" className="shrink-0 font-mono text-[10px]">
+                                  {groupTag}
+                                </Badge>
+                              ) : null}
                             </button>
                           )
                         })}
@@ -1963,10 +2110,14 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                   <Card className="max-h-48 overflow-y-auto bg-card/95">
                     <CardContent className="p-0">
                       <div className="divide-y divide-border/30">
-                        {getAvailablePlayersForSelection(editPairPlayer1Search, getAvailablePlayersForRound(selectedRound)).map((player: any) => {
+                        {getAvailablePlayersForSelection(
+                          editPairPlayer1Search,
+                          applyRound1AdvanceFilter(getAvailablePlayersForRound(selectedRound), selectedRound),
+                        ).map((player: any) => {
                           const playerId = getTournamentPlayerId(player)
                           if (!playerId) return null
                           const playerName = getTournamentPlayerName(player)
+                          const groupTag = getGroupStandingBadgeText(player)
                           return (
                             <button
                               key={playerId}
@@ -1976,9 +2127,14 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                                 setEditPairPlayer1Search(playerName)
                                 setShowEditPairPlayer1Dropdown(false)
                               }}
-                              className="w-full px-3 py-2 text-left text-sm hover:bg-muted/20"
+                              className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm hover:bg-muted/20"
                             >
-                              {playerName}
+                              <span className="min-w-0 truncate">{playerName}</span>
+                              {groupTag ? (
+                                <Badge variant="secondary" className="shrink-0 font-mono text-[10px]">
+                                  {groupTag}
+                                </Badge>
+                              ) : null}
                             </button>
                           )
                         })}
@@ -2004,10 +2160,14 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                   <Card className="max-h-48 overflow-y-auto bg-card/95">
                     <CardContent className="p-0">
                       <div className="divide-y divide-border/30">
-                        {getAvailablePlayersForSelection(editPairPlayer2Search, getAvailablePlayersForRound(selectedRound)).map((player: any) => {
+                        {getAvailablePlayersForSelection(
+                          editPairPlayer2Search,
+                          applyRound1AdvanceFilter(getAvailablePlayersForRound(selectedRound), selectedRound),
+                        ).map((player: any) => {
                           const playerId = getTournamentPlayerId(player)
                           if (!playerId) return null
                           const playerName = getTournamentPlayerName(player)
+                          const groupTag = getGroupStandingBadgeText(player)
                           return (
                             <button
                               key={playerId}
@@ -2017,9 +2177,14 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                                 setEditPairPlayer2Search(playerName)
                                 setShowEditPairPlayer2Dropdown(false)
                               }}
-                              className="w-full px-3 py-2 text-left text-sm hover:bg-muted/20"
+                              className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm hover:bg-muted/20"
                             >
-                              {playerName}
+                              <span className="min-w-0 truncate">{playerName}</span>
+                              {groupTag ? (
+                                <Badge variant="secondary" className="shrink-0 font-mono text-[10px]">
+                                  {groupTag}
+                                </Badge>
+                              ) : null}
                             </button>
                           )
                         })}
@@ -2049,6 +2214,7 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                           const playerId = getTournamentPlayerId(player)
                           if (!playerId) return null
                           const playerName = getTournamentPlayerName(player)
+                          const groupTag = getGroupStandingBadgeText(player)
                           return (
                             <button
                               key={playerId}
@@ -2058,9 +2224,14 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                                 setEditPairScorerSearch(playerName)
                                 setShowEditPairScorerDropdown(false)
                               }}
-                              className="w-full px-3 py-2 text-left text-sm hover:bg-muted/20"
+                              className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm hover:bg-muted/20"
                             >
-                              {playerName}
+                              <span className="min-w-0 truncate">{playerName}</span>
+                              {groupTag ? (
+                                <Badge variant="outline" className="shrink-0 font-mono text-[10px]">
+                                  {groupTag}
+                                </Badge>
+                              ) : null}
                             </button>
                           )
                         })}
@@ -2122,10 +2293,11 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                     <Card className="max-h-48 overflow-y-auto bg-card/95">
                       <CardContent className="p-0">
                         <div className="divide-y divide-border/30">
-                          {getAvailablePlayersForSelection(player1SearchTerm, getAllTournamentPlayers()).map((player: any) => {
+                          {getAvailablePlayersForSelection(player1SearchTerm, matchSettingsPlayerPool).map((player: any) => {
                             const playerId = getTournamentPlayerId(player)
                             if (!playerId) return null
                             const playerName = getTournamentPlayerName(player)
+                            const groupTag = getGroupStandingBadgeText(player)
                             return (
                               <button
                                 key={playerId}
@@ -2135,9 +2307,14 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                                   setPlayer1SearchTerm(playerName)
                                   setShowPlayer1Dropdown(false)
                                 }}
-                                className="w-full px-3 py-2 text-left text-sm hover:bg-muted/20"
+                                className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm hover:bg-muted/20"
                               >
-                                {playerName}
+                                <span className="min-w-0 truncate">{playerName}</span>
+                                {groupTag ? (
+                                  <Badge variant="secondary" className="shrink-0 font-mono text-[10px]">
+                                    {groupTag}
+                                  </Badge>
+                                ) : null}
                               </button>
                             )
                           })}
@@ -2163,10 +2340,11 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                     <Card className="max-h-48 overflow-y-auto bg-card/95">
                       <CardContent className="p-0">
                         <div className="divide-y divide-border/30">
-                          {getAvailablePlayersForSelection(player2SearchTerm, getAllTournamentPlayers()).map((player: any) => {
+                          {getAvailablePlayersForSelection(player2SearchTerm, matchSettingsPlayerPool).map((player: any) => {
                             const playerId = getTournamentPlayerId(player)
                             if (!playerId) return null
                             const playerName = getTournamentPlayerName(player)
+                            const groupTag = getGroupStandingBadgeText(player)
                             return (
                               <button
                                 key={playerId}
@@ -2176,9 +2354,14 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                                   setPlayer2SearchTerm(playerName)
                                   setShowPlayer2Dropdown(false)
                                 }}
-                                className="w-full px-3 py-2 text-left text-sm hover:bg-muted/20"
+                                className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm hover:bg-muted/20"
                               >
-                                {playerName}
+                                <span className="min-w-0 truncate">{playerName}</span>
+                                {groupTag ? (
+                                  <Badge variant="secondary" className="shrink-0 font-mono text-[10px]">
+                                    {groupTag}
+                                  </Badge>
+                                ) : null}
                               </button>
                             )
                           })}
@@ -2208,6 +2391,7 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                             const playerId = getTournamentPlayerId(player)
                             if (!playerId) return null
                             const playerName = getTournamentPlayerName(player)
+                            const groupTag = getGroupStandingBadgeText(player)
                             return (
                               <button
                                 key={playerId}
@@ -2217,9 +2401,14 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                                   setScorerSearchTerm(playerName)
                                   setShowScorerDropdown(false)
                                 }}
-                                className="w-full px-3 py-2 text-left text-sm hover:bg-muted/20"
+                                className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm hover:bg-muted/20"
                               >
-                                {playerName}
+                                <span className="min-w-0 truncate">{playerName}</span>
+                                {groupTag ? (
+                                  <Badge variant="outline" className="shrink-0 font-mono text-[10px]">
+                                    {groupTag}
+                                  </Badge>
+                                ) : null}
                               </button>
                             )
                           })}

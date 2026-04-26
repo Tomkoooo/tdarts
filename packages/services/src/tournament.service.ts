@@ -625,12 +625,15 @@ export class TournamentService {
         availableBoards: Array<{ boardNumber: number; name?: string; isUsed: boolean }>;
         tournamentStatus: string | null;
         knockoutMethod: 'automatic' | 'manual';
+        groups: any[];
+        format?: string;
+        groupAdvancesToKnockout?: number | null;
     }> {
         await connectMongo();
         const filter = this.buildCodeOrIdFilter(tournamentId);
         const tournament: any = await TournamentModel.findOne(filter)
             .select(
-                'knockout tournamentPlayers.playerReference boards.boardNumber boards.name boards.isActive tournamentSettings.status tournamentSettings.knockoutMethod'
+                'knockout groups._id groups.board tournamentPlayers.playerReference tournamentPlayers.groupId tournamentPlayers.groupStanding boards.boardNumber boards.name boards.isActive tournamentSettings.status tournamentSettings.format tournamentSettings.knockoutMethod tournamentSettings.groupAdvancesToKnockout'
             )
             .populate('tournamentPlayers.playerReference', 'name')
             .populate('knockout.matches.player1', 'name')
@@ -660,9 +663,17 @@ export class TournamentService {
 
         const knockout = Array.isArray(tournament.knockout) ? tournament.knockout : [];
         const tournamentPlayers = Array.isArray(tournament.tournamentPlayers) ? tournament.tournamentPlayers : [];
+        const groups = Array.isArray(tournament.groups) ? tournament.groups : [];
         const boards = Array.isArray(tournament.boards) ? tournament.boards : [];
         const status = tournament?.tournamentSettings?.status || null;
         const knockoutMethod = tournament?.tournamentSettings?.knockoutMethod || 'automatic';
+        const format = tournament?.tournamentSettings?.format;
+        const rawAdvance = tournament?.tournamentSettings?.groupAdvancesToKnockout;
+        const parsedAdvance = rawAdvance != null && rawAdvance !== '' ? Number(rawAdvance) : NaN;
+        const groupAdvancesToKnockout =
+            typeof parsedAdvance === 'number' && Number.isFinite(parsedAdvance) && parsedAdvance > 0
+                ? parsedAdvance
+                : null;
 
         const usedBoards = new Set<number>();
         knockout.forEach((round: any) =>
@@ -686,6 +697,9 @@ export class TournamentService {
             availableBoards,
             tournamentStatus: status,
             knockoutMethod,
+            groups,
+            format,
+            groupAdvancesToKnockout,
         };
     }
 
@@ -894,7 +908,7 @@ export class TournamentService {
         const filter = this.buildCodeOrIdFilter(tournamentId);
         const tournament = await TournamentModel.findOne(filter)
             .select(
-                'tournamentId clubId groups knockout tournamentPlayers tournamentSettings.status tournamentSettings.format tournamentSettings.name tournamentSettings.boardCount tournamentSettings.knockoutMethod verified paymentStatus isSandbox'
+                'tournamentId clubId groups knockout tournamentPlayers tournamentSettings.status tournamentSettings.format tournamentSettings.name tournamentSettings.boardCount tournamentSettings.knockoutMethod tournamentSettings.groupAdvancesToKnockout verified paymentStatus isSandbox'
             )
             .populate('clubId', 'name location contact')
             .populate({
@@ -2124,7 +2138,13 @@ export class TournamentService {
             '8_3': ['1/1-X', '2/2-3/3', '8/1-X', '7/2-6/3', '4/1-X', '3/2-2/3', '5/1-X', '6/2-7/3', '2/1-X', '1/2-4/3', '7/1-X', '8/2-5/3', '3/1-X', '4/2-1/3', '6/1-X', '5/2-8/3'],
             '8_4': ['1/1-4/4', '2/2-3/3', '8/1-5/4', '7/2-6/3', '4/1-1/4', '3/2-2/3', '5/1-8/4', '6/2-7/3', '2/1-3/4', '1/2-4/3', '7/1-6/4', '8/2-5/3', '3/1-2/4', '4/2-1/3', '6/1-7/4', '5/2-8/3'],
             '16_2': ['1/1-2/2', '16/1-15/2', '8/1-7/2', '9/1-10/2', '4/1-3/2', '13/1-14/2', '5/1-6/2', '12/1-11/2', '2/1-1/2', '15/1-16/2', '7/1-8/2', '10/1-9/2', '3/1-4/2', '14/1-13/2', '6/1-5/2', '11/1-12/2'],
-            '16_3': ['1/1-X', '2/2-3/3', '16/1-X', '15/2-14/3', '8/1-X', '7/2-6/3', '9/1-X', '10/2-11/3', '4/1-X', '3/2-2/3', '13/1-X', '14/2-15/3', '5/1-X', '6/2-7/3', '12/1-X', '11/2-10/3', '2/1-X', '1/2-4/3', '15/1-X', '16/2-13/3', '7/1-X', '8/2-12/3', '10/1-X', '9/2-5/3', '3/1-X', '4/2-1/3', '14/1-X', '13/2-16/3', '6/1-X', '5/2-9/3', '11/1-X', '12/2-8/3']
+            '16_3': ['1/1-X', '2/2-3/3', '16/1-X', '15/2-14/3', '8/1-X', '7/2-6/3', '9/1-X', '10/2-11/3', '4/1-X', '3/2-2/3', '13/1-X', '14/2-15/3', '5/1-X', '6/2-7/3', '12/1-X', '11/2-10/3', '2/1-X', '1/2-4/3', '15/1-X', '16/2-13/3', '7/1-X', '8/2-12/3', '10/1-X', '9/2-5/3', '3/1-X', '4/2-1/3', '14/1-X', '13/2-16/3', '6/1-X', '5/2-9/3', '11/1-X', '12/2-8/3'],
+            '16_4': [
+                '1/1-16/4', '8/3-9/2', '2/1-15/4', '7/3-10/2', '3/1-14/4', '6/3-11/2', '4/1-13/4', '5/3-12/2',
+                '5/1-12/4', '4/3-13/2', '6/1-11/4', '3/3-14/2', '7/1-10/4', '2/3-15/2', '8/1-9/4', '1/3-16/2',
+                '9/1-8/4', '16/3-1/2', '10/1-7/4', '15/3-2/2', '11/1-6/4', '14/3-3/2', '12/1-5/4', '13/3-4/2',
+                '13/1-4/4', '12/3-5/2', '14/1-3/4', '11/3-6/2', '15/1-2/4', '10/3-7/2', '16/1-1/4', '9/3-8/2'
+            ]
         };
 
         const matchRules = rules[pairingsKey];
@@ -4117,6 +4137,31 @@ export class TournamentService {
         }
     }
 
+    /** Normalize knockout round match slot (ObjectId, string, or populated Player) to player id string. */
+    private static extractKnockoutRoundSlotPlayerId(slot: any): string | null {
+        if (slot == null) return null;
+        if (typeof slot === 'string' && slot.trim()) return slot.trim();
+        if (typeof slot === 'object') {
+            if (slot._id != null) return String(slot._id);
+            if (typeof slot.toString === 'function') {
+                const s = slot.toString();
+                if (s && s !== '[object Object]') return s;
+            }
+        }
+        return null;
+    }
+
+    private static collectPlayerIdsOccupiedInKnockoutRound(round: { matches?: any[] }): Set<string> {
+        const used = new Set<string>();
+        for (const m of round.matches || []) {
+            const id1 = this.extractKnockoutRoundSlotPlayerId(m?.player1);
+            const id2 = this.extractKnockoutRoundSlotPlayerId(m?.player2);
+            if (id1) used.add(id1);
+            if (id2) used.add(id2);
+        }
+        return used;
+    }
+
     static async addManualMatch(tournamentId: string, requesterId: string, matchData: {
         round: number;
         player1Id: string;
@@ -4135,6 +4180,10 @@ export class TournamentService {
             const isAuthorized = await AuthorizationService.checkAdminOrModerator(requesterId, tournament.clubId.toString());
             if (!isAuthorized) {
                 throw new BadRequestError('Only club admins or moderators can add manual matches');
+            }
+
+            if (matchData.player1Id === matchData.player2Id) {
+                throw new BadRequestError('Player 1 and player 2 must be different');
             }
 
             // Validate players exist in tournament
@@ -4165,6 +4214,39 @@ export class TournamentService {
             const round = tournament.knockout.find((r: any) => r.round === matchData.round);
             if (!round) {
                 throw new BadRequestError(`Round ${matchData.round} not found`);
+            }
+
+            const occupiedInRound = this.collectPlayerIdsOccupiedInKnockoutRound(round);
+            if (occupiedInRound.has(matchData.player1Id) || occupiedInRound.has(matchData.player2Id)) {
+                throw new BadRequestError(
+                    'One or both players are already in another match in this round',
+                    'tournament',
+                    undefined,
+                    { errorCode: 'KNOCKOUT_ROUND_PLAYER_DUPLICATE', expected: true }
+                );
+            }
+
+            const format = tournament.tournamentSettings?.format;
+            const advanceLimit = tournament.tournamentSettings?.groupAdvancesToKnockout;
+            if (
+                matchData.round === 1 &&
+                format === 'group_knockout' &&
+                typeof advanceLimit === 'number' &&
+                Number.isFinite(advanceLimit) &&
+                advanceLimit > 0
+            ) {
+                for (const tp of [player1, player2]) {
+                    if (tp?.groupId == null) continue;
+                    const standing = tp.groupStanding;
+                    if (typeof standing === 'number' && standing > advanceLimit) {
+                        throw new BadRequestError(
+                            `Players with group standing above ${advanceLimit} cannot be added to round 1`,
+                            'tournament',
+                            undefined,
+                            { errorCode: 'KNOCKOUT_GROUP_ADVANCE_LIMIT', expected: true }
+                        );
+                    }
+                }
             }
 
             // Get available boards for this tournament
@@ -4231,6 +4313,9 @@ export class TournamentService {
             return match;
         } catch (err) {
             console.error('addManualMatch error:', err);
+            if (err instanceof BadRequestError) {
+                throw err;
+            }
             return false;
         }
     }
@@ -6298,6 +6383,20 @@ export class TournamentService {
 
             if (updatedSettings.entryFee !== undefined && updatedSettings.entryFee < 0) {
                 throw new BadRequestError('Entry fee cannot be negative');
+            }
+
+            if (settingsRest.groupAdvancesToKnockout !== undefined) {
+                const v = settingsRest.groupAdvancesToKnockout as number | null | undefined;
+                if (v !== null && v !== undefined) {
+                    if (typeof v !== 'number' || !Number.isInteger(v) || v < 1) {
+                        throw new BadRequestError(
+                            'groupAdvancesToKnockout must be a positive integer or empty',
+                            'tournament',
+                            undefined,
+                            { errorCode: 'INVALID_GROUP_ADVANCES', expected: true }
+                        );
+                    }
+                }
             }
 
             // Update the tournament

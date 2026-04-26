@@ -1953,7 +1953,14 @@
       "matches_btn": "Matches",
       "rank_label": "Rank",
       "registration_open": "Registration Open",
-      "full_capacity": "Full Capacity"
+      "full_capacity": "Full Capacity",
+      "list_filter_aria": "Filter roster by check-in status",
+      "list_filter_label": "Show",
+      "list_filter_all": "All",
+      "list_filter_checked_in": "Checked in",
+      "list_filter_not_checked_in": "Not checked in",
+      "list_search_placeholder": "Search by name or username…",
+      "list_no_matches": "No players match your filters."
     },
     "registration": {
       "sign_up": "Registration for the tournament",
@@ -2208,6 +2215,8 @@
       "success_empty_rounds": "Empty circles successfully generated!",
       "success_pairings": "Pairings successfully generated!",
       "success_settings_updated": "Match settings successfully updated!",
+      "last_manual_add_title": "Last manual match",
+      "last_manual_add_description": "Round {round} · {p1} vs {p2} · board: {board}",
       "error_loading_title": "An error occurred while loading the knockout table",
       "error_unknown": "Unknown error",
       "error_reload_prompt": "Try reloading the page or generate a new round in the admin interface."

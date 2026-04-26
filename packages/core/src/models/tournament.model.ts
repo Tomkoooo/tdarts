@@ -138,6 +138,7 @@ const tournamentSchema = new mongoose.Schema<TournamentDocument>({
         coverImage: { type: String, default: null },
         reminderSent: { type: Boolean, default: false },
         legsConfig: { type: mongoose.Schema.Types.Mixed, default: undefined },
+        groupAdvancesToKnockout: { type: Number, default: null },
     },
     createdAt: { type: Date, default: Date.now },
     updatedAt: { type: Date, default: Date.now },

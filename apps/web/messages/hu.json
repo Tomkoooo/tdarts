@@ -1718,7 +1718,14 @@
       "matches_btn": "Meccsek",
       "rank_label": "Rang",
       "registration_open": "Nevezés nyitva",
-      "full_capacity": "Betelt"
+      "full_capacity": "Betelt",
+      "list_filter_aria": "Lista szűrése check-in szerint",
+      "list_filter_label": "Mutat",
+      "list_filter_all": "Minden",
+      "list_filter_checked_in": "Check-inelve",
+      "list_filter_not_checked_in": "Nincs check-in",
+      "list_search_placeholder": "Keresés név vagy felhasználónév szerint…",
+      "list_no_matches": "Nincs a szűrésnek megfelelő játékos."
     },
     "registration": {
       "sign_up": "Jelentkezés a tornára",
@@ -1973,6 +1980,8 @@
       "success_empty_rounds": "Üres körök sikeresen generálva!",
       "success_pairings": "Párosítások sikeresen generálva!",
       "success_settings_updated": "Meccs beállítások sikeresen frissítve!",
+      "last_manual_add_title": "Utolsó manuális meccs",
+      "last_manual_add_description": "{round}. kör · {p1} vs {p2} · tábla: {board}",
       "error_loading_title": "Hiba történt a knockout tábla betöltésekor",
       "error_unknown": "Ismeretlen hiba",
       "error_reload_prompt": "Próbáld meg újratölteni az oldalt, vagy generálj új kört az admin felületen."

@@ -361,6 +361,52 @@ describe('MDL Knockout Generation', () => {
         // 12/2 - 8/3
         expect(matches[31].player1).toBe('p12_2'); expect(matches[31].player2).toBe('p8_3');
     });
+
+    test('16 Groups, 4 Qualifiers (64-es tábla)', () => {
+        const { groups, groupIds } = createGroupsMap(16, 4);
+        const result = generateMDL(groups, groupIds, 4);
+        const matches = result[0].matches;
+        expect(matches).toHaveLength(32);
+
+        for (const m of matches) {
+            expect(m.player1).toBeDefined();
+            expect(m.player2).toBeDefined();
+        }
+
+        // Pairing order (top to bottom on bracket) — 16_4 MDL rules
+        expect(matches[0].player1).toBe('p1_1'); expect(matches[0].player2).toBe('p16_4');
+        expect(matches[1].player1).toBe('p8_3'); expect(matches[1].player2).toBe('p9_2');
+        expect(matches[2].player1).toBe('p2_1'); expect(matches[2].player2).toBe('p15_4');
+        expect(matches[3].player1).toBe('p7_3'); expect(matches[3].player2).toBe('p10_2');
+        expect(matches[4].player1).toBe('p3_1'); expect(matches[4].player2).toBe('p14_4');
+        expect(matches[5].player1).toBe('p6_3'); expect(matches[5].player2).toBe('p11_2');
+        expect(matches[6].player1).toBe('p4_1'); expect(matches[6].player2).toBe('p13_4');
+        expect(matches[7].player1).toBe('p5_3'); expect(matches[7].player2).toBe('p12_2');
+        expect(matches[8].player1).toBe('p5_1'); expect(matches[8].player2).toBe('p12_4');
+        expect(matches[9].player1).toBe('p4_3'); expect(matches[9].player2).toBe('p13_2');
+        expect(matches[10].player1).toBe('p6_1'); expect(matches[10].player2).toBe('p11_4');
+        expect(matches[11].player1).toBe('p3_3'); expect(matches[11].player2).toBe('p14_2');
+        expect(matches[12].player1).toBe('p7_1'); expect(matches[12].player2).toBe('p10_4');
+        expect(matches[13].player1).toBe('p2_3'); expect(matches[13].player2).toBe('p15_2');
+        expect(matches[14].player1).toBe('p8_1'); expect(matches[14].player2).toBe('p9_4');
+        expect(matches[15].player1).toBe('p1_3'); expect(matches[15].player2).toBe('p16_2');
+        expect(matches[16].player1).toBe('p9_1'); expect(matches[16].player2).toBe('p8_4');
+        expect(matches[17].player1).toBe('p16_3'); expect(matches[17].player2).toBe('p1_2');
+        expect(matches[18].player1).toBe('p10_1'); expect(matches[18].player2).toBe('p7_4');
+        expect(matches[19].player1).toBe('p15_3'); expect(matches[19].player2).toBe('p2_2');
+        expect(matches[20].player1).toBe('p11_1'); expect(matches[20].player2).toBe('p6_4');
+        expect(matches[21].player1).toBe('p14_3'); expect(matches[21].player2).toBe('p3_2');
+        expect(matches[22].player1).toBe('p12_1'); expect(matches[22].player2).toBe('p5_4');
+        expect(matches[23].player1).toBe('p13_3'); expect(matches[23].player2).toBe('p4_2');
+        expect(matches[24].player1).toBe('p13_1'); expect(matches[24].player2).toBe('p4_4');
+        expect(matches[25].player1).toBe('p12_3'); expect(matches[25].player2).toBe('p5_2');
+        expect(matches[26].player1).toBe('p14_1'); expect(matches[26].player2).toBe('p3_4');
+        expect(matches[27].player1).toBe('p11_3'); expect(matches[27].player2).toBe('p6_2');
+        expect(matches[28].player1).toBe('p15_1'); expect(matches[28].player2).toBe('p2_4');
+        expect(matches[29].player1).toBe('p10_3'); expect(matches[29].player2).toBe('p7_2');
+        expect(matches[30].player1).toBe('p16_1'); expect(matches[30].player2).toBe('p1_4');
+        expect(matches[31].player1).toBe('p9_3'); expect(matches[31].player2).toBe('p8_2');
+    });
     
     test('Invalid Configuration throws error', () => {
         const { groups, groupIds } = createGroupsMap(3, 4); // 3 groups not supported

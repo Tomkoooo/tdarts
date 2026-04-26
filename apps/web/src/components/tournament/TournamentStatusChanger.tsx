@@ -1065,7 +1065,7 @@ export default function TournamentStatusChanger({
                   {tTour('status_changer.knockout_dialog.qualifiers_desc')}
                 </p>
                 <div className="grid grid-cols-3 gap-2">
-                  {[2, 3, 4].filter(count => !(effectiveBoardCount >= 16 && count === 4)).map((count) => (
+                  {[2, 3, 4].map((count) => (
                     <Button
                       key={count}
                       type="button"

@@ -114,11 +114,25 @@ export default function EditTournamentModal({
 
     try {
       // Convert empty strings to 0 for number fields
+      const advanceRaw = settings.groupAdvancesToKnockout;
+      const groupAdvancesToKnockout =
+        settings.format !== 'group_knockout'
+          ? null
+          : advanceRaw == null
+            ? null
+            : Number(advanceRaw);
+
       const cleanedSettings = {
         ...settings,
         maxPlayers: typeof settings.maxPlayers === 'string' && settings.maxPlayers === '' ? 0 : settings.maxPlayers,
         startingScore: typeof settings.startingScore === 'string' && settings.startingScore === '' ? 0 : settings.startingScore,
         entryFee: typeof settings.entryFee === 'string' && settings.entryFee === '' ? 0 : settings.entryFee,
+        groupAdvancesToKnockout:
+          settings.format !== 'group_knockout'
+            ? null
+            : typeof groupAdvancesToKnockout === 'number' && Number.isFinite(groupAdvancesToKnockout) && groupAdvancesToKnockout > 0
+              ? groupAdvancesToKnockout
+              : null,
       };
 
       const response = await updateTournamentSettingsAction({
@@ -374,17 +388,42 @@ export default function EditTournamentModal({
             </div>
 
             {settings.format === 'group_knockout' && (
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Kieséses módszer</label>
-                <select
-                  value={settings.knockoutMethod || 'automatic'}
-                  onChange={(e) => handleSettingsChange('knockoutMethod', e.target.value)}
-                  className="w-full px-3 py-2 bg-muted/40 rounded-lg border border-border/40 outline-none focus:ring-2 ring-primary/20"
-                >
-                  <option value="automatic">Automatikus</option>
-                  <option value="manual">Manuális</option>
-                </select>
-              </div>
+              <>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Kieséses módszer</label>
+                  <select
+                    value={settings.knockoutMethod || 'automatic'}
+                    onChange={(e) => handleSettingsChange('knockoutMethod', e.target.value)}
+                    className="w-full px-3 py-2 bg-muted/40 rounded-lg border border-border/40 outline-none focus:ring-2 ring-primary/20"
+                  >
+                    <option value="automatic">Automatikus</option>
+                    <option value="manual">Manuális</option>
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Továbbjutók száma csoportonként (kiesés 1. kör)</label>
+                  <input
+                    type="number"
+                    min={1}
+                    placeholder="Üres = nincs szűrés"
+                    value={
+                      settings.groupAdvancesToKnockout === null || settings.groupAdvancesToKnockout === undefined
+                        ? ''
+                        : String(settings.groupAdvancesToKnockout)
+                    }
+                    onChange={(e) =>
+                      handleSettingsChange(
+                        'groupAdvancesToKnockout',
+                        e.target.value === '' ? null : parseInt(e.target.value, 10),
+                      )
+                    }
+                    className="w-full px-3 py-2 bg-muted/40 rounded-lg border border-border/40 outline-none focus:ring-2 ring-primary/20"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Ha megadod (pl. 4), a manuális 1. kör játékosválasztó csak ezekig a helyezésig enged. Az íróválasztó mindenkit mutat.
+                  </p>
+                </div>
+              </>
             )}
           </div>
 

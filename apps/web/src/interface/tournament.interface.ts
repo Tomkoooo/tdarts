@@ -95,6 +95,8 @@ export interface TournamentSettings {
     type: 'amateur' | 'open';
     registrationDeadline: Date;
     coverImage?: string; // Optional cover image for SEO
+    /** Max group standing (inclusive) eligible for round 1 manual knockout; null = no limit. */
+    groupAdvancesToKnockout?: number | null;
 }
 
 export interface PlayerDocument extends Omit<Document, 'toJSON' | '_id'> {

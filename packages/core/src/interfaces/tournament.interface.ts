@@ -104,6 +104,11 @@ export interface TournamentSettings {
   coverImage?: string;
   /** Organizer-configured legs-to-win per group (by board number) and per knockout round. */
   legsConfig?: LegsConfig;
+  /**
+   * When set (e.g. 4), only players with groupStanding <= this value are eligible for round 1
+   * manual knockout pairing (UI + server). Scorer selection stays unrestricted. Null/omit = no cap.
+   */
+  groupAdvancesToKnockout?: number | null;
 }
 
 export interface PlayerDocument extends Omit<Document, 'toJSON' | '_id'> {

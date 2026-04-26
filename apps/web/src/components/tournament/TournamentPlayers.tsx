@@ -16,6 +16,7 @@ import {
   IconMedal,
   IconTrophy,
   IconChartBar,
+  IconSearch,
 } from "@tabler/icons-react"
 import { toast } from "react-hot-toast"
 
@@ -30,6 +31,7 @@ import {
 } from "@/components/ui/Card"
 import { Badge } from "@/components/ui/Badge"
 import { Button } from "@/components/ui/Button"
+import { Input } from "@/components/ui/Input"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
@@ -145,6 +147,10 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
   const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>([])
   const [legsModal, setLegsModal] = useState<{ isOpen: boolean; match: any }>({ isOpen: false, match: null })
   const [activeTab, setActiveTab] = useState<'registered' | 'waiting'>('registered')
+  const [adminRosterCheckInFilter, setAdminRosterCheckInFilter] = useState<
+    "all" | "checked-in" | "not-checked-in"
+  >("all")
+  const [adminRosterSearch, setAdminRosterSearch] = useState("")
   const [removeConfirm, setRemoveConfirm] = useState<{ isOpen: boolean; playerId?: string; playerName?: string }>({
     isOpen: false,
     playerId: undefined,
@@ -207,6 +213,7 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
   const searchParams = useSearchParams()
   const autoJoinHandledRef = React.useRef(false)
   const lastSyncedPlayersSignatureRef = React.useRef("")
+  const rosterSelectAllRef = React.useRef<HTMLInputElement>(null)
 
   React.useEffect(() => {
     const isFinished = tournament?.tournamentSettings?.status === "finished"
@@ -457,17 +464,6 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
       }
       return prev.filter((id) => id !== playerId)
     })
-  }
-
-  const toggleSelectAllPlayers = (checked: boolean) => {
-    if (!checked) {
-      setSelectedPlayerIds([])
-      return
-    }
-    const allPlayerIds = localPlayers
-      .map((player) => player?.playerReference?._id?.toString?.() || player?._id?.toString?.())
-      .filter((id: string | undefined): id is string => Boolean(id))
-    setSelectedPlayerIds([...new Set(allPlayerIds)])
   }
 
   const handleOpenMatches = (player: any) => {
@@ -805,6 +801,82 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
       })
   }, [localPlayers, localUserPlayerId])
 
+  const filteredDisplayedPlayers = useMemo(() => {
+    if (!canManageOrganizerComms) return displayedPlayers
+    const needle = adminRosterSearch.trim().toLowerCase()
+    const matchesSearch = (player: any) => {
+      if (!needle) return true
+      const haystack: string[] = []
+      const name = player.playerReference?.name || player.name
+      if (name) haystack.push(String(name))
+      const un = player.playerReference?.username
+      if (un) haystack.push(String(un))
+      const members = player.playerReference?.members
+      if (Array.isArray(members)) {
+        for (const m of members) {
+          if (m?.name) haystack.push(String(m.name))
+        }
+      }
+      return haystack.some((p) => p.toLowerCase().includes(needle))
+    }
+
+    let rows = displayedPlayers
+    if (adminRosterCheckInFilter === "checked-in") {
+      rows = rows.filter(({ player }) => player.status === "checked-in")
+    } else if (adminRosterCheckInFilter === "not-checked-in") {
+      rows = rows.filter(({ player }) => player.status !== "checked-in")
+    }
+    if (needle) {
+      rows = rows.filter(({ player }) => matchesSearch(player))
+    }
+    return rows
+  }, [canManageOrganizerComms, displayedPlayers, adminRosterCheckInFilter, adminRosterSearch])
+
+  const visiblePlayerIds = useMemo(
+    () =>
+      filteredDisplayedPlayers
+        .map(({ player }) => player.playerReference?._id?.toString() || player._id?.toString())
+        .filter((id): id is string => Boolean(id)),
+    [filteredDisplayedPlayers],
+  )
+
+  const visiblePlayerIdSet = useMemo(() => new Set(visiblePlayerIds), [visiblePlayerIds])
+
+  const isRosterFiltered =
+    canManageOrganizerComms && (adminRosterCheckInFilter !== "all" || adminRosterSearch.trim() !== "")
+
+  const toggleSelectAllPlayers = (checked: boolean) => {
+    if (!checked) {
+      if (isRosterFiltered) {
+        setSelectedPlayerIds((prev) => prev.filter((id) => !visiblePlayerIdSet.has(id)))
+      } else {
+        setSelectedPlayerIds([])
+      }
+      return
+    }
+    if (isRosterFiltered) {
+      setSelectedPlayerIds((prev) => [...new Set([...prev, ...visiblePlayerIds])])
+    } else {
+      const allPlayerIds = localPlayers
+        .map((player) => player?.playerReference?._id?.toString?.() || player?._id?.toString?.())
+        .filter((id: string | undefined): id is string => Boolean(id))
+      setSelectedPlayerIds([...new Set(allPlayerIds)])
+    }
+  }
+
+  const allVisibleSelected =
+    visiblePlayerIds.length > 0 && visiblePlayerIds.every((id) => selectedPlayerIds.includes(id))
+  const someVisibleSelected = visiblePlayerIds.some((id) => selectedPlayerIds.includes(id))
+  const selectAllHeaderChecked = isRosterFiltered
+    ? allVisibleSelected
+    : localPlayers.length > 0 && selectedPlayerIds.length === localPlayers.length
+
+  React.useEffect(() => {
+    const el = rosterSelectAllRef.current
+    if (!el) return
+    el.indeterminate = isRosterFiltered && someVisibleSelected && !allVisibleSelected
+  }, [isRosterFiltered, someVisibleSelected, allVisibleSelected])
+
   const renderPlayerActions = (player: any) => {
     const playerId = player.playerReference?._id
     if (!playerId) return null
@@ -1066,10 +1138,57 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
             {hasFreeSpots ? tTour("players.registration_open") : tTour("players.full_capacity")}
           </Badge>
         </CardHeader>
+        {canManageOrganizerComms && localPlayers.length > 0 ? (
+          <div className="border-b border-border/50 bg-muted/20 px-4 py-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div
+              className="flex flex-wrap items-center gap-2"
+              role="group"
+              aria-label={tp("list_filter_aria")}
+            >
+              <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground shrink-0">
+                {tp("list_filter_label")}
+              </span>
+              <div className="inline-flex rounded-lg border border-border/60 bg-background/80 p-0.5">
+                {(
+                  [
+                    { id: "all" as const, labelKey: "list_filter_all" },
+                    { id: "checked-in" as const, labelKey: "list_filter_checked_in" },
+                    { id: "not-checked-in" as const, labelKey: "list_filter_not_checked_in" },
+                  ] as const
+                ).map(({ id, labelKey }) => (
+                  <Button
+                    key={id}
+                    type="button"
+                    size="sm"
+                    variant={adminRosterCheckInFilter === id ? "default" : "ghost"}
+                    className="h-8 rounded-md px-3 text-xs"
+                    onClick={() => setAdminRosterCheckInFilter(id)}
+                  >
+                    {tp(labelKey)}
+                  </Button>
+                ))}
+              </div>
+            </div>
+            <div className="relative w-full min-w-0 sm:max-w-xs">
+              <IconSearch className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={adminRosterSearch}
+                onChange={(e) => setAdminRosterSearch(e.target.value)}
+                placeholder={tp("list_search_placeholder")}
+                className="h-9 pl-9"
+                aria-label={tp("list_search_placeholder")}
+              />
+            </div>
+          </div>
+        ) : null}
         <CardContent className="max-h-[600px] p-0 overflow-y-auto custom-scrollbar">
           {localPlayers.length === 0 ? (
             <div className="px-4 py-12 text-center text-sm font-bold uppercase tracking-widest text-muted-foreground">
               {tp("no_players")}
+            </div>
+          ) : filteredDisplayedPlayers.length === 0 ? (
+            <div className="px-4 py-12 text-center text-sm font-bold uppercase tracking-widest text-muted-foreground">
+              {tp("list_no_matches")}
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -1079,8 +1198,9 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
                     {canManageOrganizerComms ? (
                       <th className="px-4 py-4 text-center w-10">
                         <input
+                          ref={rosterSelectAllRef}
                           type="checkbox"
-                          checked={localPlayers.length > 0 && selectedPlayerIds.length === localPlayers.length}
+                          checked={selectAllHeaderChecked}
                           onChange={(event) => toggleSelectAllPlayers(event.target.checked)}
                           aria-label={tTour("notification_modal.select_all_players")}
                         />
@@ -1098,7 +1218,7 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/20">
-                  {displayedPlayers
+                  {filteredDisplayedPlayers
                     .map(({ player }, i) => {
                       const name = player.playerReference?.name || player.name || player._id
                       const playerId = player.playerReference?._id?.toString() || player.playerReference?.toString() || player._id?.toString() || ""

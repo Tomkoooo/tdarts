@@ -750,7 +750,14 @@
       "matches_btn": "Streichhölzer",
       "rank_label": "Rang",
       "registration_open": "Anmeldung offen",
-      "full_capacity": "Ausgebucht"
+      "full_capacity": "Ausgebucht",
+      "list_filter_aria": "Teilnehmerliste nach Check-in filtern",
+      "list_filter_label": "Anzeigen",
+      "list_filter_all": "Alle",
+      "list_filter_checked_in": "Eingecheckt",
+      "list_filter_not_checked_in": "Nicht eingecheckt",
+      "list_search_placeholder": "Nach Name oder Benutzername suchen…",
+      "list_no_matches": "Keine Spieler entsprechen den Filtern."
     },
     "registration": {
       "sign_up": "Anmeldung zum Turnier",
@@ -1005,6 +1012,8 @@
       "success_empty_rounds": "Leere Kreise erfolgreich generiert!",
       "success_pairings": "Paarungen erfolgreich generiert!",
       "success_settings_updated": "Spieleinstellungen erfolgreich aktualisiert!",
+      "last_manual_add_title": "Letztes manuelles Match",
+      "last_manual_add_description": "Runde {round} · {p1} vs {p2} · Board: {board}",
       "error_loading_title": "Beim Laden der Knockout-Tabelle ist ein Fehler aufgetreten",
       "error_unknown": "Unbekannter Fehler",
       "error_reload_prompt": "Versuchen Sie, die Seite neu zu laden oder eine neue Runde in der Admin-Oberfläche zu erstellen."
