@@ -76,12 +76,38 @@ async function checkFeatureFlagClientOutcome(
     };
   } catch (error) {
     console.error("Error checking feature flag via API:", error);
+    if (normalizedFeature === "SOCKET" && envEnabled) {
+      // Keep live updates reliable when env explicitly enables socket.
+      // Explicit guard denials are handled above; this branch is for transport/runtime failures.
+      return { enabled: true, denialReason: null };
+    }
     return disabled("feature_disabled");
   }
 }
 
 async function checkSocketFeatureClientOutcome(clubId?: string): Promise<FeatureFlagCheckOutcome> {
-  return checkFeatureFlagClientOutcome("SOCKET", clubId);
+  const envValue = process.env.NEXT_PUBLIC_ENABLE_SOCKET;
+  const envEnabled = envValue?.toLowerCase() === "true";
+
+  // Keep explicit env-level opt-out behavior unchanged.
+  if (!envEnabled) {
+    return { enabled: false, denialReason: "feature_disabled" };
+  }
+
+  // With env enabled and no club context, allow socket immediately.
+  if (!clubId) {
+    return { enabled: true, denialReason: null };
+  }
+
+  try {
+    const outcome = await checkFeatureFlagClientOutcome("SOCKET", clubId);
+    return outcome;
+  } catch (error) {
+    // Critical reliability rule: when socket is env-enabled, do not fail closed
+    // on transient feature-check transport/server errors.
+    console.error("Socket feature check failed, falling back to env-enabled state:", error);
+    return { enabled: true, denialReason: null };
+  }
 }
 
 export const useFeatureFlag = (featureName: string, clubId?: string) => {
