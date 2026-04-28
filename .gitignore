@@ -61,3 +61,4 @@ docs/api-docs.md
 .pnpm/
 .pnpm-store/
 .venv/
+.prod

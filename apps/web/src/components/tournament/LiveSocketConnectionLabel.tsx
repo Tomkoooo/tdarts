@@ -4,10 +4,12 @@ import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 import type { SocketFeatureUiStatus } from "@/hooks/useSocket";
 import type { FeatureFlagDenialReason } from "@/shared/lib/guards/result";
+import type { SocketGateReason } from "@/hooks/useFeatureFlag";
 
 export interface LiveSocketConnectionLabelProps {
   socketStatus: SocketFeatureUiStatus;
   denialReason: FeatureFlagDenialReason | null;
+  gateReason?: SocketGateReason;
   featureError: string | null;
   /** Screen-reader prefix, e.g. "Live connection status" */
   labelPrefix?: string;
@@ -32,6 +34,7 @@ function denialReasonToMessageKey(reason: FeatureFlagDenialReason | null): strin
 export function LiveSocketConnectionLabel({
   socketStatus,
   denialReason,
+  gateReason = "enabled",
   featureError,
   labelPrefix,
   className,
@@ -54,7 +57,17 @@ export function LiveSocketConnectionLabel({
       break;
     case "feature_off":
       dotClass = "bg-muted-foreground";
-      text = t(denialReasonToMessageKey(denialReason));
+      if (gateReason === "global_disabled") {
+        text = t("global_disabled");
+      } else if (gateReason === "paywall_disabled_bypass") {
+        text = t("paywall_off");
+      } else if (gateReason === "missing_club_context") {
+        text = t("missing_club_context");
+      } else if (gateReason === "eligibility_check_failed") {
+        text = t("eligibility_check_failed");
+      } else {
+        text = t(denialReasonToMessageKey(denialReason));
+      }
       break;
     case "transport_failed":
       dotClass = "bg-destructive";

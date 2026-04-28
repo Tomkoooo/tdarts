@@ -24,11 +24,13 @@ const sharedMapper = {
 
 module.exports = {
   testTimeout: 15000,
+  modulePathIgnorePatterns: ['<rootDir>/.next/standalone'],
   projects: [
     {
       displayName: 'node',
       preset: 'ts-jest',
       testEnvironment: 'node',
+      roots: ['<rootDir>/src'],
       setupFilesAfterEnv: ['<rootDir>/src/tests/setup.ts'],
       testMatch: ['<rootDir>/src/tests/**/*.test.ts', '<rootDir>/src/tests/**/*.test.tsx'],
       testPathIgnorePatterns: ['<rootDir>/src/tests/realtime/useRealTimeUpdates.test.tsx'],
@@ -38,6 +40,7 @@ module.exports = {
       displayName: 'jsdom',
       preset: 'ts-jest',
       testEnvironment: 'jest-environment-jsdom',
+      roots: ['<rootDir>/src'],
       setupFilesAfterEnv: [],
       testMatch: ['<rootDir>/src/tests/realtime/useRealTimeUpdates.test.tsx'],
       moduleNameMapper: sharedMapper,

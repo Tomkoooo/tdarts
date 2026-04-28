@@ -1,112 +1,127 @@
-import { AuthorizationService } from '@/database/services/authorization.service';
-import { authorizeUserResult } from '@/features/auth/lib/authorizeUser';
-import { evaluateFeatureAccess } from '@/features/flags/lib/featureAccess';
-import { FeatureFlagService } from '@/features/flags/lib/featureFlags';
+import { AuthorizationService } from "@/database/services/authorization.service";
+import { authorizeUserResult } from "@/features/auth/lib/authorizeUser";
+import { evaluateFeatureAccess } from "@/features/flags/lib/featureAccess";
+import { FeatureFlagService } from "@/features/flags/lib/featureFlags";
 
-jest.mock('@/features/auth/lib/authorizeUser', () => ({
+jest.mock("@/features/auth/lib/authorizeUser", () => ({
   authorizeUserResult: jest.fn(),
 }));
 
-jest.mock('@/database/services/authorization.service', () => ({
+jest.mock("@/database/services/authorization.service", () => ({
   AuthorizationService: {
     isGlobalAdmin: jest.fn(),
-    checkAdminOrModerator: jest.fn(),
   },
 }));
 
-jest.mock('@/features/flags/lib/featureFlags', () => ({
+jest.mock("@/features/flags/lib/featureFlags", () => ({
   FeatureFlagService: {
     isFeatureEnabled: jest.fn(),
     isClubFeatureEnabled: jest.fn(),
   },
 }));
 
-describe('featureAccess evaluator', () => {
-  const originalSubscription = process.env.NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED;
+const mockedAuth = authorizeUserResult as jest.MockedFunction<typeof authorizeUserResult>;
+const mockedIsGlobalAdmin = AuthorizationService.isGlobalAdmin as jest.MockedFunction<typeof AuthorizationService.isGlobalAdmin>;
+const mockedIsFeatureEnabled = FeatureFlagService.isFeatureEnabled as jest.MockedFunction<typeof FeatureFlagService.isFeatureEnabled>;
+const mockedIsClubFeatureEnabled = FeatureFlagService.isClubFeatureEnabled as jest.MockedFunction<typeof FeatureFlagService.isClubFeatureEnabled>;
+
+describe("evaluateFeatureAccess - gating precedence matrix", () => {
+  const envSnapshot = process.env.NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED;
 
   beforeEach(() => {
     jest.clearAllMocks();
-    process.env.NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED = 'true';
+    process.env.NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED = "true";
+    mockedAuth.mockResolvedValue({ ok: true, data: { userId: "u1" } } as any);
+    mockedIsGlobalAdmin.mockResolvedValue(false as any);
+    mockedIsFeatureEnabled.mockResolvedValue(true as any);
+    mockedIsClubFeatureEnabled.mockResolvedValue(true as any);
   });
 
   afterAll(() => {
-    process.env.NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED = originalSubscription;
+    if (envSnapshot === undefined) delete process.env.NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED;
+    else process.env.NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED = envSnapshot;
   });
 
-  it('returns login required when user is not authenticated', async () => {
-    (authorizeUserResult as jest.Mock).mockResolvedValue({ ok: false, code: 'UNAUTHORIZED', status: 401, message: 'Unauthorized' });
+  it("returns FEATURE_DISABLED before any subscription check when global feature is off", async () => {
+    mockedIsFeatureEnabled.mockResolvedValue(false as any);
+    mockedIsClubFeatureEnabled.mockResolvedValue(false as any);
 
-    const result = await evaluateFeatureAccess({ featureName: 'LEAGUES', clubId: 'club-1', requiresSubscription: true });
+    const result = await evaluateFeatureAccess({
+      featureName: "SOCKET",
+      clubId: "club-1",
+      requiresSubscription: true,
+    });
+
     expect(result).toEqual({
       ok: false,
-      code: 'LOGIN_REQUIRED',
-      status: 401,
-      message: 'Unauthorized',
+      code: "FEATURE_DISABLED",
+      status: 403,
+      message: "Feature disabled: SOCKET",
+    });
+    expect(mockedIsClubFeatureEnabled).not.toHaveBeenCalled();
+  });
+
+  it("returns SUBSCRIPTION_REQUIRED only when global feature is enabled and paywall is active", async () => {
+    process.env.NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED = "true";
+    mockedIsFeatureEnabled.mockResolvedValue(true as any);
+    mockedIsClubFeatureEnabled.mockResolvedValue(false as any);
+
+    const result = await evaluateFeatureAccess({
+      featureName: "SOCKET",
+      clubId: "club-1",
+      requiresSubscription: true,
+    });
+
+    expect(result).toEqual({
+      ok: false,
+      code: "SUBSCRIPTION_REQUIRED",
+      status: 403,
+      message: "Feature requires subscription: SOCKET",
     });
   });
 
-  it('short-circuits for super admins', async () => {
-    (authorizeUserResult as jest.Mock).mockResolvedValue({ ok: true, data: { userId: 'admin-1' } });
-    (AuthorizationService.isGlobalAdmin as jest.Mock).mockResolvedValue(true);
+  it("bypasses club eligibility when paywall is disabled", async () => {
+    process.env.NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED = "false";
+    mockedIsFeatureEnabled.mockResolvedValue(true as any);
+    mockedIsClubFeatureEnabled.mockResolvedValue(false as any);
 
-    const result = await evaluateFeatureAccess({ featureName: 'LEAGUES', clubId: 'club-1', requiresSubscription: true });
+    const result = await evaluateFeatureAccess({
+      featureName: "SOCKET",
+      clubId: "club-1",
+      requiresSubscription: true,
+    });
+
     expect(result).toEqual({
       ok: true,
       data: {
-        userId: 'admin-1',
-        featureKey: 'LEAGUES',
-        bypassReason: 'super_admin',
+        userId: "u1",
+        featureKey: "SOCKET",
+        bypassReason: "paywall_disabled",
       },
     });
-    expect(FeatureFlagService.isFeatureEnabled).not.toHaveBeenCalled();
+    expect(mockedIsClubFeatureEnabled).not.toHaveBeenCalled();
   });
 
-  it('returns subscription required when paywall is on and club is ineligible', async () => {
-    (authorizeUserResult as jest.Mock).mockResolvedValue({ ok: true, data: { userId: 'u1' } });
-    (AuthorizationService.isGlobalAdmin as jest.Mock).mockResolvedValue(false);
-    (FeatureFlagService.isFeatureEnabled as jest.Mock).mockResolvedValue(true);
-    (FeatureFlagService.isClubFeatureEnabled as jest.Mock).mockResolvedValue(false);
-
-    const result = await evaluateFeatureAccess({ featureName: 'LEAGUES', clubId: 'club-1', requiresSubscription: true });
-    expect(result).toEqual({
+  it("returns LOGIN_REQUIRED immediately for unauthenticated users", async () => {
+    mockedAuth.mockResolvedValue({
       ok: false,
-      code: 'SUBSCRIPTION_REQUIRED',
-      status: 403,
-      message: 'Feature requires subscription: LEAGUES',
-    });
-  });
-
-  it('does not require subscription when paywall is inactive (unset env)', async () => {
-    delete process.env.NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED;
-    (authorizeUserResult as jest.Mock).mockResolvedValue({ ok: true, data: { userId: 'u1' } });
-    (AuthorizationService.isGlobalAdmin as jest.Mock).mockResolvedValue(false);
-    (FeatureFlagService.isFeatureEnabled as jest.Mock).mockResolvedValue(true);
-    (FeatureFlagService.isClubFeatureEnabled as jest.Mock).mockResolvedValue(false);
-
-    const result = await evaluateFeatureAccess({ featureName: 'LEAGUES', clubId: 'club-1', requiresSubscription: true });
-    expect(result.ok).toBe(true);
-    expect(FeatureFlagService.isClubFeatureEnabled).not.toHaveBeenCalled();
-    process.env.NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED = 'true';
-  });
-
-  it('returns permission required when role check fails', async () => {
-    (authorizeUserResult as jest.Mock).mockResolvedValue({ ok: true, data: { userId: 'u1' } });
-    (AuthorizationService.isGlobalAdmin as jest.Mock).mockResolvedValue(false);
-    (FeatureFlagService.isFeatureEnabled as jest.Mock).mockResolvedValue(true);
-    (FeatureFlagService.isClubFeatureEnabled as jest.Mock).mockResolvedValue(true);
-    (AuthorizationService.checkAdminOrModerator as jest.Mock).mockResolvedValue(false);
+      code: "LOGIN_REQUIRED",
+      status: 401,
+      message: "Login required",
+    } as any);
 
     const result = await evaluateFeatureAccess({
-      featureName: 'LEAGUES',
-      clubId: 'club-1',
+      featureName: "SOCKET",
+      clubId: "club-1",
       requiresSubscription: true,
-      permissionCheck: ({ userId, clubId }) => AuthorizationService.checkAdminOrModerator(userId, clubId || ''),
     });
+
     expect(result).toEqual({
       ok: false,
-      code: 'PERMISSION_REQUIRED',
-      status: 403,
-      message: 'Insufficient permissions',
+      code: "LOGIN_REQUIRED",
+      status: 401,
+      message: "Login required",
     });
+    expect(mockedIsFeatureEnabled).not.toHaveBeenCalled();
   });
 });

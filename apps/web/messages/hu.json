@@ -2303,6 +2303,10 @@
         "checking": "Élő kapcsolat ellenőrzése…",
         "connecting": "Kapcsolódás…",
         "live_off": "Az élő frissítés ki van kapcsolva",
+        "global_disabled": "Az élő frissítés globálisan le van tiltva",
+        "paywall_off": "Az előfizetéses kapu ki van kapcsolva; a klub jogosultság ellenőrzése ki van hagyva",
+        "missing_club_context": "Az előfizetéses kapu bekapcsolva van; az élő frissítés ellenőrzéséhez klub kontextus szükséges",
+        "eligibility_check_failed": "Nem sikerült ellenőrizni a klub jogosultságát az élő frissítéshez",
         "login_required": "Az élő frissítéshez jelentkezz be",
         "subscription_required": "Az élő frissítéshez előfizetés szükséges",
         "permission_required": "Nincs jogosultság az élő frissítéshez",
@@ -3113,7 +3117,12 @@
     "kapcsolat": "Kapcsolat",
     "ha_már_pro": "Ha már Pro előfizető vagy, vedd fel velünk a kapcsolatot.",
     "hiba_történt_20": "Hiba történt",
-    "nem_sikerült_betölteni_8": "Nem sikerült betölteni az élő oldalt"
+    "nem_sikerült_betölteni_8": "Nem sikerült betölteni az élő oldalt",
+    "live_matches": {
+      "socket_status": {
+        "global_disabled": "Az élő frissítés globálisan le van tiltva"
+      }
+    }
   },
   "FeatureFlags": {
     "login_title": "Jelentkezz be a funkció eléréséhez",

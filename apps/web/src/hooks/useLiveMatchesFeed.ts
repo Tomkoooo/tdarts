@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSocket } from "@/hooks/useSocket";
+import { useLiveTournamentClubId } from "@/components/tournament/LiveTournamentClubProvider";
 import { getTournamentLiveMatchesClientAction } from "@/features/tournaments/actions/tournamentRoster.action";
 
 export interface LiveFeedMatch {
@@ -120,13 +121,15 @@ const mergeMatch = (prev: LiveFeedMatch, incoming: Partial<LiveFeedMatch>): Live
 export function useLiveMatchesFeed(tournamentCode: string) {
   const [matches, setMatches] = useState<LiveFeedMatch[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const clubId = useLiveTournamentClubId();
   const {
     socket,
     isConnected,
     error: socketFeatureError,
     socketFeatureDenialReason,
+    socketFeatureGateReason,
     socketStatus,
-  } = useSocket({ tournamentId: tournamentCode });
+  } = useSocket({ tournamentId: tournamentCode, clubId });
   const [isPageVisible, setIsPageVisible] = useState(true);
 
   const refresh = useCallback(async () => {
@@ -252,8 +255,18 @@ export function useLiveMatchesFeed(tournamentCode: string) {
       refresh,
       socketFeatureError,
       socketFeatureDenialReason,
+      socketFeatureGateReason,
       socketStatus,
     }),
-    [matches, isLoading, isConnected, refresh, socketFeatureError, socketFeatureDenialReason, socketStatus],
+    [
+      matches,
+      isLoading,
+      isConnected,
+      refresh,
+      socketFeatureError,
+      socketFeatureDenialReason,
+      socketFeatureGateReason,
+      socketStatus,
+    ],
   );
 }

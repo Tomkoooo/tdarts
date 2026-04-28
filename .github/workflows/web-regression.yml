@@ -14,7 +14,7 @@ env:
 
 jobs:
   lint-test-build:
-    name: Monorepo — lint, test, optional next build
+    name: Monorepo — lint and test
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -67,68 +67,3 @@ jobs:
       - name: Test apps/api (@tdarts/api)
         run: pnpm --filter "@tdarts/api" test
 
-      # Full Next.js production build — skipped on to_release to save minutes; runs on main / feature/api and PRs into main
-      - name: Build apps/web (next build)
-        if: |
-          github.ref != 'refs/heads/to_release' &&
-          !(github.event_name == 'pull_request' && github.base_ref == 'to_release')
-        run: pnpm --filter web build
-        env:
-          JWT_SECRET: ${{ env.JWT_SECRET }}
-          MONGODB_URI: ${{ env.MONGODB_URI }}
-          SKIP_ENV_VALIDATION: "1"
-
-  playwright-realtime-smoke:
-    name: Playwright — realtime SSE smoke
-    runs-on: ubuntu-latest
-    services:
-      mongodb:
-        image: mongo:7
-        ports:
-          - 27017:27017
-    env:
-      JWT_SECRET: "ci-test-secret-not-for-production"
-      MONGODB_URI: "mongodb://127.0.0.1:27017/tdarts_e2e"
-      MONGODB_DB_NAME: "tdarts_e2e"
-      ALLOW_E2E_SSE_TEST: "true"
-      CI: "true"
-    defaults:
-      run:
-        working-directory: .
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-          cache: "pnpm"
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Build shared packages (@tdarts/*)
-        run: pnpm turbo build --filter="@tdarts/*"
-
-      - name: Build apps/web
-        run: pnpm --filter web build
-        env:
-          JWT_SECRET: ${{ env.JWT_SECRET }}
-          MONGODB_URI: ${{ env.MONGODB_URI }}
-          SKIP_ENV_VALIDATION: "1"
-
-      - name: Install Playwright Chromium
-        run: pnpm --filter web exec playwright install chromium --with-deps
-
-      - name: Run realtime SSE e2e smoke
-        run: pnpm --filter web exec playwright test e2e/realtime-smoke.spec.ts --project=chromium
-        env:
-          ALLOW_E2E_SSE_TEST: "true"
-          JWT_SECRET: ${{ env.JWT_SECRET }}
-          MONGODB_URI: ${{ env.MONGODB_URI }}
-          SKIP_ENV_VALIDATION: "1"

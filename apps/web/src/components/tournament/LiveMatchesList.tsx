@@ -24,6 +24,7 @@ const LiveMatchesList: React.FC<LiveMatchesListProps> = ({ tournamentCode, onMat
     isLoading,
     socketFeatureError,
     socketFeatureDenialReason,
+    socketFeatureGateReason,
     socketStatus,
   } = useLiveMatchesFeed(tournamentCode);
 
@@ -60,6 +61,7 @@ const LiveMatchesList: React.FC<LiveMatchesListProps> = ({ tournamentCode, onMat
           <LiveSocketConnectionLabel
             socketStatus={socketStatus}
             denialReason={socketFeatureDenialReason}
+            gateReason={socketFeatureGateReason}
             featureError={socketFeatureError}
             labelPrefix={tTour('live_matches.socket_status.a11y_status')}
             className="max-w-[min(100%,14rem)] sm:max-w-[min(100%,18rem)]"

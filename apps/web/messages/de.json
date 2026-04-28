@@ -1335,6 +1335,10 @@
         "checking": "Live-Verbindung wird geprüft…",
         "connecting": "Verbindung wird hergestellt…",
         "live_off": "Live-Updates sind deaktiviert",
+        "global_disabled": "Live-Updates sind global deaktiviert",
+        "paywall_off": "Das Subscription-Gate ist aus; die Club-Berechtigungsprüfung wird übersprungen",
+        "missing_club_context": "Bei aktivem Subscription-Gate ist ein Club-Kontext nötig, um Live-Updates zu prüfen",
+        "eligibility_check_failed": "Die Club-Berechtigung für Live-Updates konnte nicht geprüft werden",
         "login_required": "Zum Live-Update bitte anmelden",
         "subscription_required": "Für Live-Updates ist ein Abonnement erforderlich",
         "permission_required": "Keine Berechtigung für Live-Updates",
@@ -4105,7 +4109,12 @@
     "kapcsolat": "Kontakt",
     "ha_már_pro": "Wenn Sie bereits Pro haben, kontaktieren Sie den Support.",
     "hiba_történt_20": "Es ist ein Fehler aufgetreten",
-    "nem_sikerült_betölteni_8": "Live-Seite konnte nicht geladen werden"
+    "nem_sikerült_betölteni_8": "Live-Seite konnte nicht geladen werden",
+    "live_matches": {
+      "socket_status": {
+        "global_disabled": "Live-Updates sind global deaktiviert"
+      }
+    }
   },
   "Map": {
     "currentLocation": "Current Location",

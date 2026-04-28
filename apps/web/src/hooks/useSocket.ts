@@ -10,6 +10,7 @@ import {
   releaseTournamentRoom,
 } from "@/lib/socketRoomCoordinator";
 import type { FeatureFlagDenialReason } from "@/shared/lib/guards/result";
+import type { SocketGateReason } from "./useFeatureFlag";
 
 interface UseSocketOptions {
   tournamentId?: string;
@@ -69,16 +70,15 @@ function syncAcquiredRooms(
 }
 
 export const useSocket = ({ tournamentId, clubId, matchId }: UseSocketOptions = {}) => {
-  const { isSocketEnabled, isLoading, error, denialReason } = useSocketFeature(clubId);
+  const { isSocketEnabled, isLoading, error, denialReason, gateReason } = useSocketFeature(clubId);
   const [socketConnected, setSocketConnected] = useState(false);
   const [transportBlocked, setTransportBlocked] = useState(false);
   const shouldNotRetry = useRef(false);
   const acquiredRooms = useRef<AcquiredRooms>({});
 
-  const isDevelopment = process.env.NODE_ENV === "development";
-  const shouldEnableSocket = isDevelopment || (isSocketEnabled && !isLoading);
+  const shouldEnableSocket = isSocketEnabled && !isLoading;
 
-  const isSocketUiDisabled = !isDevelopment && !isSocketEnabled && !isLoading;
+  const isSocketUiDisabled = !isSocketEnabled && !isLoading;
 
   const socketStatus: SocketFeatureUiStatus = useMemo(() => {
     if (isLoading) return "feature_loading";
@@ -307,6 +307,7 @@ export const useSocket = ({ tournamentId, clubId, matchId }: UseSocketOptions = 
     socketFeatureLoading: isLoading,
     socketFeatureEnabled: isSocketEnabled,
     socketFeatureDenialReason: denialReason as FeatureFlagDenialReason | null,
+    socketFeatureGateReason: gateReason as SocketGateReason,
     socketStatus,
     isSocketUiDisabled,
     socketTransportBlocked: transportBlocked,

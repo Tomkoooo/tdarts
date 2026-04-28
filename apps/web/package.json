@@ -4,7 +4,7 @@
   "private": true,
   "license": "CC BY-NC-SA 4.0",
   "scripts": {
-    "dev": "NEXT_PUBLIC_ENABLE_SOCKET=true next dev",
+    "dev": "next dev",
     "build": "next build",
     "start": "NODE_ENV=production node server.js || NODE_ENV=production next start",
     "lint": "eslint .",

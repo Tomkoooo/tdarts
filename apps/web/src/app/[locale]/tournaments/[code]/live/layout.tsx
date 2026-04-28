@@ -7,6 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/Button';
 import { IconAlertTriangle, IconHome, IconMail } from '@tabler/icons-react';
 import { Link } from '@/i18n/routing';
+import { LiveTournamentClubProvider } from '@/components/tournament/LiveTournamentClubProvider';
+import { isSubscriptionPaywallActive } from '@/features/flags/lib/subscriptionPaywall';
 
 interface LiveLayoutProps {
   children: React.ReactNode;
@@ -31,8 +33,12 @@ export default async function LiveLayout({ children, params }: LiveLayoutProps) 
 
     // Check if socket feature is enabled for this club
     const isSocketEnabled = await FeatureFlagService.isSocketEnabled(clubId);
+    const isSocketGloballyEnabled = FeatureFlagService.isEnvFeatureEnabled('SOCKET');
+    const isPaywallEnabled = isSubscriptionPaywallActive();
 
     if (!isSocketEnabled) {
+      const shouldShowSubscriptionUpsell = isSocketGloballyEnabled && isPaywallEnabled;
+
       // Return static page for clubs without live match following
       return (
         <div className="min-h-screen bg-background flex items-center justify-center p-6">
@@ -43,18 +49,23 @@ export default async function LiveLayout({ children, params }: LiveLayoutProps) 
               </div>
               <CardTitle className="text-xl">{t("élő_meccs_követés")}</CardTitle>
               <CardDescription>
-                {t("ez_a_klub")}</CardDescription>
+                {shouldShowSubscriptionUpsell
+                  ? t("ez_a_klub")
+                  : t("live_matches.socket_status.global_disabled")}
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="bg-muted p-4 rounded-lg">
-                <h3 className="font-semibold text-sm mb-2">{t("pro_előfizetés_előnyei")}</h3>
-                <ul className="text-sm text-muted-foreground space-y-1 text-left">
-                  <li>{t("élő_meccs_követés_59")}</li>
-                  <li>{t("dobásonkénti_statisztikák")}</li>
-                  <li>{t("speciális_elemző_eszközök")}</li>
-                  <li>{t("részletes_játékos_adatok")}</li>
-                </ul>
-              </div>
+              {shouldShowSubscriptionUpsell ? (
+                <div className="bg-muted p-4 rounded-lg">
+                  <h3 className="font-semibold text-sm mb-2">{t("pro_előfizetés_előnyei")}</h3>
+                  <ul className="text-sm text-muted-foreground space-y-1 text-left">
+                    <li>{t("élő_meccs_követés_59")}</li>
+                    <li>{t("dobásonkénti_statisztikák")}</li>
+                    <li>{t("speciális_elemző_eszközök")}</li>
+                    <li>{t("részletes_játékos_adatok")}</li>
+                  </ul>
+                </div>
+              ) : null}
 
               <div className="flex gap-3">
                 <Button asChild className="flex-1">
@@ -69,18 +80,21 @@ export default async function LiveLayout({ children, params }: LiveLayoutProps) 
                 </Button>
               </div>
 
-              <div className="pt-2">
-                <p className="text-xs text-muted-foreground text-center">
-                  {t("ha_már_pro")}</p>
-              </div>
+              {shouldShowSubscriptionUpsell ? (
+                <div className="pt-2">
+                  <p className="text-xs text-muted-foreground text-center">
+                    {t("ha_már_pro")}
+                  </p>
+                </div>
+              ) : null}
             </CardContent>
           </Card>
         </div>
       );
     }
 
-    // If socket feature is enabled, render the normal live page
-    return <>{children}</>;
+    // If socket feature is enabled, render the normal live page (club id for client socket gate).
+    return <LiveTournamentClubProvider clubId={clubId}>{children}</LiveTournamentClubProvider>;
 
   } catch (error) {
     console.error('Error in live layout:', error);

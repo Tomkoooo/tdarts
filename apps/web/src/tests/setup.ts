@@ -41,8 +41,8 @@ beforeAll(async () => {
 
 afterAll(async () => {
   try {
-    const { ApiTelemetryService } = await import('@tdarts/services');
-    ApiTelemetryService.reset();
+    // Avoid importing the full services barrel in teardown; it pulls broad side effects
+    // and can fail in focused test runs unrelated to telemetry.
     await mongoose.disconnect();
     if (mongoServer) {
       await mongoServer.stop();

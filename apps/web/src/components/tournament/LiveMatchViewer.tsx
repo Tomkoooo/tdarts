@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSocket } from '@/hooks/useSocket';
+import { useLiveTournamentClubId } from '@/components/tournament/LiveTournamentClubProvider';
 import { LiveSocketConnectionLabel } from '@/components/tournament/LiveSocketConnectionLabel';
 import { getMatchState } from '@/lib/socketApi';
 import { IconEye, IconArrowLeft, IconPencil, IconShare } from '@tabler/icons-react';
@@ -87,15 +88,18 @@ const LiveMatchViewer: React.FC<LiveMatchViewerProps> = ({ matchId, tournamentCo
   const [currentPlayer2, setCurrentPlayer2] = useState(player2);
   const [matchData, setMatchData] = useState<MatchData | null>(null);
   const fetchInFlightRef = useRef(false);
+  const clubId = useLiveTournamentClubId();
 
   const {
     socket,
     socketStatus,
     socketFeatureDenialReason,
+    socketFeatureGateReason,
     error: socketFeatureError,
   } = useSocket({
     tournamentId: tournamentCode,
     matchId: matchId,
+    clubId,
   });
 
   useEffect(() => {
@@ -341,6 +345,7 @@ const LiveMatchViewer: React.FC<LiveMatchViewerProps> = ({ matchId, tournamentCo
             <LiveSocketConnectionLabel
               socketStatus={socketStatus}
               denialReason={socketFeatureDenialReason}
+              gateReason={socketFeatureGateReason}
               featureError={socketFeatureError}
               labelPrefix={tTour("live_matches.socket_status.a11y_status")}
               className="max-w-full"
