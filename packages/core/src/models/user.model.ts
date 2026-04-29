@@ -21,6 +21,7 @@ const userSchema = new mongoose.Schema<UserDocument>(
     password: { type: String, required: false }, // OAuth esetén nem kötelező
     isVerified: { type: Boolean, default: false },
     isAdmin: { type: Boolean, default: false },
+    adminRoles: { type: [String], default: [] },
     createdAt: { type: Date, default: Date.now },
     updatedAt: { type: Date, default: Date.now },
     lastLogin: { type: Date, default: null },

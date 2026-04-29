@@ -15,6 +15,24 @@ export interface FeatureDefinition {
 }
 
 export const FEATURE_REGISTRY: Record<FeatureKey, FeatureDefinition> = {
+  [FEATURE_KEYS.ADS]: {
+    key: FEATURE_KEYS.ADS,
+    envVar: 'NEXT_PUBLIC_ENABLE_ADS',
+    envDefault: false,
+    tierEntitlement: null,
+    clubFlagKey: null,
+    paywallOffBehavior: 'allow',
+    requiresSubscription: false,
+  },
+  [FEATURE_KEYS.ADS_PLACEHOLDER]: {
+    key: FEATURE_KEYS.ADS_PLACEHOLDER,
+    envVar: 'NEXT_PUBLIC_ENABLE_ADS_PLACEHOLDER',
+    envDefault: false,
+    tierEntitlement: null,
+    clubFlagKey: null,
+    paywallOffBehavior: 'allow',
+    requiresSubscription: false,
+  },
   [FEATURE_KEYS.SOCKET]: {
     key: FEATURE_KEYS.SOCKET,
     envVar: 'NEXT_PUBLIC_ENABLE_SOCKET',

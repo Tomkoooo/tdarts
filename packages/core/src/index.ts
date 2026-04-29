@@ -180,6 +180,21 @@ export type {
   TelemetryOperationClass,
 } from './models/api-request-error-event.model';
 
+export { AdCampaignModel } from './models/adCampaign.model';
+export type { AdCampaignDocument, AdCampaignStatus, AdViewType, AdActorType } from './models/adCampaign.model';
+
+export { AdCreativeModel } from './models/adCreative.model';
+export type { AdCreativeDocument, AdCreativeMediaSourceType } from './models/adCreative.model';
+
+export { AdDeliveryLogModel } from './models/adDeliveryLog.model';
+export type { AdDeliveryLogDocument } from './models/adDeliveryLog.model';
+
+export { AdInteractionEventModel } from './models/adInteractionEvent.model';
+export type { AdInteractionEventDocument, AdInteractionType } from './models/adInteractionEvent.model';
+
+export { AdMetricsAggHourlyModel } from './models/adMetricsAggHourly.model';
+export type { AdMetricsAggHourlyDocument } from './models/adMetricsAggHourly.model';
+
 export { ApiRequestErrorResetModel } from './models/api-request-error-reset.model';
 export type { IApiRequestErrorReset } from './models/api-request-error-reset.model';
 
