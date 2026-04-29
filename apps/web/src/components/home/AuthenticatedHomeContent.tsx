@@ -17,6 +17,7 @@ import {
   QuickStatsTileGrid,
   UpcomingCalendarTile,
 } from "@/features/home/ui"
+import { AdSlotContainer } from "@/features/ads/components/AdSlotContainer"
 import {
   filterUserHomeTournamentsForDashboard,
   getActiveOrNextTournament,
@@ -175,6 +176,12 @@ export default function AuthenticatedHomeContent({
           metrics={metrics}
           loading={dashboardLoading}
           advancedStatsEnabled={advancedStatsEnabled}
+        />
+
+        <AdSlotContainer
+          slotId="home-stats-landscape"
+          placementKey="home.stats.under-quick-stats"
+          viewType="landscape"
         />
 
         <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">

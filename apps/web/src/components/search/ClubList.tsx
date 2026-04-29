@@ -3,12 +3,15 @@ import { Card, CardContent } from "@/components/ui/Card"
 import { IconMapPin, IconUsers } from "@tabler/icons-react"
 import Link from "next/link"
 import { useTranslations } from "next-intl"
+import type { ReactNode } from "react"
 
 interface ClubListProps {
     clubs: any[];
+    adInsertIndex?: number;
+    adElement?: ReactNode;
 }
 
-export function ClubList({ clubs }: ClubListProps) {
+export function ClubList({ clubs, adInsertIndex, adElement }: ClubListProps) {
     const t = useTranslations('Search.club_list')
 
     if (!clubs || clubs.length === 0) {
@@ -17,9 +20,11 @@ export function ClubList({ clubs }: ClubListProps) {
 
     return (
         <div className="grid gap-4">
-            {clubs.map((club) => (
-                <Card key={club._id} className="group hover:shadow-md transition-all border-base-200">
-                    <CardContent className="p-5">
+            {clubs.map((club, index) => (
+                <div key={club._id} className="contents">
+                    {typeof adInsertIndex === "number" && adElement && index === adInsertIndex ? adElement : null}
+                    <Card className="group hover:shadow-md transition-all border-base-200">
+                        <CardContent className="p-5">
                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                             <div className="space-y-2">
                                 <div className="flex items-center gap-2">
@@ -54,8 +59,9 @@ export function ClubList({ clubs }: ClubListProps) {
                                 </Button>
                             </div>
                         </div>
-                    </CardContent>
-                </Card>
+                        </CardContent>
+                    </Card>
+                </div>
             ))}
         </div>
     )

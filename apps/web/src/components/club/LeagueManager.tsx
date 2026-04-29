@@ -16,6 +16,7 @@ import { getClubLeaguesAction } from '@/features/clubs/actions/getClubLeagues.ac
 import { getPublicClubLeagueManagementMetaAction } from '@/features/clubs/actions/getPublicClubLeagueManagementMeta.action';
 import { deleteLeagueAction } from '@/features/leagues/actions/manageLeague.action';
 import { isSubscriptionPaywallActive } from '@/features/flags/lib/subscriptionPaywall';
+import { AdSlotContainer } from '@/features/ads/components/AdSlotContainer';
 
 interface LeagueManagerProps {
   clubId: string;
@@ -41,6 +42,16 @@ export default function LeagueManager({ clubId, userRole, autoOpenLeagueId }: Le
 
   const canManageLeagues = userRole === 'admin' || userRole === 'moderator';
   const canCreateLeagues = canManageLeagues && managementEnabled;
+  const activeLeagues = leagues.filter(l => l.isActive && (!l.endDate || new Date(l.endDate) > new Date()))
+  const closedLeagues = leagues.filter(l => !l.isActive || (l.endDate && new Date(l.endDate) <= new Date()))
+  const activeLeaguesAdInsertIndex =
+    activeLeagues.length > 0
+      ? Math.min(Math.max(1, Math.floor(activeLeagues.length / 2)), activeLeagues.length - 1)
+      : null
+  const closedLeaguesAdInsertIndex =
+    closedLeagues.length > 0
+      ? Math.min(Math.max(1, Math.floor(closedLeagues.length / 2)), closedLeagues.length - 1)
+      : null
 
   useEffect(() => {
     const load = async () => {
@@ -254,29 +265,35 @@ export default function LeagueManager({ clubId, userRole, autoOpenLeagueId }: Le
       ) : (
         <div className="space-y-12">
             {/* Active Leagues */}
-            {leagues.filter(l => l.isActive && (!l.endDate || new Date(l.endDate) > new Date())).length > 0 && (
+            {activeLeagues.length > 0 && (
                 <div className="space-y-4">
                     <h3 className="text-xl font-semibold flex items-center gap-2">
                         <IconTrophy className="text-primary" /> {t("aktív_ligák")}</h3>
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-                    {leagues
-                        .filter(l => l.isActive && (!l.endDate || new Date(l.endDate) > new Date()))
-                        .map((league) => (
+                    {activeLeagues.map((league, index) => (
+                        <div key={league._id} className="contents">
+                          {activeLeaguesAdInsertIndex !== null && index === activeLeaguesAdInsertIndex ? (
+                            <AdSlotContainer
+                              slotId="club-leagues-active-inline-card"
+                              placementKey="club.leagues.active.inline-card"
+                              viewType="block"
+                            />
+                          ) : null}
                             <LeagueCard
-                            key={league._id}
                             league={league}
                             canManage={canManageLeagues}
                             onView={() => handleViewLeague(league)}
                             onDelete={() => handleDeleteLeague(league._id!)}
                             clubId={clubId}
                             />
-                        ))}
+                        </div>
+                    ))}
                     </div>
                 </div>
             )}
 
             {/* Closed Leagues */}
-            {leagues.filter(l => !l.isActive || (l.endDate && new Date(l.endDate) <= new Date())).length > 0 && (
+            {closedLeagues.length > 0 && (
                 <div className="space-y-4">
                     <div className="flex items-center gap-4">
                          <h3 className="text-xl font-semibold flex items-center gap-2 text-muted-foreground">
@@ -285,18 +302,24 @@ export default function LeagueManager({ clubId, userRole, autoOpenLeagueId }: Le
                     </div>
                    
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3 opacity-80 hover:opacity-100 transition-opacity">
-                    {leagues
-                        .filter(l => !l.isActive || (l.endDate && new Date(l.endDate) <= new Date()))
-                        .map((league) => (
+                    {closedLeagues.map((league, index) => (
+                        <div key={league._id} className="contents">
+                          {closedLeaguesAdInsertIndex !== null && index === closedLeaguesAdInsertIndex ? (
+                            <AdSlotContainer
+                              slotId="club-leagues-closed-inline-card"
+                              placementKey="club.leagues.closed.inline-card"
+                              viewType="block"
+                            />
+                          ) : null}
                             <LeagueCard
-                            key={league._id}
                             league={league}
                             canManage={canManageLeagues} // Pass true so we can check verified status for delete
                             onView={() => handleViewLeague(league)}
                             onDelete={() => handleDeleteLeague(league._id!)}
                             clubId={clubId}
                             />
-                        ))}
+                        </div>
+                    ))}
                     </div>
                 </div>
             )}

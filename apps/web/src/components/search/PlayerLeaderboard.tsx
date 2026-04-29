@@ -13,15 +13,18 @@ import { getPlayerHonorAverage } from "@/lib/honorAvgBadge"
 import { useTranslations } from "next-intl"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { sortHonorsByPriority } from "@/features/profile/lib/honorSorting"
+import type { ReactNode } from "react"
 
 interface PlayerLeaderboardProps {
     players: any[];
     isOac?: boolean;
     rankingType?: 'oacMmr' | 'leaguePoints';
     onRankingChange?: (type: 'oacMmr' | 'leaguePoints') => void;
+    adInsertIndex?: number;
+    adElement?: ReactNode;
 }
 
-export function PlayerLeaderboard({ players, isOac, rankingType, onRankingChange }: PlayerLeaderboardProps) {
+export function PlayerLeaderboard({ players, isOac, rankingType, onRankingChange, adInsertIndex, adElement }: PlayerLeaderboardProps) {
     const [selectedPlayer, setSelectedPlayer] = useState<any | null>(null)
     const tCommon = useTranslations("Common");
     const hasCommonKey = (key: string) => (tCommon as unknown as { has?: (k: string) => boolean }).has?.(key) ?? false
@@ -66,11 +69,13 @@ export function PlayerLeaderboard({ players, isOac, rankingType, onRankingChange
             ) : (
                 <div className="grid gap-4">
                     {players.map((player, index) => (
-                        <Card key={player._id} className={cn(
-                            "overflow-hidden transition-all hover:shadow-md border-base-200",
-                            isOac && "border-primary/20 bg-primary/5" // Highlight OAC cards slightly
-                        )}>
-                            <CardContent className="p-4 flex items-center gap-4">
+                        <div key={player._id} className="contents">
+                            {typeof adInsertIndex === "number" && adElement && index === adInsertIndex ? adElement : null}
+                            <Card className={cn(
+                                "overflow-hidden transition-all hover:shadow-md border-base-200",
+                                isOac && "border-primary/20 bg-primary/5" // Highlight OAC cards slightly
+                            )}>
+                                <CardContent className="p-4 flex items-center gap-4">
                                 <div className="shrink-0 font-mono text-2xl font-bold text-base-content/20 w-8 text-center">
                                     {player.globalRank || index + 1}
                                 </div>
@@ -197,8 +202,9 @@ export function PlayerLeaderboard({ players, isOac, rankingType, onRankingChange
                                         <IconChartBar className="h-4 w-4" />
                                     </Button>
                                 </div>
-                            </CardContent>
-                        </Card>
+                                </CardContent>
+                            </Card>
+                        </div>
                     ))}
                 </div>
             )}

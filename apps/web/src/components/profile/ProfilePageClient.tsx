@@ -32,6 +32,7 @@ import { ProfileLegalCompletionSection } from "@/components/profile/ProfileLegal
 import { useLogout } from "@/hooks/useLogout";
 import { getMatchByIdClientAction } from "@/features/tournaments/actions/tournamentRoster.action";
 import type { ServerUser } from "@/lib/getServerUser";
+import { AdSlotContainer } from "@/features/ads/components/AdSlotContainer";
 
 type ProfilePageClientProps = {
   serverUser: ServerUser;
@@ -356,6 +357,11 @@ export function ProfilePageClient({ serverUser }: ProfilePageClientProps) {
               playerStats={playerStats}
               isLoading={isLoadingStats}
               onViewLegs={handleViewLegs}
+            />
+            <AdSlotContainer
+              slotId="profile-stats-mid-landscape"
+              placementKey="profile.stats.between-stat-sections"
+              viewType="landscape"
             />
             <LeagueHistorySection
               leagueHistory={leagueHistory}
