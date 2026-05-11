@@ -83,6 +83,8 @@ export function gateReasonFromDenial(denial: FeatureFlagDenialReason): SocketGat
       return "login_required";
     case "subscription_required":
       return "subscription_required";
+    case "club_not_eligible":
+      return "subscription_required";
     case "permission_required":
       return "permission_required";
     case "feature_disabled":

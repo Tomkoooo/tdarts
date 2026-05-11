@@ -1,75 +1,46 @@
 /**
- * Feature flag tests aligned with the feature registry and TIER_CONFIG.
- * All env vars set explicitly -- NO reliance on .env or NEXT_PUBLIC_ENABLE_ALL.
+ * Feature flag tests aligned with the DB-backed SystemSettings model.
+ * No reliance on env vars; per-test we mutate the in-process settings cache.
  */
 import { ClubModel } from '@tdarts/core';
 import { FeatureFlagService } from '@/features/flags/lib/featureFlags';
-import { isSubscriptionPaywallActive } from '@tdarts/core/subscription-paywall';
+import {
+  __setSystemSettingsCacheForTests,
+  bustSystemSettingsCache,
+  isSubscriptionPaywallEnabled,
+  SYSTEM_SETTINGS_DEFAULTS,
+  type SystemSettingsSnapshot,
+} from '@tdarts/core/system-settings';
 import { FEATURE_REGISTRY } from '@/features/flags/lib/featureRegistry';
 import { FEATURE_KEYS } from '@/features/flags/lib/featureKeys';
 
-const ALL_ENV_KEYS = [
-  'NEXT_PUBLIC_ENABLE_ALL',
-  'NEXT_PUBLIC_ENABLE_SOCKET',
-  'NEXT_PUBLIC_ENABLE_LEAGUES',
-  'NEXT_PUBLIC_ENABLE_LIVE_MATCH_FOLLOWING',
-  'NEXT_PUBLIC_ENABLE_DETAILED_STATISTICS',
-  'NEXT_PUBLIC_ENABLE_ADVANCED_STATISTICS',
-  'NEXT_PUBLIC_ENABLE_OAC_CREATION',
-  'NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED',
-] as const;
-
-function snapshotEnv() {
-  const s: Record<string, string | undefined> = {};
-  for (const k of ALL_ENV_KEYS) s[k] = process.env[k];
-  return s;
+function setSettings(overrides: Partial<SystemSettingsSnapshot> = {}) {
+  const snapshot: SystemSettingsSnapshot = {
+    features: { ...SYSTEM_SETTINGS_DEFAULTS.features, ...(overrides.features ?? {}) },
+    subscriptionPaywallEnabled:
+      overrides.subscriptionPaywallEnabled ?? SYSTEM_SETTINGS_DEFAULTS.subscriptionPaywallEnabled,
+    superAdminBypassEnabled:
+      overrides.superAdminBypassEnabled ?? SYSTEM_SETTINGS_DEFAULTS.superAdminBypassEnabled,
+    updatedAt: overrides.updatedAt ?? new Date(),
+    updatedBy: overrides.updatedBy ?? null,
+  };
+  __setSystemSettingsCacheForTests(snapshot);
+  return snapshot;
 }
 
-function restoreEnv(s: Record<string, string | undefined>) {
-  for (const k of ALL_ENV_KEYS) {
-    if (s[k] === undefined) Reflect.deleteProperty(process.env, k);
-    else process.env[k] = s[k];
-  }
-}
+afterEach(() => {
+  bustSystemSettingsCache();
+});
 
-function clearAllFeatureEnvs() {
-  for (const k of ALL_ENV_KEYS) Reflect.deleteProperty(process.env, k);
-}
-
-const PROD_ENV: Record<string, string> = {
-  NEXT_PUBLIC_ENABLE_LEAGUES: 'true',
-  NEXT_PUBLIC_ENABLE_SOCKET: 'true',
-  NEXT_PUBLIC_ENABLE_OAC_CREATION: 'true',
-  NEXT_PUBLIC_ENABLE_DETAILED_STATISTICS: 'true',
-  NEXT_PUBLIC_ENABLE_LIVE_MATCH_FOLLOWING: 'true',
-  NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED: 'false',
-};
-
-function applyProdEnv() {
-  clearAllFeatureEnvs();
-  for (const [k, v] of Object.entries(PROD_ENV)) {
-    process.env[k] = v;
-  }
-}
-
-describe('isSubscriptionPaywallActive', () => {
-  let snap: Record<string, string | undefined>;
-  beforeEach(() => { snap = snapshotEnv(); });
-  afterEach(() => { restoreEnv(snap); });
-
-  it('active only for exact "true"', () => {
-    process.env.NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED = 'true';
-    expect(isSubscriptionPaywallActive()).toBe(true);
+describe('isSubscriptionPaywallEnabled', () => {
+  it('reflects SystemSettings.subscriptionPaywallEnabled = true', async () => {
+    setSettings({ subscriptionPaywallEnabled: true });
+    await expect(isSubscriptionPaywallEnabled()).resolves.toBe(true);
   });
 
-  it.each(['false', '', 'True', '1'])('inactive for %p', (val) => {
-    process.env.NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED = val;
-    expect(isSubscriptionPaywallActive()).toBe(false);
-  });
-
-  it('inactive when unset', () => {
-    Reflect.deleteProperty(process.env, 'NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED');
-    expect(isSubscriptionPaywallActive()).toBe(false);
+  it('reflects SystemSettings.subscriptionPaywallEnabled = false', async () => {
+    setSettings({ subscriptionPaywallEnabled: false });
+    await expect(isSubscriptionPaywallEnabled()).resolves.toBe(false);
   });
 });
 
@@ -80,9 +51,12 @@ describe('Feature registry completeness', () => {
     }
   });
 
-  it('every registry entry has a valid envVar', () => {
+  it('every registry entry has tier metadata fields (envVar removed)', () => {
     for (const def of Object.values(FEATURE_REGISTRY)) {
-      expect(def.envVar).toMatch(/^NEXT_PUBLIC_ENABLE_/);
+      expect(def).toHaveProperty('tierEntitlement');
+      expect(def).toHaveProperty('paywallOffBehavior');
+      expect(def).toHaveProperty('requiresSubscription');
+      expect((def as any).envVar).toBeUndefined();
     }
   });
 
@@ -92,45 +66,35 @@ describe('Feature registry completeness', () => {
   });
 });
 
-describe('Production env mirror (no ENABLE_ALL)', () => {
-  let snap: Record<string, string | undefined>;
-
+describe('Production parity (paywall off, all features on)', () => {
   beforeEach(async () => {
-    snap = snapshotEnv();
-    applyProdEnv();
+    setSettings({
+      subscriptionPaywallEnabled: false,
+      features: {
+        LEAGUES: true,
+        SOCKET: true,
+        LIVE_MATCH_FOLLOWING: true,
+        DETAILED_STATISTICS: true,
+        ADVANCED_STATISTICS: true,
+        OAC_CREATION: true,
+      },
+    });
     await ClubModel.deleteMany({ name: /^ff-prod-/ });
   });
 
   afterEach(async () => {
     await ClubModel.deleteMany({ name: /^ff-prod-/ });
-    restoreEnv(snap);
   });
 
-  it('ENABLE_ALL is NOT set', () => {
-    expect(process.env.NEXT_PUBLIC_ENABLE_ALL).toBeUndefined();
+  it('SOCKET enabled at the global level', async () => {
+    await expect(FeatureFlagService.isGlobalFeatureEnabled('SOCKET')).resolves.toBe(true);
   });
 
-  it('SOCKET enabled at env level', () => {
-    expect(FeatureFlagService.isEnvFeatureEnabled('SOCKET')).toBe(true);
+  it('LEAGUES enabled at the global level', async () => {
+    await expect(FeatureFlagService.isGlobalFeatureEnabled('LEAGUES')).resolves.toBe(true);
   });
 
-  it('LEAGUES enabled at env level', () => {
-    expect(FeatureFlagService.isEnvFeatureEnabled('LEAGUES')).toBe(true);
-  });
-
-  it('DETAILED_STATISTICS enabled at env level', () => {
-    expect(FeatureFlagService.isEnvFeatureEnabled('DETAILED_STATISTICS')).toBe(true);
-  });
-
-  it('LIVE_MATCH_FOLLOWING enabled at env level', () => {
-    expect(FeatureFlagService.isEnvFeatureEnabled('LIVE_MATCH_FOLLOWING')).toBe(true);
-  });
-
-  it('OAC_CREATION enabled at env level', () => {
-    expect(FeatureFlagService.isEnvFeatureEnabled('OAC_CREATION')).toBe(true);
-  });
-
-  it('paywall off: socket enabled for any club without liveMatchFollowing flag', async () => {
+  it('socket enabled for any club regardless of liveMatchFollowing flag', async () => {
     const club = await ClubModel.create({
       name: 'ff-prod-socket',
       description: 'Test',
@@ -142,7 +106,7 @@ describe('Production env mirror (no ENABLE_ALL)', () => {
     await expect(FeatureFlagService.isSocketEnabled(club._id.toString())).resolves.toBe(true);
   });
 
-  it('paywall off: leagues enabled for free club', async () => {
+  it('leagues enabled for free club (paywall_off + paywallOffBehavior=allow)', async () => {
     const club = await ClubModel.create({
       name: 'ff-prod-leagues',
       description: 'Test',
@@ -152,28 +116,45 @@ describe('Production env mirror (no ENABLE_ALL)', () => {
     });
     await expect(FeatureFlagService.isFeatureEnabled('LEAGUES', club._id.toString())).resolves.toBe(true);
   });
+
+  it('regression: LEAGUES global=true + paywall=false yields enabled=true on the server (the original prod symptom)', async () => {
+    const club = await ClubModel.create({
+      name: 'ff-prod-leagues-regression',
+      description: 'Test',
+      location: 'Test',
+      subscriptionModel: 'free',
+      admin: [],
+    });
+    await expect(FeatureFlagService.isFeatureEnabled('LEAGUES', club._id.toString())).resolves.toBe(true);
+    const outcome = await FeatureFlagService.evaluateClubFeature(
+      club._id.toString(),
+      'LEAGUES'
+    );
+    expect(outcome).toEqual({ kind: 'allowed' });
+  });
 });
 
-describe('Feature flags with paywall ON - tier-based entitlements', () => {
-  let snap: Record<string, string | undefined>;
-
+describe('Paywall ON: tier-based entitlements', () => {
   beforeEach(async () => {
-    snap = snapshotEnv();
-    clearAllFeatureEnvs();
-    process.env.NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED = 'true';
-    process.env.NEXT_PUBLIC_ENABLE_LEAGUES = 'true';
-    process.env.NEXT_PUBLIC_ENABLE_SOCKET = 'true';
-    process.env.NEXT_PUBLIC_ENABLE_DETAILED_STATISTICS = 'true';
-    process.env.NEXT_PUBLIC_ENABLE_LIVE_MATCH_FOLLOWING = 'true';
+    setSettings({
+      subscriptionPaywallEnabled: true,
+      features: {
+        LEAGUES: true,
+        SOCKET: true,
+        LIVE_MATCH_FOLLOWING: true,
+        DETAILED_STATISTICS: true,
+        ADVANCED_STATISTICS: true,
+        OAC_CREATION: true,
+      },
+    });
     await ClubModel.deleteMany({ name: /^ff-tier-/ });
   });
 
   afterEach(async () => {
     await ClubModel.deleteMany({ name: /^ff-tier-/ });
-    restoreEnv(snap);
   });
 
-  it('free club cannot access leagues', async () => {
+  it('free club cannot access leagues (subscription_required)', async () => {
     const club = await ClubModel.create({
       name: 'ff-tier-free-leagues',
       description: 'Test',
@@ -182,6 +163,8 @@ describe('Feature flags with paywall ON - tier-based entitlements', () => {
       admin: [],
     });
     await expect(FeatureFlagService.isFeatureEnabled('LEAGUES', club._id.toString())).resolves.toBe(false);
+    const outcome = await FeatureFlagService.evaluateClubFeature(club._id.toString(), 'LEAGUES');
+    expect(outcome.kind).toBe('subscription_required');
   });
 
   it('basic club can access leagues', async () => {
@@ -226,10 +209,12 @@ describe('Feature flags with paywall ON - tier-based entitlements', () => {
       featureFlags: { advancedStatistics: true, liveMatchFollowing: false },
       admin: [],
     });
-    await expect(FeatureFlagService.isFeatureEnabled('DETAILED_STATISTICS', club._id.toString())).resolves.toBe(true);
+    await expect(
+      FeatureFlagService.isFeatureEnabled('DETAILED_STATISTICS', club._id.toString())
+    ).resolves.toBe(true);
   });
 
-  it('pro club without advancedStatistics flag cannot access detailed statistics', async () => {
+  it('pro club without advancedStatistics flag yields club_not_eligible', async () => {
     const club = await ClubModel.create({
       name: 'ff-tier-pro-stats-no',
       description: 'Test',
@@ -238,10 +223,14 @@ describe('Feature flags with paywall ON - tier-based entitlements', () => {
       featureFlags: { advancedStatistics: false, liveMatchFollowing: false },
       admin: [],
     });
-    await expect(FeatureFlagService.isFeatureEnabled('DETAILED_STATISTICS', club._id.toString())).resolves.toBe(false);
+    const outcome = await FeatureFlagService.evaluateClubFeature(
+      club._id.toString(),
+      'DETAILED_STATISTICS'
+    );
+    expect(outcome).toMatchObject({ kind: 'club_not_eligible' });
   });
 
-  it('free club cannot access detailed statistics even with advancedStatistics flag', async () => {
+  it('free club without tier entitlement yields subscription_required', async () => {
     const club = await ClubModel.create({
       name: 'ff-tier-free-stats',
       description: 'Test',
@@ -250,33 +239,27 @@ describe('Feature flags with paywall ON - tier-based entitlements', () => {
       featureFlags: { advancedStatistics: true, liveMatchFollowing: false },
       admin: [],
     });
-    await expect(FeatureFlagService.isFeatureEnabled('DETAILED_STATISTICS', club._id.toString())).resolves.toBe(false);
+    const outcome = await FeatureFlagService.evaluateClubFeature(
+      club._id.toString(),
+      'DETAILED_STATISTICS'
+    );
+    expect(outcome.kind).toBe('subscription_required');
   });
 });
 
-describe('Feature flags with missing env vars', () => {
-  let snap: Record<string, string | undefined>;
-
-  beforeEach(() => {
-    snap = snapshotEnv();
-    clearAllFeatureEnvs();
+describe('Global toggles off', () => {
+  it('SOCKET disabled when feature toggle is off', async () => {
+    setSettings({ features: { ...SYSTEM_SETTINGS_DEFAULTS.features, SOCKET: false } });
+    await expect(FeatureFlagService.isGlobalFeatureEnabled('SOCKET')).resolves.toBe(false);
   });
 
-  afterEach(() => { restoreEnv(snap); });
-
-  it('SOCKET disabled when env var missing', () => {
-    expect(FeatureFlagService.isEnvFeatureEnabled('SOCKET')).toBe(false);
+  it('LEAGUES disabled when feature toggle is off', async () => {
+    setSettings({ features: { ...SYSTEM_SETTINGS_DEFAULTS.features, LEAGUES: false } });
+    await expect(FeatureFlagService.isGlobalFeatureEnabled('LEAGUES')).resolves.toBe(false);
   });
 
-  it('LEAGUES disabled when env var missing', () => {
-    expect(FeatureFlagService.isEnvFeatureEnabled('LEAGUES')).toBe(false);
-  });
-
-  it('OAC_CREATION defaults to true when env var missing', () => {
-    expect(FeatureFlagService.isEnvFeatureEnabled('OAC_CREATION')).toBe(true);
-  });
-
-  it('unknown feature returns false', () => {
-    expect(FeatureFlagService.isEnvFeatureEnabled('NONEXISTENT')).toBe(false);
+  it('unknown feature returns false', async () => {
+    setSettings();
+    await expect(FeatureFlagService.isGlobalFeatureEnabled('NONEXISTENT')).resolves.toBe(false);
   });
 });

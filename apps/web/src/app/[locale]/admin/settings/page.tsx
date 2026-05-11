@@ -27,6 +27,7 @@ import { Badge } from "@/components/ui/Badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 import { YearWrapCard } from "@/components/admin/YearWrapCard"
+import { FeatureFlagsSettings } from "@/components/admin/FeatureFlagsSettings"
 import { adminSettingsActions } from "@/features/admin/actions/adminDomains.action"
 
 interface SystemInfo {
@@ -229,49 +230,8 @@ export default function AdminSettingsPage() {
         </CardContent>
       </Card>
 
-      {/* Features */}
-      <Card  className="backdrop-blur-xl bg-card/30">
-        <CardHeader>
-          <div className="flex items-center gap-3">
-            <div className="size-10 backdrop-blur-md bg-success/20 rounded-lg flex items-center justify-center">
-              <IconPlug className="size-6 text-success" />
-            </div>
-            <CardTitle className="text-2xl">{t("funkciók")}</CardTitle>
-          </div>
-        </CardHeader>
-        <CardContent>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="flex items-center justify-between p-4 backdrop-blur-md bg-muted/30 rounded-xl">
-            <div className="flex items-center gap-3">
-                <IconShield className="size-5 text-primary" />
-              <span className="font-medium">{t("előfizetés_rendszer")}</span>
-            </div>
-            <StatusBadge active={systemInfo.features.subscriptionEnabled} />
-          </div>
-            <div className="flex items-center justify-between p-4 backdrop-blur-md bg-muted/30 rounded-xl">
-            <div className="flex items-center gap-3">
-                <IconActivity className="size-5 text-primary" />
-              <span className="font-medium">{t("socket_kapcsolat")}</span>
-            </div>
-            <StatusBadge active={systemInfo.features.socketEnabled} />
-          </div>
-            <div className="flex items-center justify-between p-4 backdrop-blur-md bg-muted/30 rounded-xl">
-            <div className="flex items-center gap-3">
-                <IconSection className="size-5 text-primary" />
-              <span className="font-medium">{t("ligák")}</span>
-            </div>
-            <StatusBadge active={systemInfo.features.leaguesEnabled} />
-          </div>
-            <div className="flex items-center justify-between p-4 backdrop-blur-md bg-muted/30 rounded-xl">
-            <div className="flex items-center gap-3">
-                <IconChartBar className="size-5 text-primary" />
-              <span className="font-medium">{t("részletes_statisztikák")}</span>
-            </div>
-            <StatusBadge active={systemInfo.features.detailedStatisticsEnabled} />
-          </div>
-        </div>
-        </CardContent>
-      </Card>
+      {/* Feature flags + Access control (live, DB-backed toggles) */}
+      <FeatureFlagsSettings />
 
       {/* Environment Variables */}
       <Card  className="backdrop-blur-xl bg-card/30">

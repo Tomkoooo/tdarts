@@ -12,6 +12,7 @@ export type GuardFailureCode =
   | 'LOGIN_REQUIRED'
   | 'FEATURE_DISABLED'
   | 'SUBSCRIPTION_REQUIRED'
+  | 'CLUB_NOT_ELIGIBLE'
   | 'PERMISSION_REQUIRED';
 
 export type GuardFailureStatus = 401 | 403;

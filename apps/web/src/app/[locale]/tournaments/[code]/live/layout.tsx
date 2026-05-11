@@ -33,8 +33,8 @@ export default async function LiveLayout({ children, params }: LiveLayoutProps) 
 
     // Check if socket feature is enabled for this club
     const isSocketEnabled = await FeatureFlagService.isSocketEnabled(clubId);
-    const isSocketGloballyEnabled = FeatureFlagService.isEnvFeatureEnabled('SOCKET');
-    const isPaywallEnabled = isSubscriptionPaywallActive();
+    const isSocketGloballyEnabled = await FeatureFlagService.isGlobalFeatureEnabled('SOCKET');
+    const isPaywallEnabled = await isSubscriptionPaywallActive();
 
     if (!isSocketEnabled) {
       const shouldShowSubscriptionUpsell = isSocketGloballyEnabled && isPaywallEnabled;

@@ -64,7 +64,19 @@ export {
 } from './lib/entry-fee-currency';
 export type { EntryFeeCurrency } from './lib/entry-fee-currency';
 
-export { isSubscriptionPaywallActive } from './lib/subscription-paywall';
+export {
+  getSystemSettings,
+  peekSystemSettings,
+  bustSystemSettingsCache,
+  updateFeatureToggle,
+  updateSubscriptionPaywallEnabled,
+  updateSuperAdminBypassEnabled,
+  isSubscriptionPaywallEnabled,
+  isGlobalFeatureToggleEnabled,
+  SYSTEM_SETTINGS_DEFAULTS,
+  __setSystemSettingsCacheForTests,
+} from './lib/system-settings';
+export type { SystemSettingsSnapshot } from './lib/system-settings';
 
 export {
   INTERNATIONAL_COUNTRY_CODE,
@@ -237,6 +249,17 @@ export type {
 
 export { SubscriptionModel } from './models/subscription.model';
 export type { SubscriptionDocument } from './models/subscription.model';
+
+export {
+  SystemSettingsModel,
+  SYSTEM_SETTINGS_SINGLETON_ID,
+  FEATURE_TOGGLE_KEYS,
+} from './models/system-settings.model';
+export type {
+  SystemSettingsDocument,
+  FeatureToggleKey,
+  FeatureTogglesMap,
+} from './models/system-settings.model';
 
 export { TeamInvitationModel } from './models/teaminvitation.model';
 

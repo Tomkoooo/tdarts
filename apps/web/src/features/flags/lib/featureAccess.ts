@@ -2,8 +2,8 @@ import { AuthorizationService } from '@/database/services/authorization.service'
 import { authorizeUserResult } from '@/features/auth/lib/authorizeUser';
 import { normalizeFeatureKey } from '@/features/flags/lib/featureKeys';
 import { FeatureFlagService } from '@/features/flags/lib/featureFlags';
-import { isSubscriptionPaywallActive } from '@/features/flags/lib/subscriptionPaywall';
 import { PAYWALLED_FEATURE_KEYS } from '@/features/flags/lib/featureRegistry';
+import { getSystemSettings } from '@tdarts/core/system-settings';
 import { GuardFailureResult, GuardResult } from '@/shared/lib/telemetry/types';
 
 type FeatureAccessParams = {
@@ -29,6 +29,15 @@ function denial(code: GuardFailureResult['code'], message: string): GuardFailure
   };
 }
 
+/**
+ * Single source of truth for "can this user use this feature for this club?".
+ * Order of checks is significant: we deny in the order login → feature global
+ * toggle → tier (subscription required) → club flag (club not eligible) →
+ * permission so the UI can render the most specific reason.
+ *
+ * Super-admin bypass only kicks in when `SystemSettings.superAdminBypassEnabled`
+ * is true; toggling it off lets a global admin reproduce a regular user's view.
+ */
 export async function evaluateFeatureAccess(params: FeatureAccessParams): Promise<GuardResult<FeatureAccessOutcome>> {
   const authResult = await authorizeUserResult(params.request ? { request: params.request } : undefined);
   if (!authResult.ok) {
@@ -36,6 +45,8 @@ export async function evaluateFeatureAccess(params: FeatureAccessParams): Promis
   }
 
   const userId = authResult.data.userId;
+  const settings = await getSystemSettings();
+
   let isGlobalAdmin = false;
   try {
     isGlobalAdmin = await AuthorizationService.isGlobalAdmin(userId);
@@ -48,7 +59,7 @@ export async function evaluateFeatureAccess(params: FeatureAccessParams): Promis
     return denial('FEATURE_DISABLED', `Feature disabled: ${params.featureName}`);
   }
 
-  if (isGlobalAdmin) {
+  if (isGlobalAdmin && settings.superAdminBypassEnabled) {
     return {
       ok: true,
       data: {
@@ -59,17 +70,24 @@ export async function evaluateFeatureAccess(params: FeatureAccessParams): Promis
     };
   }
 
-  const enabled = await FeatureFlagService.isFeatureEnabled(normalizedFeature, params.clubId);
-  if (!enabled) {
+  const globalEnabled = await FeatureFlagService.isGlobalFeatureEnabled(normalizedFeature);
+  if (!globalEnabled) {
     return denial('FEATURE_DISABLED', `Feature disabled: ${normalizedFeature}`);
   }
 
   const requiresSubscription = params.requiresSubscription ?? false;
-  const paywallEnabled = isSubscriptionPaywallActive();
-  if (requiresSubscription && paywallEnabled && params.clubId) {
-    const hasSubscriptionAccess = await FeatureFlagService.isClubFeatureEnabled(params.clubId, normalizedFeature);
-    if (!hasSubscriptionAccess) {
-      return denial('SUBSCRIPTION_REQUIRED', `Feature requires subscription: ${normalizedFeature}`);
+  const paywallEnabled = settings.subscriptionPaywallEnabled;
+
+  if (params.clubId) {
+    const outcome = await FeatureFlagService.evaluateClubFeature(params.clubId, normalizedFeature);
+    if (outcome.kind === 'club_missing') {
+      return denial('FEATURE_DISABLED', `Club not found for feature: ${normalizedFeature}`);
+    }
+    if (outcome.kind === 'subscription_required') {
+      return denial('SUBSCRIPTION_REQUIRED', `Feature requires a higher subscription tier: ${normalizedFeature}`);
+    }
+    if (outcome.kind === 'club_not_eligible') {
+      return denial('CLUB_NOT_ELIGIBLE', `Club not eligible for feature: ${normalizedFeature}`);
     }
   }
 

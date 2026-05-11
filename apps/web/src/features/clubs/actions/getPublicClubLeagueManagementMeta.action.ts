@@ -8,6 +8,7 @@ import { FeatureFlagService } from '@/features/flags/lib/featureFlags';
 import { withTelemetry } from '@/shared/lib/withTelemetry';
 import { authorizeUserResult } from '@/features/auth/lib/authorizeUser';
 import { AuthorizationService } from '@tdarts/services';
+import { getSystemSettings } from '@tdarts/core/system-settings';
 
 const inputSchema = z.object({ clubId: z.string().min(1) });
 
@@ -17,6 +18,8 @@ export type PublicClubLeagueManagementMeta = {
   managementEnabled: boolean;
   /** Whether current user can bypass subscription gate via global admin */
   isGlobalAdmin: boolean;
+  /** Mirrors `SystemSettings.subscriptionPaywallEnabled` so client UIs can show upgrade CTAs only when the paywall is on. */
+  subscriptionPaywallEnabled: boolean;
 };
 
 /**
@@ -35,16 +38,18 @@ export async function getPublicClubLeagueManagementMetaAction(
       if (!club) {
         throw new BadRequestError('Club not found');
       }
-      const [featureEnabled, authResult] = await Promise.all([
+      const [featureEnabled, authResult, settings] = await Promise.all([
         FeatureFlagService.isFeatureEnabled('LEAGUES', clubId),
         authorizeUserResult(),
+        getSystemSettings(),
       ]);
       const isGlobalAdmin = authResult.ok ? await AuthorizationService.isGlobalAdmin(authResult.data.userId) : false;
-      const managementEnabled = featureEnabled || isGlobalAdmin;
+      const managementEnabled = featureEnabled || (isGlobalAdmin && settings.superAdminBypassEnabled);
       return {
         subscriptionModel: String((club as { subscriptionModel?: string }).subscriptionModel || 'free'),
         managementEnabled,
         isGlobalAdmin,
+        subscriptionPaywallEnabled: settings.subscriptionPaywallEnabled,
       };
     },
     { method: 'ACTION', metadata: { feature: 'clubs', actionName: 'getPublicLeagueManagementMeta' } }

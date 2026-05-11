@@ -482,11 +482,13 @@
     "login_description": "Ihre Sitzung konnte nicht geprüft werden (z. B. im In-App-Browser). Melden Sie sich an, um diese Funktion zu nutzen.",
     "login_cta": "Anmelden",
     "subscription_title": "Abonnement erforderlich",
-    "subscription_description": "Für diese Funktion ist ein berechtigtes Abonnement für diesen Verein erforderlich.",
+    "subscription_description": "Das Abonnement Ihres Vereins enthält diese Funktion nicht. Aktualisieren Sie das Abonnement, um sie freizuschalten.",
+    "club_not_eligible_title": "Für diesen Verein nicht aktiviert",
+    "club_not_eligible_description": "Diese Funktion ist global verfügbar, wurde für diesen Verein jedoch nicht aktiviert.",
     "permission_title": "Berechtigung erforderlich",
     "permission_description": "Ihr Konto hat nicht die erforderlichen Berechtigungen für diese Funktion.",
     "disabled_title": "Diese Funktion ist nicht verfügbar",
-    "disabled_description": "Diese Funktion ist für diesen Verein deaktiviert, oder Ihr Konto hat in diesem Kontext keinen Zugriff."
+    "disabled_description": "Diese Funktion ist derzeit systemweit deaktiviert. Ein Administrator kann sie in den Admin-Einstellungen aktivieren."
   },
   "Carousel": {
     "management": "Weltklasse-Wettbewerbsmanagement",

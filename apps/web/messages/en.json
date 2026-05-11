@@ -4296,11 +4296,13 @@
     "login_description": "We could not verify your session (for example in an in-app browser). Sign in to use this feature.",
     "login_cta": "Log in",
     "subscription_title": "Subscription required",
-    "subscription_description": "This feature requires an eligible subscription for this club.",
+    "subscription_description": "Your club's subscription tier does not include this feature. Upgrade the subscription to enable it.",
+    "club_not_eligible_title": "Not enabled for this club",
+    "club_not_eligible_description": "This feature is globally available, but it has not been enabled for this specific club.",
     "permission_title": "Permission required",
     "permission_description": "Your account does not have the required permissions for this feature.",
     "disabled_title": "This feature is not available",
-    "disabled_description": "This feature is turned off for this club, or your account cannot access it in this context."
+    "disabled_description": "This feature is currently turned off system-wide. An administrator can enable it from the admin settings."
   },
   "Carousel": {
     "experience": "Kiváló Felhasználói Élmény",
