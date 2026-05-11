@@ -1,5 +1,6 @@
 name: Docker Socket
 
+# Socket image uses only apps/socket; no monorepo root files in the build context.
 on:
   push:
     branches: ["main", "new_ui"]
