@@ -1,9 +1,8 @@
 import * as checkFlags from "@/features/feature-flags/actions/checkFeatureFlags.action";
 import { checkSocketFeatureClientOutcome } from "@/hooks/useFeatureFlag";
 
-describe("checkSocketFeatureClientOutcome", () => {
+describe("checkSocketFeatureClientOutcome (runtime config-driven)", () => {
   const originalFetch = global.fetch;
-  const originalEnvSocket = process.env.NEXT_PUBLIC_ENABLE_SOCKET;
 
   beforeEach(() => {
     jest.spyOn(checkFlags, "checkFeatureFlagAction").mockClear();
@@ -11,16 +10,10 @@ describe("checkSocketFeatureClientOutcome", () => {
 
   afterEach(() => {
     global.fetch = originalFetch;
-    if (originalEnvSocket === undefined) {
-      Reflect.deleteProperty(process.env, "NEXT_PUBLIC_ENABLE_SOCKET");
-    } else {
-      process.env.NEXT_PUBLIC_ENABLE_SOCKET = originalEnvSocket;
-    }
     jest.restoreAllMocks();
   });
 
   it("does not call subscription eligibility when runtime disables socket globally", async () => {
-    process.env.NEXT_PUBLIC_ENABLE_SOCKET = "true";
     global.fetch = jest.fn(() =>
       Promise.resolve({
         ok: true,
@@ -42,7 +35,6 @@ describe("checkSocketFeatureClientOutcome", () => {
   });
 
   it("does not call eligibility when paywall is off even without club", async () => {
-    Reflect.deleteProperty(process.env, "NEXT_PUBLIC_ENABLE_SOCKET");
     global.fetch = jest.fn(() =>
       Promise.resolve({
         ok: true,
@@ -61,7 +53,6 @@ describe("checkSocketFeatureClientOutcome", () => {
   });
 
   it("returns missing_club_context when paywall is on and club id is absent", async () => {
-    process.env.NEXT_PUBLIC_ENABLE_SOCKET = "true";
     global.fetch = jest.fn(() =>
       Promise.resolve({
         ok: true,
@@ -83,7 +74,6 @@ describe("checkSocketFeatureClientOutcome", () => {
   });
 
   it("keeps global_disabled terminal when both socket and paywall are disabled", async () => {
-    process.env.NEXT_PUBLIC_ENABLE_SOCKET = "false";
     global.fetch = jest.fn(() =>
       Promise.resolve({
         ok: true,

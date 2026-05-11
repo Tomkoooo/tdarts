@@ -1,4 +1,5 @@
 import type { TierFeatures } from '@tdarts/core/subscription-tiers';
+import type { FeatureToggleKey } from '@/database/models/system-settings.model';
 import type { FeatureKey } from './featureKeys';
 import { FEATURE_KEYS } from './featureKeys';
 
@@ -6,19 +7,28 @@ export type PaywallOffBehavior = 'allow' | 'check_club_flag';
 
 export interface FeatureDefinition {
   key: FeatureKey;
-  envVar: string;
-  envDefault: boolean;
+  /**
+   * Tier-feature this gate consults when the subscription paywall is ON.
+   * `null` means the feature is not gated by tier (still gated by global toggle).
+   */
   tierEntitlement: keyof TierFeatures | null;
+  /** Per-club override flag in `club.featureFlags`, if any. */
   clubFlagKey: 'liveMatchFollowing' | 'advancedStatistics' | null;
+  /** Behavior when the paywall toggle is OFF. */
   paywallOffBehavior: PaywallOffBehavior;
+  /** Whether the feature requires a paid subscription tier when the paywall is on. */
   requiresSubscription: boolean;
 }
 
+/**
+ * Static metadata only. Per-feature on/off lives in the `SystemSettings` DB doc
+ * (see {@link import('@tdarts/core/system-settings').getSystemSettings}). The
+ * registry maps logical feature keys to tier entitlements and per-club flag
+ * names so we can decide WHY a feature is denied (subscription vs club flag).
+ */
 export const FEATURE_REGISTRY: Record<FeatureKey, FeatureDefinition> = {
   [FEATURE_KEYS.SOCKET]: {
     key: FEATURE_KEYS.SOCKET,
-    envVar: 'NEXT_PUBLIC_ENABLE_SOCKET',
-    envDefault: false,
     tierEntitlement: 'liveTracking',
     clubFlagKey: null,
     paywallOffBehavior: 'allow',
@@ -26,8 +36,6 @@ export const FEATURE_REGISTRY: Record<FeatureKey, FeatureDefinition> = {
   },
   [FEATURE_KEYS.LIVE_MATCH_FOLLOWING]: {
     key: FEATURE_KEYS.LIVE_MATCH_FOLLOWING,
-    envVar: 'NEXT_PUBLIC_ENABLE_LIVE_MATCH_FOLLOWING',
-    envDefault: false,
     tierEntitlement: 'liveTracking',
     clubFlagKey: 'liveMatchFollowing',
     paywallOffBehavior: 'allow',
@@ -35,8 +43,6 @@ export const FEATURE_REGISTRY: Record<FeatureKey, FeatureDefinition> = {
   },
   [FEATURE_KEYS.LEAGUES]: {
     key: FEATURE_KEYS.LEAGUES,
-    envVar: 'NEXT_PUBLIC_ENABLE_LEAGUES',
-    envDefault: false,
     tierEntitlement: 'leagues',
     clubFlagKey: null,
     paywallOffBehavior: 'allow',
@@ -44,8 +50,6 @@ export const FEATURE_REGISTRY: Record<FeatureKey, FeatureDefinition> = {
   },
   [FEATURE_KEYS.DETAILED_STATISTICS]: {
     key: FEATURE_KEYS.DETAILED_STATISTICS,
-    envVar: 'NEXT_PUBLIC_ENABLE_DETAILED_STATISTICS',
-    envDefault: false,
     tierEntitlement: 'detailedStatistics',
     clubFlagKey: 'advancedStatistics',
     paywallOffBehavior: 'check_club_flag',
@@ -53,8 +57,6 @@ export const FEATURE_REGISTRY: Record<FeatureKey, FeatureDefinition> = {
   },
   [FEATURE_KEYS.ADVANCED_STATISTICS]: {
     key: FEATURE_KEYS.ADVANCED_STATISTICS,
-    envVar: 'NEXT_PUBLIC_ENABLE_ADVANCED_STATISTICS',
-    envDefault: false,
     tierEntitlement: 'detailedStatistics',
     clubFlagKey: 'advancedStatistics',
     paywallOffBehavior: 'check_club_flag',
@@ -62,8 +64,6 @@ export const FEATURE_REGISTRY: Record<FeatureKey, FeatureDefinition> = {
   },
   [FEATURE_KEYS.OAC_CREATION]: {
     key: FEATURE_KEYS.OAC_CREATION,
-    envVar: 'NEXT_PUBLIC_ENABLE_OAC_CREATION',
-    envDefault: true,
     tierEntitlement: null,
     clubFlagKey: null,
     paywallOffBehavior: 'allow',
@@ -80,3 +80,12 @@ export const PAYWALLED_FEATURE_KEYS = new Set<string>(
     .filter(d => d.requiresSubscription)
     .map(d => d.key)
 );
+
+/**
+ * Maps internal feature keys to the {@link FeatureToggleKey} stored in
+ * `SystemSettings.features`. The mapping is intentionally identity for now —
+ * keep this helper to make it explicit at boundaries.
+ */
+export function toToggleKey(featureKey: FeatureKey): FeatureToggleKey {
+  return featureKey as FeatureToggleKey;
+}

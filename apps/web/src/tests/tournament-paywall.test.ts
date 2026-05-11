@@ -2,19 +2,21 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 import mongoose from 'mongoose';
 import { ClubModel, TournamentModel, UserModel } from '@tdarts/core';
 import { SubscriptionService } from '@tdarts/services';
+import {
+  __setSystemSettingsCacheForTests,
+  bustSystemSettingsCache,
+  SYSTEM_SETTINGS_DEFAULTS,
+} from '@tdarts/core/system-settings';
 
 describe('Tournament Paywall & OAC Limits', () => {
   let mongoServer: MongoMemoryServer;
 
   beforeAll(async () => {
-    // Enable subscription feature for tests
-    process.env.NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED = 'true';
-    
     // Disconnect any existing connection first
     if (mongoose.connection.readyState !== 0) {
       await mongoose.disconnect();
     }
-    
+
     // Start in-memory MongoDB
     mongoServer = await MongoMemoryServer.create();
     const mongoUri = mongoServer.getUri();
@@ -22,11 +24,21 @@ describe('Tournament Paywall & OAC Limits', () => {
   });
 
   afterAll(async () => {
+    bustSystemSettingsCache();
     await mongoose.disconnect();
     await mongoServer.stop();
   });
 
   beforeEach(async () => {
+    // Force the paywall on for these tests via the in-memory settings cache.
+    __setSystemSettingsCacheForTests({
+      features: { ...SYSTEM_SETTINGS_DEFAULTS.features },
+      subscriptionPaywallEnabled: true,
+      superAdminBypassEnabled: SYSTEM_SETTINGS_DEFAULTS.superAdminBypassEnabled,
+      updatedAt: new Date(),
+      updatedBy: null,
+    });
+
     // Clear all collections before each test
     await ClubModel.deleteMany({});
     await TournamentModel.deleteMany({});

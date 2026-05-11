@@ -29,7 +29,7 @@ export class SubscriptionService {
     errorMessage?: string;
   }> {
     try {
-      if (!isSubscriptionPaywallActive()) {
+      if (!(await isSubscriptionPaywallActive())) {
         return { canCreate: true, currentCount: 0, maxAllowed: -1, tierName: 'Unlimited' };
       }
 
@@ -126,7 +126,7 @@ export class SubscriptionService {
     errorMessage?: string;
   }> {
     try {
-      if (!isSubscriptionPaywallActive()) {
+      if (!(await isSubscriptionPaywallActive())) {
         return { canUpdate: true, currentCount: 0, maxAllowed: -1, tierName: 'Unlimited' };
       }
 

@@ -1069,11 +1069,13 @@ export async function adminSettingsGetSystemInfoAction() {
     const guard = await assertGlobalAdmin();
     if ('error' in guard) return guard.error;
     await connectMongo();
-    const [users, clubs, tournaments, leagues] = await Promise.all([
+    const { getSystemSettings } = await import('@tdarts/core/system-settings');
+    const [users, clubs, tournaments, leagues, settings] = await Promise.all([
       UserModel.estimatedDocumentCount(),
       ClubModel.estimatedDocumentCount(),
       TournamentModel.estimatedDocumentCount(),
       LeagueModel.estimatedDocumentCount(),
+      getSystemSettings(),
     ]);
     const used = process.memoryUsage().heapUsed;
     const total = process.memoryUsage().heapTotal || 1;
@@ -1091,16 +1093,16 @@ export async function adminSettingsGetSystemInfoAction() {
         documents: users + clubs + tournaments + leagues,
       },
       features: {
-        subscriptionEnabled: Boolean(process.env.SUBSCRIPTION_ENABLED),
-        socketEnabled: Boolean(process.env.SOCKET_SERVER_URL),
-        leaguesEnabled: true,
-        detailedStatisticsEnabled: true,
+        subscriptionEnabled: settings.subscriptionPaywallEnabled,
+        socketEnabled: settings.features.SOCKET,
+        leaguesEnabled: settings.features.LEAGUES,
+        detailedStatisticsEnabled: settings.features.DETAILED_STATISTICS,
       },
       environment: {
         emailUsername: process.env.EMAIL_USER || '',
         nodeEnv: process.env.NODE_ENV || 'development',
-        subscriptionEnabled: process.env.SUBSCRIPTION_ENABLED || 'false',
-        socketServerUrl: process.env.SOCKET_SERVER_URL || '',
+        subscriptionEnabled: settings.subscriptionPaywallEnabled ? 'true' : 'false',
+        socketServerUrl: process.env.NEXT_PUBLIC_SOCKET_SERVER_URL || process.env.SOCKET_SERVER_URL || '',
       },
     });
   } catch (error: any) {

@@ -1,8 +1,16 @@
 /**
- * Subscription paywall / usage quotas (monthly tournament limits, sandbox rules) are opt-in:
- * only explicit `NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED=true` enables them.
- * Aligns feature-flag entitlement checks in the web app with `@tdarts/services` SubscriptionService.
+ * Backward-compatible entry point for `@tdarts/core/subscription-paywall`.
+ *
+ * **Semantics:** `isSubscriptionPaywallActive` is an alias of
+ * {@link import('./system-settings').isSubscriptionPaywallEnabled}. It reads the
+ * **MongoDB `SystemSettings` singleton** (`subscriptionPaywallEnabled`) with the
+ * same cache/seed behavior as the rest of system settings.
+ *
+ * **Not env:** This is **not** `NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED` or any
+ * build-inlined flag. It is async, server-oriented, and reflects what admins set
+ * in runtime settings.
+ *
+ * **Callers:** Always `await isSubscriptionPaywallActive()` (or the
+ * `isSubscriptionPaywallEnabled` name); do not treat it as a synchronous env read.
  */
-export function isSubscriptionPaywallActive(): boolean {
-  return process.env.NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED === 'true';
-}
+export { isSubscriptionPaywallEnabled as isSubscriptionPaywallActive } from './system-settings';

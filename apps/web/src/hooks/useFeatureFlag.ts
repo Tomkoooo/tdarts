@@ -57,82 +57,43 @@ async function getRuntimeSocketConfig(): Promise<{
   }
 }
 
+/**
+ * Always defers to the server. The previous implementation read
+ * `process.env.NEXT_PUBLIC_ENABLE_*` first and short-circuited when those
+ * build-time values were missing, which is exactly what hid the bug on prod.
+ */
 async function checkFeatureFlagClientOutcome(
   featureName: string,
   clubId?: string,
 ): Promise<FeatureFlagCheckOutcome> {
-  const disabled = (reason: FeatureFlagDenialReason): FeatureFlagCheckOutcome => ({
-    enabled: false,
-    denialReason: reason,
-  });
-
   const normalizedFeature = normalizeFeatureKey(featureName);
   if (!normalizedFeature) {
-    return disabled("feature_disabled");
+    return { enabled: false, denialReason: "feature_disabled" };
   }
 
-  const envVarName = `NEXT_PUBLIC_ENABLE_${normalizedFeature}`;
-  const envValue = process.env[envVarName];
-
-  // Precedence rule:
-  // 1) Explicit per-feature env flag (if present) always wins.
-  // 2) Global NEXT_PUBLIC_ENABLE_ALL only applies when feature-specific env is absent.
-  if (envValue !== undefined) {
-    const envEnabled = envValue.toLowerCase() === "true";
-    if (!envEnabled) {
-      return disabled("feature_disabled");
+  try {
+    const data = await checkFeatureFlagAction({ feature: normalizedFeature, clubId });
+    if (isGuardFailureResult(data)) {
+      return {
+        enabled: false,
+        denialReason: guardFailureToFeatureFlagDenial(data) ?? "feature_disabled",
+      };
     }
-    if (!clubId) {
+    if (data.enabled) {
       return { enabled: true, denialReason: null };
     }
-    try {
-      const data = await checkFeatureFlagAction({ feature: normalizedFeature, clubId });
-      if (isGuardFailureResult(data)) {
-        return disabled(guardFailureToFeatureFlagDenial(data) ?? "feature_disabled");
-      }
-      return {
-        enabled: data.enabled,
-        denialReason: data.enabled ? null : "feature_disabled",
-      };
-    } catch (error) {
-      console.error("Error checking feature flag via API:", error);
-      if (normalizedFeature === "SOCKET" && envEnabled) {
-        return { enabled: true, denialReason: null };
-      }
-      return disabled("feature_disabled");
-    }
+    return { enabled: false, denialReason: "feature_disabled" };
+  } catch (error) {
+    console.error("Error checking feature flag via server action:", error);
+    return { enabled: false, denialReason: "feature_disabled" };
   }
-
-  if (process.env.NEXT_PUBLIC_ENABLE_ALL === "true") {
-    return { enabled: true, denialReason: null };
-  }
-  if (envValue === undefined) {
-    if (normalizedFeature === "DETAILED_STATISTICS" && clubId) {
-      try {
-        const data = await checkFeatureFlagAction({ feature: normalizedFeature, clubId });
-        if (isGuardFailureResult(data)) {
-          return disabled(guardFailureToFeatureFlagDenial(data) ?? "feature_disabled");
-        }
-        return {
-          enabled: data.enabled,
-          denialReason: data.enabled ? null : "feature_disabled",
-        };
-      } catch (error) {
-        console.error("Error checking detailedStatistics feature via API:", error);
-        return disabled("feature_disabled");
-      }
-    }
-    return disabled("feature_disabled");
-  }
-
-  return disabled("feature_disabled");
 }
 
 /** Client-side socket gate (runtime config + subscription paywall + optional club eligibility). */
 export async function checkSocketFeatureClientOutcome(clubId?: string): Promise<SocketGateClientOutcome> {
   const runtimeConfig = await getRuntimeSocketConfig();
   const globalSocketEnabled = mergeSocketGlobalEnabled({
-    buildEnvRaw: process.env.NEXT_PUBLIC_ENABLE_SOCKET,
+    buildEnvRaw: undefined,
     runtimeSocketEnabled: runtimeConfig.socketEnabled,
   });
   const subscriptionPaywallEnabled = runtimeConfig.subscriptionPaywallEnabled ?? true;

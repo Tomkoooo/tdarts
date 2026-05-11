@@ -39,6 +39,8 @@ export interface Match {
 export interface UserRole {
   clubRole: "admin" | "moderator" | "member";
   tournamentRole?: "player" | "moderator" | "admin";
+  /** True when the user is a global (super) admin; board API may still set clubRole to admin for privileges. */
+  isGlobalAdmin?: boolean;
 }
 
 export type BoardFlowState =

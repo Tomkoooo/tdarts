@@ -581,7 +581,10 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
     await loadMatches();
   };
 
-  const isAdminOrModerator = userRole?.clubRole === 'admin' || userRole?.clubRole === 'moderator';
+  const isAdminOrModerator =
+    userRole?.isGlobalAdmin === true ||
+    userRole?.clubRole === 'admin' ||
+    userRole?.clubRole === 'moderator';
 
   const handleStartLocalMatch = () => {
     const matchId = `local_${Date.now()}`;
@@ -802,6 +805,11 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
                           <Button size="sm" variant="outline">
                             {t("kiválaszt")}</Button>
                         </div>
+                        {isAdminOrModerator && (
+                          <p className="text-xs text-muted-foreground font-mono break-all pt-1">
+                            ID: {String(match._id)}
+                          </p>
+                        )}
                       </div>
                     </button>
                   );

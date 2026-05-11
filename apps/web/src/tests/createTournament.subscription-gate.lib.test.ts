@@ -54,20 +54,25 @@ jest.mock('@tdarts/services', () => {
 
 import { createTournamentAction } from '@/features/tournaments/actions/createTournament.action';
 import { ClubService, SubscriptionService, TournamentService } from '@tdarts/services';
+import {
+  __setSystemSettingsCacheForTests,
+  bustSystemSettingsCache,
+  SYSTEM_SETTINGS_DEFAULTS,
+} from '@tdarts/core/system-settings';
+
+function setPaywall(enabled: boolean) {
+  __setSystemSettingsCacheForTests({
+    features: { ...SYSTEM_SETTINGS_DEFAULTS.features },
+    subscriptionPaywallEnabled: enabled,
+    superAdminBypassEnabled: SYSTEM_SETTINGS_DEFAULTS.superAdminBypassEnabled,
+    updatedAt: new Date(),
+    updatedBy: null,
+  });
+}
 
 describe('createTournamentAction subscription gate (UI parity)', () => {
-  const snap: Partial<Record<'NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED', string | undefined>> = {};
-
-  beforeAll(() => {
-    snap.NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED = process.env.NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED;
-  });
-
   afterAll(() => {
-    if (snap.NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED === undefined) {
-      Reflect.deleteProperty(process.env, 'NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED');
-    } else {
-      process.env.NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED = snap.NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED;
-    }
+    bustSystemSettingsCache();
   });
 
   let spyCanCreate: jest.SpiedFunction<typeof SubscriptionService.canCreateTournament>;
@@ -86,10 +91,11 @@ describe('createTournamentAction subscription gate (UI parity)', () => {
 
   afterEach(() => {
     spyCanCreate.mockRestore();
+    bustSystemSettingsCache();
   });
 
   it('paywall inactive: never calls canCreateTournament (no subscription-limit error path)', async () => {
-    Reflect.deleteProperty(process.env, 'NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED');
+    setPaywall(false);
 
     await createTournamentAction({
       clubId: 'club-gate-1',
@@ -101,7 +107,7 @@ describe('createTournamentAction subscription gate (UI parity)', () => {
   });
 
   it('paywall active: calls canCreateTournament and returns SUBSCRIPTION_REQUIRED when denied', async () => {
-    process.env.NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED = 'true';
+    setPaywall(true);
     spyCanCreate.mockResolvedValue({
       canCreate: false,
       currentCount: 3,
@@ -133,7 +139,7 @@ describe('createTournamentAction subscription gate (UI parity)', () => {
   });
 
   it('paywall active: creates tournament when canCreateTournament allows', async () => {
-    process.env.NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED = 'true';
+    setPaywall(true);
     spyCanCreate.mockResolvedValue({
       canCreate: true,
       currentCount: 0,

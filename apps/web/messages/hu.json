@@ -2292,7 +2292,24 @@
       "legs": "Legs",
       "out_1ooe": "OUT",
       "leg_1mum": "Leg",
-      "tdarts_f0pi": "tDarts"
+      "tdarts_f0pi": "tDarts",
+      "about_to_start": "Hamarosan kezdődik",
+      "start_score_label": "Rajtpont",
+      "starts_first_leg": "Első leg kezdő",
+      "type_knockout": "Kieséses",
+      "type_group": "Csoport",
+      "board_n": "{n}. tábla",
+      "round_n": "{n}. kör",
+      "waiting_scores_hint": "A pontok és dobások akkor jelennek meg, amikor a tábla csatlakozik.",
+      "stream_match_starting_soon": "Hamarosan kezdődik",
+      "stream_scoring_on_tdarts": "Pontszámlálás a tDarts-on",
+      "stream_scoring_leg_tail": "__LEG__. leg",
+      "stream_stage_group": "{number}. csoport ({letter})",
+      "stream_stage_group_board": "{n}. tábla",
+      "stream_knockout_final": "Döntő",
+      "stream_knockout_semi": "Elődöntő",
+      "stream_knockout_quarter": "Negyeddöntő",
+      "stream_knockout_round_of": "{n} közé döntő"
     },
     "live_matches": {
       "title": "Aktív meccsek",
@@ -2320,7 +2337,15 @@
       "leg_count": "{count} leg",
       "loading": "Betöltés...",
       "leg_1mum": "Leg",
-      "leg_2aku": "leg"
+      "leg_2aku": "leg",
+      "player_1": "1. játékos",
+      "player_2": "2. játékos",
+      "upcoming_title": "Következő meccsek",
+      "upcoming_desc": "Válassz meccset még az élő kezdés előtt, hogy a stream nézet készen álljon, amikor a tábla elindítja a meccset.",
+      "upcoming_empty": "Nincs következő meccs mindkét játékossal.",
+      "badge_knockout": "Kiesés",
+      "badge_group": "Csoport",
+      "board_n_short": "{n}. tábla"
     },
     "stats_charts": {
       "overview": "Összesítő",
@@ -3129,11 +3154,13 @@
     "login_description": "Nem tudtuk ellenőrizni a munkamenetedet (például beépített böngészőben). Jelentkezz be a funkció használatához.",
     "login_cta": "Bejelentkezés",
     "subscription_title": "Előfizetés szükséges",
-    "subscription_description": "A funkció használatához a klub számára megfelelő előfizetés szükséges.",
+    "subscription_description": "A klub előfizetése nem tartalmazza ezt a funkciót. Frissítsd az előfizetést a használatához.",
+    "club_not_eligible_title": "A klub számára nincs engedélyezve",
+    "club_not_eligible_description": "A funkció globálisan elérhető, de ehhez a klubhoz külön nem lett bekapcsolva.",
     "permission_title": "Jogosultság szükséges",
     "permission_description": "A fiókod nem rendelkezik a funkció használatához szükséges jogosultsággal.",
     "disabled_title": "A funkció nem érhető el",
-    "disabled_description": "Ez a funkció ki van kapcsolva ehhez a klubhoz, vagy a fiókod ebben a helyzetben nem fér hozzá."
+    "disabled_description": "Ez a funkció jelenleg rendszerszinten ki van kapcsolva. Adminisztrátor az admin beállításokban kapcsolhatja be."
   },
   "Carousel": {
     "management": "Világszínvonalú Versenykezelés",

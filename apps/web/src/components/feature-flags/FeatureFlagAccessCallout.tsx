@@ -42,6 +42,17 @@ export function FeatureFlagAccessCallout({ reason, variant = "default", classNam
     );
   }
 
+  if (reason === "club_not_eligible") {
+    return (
+      <Alert className={className} variant="default">
+        <AlertTitle className={compact ? "text-sm" : undefined}>{t("club_not_eligible_title")}</AlertTitle>
+        <AlertDescription className={compact ? "text-xs" : undefined}>
+          <p>{t("club_not_eligible_description")}</p>
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
   if (reason === "permission_required") {
     return (
       <Alert className={className} variant="default">

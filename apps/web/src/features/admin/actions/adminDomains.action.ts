@@ -53,6 +53,12 @@ import {
   adminYearWrapRestoreAction,
   adminYearWrapWrapAction,
 } from './adminDomainsServer.action';
+import {
+  adminGetSystemSettingsAction,
+  adminUpdateFeatureFlagAction,
+  adminUpdateSubscriptionPaywallAction,
+  adminUpdateSuperAdminBypassAction,
+} from './featureFlagsAdmin.action';
 
 const call = <Args extends any[]>(fn: (...args: Args) => Promise<unknown>) => {
   return async (...args: Args): Promise<any> => {
@@ -128,6 +134,10 @@ export const adminTodosActions = {
 
 export const adminSettingsActions = {
   getSystemInfo: call(adminSettingsGetSystemInfoAction),
+  getSystemSettings: call(adminGetSystemSettingsAction),
+  updateFeatureFlag: call(adminUpdateFeatureFlagAction),
+  updateSubscriptionPaywall: call(adminUpdateSubscriptionPaywallAction),
+  updateSuperAdminBypass: call(adminUpdateSuperAdminBypassAction),
 };
 
 export const adminChartsActions = {

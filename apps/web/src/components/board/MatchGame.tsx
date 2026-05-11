@@ -2,7 +2,7 @@
 import { useTranslations } from "next-intl";
 
 import {  IconSettings } from '@tabler/icons-react';
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useSocket } from '@/hooks/useSocket';
 import toast from 'react-hot-toast';
 import { showErrorToast } from '@/lib/toastUtils';
@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/Label';
 import { Input } from '@/components/ui/Input';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/Button';
-import { finishBoardMatchAction } from '@/features/board/actions/boardPage.action';
+import { finishBoardMatchAction, startBoardMatchAction } from '@/features/board/actions/boardPage.action';
 import {
   finishMatchLegAction,
   undoMatchLegAction,
@@ -32,6 +32,7 @@ interface PlayerData {
 }
 
 import { useScolia } from '@/hooks/useScolia';
+import { formatBoardPlayerName } from '@/lib/formatBoardPlayerName';
 
 interface Scorer {
   playerId: string;
@@ -91,19 +92,14 @@ const MatchGame: React.FC<MatchGameProps> = ({
   scoliaConfig,
 }) => {
   const t = useTranslations("Board");
-  // Helper to format full names as initials + last name (e.g., "D. S. Erika")
-  const formatName = (fullName: string) => {
-    const parts = fullName.trim().split(/\s+/);
-    if (parts.length === 0) return '';
-    const last = parts.pop() as string;
-    const initials = parts.map(p => p.charAt(0).toUpperCase() + '.');
-    return [...initials, last].join(' ');
-  };
   const initialScore = match.startingScore;
   const [legsToWin, setLegsToWin] = useState(match.legsToWin || 3);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [tempLegsToWin, setTempLegsToWin] = useState(legsToWin);
   const [tempStartingPlayer, setTempStartingPlayer] = useState<1 | 2>(match.startingPlayer || 1);
+  /** First-leg starter persisted to DB / socket (must match init-match `startingPlayer`). */
+  const [socketSyncStartingPlayer, setSocketSyncStartingPlayer] = useState<1 | 2>(match.startingPlayer || 1);
+  const hasPersistedMatchStartRef = useRef(false);
 
   // Helper function to count 180s dynamically from throws
   const count180s = (throws: number[]): number => {
@@ -111,7 +107,7 @@ const MatchGame: React.FC<MatchGameProps> = ({
   };
 
   const [player1, setPlayer1] = useState<Player>({
-    name: formatName(match.player1.playerId.name),
+    name: formatBoardPlayerName(match.player1.playerId.name),
     score: initialScore,
     legsWon: match.player1.legsWon || 0,
     allThrows: [],
@@ -123,7 +119,7 @@ const MatchGame: React.FC<MatchGameProps> = ({
   });
 
   const [player2, setPlayer2] = useState<Player>({
-    name: formatName(match.player2.playerId.name),
+    name: formatBoardPlayerName(match.player2.playerId.name),
     score: initialScore,
     legsWon: match.player2.legsWon || 0,
     allThrows: [],
@@ -217,36 +213,92 @@ const MatchGame: React.FC<MatchGameProps> = ({
     return totalLegsPlayed % 2 === 1 ? (originalStartingPlayer === 1 ? 2 : 1) : originalStartingPlayer;
   };
 
-  // Socket.IO initialization
   useEffect(() => {
-    if (!isConnected) return;
-    
-    socket.emit('init-match', {
-      matchId: match._id,
-      startingScore: initialScore,
-      legsToWin: legsToWin,
-      startingPlayer: match.startingPlayer || 1
-    });
-    
-    socket.emit('set-match-players', {
-      matchId: match._id,
-      player1Id: match.player1.playerId._id,
-      player2Id: match.player2.playerId._id,
-      player1Name: match.player1.playerId.name,
-      player2Name: match.player2.playerId.name
-    });
-    
-    socket.emit('match-started', {
-      matchId: match._id,
-      tournamentCode,
-      matchData: {
-        player1: match.player1,
-        player2: match.player2,
-        startingScore: initialScore,
-        legsToWin: legsToWin
+    setSocketSyncStartingPlayer(match.startingPlayer || 1);
+    hasPersistedMatchStartRef.current = false;
+  }, [match._id, match.startingPlayer]);
+
+  const pushMatchSocket = useCallback(
+    async (opts?: { legsToWin?: number; startingPlayer?: 1 | 2 }) => {
+      if (!isConnected) return;
+      const lt = opts?.legsToWin ?? legsToWin;
+      const sp = opts?.startingPlayer ?? socketSyncStartingPlayer;
+
+      // Source of truth: persist pending -> ongoing in Mongo when a board starts.
+      if (!hasPersistedMatchStartRef.current && String(match.status || 'pending') === 'pending') {
+        try {
+          const boardNumber = typeof match.boardReference === 'number' ? match.boardReference : 1;
+          const resp = await startBoardMatchAction({
+            tournamentId: tournamentCode,
+            boardNumber,
+            matchId: match._id,
+            legsToWin: lt,
+            startingPlayer: sp,
+            password: boardAccessPassword,
+          });
+          if (!(resp as any)?.success) {
+            showErrorToast(t("hiba_történt_a_6"), {
+              error: (resp as any)?.error || (resp as any)?.message,
+              context: 'Meccs indítása',
+              errorName: 'Meccs indítása sikertelen',
+            });
+            return;
+          }
+          hasPersistedMatchStartRef.current = true;
+        } catch (error: any) {
+          showErrorToast(t("hiba_történt_a_6"), {
+            error: error?.message,
+            context: 'Meccs indítása',
+            errorName: 'Meccs indítása sikertelen',
+          });
+          return;
+        }
       }
-    });
-  }, [isConnected, match._id, tournamentCode, socket]);
+
+      socket.emit('init-match', {
+        matchId: match._id,
+        startingScore: initialScore,
+        legsToWin: lt,
+        startingPlayer: sp,
+      });
+      socket.emit('set-match-players', {
+        matchId: match._id,
+        player1Id: match.player1.playerId._id,
+        player2Id: match.player2.playerId._id,
+        player1Name: match.player1.playerId.name,
+        player2Name: match.player2.playerId.name,
+      });
+      socket.emit('match-started', {
+        matchId: match._id,
+        tournamentCode,
+        matchData: {
+          player1: match.player1,
+          player2: match.player2,
+          startingScore: initialScore,
+          legsToWin: lt,
+        },
+      });
+    },
+    [
+      isConnected,
+      socket,
+      match._id,
+      match.player1,
+      match.player2,
+      match.status,
+      match.boardReference,
+      initialScore,
+      legsToWin,
+      socketSyncStartingPlayer,
+      tournamentCode,
+      boardAccessPassword,
+      t,
+    ],
+  );
+
+  useEffect(() => {
+    void pushMatchSocket();
+  }, [isConnected, match._id, tournamentCode, legsToWin, socketSyncStartingPlayer, pushMatchSocket]);
 
   // Initialize game state from localStorage or database
   useEffect(() => {
@@ -970,6 +1022,8 @@ const MatchGame: React.FC<MatchGameProps> = ({
             context: 'Meccs beállítások',
             errorName: 'Beállítás mentése sikertelen',
           });
+        } else {
+          pushMatchSocket({ legsToWin: tempLegsToWin });
         }
       } catch (error: any) {
         console.error('Error updating legsToWin:', error);
@@ -991,6 +1045,7 @@ const MatchGame: React.FC<MatchGameProps> = ({
 
       if ((response as any)?.success) {
         setLegsToWin(tempLegsToWin);
+        pushMatchSocket({ legsToWin: tempLegsToWin });
         setShowSettingsModal(false);
         toast.success(t("beállítások_mentve"));
       } else {
@@ -1394,10 +1449,14 @@ const MatchGame: React.FC<MatchGameProps> = ({
                       
                       // Update match starting player via server action
                       try {
-                        await updateMatchGameplaySettingsAction({
+                        const spRes = await updateMatchGameplaySettingsAction({
                           matchId: match._id,
                           startingPlayer: tempStartingPlayer,
                         });
+                        if ((spRes as any)?.success) {
+                          setSocketSyncStartingPlayer(tempStartingPlayer);
+                          pushMatchSocket({ startingPlayer: tempStartingPlayer });
+                        }
                       } catch (error) {
                         console.error('Error updating starting player:', error);
                       }

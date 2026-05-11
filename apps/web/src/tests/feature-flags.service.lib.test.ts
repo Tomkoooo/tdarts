@@ -1,4 +1,10 @@
 import { FeatureFlagService } from '@/features/flags/lib/featureFlags';
+import {
+  __setSystemSettingsCacheForTests,
+  bustSystemSettingsCache,
+  SYSTEM_SETTINGS_DEFAULTS,
+  type SystemSettingsSnapshot,
+} from '@tdarts/core/system-settings';
 
 jest.mock('@/database/models/club.model', () => ({
   ClubModel: {
@@ -8,88 +14,99 @@ jest.mock('@/database/models/club.model', () => ({
 
 import { ClubModel } from '@/database/models/club.model';
 
-describe('FeatureFlagService (paywall + socket)', () => {
+function setSettings(overrides: Partial<SystemSettingsSnapshot> = {}) {
+  const snapshot: SystemSettingsSnapshot = {
+    features: { ...SYSTEM_SETTINGS_DEFAULTS.features, ...(overrides.features ?? {}) },
+    subscriptionPaywallEnabled:
+      overrides.subscriptionPaywallEnabled ?? SYSTEM_SETTINGS_DEFAULTS.subscriptionPaywallEnabled,
+    superAdminBypassEnabled:
+      overrides.superAdminBypassEnabled ?? SYSTEM_SETTINGS_DEFAULTS.superAdminBypassEnabled,
+    updatedAt: overrides.updatedAt ?? new Date(),
+    updatedBy: overrides.updatedBy ?? null,
+  };
+  __setSystemSettingsCacheForTests(snapshot);
+  return snapshot;
+}
+
+function mockClub(doc: object | null) {
+  (ClubModel.findById as jest.Mock).mockReturnValue({
+    select: jest.fn().mockReturnValue({
+      lean: jest.fn().mockResolvedValue(doc),
+    }),
+  });
+}
+
+describe('FeatureFlagService (paywall + socket) — DB-backed', () => {
   const clubId = '507f1f77bcf86cd799439011';
-  const envKeys = [
-    'NEXT_PUBLIC_ENABLE_ALL',
-    'NEXT_PUBLIC_ENABLE_SOCKET',
-    'NEXT_PUBLIC_ENABLE_LEAGUES',
-    'NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED',
-  ] as const;
-  const envSnapshot: Partial<Record<(typeof envKeys)[number], string | undefined>> = {};
-
-  beforeAll(() => {
-    for (const k of envKeys) {
-      envSnapshot[k] = process.env[k];
-    }
-  });
-
-  afterAll(() => {
-    for (const k of envKeys) {
-      const v = envSnapshot[k];
-      if (v === undefined) {
-        Reflect.deleteProperty(process.env, k);
-      } else {
-        process.env[k] = v;
-      }
-    }
-  });
+  const allFeaturesOff = {
+    LEAGUES: false,
+    SOCKET: false,
+    LIVE_MATCH_FOLLOWING: false,
+    DETAILED_STATISTICS: false,
+    ADVANCED_STATISTICS: false,
+    OAC_CREATION: false,
+  };
 
   beforeEach(() => {
     jest.clearAllMocks();
-    process.env.NEXT_PUBLIC_ENABLE_ALL = 'false';
-    Reflect.deleteProperty(process.env, 'NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED');
-    Reflect.deleteProperty(process.env, 'NEXT_PUBLIC_ENABLE_SOCKET');
-    Reflect.deleteProperty(process.env, 'NEXT_PUBLIC_ENABLE_LEAGUES');
+    bustSystemSettingsCache();
   });
 
-  function mockClub(doc: object | null) {
-    (ClubModel.findById as jest.Mock).mockReturnValue({
-      select: jest.fn().mockResolvedValue(doc),
-    });
-  }
-
-  it('isSocketEnabled is false when NEXT_PUBLIC_ENABLE_SOCKET is not true', async () => {
-    process.env.NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED = 'true';
+  it('isSocketEnabled is false when global SOCKET toggle is off', async () => {
+    setSettings({ features: { ...allFeaturesOff }, subscriptionPaywallEnabled: true });
     await expect(FeatureFlagService.isSocketEnabled(clubId)).resolves.toBe(false);
+    expect(ClubModel.findById).not.toHaveBeenCalled();
   });
 
-  it('when paywall inactive, socket is on if env is on (ignores club liveMatchFollowing)', async () => {
-    process.env.NEXT_PUBLIC_ENABLE_SOCKET = 'true';
+  it('paywall off + SOCKET on: socket is enabled regardless of liveMatchFollowing', async () => {
+    setSettings({
+      features: { ...SYSTEM_SETTINGS_DEFAULTS.features, SOCKET: true },
+      subscriptionPaywallEnabled: false,
+    });
     mockClub({ featureFlags: { liveMatchFollowing: false }, subscriptionModel: 'free' });
     await expect(FeatureFlagService.isSocketEnabled(clubId)).resolves.toBe(true);
   });
 
-  it('when paywall inactive, socket still off if club is missing', async () => {
-    process.env.NEXT_PUBLIC_ENABLE_SOCKET = 'true';
+  it('paywall off + SOCKET on: socket still disabled if club is missing', async () => {
+    setSettings({ subscriptionPaywallEnabled: false });
     mockClub(null);
     await expect(FeatureFlagService.isSocketEnabled(clubId)).resolves.toBe(false);
   });
 
-  it('when paywall active, enterprise tier with liveTracking can access socket', async () => {
-    process.env.NEXT_PUBLIC_ENABLE_SOCKET = 'true';
-    process.env.NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED = 'true';
+  it('paywall on: enterprise tier with liveTracking can access socket', async () => {
+    setSettings({ subscriptionPaywallEnabled: true });
     mockClub({ featureFlags: { liveMatchFollowing: true }, subscriptionModel: 'enterprise' });
     await expect(FeatureFlagService.isSocketEnabled(clubId)).resolves.toBe(true);
   });
 
-  it('when paywall active, basic tier cannot access socket (liveTracking=false in tier)', async () => {
-    process.env.NEXT_PUBLIC_ENABLE_SOCKET = 'true';
-    process.env.NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED = 'true';
+  it('paywall on: basic tier returns subscription_required (liveTracking not in tier)', async () => {
+    setSettings({ subscriptionPaywallEnabled: true });
     mockClub({ featureFlags: { liveMatchFollowing: true }, subscriptionModel: 'basic' });
-    await expect(FeatureFlagService.isSocketEnabled(clubId)).resolves.toBe(false);
+    const outcome = await FeatureFlagService.evaluateClubFeature(clubId, 'SOCKET');
+    expect(outcome.kind).toBe('subscription_required');
   });
 
-  it('when paywall active, pro tier cannot access socket (liveTracking=false in tier)', async () => {
-    process.env.NEXT_PUBLIC_ENABLE_SOCKET = 'true';
-    process.env.NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED = 'true';
-    mockClub({ featureFlags: { liveMatchFollowing: false }, subscriptionModel: 'pro' });
-    await expect(FeatureFlagService.isSocketEnabled(clubId)).resolves.toBe(false);
-  });
-
-  it('when paywall inactive, isFeatureEnabled still respects disabled LEAGUES env', async () => {
-    process.env.NEXT_PUBLIC_ENABLE_LEAGUES = 'false';
+  it('paywall on + LEAGUES off globally: short-circuits before club lookup', async () => {
+    setSettings({
+      features: { ...SYSTEM_SETTINGS_DEFAULTS.features, LEAGUES: false },
+      subscriptionPaywallEnabled: true,
+    });
     await expect(FeatureFlagService.isFeatureEnabled('LEAGUES', clubId)).resolves.toBe(false);
     expect(ClubModel.findById).not.toHaveBeenCalled();
+  });
+});
+
+describe('SystemSettings cache', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    bustSystemSettingsCache();
+  });
+
+  it('respects cache busting after settings updates', async () => {
+    setSettings({ features: { ...SYSTEM_SETTINGS_DEFAULTS.features, LEAGUES: true } });
+    await expect(FeatureFlagService.isGlobalFeatureEnabled('LEAGUES')).resolves.toBe(true);
+
+    setSettings({ features: { ...SYSTEM_SETTINGS_DEFAULTS.features, LEAGUES: false } });
+    await expect(FeatureFlagService.isGlobalFeatureEnabled('LEAGUES')).resolves.toBe(false);
   });
 });

@@ -2527,7 +2527,24 @@
       "legs": "Legs",
       "out_1ooe": "OUT",
       "leg_1mum": "leg",
-      "tdarts_f0pi": "tDarts"
+      "tdarts_f0pi": "tDarts",
+      "about_to_start": "About to start",
+      "start_score_label": "Start score",
+      "starts_first_leg": "Starts first leg",
+      "type_knockout": "Knockout",
+      "type_group": "Group",
+      "board_n": "Board {n}",
+      "round_n": "Round {n}",
+      "waiting_scores_hint": "Scores and throws appear when the board connects.",
+      "stream_match_starting_soon": "Starting soon",
+      "stream_scoring_on_tdarts": "Scoring on tDarts",
+      "stream_scoring_leg_tail": "Leg __LEG__",
+      "stream_stage_group": "Group {number} ({letter})",
+      "stream_stage_group_board": "Board {n}",
+      "stream_knockout_final": "Final",
+      "stream_knockout_semi": "Semi-final",
+      "stream_knockout_quarter": "Quarter-final",
+      "stream_knockout_round_of": "Round of {n}"
     },
     "live_matches": {
       "title": "Active matches",
@@ -2555,7 +2572,15 @@
       "leg_count": "{count} leg",
       "loading": "Loading...",
       "leg_1mum": "leg",
-      "leg_2aku": "leg"
+      "leg_2aku": "leg",
+      "player_1": "Player 1",
+      "player_2": "Player 2",
+      "upcoming_title": "Upcoming matches",
+      "upcoming_desc": "Pick a match before it goes live so the stream view is ready when the board starts.",
+      "upcoming_empty": "No upcoming matches with both players set.",
+      "badge_knockout": "KO",
+      "badge_group": "Group",
+      "board_n_short": "B{n}"
     },
     "stats_charts": {
       "overview": "Aggregate",
@@ -4296,11 +4321,13 @@
     "login_description": "We could not verify your session (for example in an in-app browser). Sign in to use this feature.",
     "login_cta": "Log in",
     "subscription_title": "Subscription required",
-    "subscription_description": "This feature requires an eligible subscription for this club.",
+    "subscription_description": "Your club's subscription tier does not include this feature. Upgrade the subscription to enable it.",
+    "club_not_eligible_title": "Not enabled for this club",
+    "club_not_eligible_description": "This feature is globally available, but it has not been enabled for this specific club.",
     "permission_title": "Permission required",
     "permission_description": "Your account does not have the required permissions for this feature.",
     "disabled_title": "This feature is not available",
-    "disabled_description": "This feature is turned off for this club, or your account cannot access it in this context."
+    "disabled_description": "This feature is currently turned off system-wide. An administrator can enable it from the admin settings."
   },
   "Carousel": {
     "experience": "Kiváló Felhasználói Élmény",

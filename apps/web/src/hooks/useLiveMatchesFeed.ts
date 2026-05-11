@@ -1,9 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSocket } from "@/hooks/useSocket";
 import { useLiveTournamentClubId } from "@/components/tournament/LiveTournamentClubProvider";
 import { getTournamentLiveMatchesClientAction } from "@/features/tournaments/actions/tournamentRoster.action";
+import { getLiveMatches } from "@/lib/socketApi";
 
 export interface LiveFeedMatch {
   _id: string;
@@ -23,7 +24,10 @@ function normalizeMatchId(id: unknown): string {
   return String(id ?? "");
 }
 
-/** Until the first throw of the current leg, UI shows starting score; after throws, use socket remainings. */
+/**
+ * Prefer explicit remainings from socket memory whenever both are set (even before throws are listed).
+ * Otherwise fall back to starting score until the first throw, then per-field fallbacks.
+ */
 function remainingsFromSocketMatchState(state: any): {
   player1Remaining: number;
   player2Remaining: number;
@@ -36,13 +40,18 @@ function remainingsFromSocketMatchState(state: any): {
   const p2Throws = Array.isArray(cur?.player2Throws) ? cur.player2Throws.length : 0;
   const hasThrow = p1Throws > 0 || p2Throws > 0;
 
+  const n1 = p1Raw != null && p1Raw !== "" ? Number(p1Raw) : NaN;
+  const n2 = p2Raw != null && p2Raw !== "" ? Number(p2Raw) : NaN;
+
+  if (!Number.isNaN(n1) && !Number.isNaN(n2)) {
+    return { player1Remaining: n1, player2Remaining: n2 };
+  }
   if (!hasThrow) {
     return { player1Remaining: starting, player2Remaining: starting };
   }
-
   return {
-    player1Remaining: p1Raw != null ? Number(p1Raw) : starting,
-    player2Remaining: p2Raw != null ? Number(p2Raw) : starting,
+    player1Remaining: Number.isNaN(n1) ? starting : n1,
+    player2Remaining: Number.isNaN(n2) ? starting : n2,
   };
 }
 
@@ -99,6 +108,44 @@ const normalizeMatch = (match: any): LiveFeedMatch => {
 };
 };
 
+/** Overlay in-memory socket scores for this tournament's ongoing rows (HTTP; works before room join). */
+async function hydrateMatchesFromSocketServer(matchesFromDb: LiveFeedMatch[]): Promise<LiveFeedMatch[]> {
+  if (!matchesFromDb.length) return matchesFromDb;
+  try {
+    const data = (await getLiveMatches()) as { success?: boolean; matches?: any[] };
+    if (!data?.success || !Array.isArray(data.matches)) return matchesFromDb;
+    const allowed = new Set(matchesFromDb.map((m) => normalizeMatchId(m._id)));
+    const byId = new Map<string, any>();
+    for (const row of data.matches) {
+      const id = normalizeMatchId(row?._id);
+      if (id && allowed.has(id)) byId.set(id, row);
+    }
+    return matchesFromDb.map((m) => {
+      const row = byId.get(normalizeMatchId(m._id));
+      if (!row) return m;
+      return mergeMatch(m, {
+        currentLeg: Number(row.currentLeg ?? m.currentLeg),
+        player1Remaining:
+          row.player1Remaining != null ? Number(row.player1Remaining) : m.player1Remaining,
+        player2Remaining:
+          row.player2Remaining != null ? Number(row.player2Remaining) : m.player2Remaining,
+        player1LegsWon: row.player1LegsWon != null ? Number(row.player1LegsWon) : m.player1LegsWon,
+        player2LegsWon: row.player2LegsWon != null ? Number(row.player2LegsWon) : m.player2LegsWon,
+        player1: {
+          _id: row.player1Id != null ? String(row.player1Id) : m.player1?._id,
+          name: row.player1Name ?? m.player1?.name,
+        },
+        player2: {
+          _id: row.player2Id != null ? String(row.player2Id) : m.player2?._id,
+          name: row.player2Name ?? m.player2?.name,
+        },
+      });
+    });
+  } catch {
+    return matchesFromDb;
+  }
+}
+
 const mergeMatch = (prev: LiveFeedMatch, incoming: Partial<LiveFeedMatch>): LiveFeedMatch => ({
   ...prev,
   ...incoming,
@@ -120,6 +167,8 @@ const mergeMatch = (prev: LiveFeedMatch, incoming: Partial<LiveFeedMatch>): Live
 
 export function useLiveMatchesFeed(tournamentCode: string) {
   const [matches, setMatches] = useState<LiveFeedMatch[]>([]);
+  const matchesRef = useRef<LiveFeedMatch[]>([]);
+  matchesRef.current = matches;
   const [isLoading, setIsLoading] = useState(true);
   const clubId = useLiveTournamentClubId();
   const {
@@ -137,7 +186,8 @@ export function useLiveMatchesFeed(tournamentCode: string) {
       const data = await getTournamentLiveMatchesClientAction({ code: tournamentCode }) as any;
       if (!data?.success) return;
       const normalized = (data.matches || []).map(normalizeMatch);
-      setMatches(normalized);
+      const hydrated = await hydrateMatchesFromSocketServer(normalized);
+      setMatches(hydrated);
     } finally {
       setIsLoading(false);
     }
@@ -146,6 +196,22 @@ export function useLiveMatchesFeed(tournamentCode: string) {
   useEffect(() => {
     void refresh();
   }, [refresh]);
+
+  /**
+   * Merge socket-server memory when the transport is up and we have rows (covers: auth ready after first DB fetch,
+   * or first fetch finishing while already connected).
+   */
+  useEffect(() => {
+    if (!isConnected || !matches.length) return;
+    let cancelled = false;
+    void (async () => {
+      const next = await hydrateMatchesFromSocketServer(matchesRef.current);
+      if (!cancelled) setMatches(next);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [isConnected, matches.length]);
 
   useEffect(() => {
     if (typeof document === "undefined") return;

@@ -1,11 +1,10 @@
 'use server';
 
-import { FeatureFlagService } from '@/features/flags/lib/featureFlags';
 import { z } from 'zod';
 import { withTelemetry } from '@/shared/lib/withTelemetry';
 import { evaluateFeatureAccess, PAYWALLED_FEATURES } from '@/features/flags/lib/featureAccess';
 import { normalizeFeatureKey } from '@/features/flags/lib/featureKeys';
-import { isSubscriptionPaywallActive } from '@/features/flags/lib/subscriptionPaywall';
+import { getSystemSettings } from '@tdarts/core/system-settings';
 import { resolveGuardAwareStatus } from '@/shared/lib/guards/result';
 import { GuardFailureResult } from '@/shared/lib/telemetry/types';
 import { BadRequestError } from '@/middleware/errorHandle';
@@ -23,6 +22,8 @@ export type CheckFeatureFlagInput = {
 export type CheckFeatureFlagResult = {
   enabled: boolean;
   subscriptionModelEnabled: boolean;
+  /** Set when access was granted via super-admin bypass. */
+  bypassReason?: 'super_admin' | 'paywall_disabled' | 'none';
 };
 
 const checkSocketFlagInputSchema = z.object({
@@ -35,6 +36,7 @@ export type CheckSocketFlagInput = {
 
 export type CheckSocketFlagResult = {
   enabled: boolean;
+  bypassReason?: 'super_admin' | 'paywall_disabled' | 'none';
 };
 
 export async function checkFeatureFlagAction(
@@ -64,10 +66,11 @@ export async function checkFeatureFlagAction(
       return accessResult;
     }
 
-    const enabled = await FeatureFlagService.isFeatureEnabled(normalizedFeature, payload.clubId || undefined);
+    const settings = await getSystemSettings();
     return {
-      enabled,
-      subscriptionModelEnabled: isSubscriptionPaywallActive(),
+      enabled: true,
+      subscriptionModelEnabled: settings.subscriptionPaywallEnabled,
+      bypassReason: accessResult.data.bypassReason,
     };
   }, {
     method: 'ACTION',
@@ -95,8 +98,10 @@ export async function checkSocketFlagAction(input: CheckSocketFlagInput): Promis
       return accessResult;
     }
 
-    const enabled = await FeatureFlagService.isSocketEnabled(payload.clubId || undefined);
-    return { enabled };
+    return {
+      enabled: true,
+      bypassReason: accessResult.data.bypassReason,
+    };
   }, {
     method: 'ACTION',
     metadata: {

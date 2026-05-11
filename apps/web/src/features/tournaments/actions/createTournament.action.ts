@@ -129,7 +129,7 @@ export async function createTournamentAction(input: CreateTournamentInput): Prom
       const isSandbox = payload.isSandbox || false;
       const isVerified = payload.verified || false;
 
-      if (isSubscriptionPaywallActive()) {
+      if (await isSubscriptionPaywallActive()) {
         const subscriptionCheck = await SubscriptionService.canCreateTournament(
           clubId,
           tournamentStartDate,

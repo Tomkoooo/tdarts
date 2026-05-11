@@ -23,7 +23,7 @@ jest.mock("@/features/tournaments/lib/liveLayout.db", () => ({
 jest.mock("@/features/flags/lib/featureFlags", () => ({
   FeatureFlagService: {
     isSocketEnabled: jest.fn(),
-    isEnvFeatureEnabled: jest.fn(),
+    isGlobalFeatureEnabled: jest.fn(),
   },
 }));
 
@@ -49,7 +49,7 @@ describe("LiveLayout socket/subscription messaging precedence", () => {
       clubId: { toString: () => "club-1" },
     });
     (FeatureFlagService.isSocketEnabled as jest.Mock).mockResolvedValueOnce(false);
-    (FeatureFlagService.isEnvFeatureEnabled as jest.Mock).mockReturnValueOnce(false);
+    (FeatureFlagService.isGlobalFeatureEnabled as jest.Mock).mockResolvedValueOnce(false);
 
     const tree = await LiveLayout({
       children: React.createElement("div", null, "child"),

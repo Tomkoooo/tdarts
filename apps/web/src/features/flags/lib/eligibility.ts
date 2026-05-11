@@ -1,6 +1,6 @@
 import { FeatureFlagService } from '@/features/flags/lib/featureFlags';
 import { normalizeFeatureKey } from '@/features/flags/lib/featureKeys';
-import { isSubscriptionPaywallActive } from '@/features/flags/lib/subscriptionPaywall';
+import { getSystemSettings } from '@tdarts/core/system-settings';
 import { AuthorizationError } from '@/middleware/errorHandle';
 import { GuardFailureResult, GuardResult } from '@/shared/lib/telemetry/types';
 
@@ -25,8 +25,15 @@ function featureDisabledResult(featureName?: string): GuardFailureResult {
   };
 }
 
-export function isPaidOverrideEnabled(): boolean {
-  return !isSubscriptionPaywallActive() || process.env.NEXT_PUBLIC_ENABLE_ALL === 'true';
+/**
+ * "Paid override" means the subscription paywall is off in admin settings
+ * (`SystemSettings.subscriptionPaywallEnabled === false` from {@link getSystemSettings}),
+ * so we don't gate paid-tier features for that request. This is entirely DB-backed;
+ * it is not driven by `NEXT_PUBLIC_*` or any env "escape hatch".
+ */
+export async function isPaidOverrideEnabled(): Promise<boolean> {
+  const settings = await getSystemSettings();
+  return !settings.subscriptionPaywallEnabled;
 }
 
 export async function assertEligibility(params: EligibilityParams): Promise<EligibilityOutcome> {
@@ -40,7 +47,7 @@ export async function assertEligibility(params: EligibilityParams): Promise<Elig
 
 export async function assertEligibilityResult(params: EligibilityParams): Promise<GuardResult<EligibilityOutcome>> {
   const allowPaidOverride = params.allowPaidOverride ?? true;
-  const paidOverride = allowPaidOverride && isPaidOverrideEnabled();
+  const paidOverride = allowPaidOverride && (await isPaidOverrideEnabled());
   if (paidOverride) {
     return { ok: true, data: { allowed: true, paidOverride: true, reason: 'paid_override' } };
   }

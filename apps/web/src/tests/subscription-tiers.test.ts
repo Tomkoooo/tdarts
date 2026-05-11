@@ -2,23 +2,31 @@ import { ClubModel, TournamentModel } from '@tdarts/core';
 import { SubscriptionService } from '@tdarts/services';
 import { TIER_CONFIG, getTierConfig } from '@tdarts/core/subscription-tiers';
 import type { TierId } from '@tdarts/core/subscription-tiers';
+import {
+  __setSystemSettingsCacheForTests,
+  bustSystemSettingsCache,
+  SYSTEM_SETTINGS_DEFAULTS,
+  type SystemSettingsSnapshot,
+} from '@tdarts/core/system-settings';
 import { findExistingVerifiedTournamentForWeek } from '@/features/tournaments/lib/tournamentCreation.db';
 
-const ENV_KEYS = [
-  'NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED',
-] as const;
-
-function snapshotEnv() {
-  const s: Record<string, string | undefined> = {};
-  for (const k of ENV_KEYS) s[k] = process.env[k];
-  return s;
+function setPaywall(enabled: boolean) {
+  const snapshot: SystemSettingsSnapshot = {
+    features: { ...SYSTEM_SETTINGS_DEFAULTS.features },
+    subscriptionPaywallEnabled: enabled,
+    superAdminBypassEnabled: SYSTEM_SETTINGS_DEFAULTS.superAdminBypassEnabled,
+    updatedAt: new Date(),
+    updatedBy: null,
+  };
+  __setSystemSettingsCacheForTests(snapshot);
 }
 
-function restoreEnv(s: Record<string, string | undefined>) {
-  for (const k of ENV_KEYS) {
-    if (s[k] === undefined) Reflect.deleteProperty(process.env, k);
-    else process.env[k] = s[k];
-  }
+function snapshotEnv() {
+  return {} as Record<string, string | undefined>;
+}
+
+function restoreEnv(_s: Record<string, string | undefined>) {
+  bustSystemSettingsCache();
 }
 
 function tournamentDoc(clubId: unknown, startDate: Date, id: string, overrides: Record<string, unknown> = {}) {
@@ -133,7 +141,7 @@ describe('SubscriptionService.canCreateTournament', () => {
 
   describe('paywall OFF', () => {
     beforeEach(() => {
-      Reflect.deleteProperty(process.env, 'NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED');
+      setPaywall(false);
     });
 
     it.each<TierId>(['free', 'basic', 'pro', 'enterprise'])(
@@ -159,7 +167,7 @@ describe('SubscriptionService.canCreateTournament', () => {
 
   describe('paywall ON - free tier', () => {
     beforeEach(() => {
-      process.env.NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED = 'true';
+      setPaywall(true);
     });
 
     it('blocks live tournament creation (allowNonSandbox=false)', async () => {
@@ -212,7 +220,7 @@ describe('SubscriptionService.canCreateTournament', () => {
 
   describe('paywall ON - basic tier', () => {
     beforeEach(() => {
-      process.env.NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED = 'true';
+      setPaywall(true);
     });
 
     it('allows 2 live tournaments, blocks 3rd', async () => {
@@ -253,7 +261,7 @@ describe('SubscriptionService.canCreateTournament', () => {
 
   describe('paywall ON - pro tier', () => {
     beforeEach(() => {
-      process.env.NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED = 'true';
+      setPaywall(true);
     });
 
     it('allows 4 live tournaments, blocks 5th', async () => {
@@ -286,7 +294,7 @@ describe('SubscriptionService.canCreateTournament', () => {
 
   describe('paywall ON - enterprise tier', () => {
     beforeEach(() => {
-      process.env.NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED = 'true';
+      setPaywall(true);
     });
 
     it('unlimited live tournaments', async () => {
@@ -311,7 +319,7 @@ describe('SubscriptionService.canCreateTournament', () => {
 
   describe('verified/OAC tournaments do not count toward live or sandbox limits', () => {
     beforeEach(() => {
-      process.env.NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED = 'true';
+      setPaywall(true);
     });
 
     it('verified tournaments are excluded from live count', async () => {
@@ -344,7 +352,7 @@ describe('SubscriptionService.canUpdateTournament', () => {
   });
 
   it('paywall OFF: any tier can update', async () => {
-    Reflect.deleteProperty(process.env, 'NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED');
+    setPaywall(false);
     const club = await createClub('tier-upd-off', 'free');
     const check = await SubscriptionService.canUpdateTournament(club._id.toString(), new Date());
     expect(check.canUpdate).toBe(true);
@@ -352,7 +360,7 @@ describe('SubscriptionService.canUpdateTournament', () => {
   });
 
   it('paywall ON: update within limit OK', async () => {
-    process.env.NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED = 'true';
+    setPaywall(true);
     const club = await createClub('tier-upd-ok', 'basic');
     const startDate = new Date();
 
@@ -363,7 +371,7 @@ describe('SubscriptionService.canUpdateTournament', () => {
   });
 
   it('paywall ON: update at limit excluding self OK', async () => {
-    process.env.NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED = 'true';
+    setPaywall(true);
     const club = await createClub('tier-upd-self', 'basic');
     const startDate = new Date();
 
@@ -376,7 +384,7 @@ describe('SubscriptionService.canUpdateTournament', () => {
   });
 
   it('paywall ON: update over limit blocked', async () => {
-    process.env.NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED = 'true';
+    setPaywall(true);
     const club = await createClub('tier-upd-block', 'basic');
     const startDate = new Date();
 

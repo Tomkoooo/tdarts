@@ -8,12 +8,12 @@ export default function PWAProvider() {
       return;
     }
 
-    const shouldEnablePWA =
-      process.env.NEXT_PUBLIC_ENABLE_PWA === 'true' || process.env.NODE_ENV === 'production';
+    // PWA is not a product "feature flag": we only distinguish dev vs prod builds.
+    // In development we unregister SW and clear app caches so HMR / Fast Refresh work.
+    // In production we register `/sw.js` when the browser supports service workers.
+    const isProduction = process.env.NODE_ENV === 'production';
 
-    // In development we explicitly remove any previously installed SW/caches
-    // so HMR and App Router navigation are never intercepted.
-    if (!shouldEnablePWA) {
+    if (!isProduction) {
       const cleanup = async () => {
         try {
           const registrations = await navigator.serviceWorker.getRegistrations();
@@ -29,7 +29,7 @@ export default function PWAProvider() {
             );
           }
 
-          console.log('PWA disabled in development: service workers and tdarts caches cleaned.');
+          console.log('Development mode: service workers and tdarts caches cleaned (PWA not active).');
 
           // If an old SW was controlling this page, one reload helps the browser
           // boot entirely without stale workers/caches.

@@ -41,14 +41,25 @@ beforeAll(async () => {
 
 afterAll(async () => {
   try {
-    // Avoid importing the full services barrel in teardown; it pulls broad side effects
-    // and can fail in focused test runs unrelated to telemetry.
+    // Clear telemetry debounce timer and in-process SSE bus listeners so Jest can exit
+    // (otherwise "Jest did not exit" until the GitHub job hits its global timeout).
+    const [{ ApiTelemetryService }, { eventEmitter }] = await Promise.all([
+      import('@tdarts/services'),
+      import('@tdarts/core'),
+    ]);
+    ApiTelemetryService.reset();
+    eventEmitter.removeAllListeners();
+  } catch (error) {
+    console.error('Test runtime cleanup (telemetry / event bus):', error);
+  }
+
+  try {
     await mongoose.disconnect();
     if (mongoServer) {
       await mongoServer.stop();
       console.log('MongoMemoryServer stopped');
     }
   } catch (error) {
-    console.error('Error during cleanup:', error);
+    console.error('Error during MongoDB cleanup:', error);
   }
 });

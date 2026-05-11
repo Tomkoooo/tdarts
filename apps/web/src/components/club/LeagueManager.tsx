@@ -15,7 +15,6 @@ import { cn } from '@/lib/utils';
 import { getClubLeaguesAction } from '@/features/clubs/actions/getClubLeagues.action';
 import { getPublicClubLeagueManagementMetaAction } from '@/features/clubs/actions/getPublicClubLeagueManagementMeta.action';
 import { deleteLeagueAction } from '@/features/leagues/actions/manageLeague.action';
-import { isSubscriptionPaywallActive } from '@/features/flags/lib/subscriptionPaywall';
 
 interface LeagueManagerProps {
   clubId: string;
@@ -36,8 +35,7 @@ export default function LeagueManager({ clubId, userRole, autoOpenLeagueId }: Le
   /** Product gate for create/manage only — never used to hide public league reads */
   const [managementEnabled, setManagementEnabled] = useState(false);
   const [isGlobalAdmin, setIsGlobalAdmin] = useState(false);
-
-  const subscriptionProductEnabled = isSubscriptionPaywallActive();
+  const [subscriptionProductEnabled, setSubscriptionProductEnabled] = useState(false);
 
   const canManageLeagues = userRole === 'admin' || userRole === 'moderator';
   const canCreateLeagues = canManageLeagues && managementEnabled;
@@ -77,6 +75,7 @@ export default function LeagueManager({ clubId, userRole, autoOpenLeagueId }: Le
                   setClubSubscription(meta.subscriptionModel);
                   setManagementEnabled(meta.managementEnabled);
                   setIsGlobalAdmin(Boolean(meta.isGlobalAdmin));
+                  setSubscriptionProductEnabled(Boolean(meta.subscriptionPaywallEnabled));
                 } catch (err) {
                   showErrorToast(t("hiba_a_klub"), {
                     context: 'Liga kezelési jogosultság betöltése',

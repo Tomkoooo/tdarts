@@ -482,11 +482,13 @@
     "login_description": "Ihre Sitzung konnte nicht geprüft werden (z. B. im In-App-Browser). Melden Sie sich an, um diese Funktion zu nutzen.",
     "login_cta": "Anmelden",
     "subscription_title": "Abonnement erforderlich",
-    "subscription_description": "Für diese Funktion ist ein berechtigtes Abonnement für diesen Verein erforderlich.",
+    "subscription_description": "Das Abonnement Ihres Vereins enthält diese Funktion nicht. Aktualisieren Sie das Abonnement, um sie freizuschalten.",
+    "club_not_eligible_title": "Für diesen Verein nicht aktiviert",
+    "club_not_eligible_description": "Diese Funktion ist global verfügbar, wurde für diesen Verein jedoch nicht aktiviert.",
     "permission_title": "Berechtigung erforderlich",
     "permission_description": "Ihr Konto hat nicht die erforderlichen Berechtigungen für diese Funktion.",
     "disabled_title": "Diese Funktion ist nicht verfügbar",
-    "disabled_description": "Diese Funktion ist für diesen Verein deaktiviert, oder Ihr Konto hat in diesem Kontext keinen Zugriff."
+    "disabled_description": "Diese Funktion ist derzeit systemweit deaktiviert. Ein Administrator kann sie in den Admin-Einstellungen aktivieren."
   },
   "Carousel": {
     "management": "Weltklasse-Wettbewerbsmanagement",
@@ -1324,7 +1326,24 @@
       "legs": "Beine",
       "out_1ooe": "AUS",
       "leg_1mum": "Bein",
-      "tdarts_f0pi": "tDarts"
+      "tdarts_f0pi": "tDarts",
+      "about_to_start": "Start steht bevor",
+      "start_score_label": "Startpunktzahl",
+      "starts_first_leg": "Beginnt das erste Leg",
+      "type_knockout": "K.-o.",
+      "type_group": "Gruppe",
+      "board_n": "Board {n}",
+      "round_n": "Runde {n}",
+      "waiting_scores_hint": "Punkte und Würfe erscheinen, sobald das Board verbunden ist.",
+      "stream_match_starting_soon": "Beginnt in Kürze",
+      "stream_scoring_on_tdarts": "Zählung auf tDarts",
+      "stream_scoring_leg_tail": "Bein __LEG__",
+      "stream_stage_group": "Gruppe {number} ({letter})",
+      "stream_stage_group_board": "Board {n}",
+      "stream_knockout_final": "Finale",
+      "stream_knockout_semi": "Halbfinale",
+      "stream_knockout_quarter": "Viertelfinale",
+      "stream_knockout_round_of": "Round of {n}"
     },
     "live_matches": {
       "title": "Aktive Spiele",
@@ -1352,7 +1371,15 @@
       "leg_count": "{count} Bein",
       "loading": "Laden...",
       "leg_1mum": "Bein",
-      "leg_2aku": "Bein"
+      "leg_2aku": "Bein",
+      "player_1": "Spieler 1",
+      "player_2": "Spieler 2",
+      "upcoming_title": "Kommende Spiele",
+      "upcoming_desc": "Wähle ein Spiel vor dem Live-Start, damit die Stream-Ansicht bereit ist, sobald das Board beginnt.",
+      "upcoming_empty": "Keine anstehenden Spiele mit zwei gesetzten Spielern.",
+      "badge_knockout": "KO",
+      "badge_group": "Gruppe",
+      "board_n_short": "B{n}"
     },
     "stats_charts": {
       "overview": "Aggregat",

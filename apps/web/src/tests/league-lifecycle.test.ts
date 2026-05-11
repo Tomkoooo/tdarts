@@ -517,7 +517,7 @@ describe('League Lifecycle Test', () => {
       if (!featureEnabled) {
         await logError('League feature is not enabled for this club - test cannot proceed');
         // You may want to skip the test or enable the feature for testing
-        console.warn('⚠️  Consider enabling NEXT_PUBLIC_ENABLE_LEAGUES=true or upgrading club subscription for testing');
+        console.warn('⚠️  Consider enabling LEAGUES via admin settings (SystemSettings DB doc) or upgrading club subscription for testing');
       }
     } catch (error) {
       await logError('Failed to check feature flags', error);
@@ -555,7 +555,7 @@ describe('League Lifecycle Test', () => {
       await logError('Failed to create league', error);
       
       if ((error as any)?.response?.data?.featureDisabled) {
-        console.warn('⚠️  League feature is disabled. Enable with NEXT_PUBLIC_ENABLE_LEAGUES=true or upgrade club subscription.');
+        console.warn('⚠️  League feature is disabled. Enable LEAGUES via admin settings (SystemSettings DB doc) or upgrade club subscription.');
       }
       throw error;
     }
