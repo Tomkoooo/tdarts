@@ -30,6 +30,18 @@ jest.mock('@tdarts/services', () => ({
   },
 }));
 
+jest.mock('@tdarts/core/system-settings', () => ({
+  getSystemSettings: jest.fn(() =>
+    Promise.resolve({
+      features: {},
+      subscriptionPaywallEnabled: false,
+      superAdminBypassEnabled: true,
+      updatedAt: new Date(),
+      updatedBy: null,
+    }),
+  ),
+}));
+
 import { getPublicClubLeagueManagementMetaAction } from '@/features/clubs/actions/getPublicClubLeagueManagementMeta.action';
 import { ClubModel } from '@tdarts/core';
 import { FeatureFlagService } from '@/features/flags/lib/featureFlags';
@@ -57,6 +69,7 @@ describe('getPublicClubLeagueManagementMetaAction', () => {
       subscriptionModel: 'free',
       managementEnabled: true,
       isGlobalAdmin: true,
+      subscriptionPaywallEnabled: false,
     });
   });
 });

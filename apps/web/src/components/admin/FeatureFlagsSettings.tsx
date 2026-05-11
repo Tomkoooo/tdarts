@@ -317,7 +317,7 @@ export function FeatureFlagsSettings() {
               <div className="min-w-0">
                 <span className="font-medium">Subscription paywall</span>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  When ON, paid features check the club's subscription tier and per-club flags. When
+                  When ON, paid features check the club&apos;s subscription tier and per-club flags. When
                   OFF, paid features are open to every club (great for staging/dev).
                 </p>
               </div>
