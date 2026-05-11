@@ -1,6 +1,6 @@
 import { connectMongo } from './mongoose';
 import {
-  SystemSettingsModel,
+  getSystemSettingsModel,
   SYSTEM_SETTINGS_SINGLETON_ID,
   FEATURE_TOGGLE_KEYS,
   type FeatureToggleKey,
@@ -89,6 +89,7 @@ function toSnapshot(doc: {
 async function loadSettingsFromDb(): Promise<SystemSettingsSnapshot> {
   await connectMongo();
 
+  const SystemSettingsModel = getSystemSettingsModel();
   const existing = await SystemSettingsModel.findById(SYSTEM_SETTINGS_SINGLETON_ID).lean();
   if (existing) {
     return toSnapshot(existing as any);
@@ -152,6 +153,7 @@ async function applyUpdate(
   updatedBy?: string | null
 ): Promise<SystemSettingsSnapshot> {
   await connectMongo();
+  const SystemSettingsModel = getSystemSettingsModel();
   const updated = await SystemSettingsModel.findOneAndUpdate(
     { _id: SYSTEM_SETTINGS_SINGLETON_ID },
     {

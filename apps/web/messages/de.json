@@ -1326,7 +1326,24 @@
       "legs": "Beine",
       "out_1ooe": "AUS",
       "leg_1mum": "Bein",
-      "tdarts_f0pi": "tDarts"
+      "tdarts_f0pi": "tDarts",
+      "about_to_start": "Start steht bevor",
+      "start_score_label": "Startpunktzahl",
+      "starts_first_leg": "Beginnt das erste Leg",
+      "type_knockout": "K.-o.",
+      "type_group": "Gruppe",
+      "board_n": "Board {n}",
+      "round_n": "Runde {n}",
+      "waiting_scores_hint": "Punkte und Würfe erscheinen, sobald das Board verbunden ist.",
+      "stream_match_starting_soon": "Beginnt in Kürze",
+      "stream_scoring_on_tdarts": "Zählung auf tDarts",
+      "stream_scoring_leg_tail": "Bein __LEG__",
+      "stream_stage_group": "Gruppe {number} ({letter})",
+      "stream_stage_group_board": "Board {n}",
+      "stream_knockout_final": "Finale",
+      "stream_knockout_semi": "Halbfinale",
+      "stream_knockout_quarter": "Viertelfinale",
+      "stream_knockout_round_of": "Round of {n}"
     },
     "live_matches": {
       "title": "Aktive Spiele",
@@ -1354,7 +1371,15 @@
       "leg_count": "{count} Bein",
       "loading": "Laden...",
       "leg_1mum": "Bein",
-      "leg_2aku": "Bein"
+      "leg_2aku": "Bein",
+      "player_1": "Spieler 1",
+      "player_2": "Spieler 2",
+      "upcoming_title": "Kommende Spiele",
+      "upcoming_desc": "Wähle ein Spiel vor dem Live-Start, damit die Stream-Ansicht bereit ist, sobald das Board beginnt.",
+      "upcoming_empty": "Keine anstehenden Spiele mit zwei gesetzten Spielern.",
+      "badge_knockout": "KO",
+      "badge_group": "Gruppe",
+      "board_n_short": "B{n}"
     },
     "stats_charts": {
       "overview": "Aggregat",

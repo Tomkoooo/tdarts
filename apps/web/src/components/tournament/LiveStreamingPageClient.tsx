@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from "react";
 import { useTranslations } from "next-intl";
 import LiveMatchViewer from "@/components/tournament/LiveMatchViewer";
 import LiveMatchesList from "@/components/tournament/LiveMatchesList";
+import { getMatchByIdClientAction } from "@/features/tournaments/actions/tournamentRoster.action";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
@@ -23,12 +24,69 @@ function LiveStreamingContent({ code }: Props) {
 
   useEffect(() => {
     const matchId = searchParams.get("matchId");
-    if (matchId) setSelectedMatchId(matchId);
+    if (!matchId) {
+      setSelectedMatchId(null);
+      setSelectedMatch(null);
+      return;
+    }
+    setSelectedMatchId(matchId);
+    let alive = true;
+    void (async () => {
+      const data = await getMatchByIdClientAction({ matchId });
+      if (!alive) return;
+      if (data.success && data.match) {
+        setSelectedMatch(data.match as any);
+      }
+    })();
+    return () => {
+      alive = false;
+    };
   }, [searchParams]);
+
+  // If user pre-selects a pending match, refresh until it flips to ongoing/finished.
+  // IMPORTANT: depend only on selectedMatchId. Including selectedMatch in deps caused an
+  // infinite loop: each poll() setState(newMatch) re-ran the effect and immediate poll() again.
+  useEffect(() => {
+    if (!selectedMatchId) return;
+    let cancelled = false;
+    let intervalId: ReturnType<typeof setInterval> | null = null;
+
+    const pollOnce = async (): Promise<string | undefined> => {
+      try {
+        const data = await getMatchByIdClientAction({ matchId: selectedMatchId });
+        if (cancelled || !data.success || !data.match) return undefined;
+        const m = data.match as any;
+        setSelectedMatch(m);
+        return String(m?.status ?? "");
+      } catch {
+        return undefined;
+      }
+    };
+
+    void (async () => {
+      const status = await pollOnce();
+      if (cancelled || status !== "pending") return;
+      intervalId = setInterval(async () => {
+        if (cancelled) return;
+        const s = await pollOnce();
+        if (cancelled) return;
+        if (s !== "pending" && intervalId != null) {
+          clearInterval(intervalId);
+          intervalId = null;
+        }
+      }, 1500);
+    })();
+
+    return () => {
+      cancelled = true;
+      if (intervalId != null) clearInterval(intervalId);
+    };
+  }, [selectedMatchId]);
 
   const handleMatchSelect = (matchId: string, match: any) => {
     setSelectedMatchId(matchId);
-    setSelectedMatch(match);
+    // Always refetch by id so the viewer reflects live status transitions (pending -> ongoing) reliably.
+    setSelectedMatch(null);
     const newParams = new URLSearchParams(searchParams);
     newParams.set("matchId", matchId);
     router.push(`?${newParams.toString()}`, { scroll: false });
@@ -94,6 +152,7 @@ function LiveStreamingContent({ code }: Props) {
           {selectedMatchId ? (
             <div className="col-span-1 lg:col-span-8 h-full overflow-y-auto">
               <LiveMatchViewer
+                key={selectedMatchId}
                 matchId={selectedMatchId}
                 tournamentCode={code}
                 player1={selectedMatch?.player1}

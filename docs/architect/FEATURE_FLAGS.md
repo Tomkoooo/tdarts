@@ -176,11 +176,13 @@ All admin writes require global-admin authorization and emit telemetry.
 
 ## Removed env-based controls
 
-No longer used for feature gating:
+These **must not** be used for product feature gating or paywall behavior anymore:
 
-- `NEXT_PUBLIC_ENABLE_*`
-- `NEXT_PUBLIC_ENABLE_ALL`
-- `NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED`
+- `NEXT_PUBLIC_ENABLE_*` (per-feature build-time flags)
+- `NEXT_PUBLIC_ENABLE_ALL` (there is **no** env equivalent to “turn everything on”; that was a separate historical mechanism and is **not** a substitute for admin settings)
+- `NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED` (paywall is **`SystemSettings.subscriptionPaywallEnabled`**, exposed server-side via `isSubscriptionPaywallEnabled` / `isSubscriptionPaywallActive` on `@tdarts/core/subscription-paywall` — both names are **async DB readers**, not env)
+
+**Paid override / “subscription gate off”** is **only**: `getSystemSettings()` → `subscriptionPaywallEnabled === false` (see `isPaidOverrideEnabled()` in `apps/web/src/features/flags/lib/eligibility.ts`). It is not tied to `NEXT_PUBLIC_ENABLE_ALL`.
 
 They were removed from:
 
@@ -188,7 +190,16 @@ They were removed from:
 - root `.env` feature/paywall gating fields
 - load-test env feature gating fields
 
-`NEXT_PUBLIC_SOCKET_SERVER_URL` remains as a transport endpoint URL, not a feature-toggle gate.
+`NEXT_PUBLIC_SOCKET_SERVER_URL` remains as a **transport endpoint URL**, not a feature-toggle gate.
+
+## PWA (not a feature flag)
+
+Service worker registration is **not** part of `SystemSettings` or any `NEXT_PUBLIC_ENABLE_*` flag.
+
+- **Production** (`NODE_ENV === 'production'`): register `/sw.js` when `navigator.serviceWorker` exists.
+- **Development**: unregister workers and clear `tdarts-*` caches so HMR and App Router are not intercepted.
+
+This is build-environment behavior only, not admin-togglable product access.
 
 ## Tests
 

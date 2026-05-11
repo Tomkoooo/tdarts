@@ -265,7 +265,9 @@ export async function getBoardUserRoleAction(input: { tournamentId: string; pass
       const parsed = boardAccessSchema.parse(payload);
       await assertBoardAccess({ tournamentId: parsed.tournamentId, password: parsed.password });
       const authResult = await authorizeUserResult();
-      if (!authResult.ok) return serializeForClient({ clubRole: 'member' as const });
+      if (!authResult.ok) {
+        return serializeForClient({ clubRole: 'member' as const, isGlobalAdmin: false as const });
+      }
       const { clubId } = await TournamentService.getTournamentRoleContext(parsed.tournamentId);
       const [role, isGlobalAdmin] = await Promise.all([
         ClubService.getUserRoleInClub(authResult.data.userId, clubId),
@@ -274,9 +276,9 @@ export async function getBoardUserRoleAction(input: { tournamentId: string; pass
       // Global admins are treated as club admins for board privilege purposes,
       // mirroring the assertBoardAccess behavior.
       if (isGlobalAdmin) {
-        return serializeForClient({ clubRole: 'admin' as const });
+        return serializeForClient({ clubRole: 'admin' as const, isGlobalAdmin: true as const });
       }
-      return serializeForClient({ clubRole: role || 'member' });
+      return serializeForClient({ clubRole: role || 'member', isGlobalAdmin: false as const });
     },
     {
       method: 'ACTION',

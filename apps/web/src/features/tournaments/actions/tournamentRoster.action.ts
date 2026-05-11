@@ -551,7 +551,10 @@ export async function getMatchByIdClientAction(input: { matchId: string }) {
         .populate('player1.playerId', 'name')
         .populate('player2.playerId', 'name')
         .populate('legs.winnerId', 'name')
-        .populate('tournamentRef', 'clubId tournamentId tournamentSettings');
+        .populate(
+          'tournamentRef',
+          'clubId tournamentId tournamentSettings groups knockout',
+        );
       return serializeForClient({ success: true, match });
     },
     {
@@ -715,6 +718,23 @@ export async function getTournamentLiveMatchesClientAction(input: { code: string
     {
       method: 'ACTION',
       metadata: { feature: 'tournaments', actionName: 'getTournamentLiveMatchesClient' },
+      resolveStatus: resolveGuardAwareStatus,
+    }
+  );
+  return run(input);
+}
+
+export async function getTournamentUpcomingMatchesClientAction(input: { code: string }) {
+  const run = withTelemetry(
+    'tournaments.upcomingMatches.get',
+    async (payload: { code: string }) => {
+      const parsed = codeSchema.parse(payload);
+      const matches = await TournamentService.getUpcomingMatches(parsed.code);
+      return serializeForClient({ success: true, matches });
+    },
+    {
+      method: 'ACTION',
+      metadata: { feature: 'tournaments', actionName: 'getTournamentUpcomingMatchesClient' },
       resolveStatus: resolveGuardAwareStatus,
     }
   );

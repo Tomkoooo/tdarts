@@ -1,9 +1,16 @@
 /**
- * Backward-compatible facade. The paywall flag now lives in the SystemSettings
- * singleton document (see {@link import('./system-settings').isSubscriptionPaywallEnabled}).
+ * Backward-compatible entry point for `@tdarts/core/subscription-paywall`.
  *
- * This async function is the canonical way to read the paywall toggle from
- * server code. Callers must `await` it; reading from `process.env` directly
- * is unsafe because Next.js inlines `NEXT_PUBLIC_*` at build time.
+ * **Semantics:** `isSubscriptionPaywallActive` is an alias of
+ * {@link import('./system-settings').isSubscriptionPaywallEnabled}. It reads the
+ * **MongoDB `SystemSettings` singleton** (`subscriptionPaywallEnabled`) with the
+ * same cache/seed behavior as the rest of system settings.
+ *
+ * **Not env:** This is **not** `NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED` or any
+ * build-inlined flag. It is async, server-oriented, and reflects what admins set
+ * in runtime settings.
+ *
+ * **Callers:** Always `await isSubscriptionPaywallActive()` (or the
+ * `isSubscriptionPaywallEnabled` name); do not treat it as a synchronous env read.
  */
 export { isSubscriptionPaywallEnabled as isSubscriptionPaywallActive } from './system-settings';

@@ -251,7 +251,7 @@ export { SubscriptionModel } from './models/subscription.model';
 export type { SubscriptionDocument } from './models/subscription.model';
 
 export {
-  SystemSettingsModel,
+  getSystemSettingsModel,
   SYSTEM_SETTINGS_SINGLETON_ID,
   FEATURE_TOGGLE_KEYS,
 } from './models/system-settings.model';

@@ -6251,8 +6251,19 @@ export class TournamentService {
 
                 if (openLeg) {
                     currentLeg = Number(openLeg.legNumber ?? currentLeg);
-                    player1Remaining = Number(openLeg.player1Score);
-                    player2Remaining = Number(openLeg.player2Score);
+                    const legRem = (leg: any, side: "1" | "2") => {
+                        const raw =
+                            side === "1" ? leg?.player1Remaining : leg?.player2Remaining;
+                        const score =
+                            side === "1" ? leg?.player1Score : leg?.player2Score;
+                        if (raw != null && raw !== "" && Number.isFinite(Number(raw))) {
+                            return Number(raw);
+                        }
+                        const n = Number(score);
+                        return Number.isFinite(n) ? n : startingScore;
+                    };
+                    player1Remaining = legRem(openLeg, "1");
+                    player2Remaining = legRem(openLeg, "2");
                 } else {
                     // No persisted in-leg row yet (or leg only exists after leg-complete): show starting score until throws are persisted.
                     player1Remaining = startingScore;
@@ -6270,6 +6281,49 @@ export class TournamentService {
             });
         } catch (error) {
             console.error('getLiveMatches error:', error);
+            throw error;
+        }
+    }
+
+    /** Pending matches with both players assigned — for live page "upcoming" pre-selection. */
+    static async getUpcomingMatches(tournamentCode: string): Promise<any[]> {
+        try {
+            await connectMongo();
+            const tournament = await TournamentModel.findOne({
+                tournamentId: tournamentCode,
+                isDeleted: { $ne: true },
+                isArchived: { $ne: true },
+            });
+
+            if (!tournament) {
+                throw new Error('Tournament not found');
+            }
+
+            const startingScore = Number(
+                (tournament as any).tournamentSettings?.startingScore ?? 501
+            );
+
+            const upcomingMatches = await MatchModel.find({
+                tournamentRef: tournament._id,
+                status: 'pending',
+                'player1.playerId': { $exists: true, $ne: null },
+                'player2.playerId': { $exists: true, $ne: null },
+            })
+                .populate('player1.playerId')
+                .populate('player2.playerId')
+                .sort({ boardReference: 1, round: 1, bracketPosition: 1 })
+                .lean();
+
+            return upcomingMatches.map((match: any) => ({
+                ...match,
+                startingScore,
+                currentLeg: 1,
+                player1Remaining: startingScore,
+                player2Remaining: startingScore,
+                lastUpdate: match.updatedAt || match.createdAt,
+            }));
+        } catch (error) {
+            console.error('getUpcomingMatches error:', error);
             throw error;
         }
     }

@@ -2292,7 +2292,24 @@
       "legs": "Legs",
       "out_1ooe": "OUT",
       "leg_1mum": "Leg",
-      "tdarts_f0pi": "tDarts"
+      "tdarts_f0pi": "tDarts",
+      "about_to_start": "Hamarosan kezdődik",
+      "start_score_label": "Rajtpont",
+      "starts_first_leg": "Első leg kezdő",
+      "type_knockout": "Kieséses",
+      "type_group": "Csoport",
+      "board_n": "{n}. tábla",
+      "round_n": "{n}. kör",
+      "waiting_scores_hint": "A pontok és dobások akkor jelennek meg, amikor a tábla csatlakozik.",
+      "stream_match_starting_soon": "Hamarosan kezdődik",
+      "stream_scoring_on_tdarts": "Pontszámlálás a tDarts-on",
+      "stream_scoring_leg_tail": "__LEG__. leg",
+      "stream_stage_group": "{number}. csoport ({letter})",
+      "stream_stage_group_board": "{n}. tábla",
+      "stream_knockout_final": "Döntő",
+      "stream_knockout_semi": "Elődöntő",
+      "stream_knockout_quarter": "Negyeddöntő",
+      "stream_knockout_round_of": "{n} közé döntő"
     },
     "live_matches": {
       "title": "Aktív meccsek",
@@ -2320,7 +2337,15 @@
       "leg_count": "{count} leg",
       "loading": "Betöltés...",
       "leg_1mum": "Leg",
-      "leg_2aku": "leg"
+      "leg_2aku": "leg",
+      "player_1": "1. játékos",
+      "player_2": "2. játékos",
+      "upcoming_title": "Következő meccsek",
+      "upcoming_desc": "Válassz meccset még az élő kezdés előtt, hogy a stream nézet készen álljon, amikor a tábla elindítja a meccset.",
+      "upcoming_empty": "Nincs következő meccs mindkét játékossal.",
+      "badge_knockout": "Kiesés",
+      "badge_group": "Csoport",
+      "board_n_short": "{n}. tábla"
     },
     "stats_charts": {
       "overview": "Összesítő",

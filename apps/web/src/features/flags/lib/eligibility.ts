@@ -26,9 +26,10 @@ function featureDisabledResult(featureName?: string): GuardFailureResult {
 }
 
 /**
- * "Paid override" means the paywall is currently turned off in admin settings,
- * so we don't gate paid features at all. Replaces the legacy
- * `process.env.NEXT_PUBLIC_ENABLE_ALL` developer escape hatch.
+ * "Paid override" means the subscription paywall is off in admin settings
+ * (`SystemSettings.subscriptionPaywallEnabled === false` from {@link getSystemSettings}),
+ * so we don't gate paid-tier features for that request. This is entirely DB-backed;
+ * it is not driven by `NEXT_PUBLIC_*` or any env "escape hatch".
  */
 export async function isPaidOverrideEnabled(): Promise<boolean> {
   const settings = await getSystemSettings();

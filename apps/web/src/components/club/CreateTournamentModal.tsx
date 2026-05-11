@@ -3,6 +3,7 @@ import { toast } from "react-hot-toast"
 import { getClubAction } from "@/features/clubs/actions/getClub.action"
 import { getClubLeaguesAction } from "@/features/clubs/actions/getClubLeagues.action"
 import { createTournamentAction } from "@/features/tournaments/actions/createTournament.action"
+import { checkFeatureFlagAction } from "@/features/feature-flags/actions/checkFeatureFlags.action"
 import { isGuardFailureResult } from "@/shared/lib/guards/result"
 import {
   IconCalendar,
@@ -27,7 +28,6 @@ import { useRouter } from "@/i18n/routing"
 import { TournamentSettings } from "@/interface/tournament.interface"
 import { BillingInfo } from "@/interface/club.interface"
 import { cn } from "@/lib/utils"
-import { FeatureFlagService } from "@/features/flags/lib/featureFlags"
 import { Button } from "@/components/ui/Button"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { FormField } from "@/components/ui/form-field"
@@ -105,7 +105,8 @@ export default function CreateTournamentModal({
 }: CreateTournamentModalProps) {
   const t = useTranslations('Club.create_tournament_modal')
   const router = useRouter()
-  const isOacCreationEnabled = FeatureFlagService.isEnvFeatureEnabled('OAC_CREATION')
+  /** DB-backed OAC gate; null until loaded from server action. */
+  const [isOacCreationEnabled, setIsOacCreationEnabled] = useState<boolean | null>(null)
 
   const steps = [
     { id: "details", label: t('steps.details'), icon: IconTrophy },
@@ -145,6 +146,24 @@ export default function CreateTournamentModal({
       }
     }
   }, [isOpen, clubId, boardCount, preSelectedLeagueId, defaultIsSandbox])
+
+  useEffect(() => {
+    if (!isOpen || !clubId) return
+    let cancelled = false
+    setIsOacCreationEnabled(null)
+    void (async () => {
+      try {
+        const data = await checkFeatureFlagAction({ feature: "OAC_CREATION", clubId })
+        if (cancelled) return
+        setIsOacCreationEnabled(!isGuardFailureResult(data))
+      } catch {
+        if (!cancelled) setIsOacCreationEnabled(false)
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [isOpen, clubId])
 
   const isOac = React.useMemo(() => {
     const selectedLeague = availableLeagues.find(l => l._id === selectedLeagueId)
@@ -847,7 +866,7 @@ export default function CreateTournamentModal({
                   <div className="flex w-full flex-col items-stretch gap-1 sm:w-auto sm:items-end">
                     <Button 
                       onClick={handleSubmit} 
-                      disabled={!canProceed() || isSubmitting || (isOac && !isOacCreationEnabled)} 
+                      disabled={!canProceed() || isSubmitting || (isOac && isOacCreationEnabled !== true)} 
                       size="sm" 
                       className={cn("w-full gap-1.5 shadow-lg shadow-primary/30 md:size-default sm:w-auto", isOac && "bg-primary hover:bg-primary/90")}
                     >
@@ -863,7 +882,7 @@ export default function CreateTournamentModal({
                         </>
                       )}
                     </Button>
-                     {isOac && !isOacCreationEnabled && (
+                     {isOac && isOacCreationEnabled !== true && (
                       <span className="text-xs font-medium text-destructive sm:mb-1 animate-pulse">
                         {t('footer.oac_not_available')}
                       </span>

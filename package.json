@@ -8,7 +8,9 @@
     "lint": "turbo lint",
     "test": "turbo test",
     "build:web": "turbo build --filter=web",
-    "dev:web": "turbo dev --filter=web"
+    "dev:web": "turbo dev --filter=web",
+    "dev:socket": "turbo dev --filter=socket",
+    "dev:app": "turbo dev --filter=web --filter=socket"
   },
   "devDependencies": {
     "@esbuild/darwin-x64": "^0.27.7",

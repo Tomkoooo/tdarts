@@ -307,6 +307,21 @@ io.on("connection", (socket) => {
     initial.initialStartingPlayer = startingPlayer;
     if (!existing) {
       initial.currentLegData.currentPlayer = startingPlayer;
+    } else {
+      const cur = initial.currentLegData;
+      const noThrows =
+        Array.isArray(cur?.player1Throws) &&
+        Array.isArray(cur?.player2Throws) &&
+        cur.player1Throws.length === 0 &&
+        cur.player2Throws.length === 0;
+      if (noThrows) {
+        initial.initialStartingPlayer = startingPlayer;
+        initial.currentLegData.currentPlayer = startingPlayer;
+        initial.currentLegData.player1Remaining = startingScore;
+        initial.currentLegData.player2Remaining = startingScore;
+        initial.currentLegData.player1Score = startingScore;
+        initial.currentLegData.player2Score = startingScore;
+      }
     }
     matchStates.set(matchId, initial);
     socket.to(`match-${matchId}`).emit("match-state", initial);

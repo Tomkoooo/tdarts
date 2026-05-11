@@ -22,6 +22,7 @@ test-results/
 /playwright-report
 playwright-report/
 apps/web/src/features/tests/load/artifacts/
+apps/socket/server-metrics.json
 **/src/features/tests/load/artifacts/
 
 # next.js
