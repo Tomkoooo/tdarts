@@ -549,7 +549,7 @@ export class StressLoadRunner {
         await StressRunService.setStatus(args.runId, 'failed', { errorMessage: message });
         await ErrorService.logError('Stress runner execution failed', error, 'api', {
           operation: 'stress_runner_execution',
-          endpoint: '/api/admin/stress-runs/start',
+          endpoint: 'stress-load-runner',
           metadata: { runId: args.runId, message },
         });
       })
