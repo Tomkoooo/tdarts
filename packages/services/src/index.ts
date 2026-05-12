@@ -1,5 +1,6 @@
 export * from './announcement.service';
 export * from './admin-authorization.service';
+export * from './admin';
 export * from './ads';
 export * from './app-updates.service';
 export * from './api-telemetry.service';

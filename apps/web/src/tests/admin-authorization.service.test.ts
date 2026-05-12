@@ -29,6 +29,10 @@ describe('AdminAuthorizationService', () => {
     await expect(AdminAuthorizationService.canAccessAdminShell(String(user._id))).resolves.toBe(
       true
     );
+
+    const caps = await AdminAuthorizationService.getEffectiveCapabilities(String(user._id));
+    expect(caps).toContain(ADMIN_CAPABILITIES.ADMIN_SYSTEM_WRITE);
+    expect(caps).toContain(ADMIN_CAPABILITIES.ADMIN_CLUBS_READ);
   });
 
   it('grants only ads capabilities to marketing role', async () => {
@@ -62,6 +66,11 @@ describe('AdminAuthorizationService', () => {
     await expect(AdminAuthorizationService.canAccessAdminShell(String(user._id))).resolves.toBe(
       true
     );
+
+    const caps = await AdminAuthorizationService.getEffectiveCapabilities(String(user._id));
+    expect(caps).toContain(ADMIN_CAPABILITIES.ADMIN_ADS_READ);
+    expect(caps).not.toContain(ADMIN_CAPABILITIES.ADMIN_CLUBS_READ);
+    expect(caps).not.toContain(ADMIN_CAPABILITIES.ADMIN_USERS_MANAGE);
   });
 
   it('denies admin shell and capabilities for normal user', async () => {
@@ -83,6 +92,7 @@ describe('AdminAuthorizationService', () => {
         ADMIN_CAPABILITIES.ADMIN_ADS_READ
       )
     ).resolves.toBe(false);
+    await expect(AdminAuthorizationService.getEffectiveCapabilities(String(user._id))).resolves.toEqual([]);
   });
 });
 

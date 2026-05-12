@@ -67,7 +67,7 @@ export class InternalAdDecisionEngineService implements AdDecisionEnginePort {
 
       const audienceFiltered = campaigns.filter((campaign) => {
         if (!Array.isArray(campaign.audienceRoles) || campaign.audienceRoles.length === 0) return true;
-        return campaign.audienceRoles.some((role) => request.identity.audienceRoles.includes(role));
+        return campaign.audienceRoles.some((role: string) => request.identity.audienceRoles.includes(role));
       });
 
       if (audienceFiltered.length === 0) {
