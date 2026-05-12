@@ -3,9 +3,11 @@
 import { useEffect, useState } from "react";
 import {
   IconActivity,
+  IconAd,
   IconChartBar,
   IconCheck,
   IconFlag,
+  IconPhoto,
   IconRefresh,
   IconSection,
   IconShield,
@@ -22,14 +24,7 @@ import { Button } from "@/components/ui/Button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { adminSettingsActions } from "@/features/admin/actions/adminDomains.action";
-
-type FeatureToggleKey =
-  | "LEAGUES"
-  | "SOCKET"
-  | "LIVE_MATCH_FOLLOWING"
-  | "DETAILED_STATISTICS"
-  | "ADVANCED_STATISTICS"
-  | "OAC_CREATION";
+import type { FeatureToggleKey } from "@tdarts/core";
 
 type SystemSettingsResult = {
   features: Record<FeatureToggleKey, boolean>;
@@ -82,6 +77,18 @@ const FEATURE_META: FeatureMeta[] = [
     label: "OAC creation",
     description: "Allow creating OAC tournaments.",
     icon: IconFlag,
+  },
+  {
+    key: "ADS",
+    label: "Ads",
+    description: "Serve ads and enable ad decision APIs across the app.",
+    icon: IconAd,
+  },
+  {
+    key: "ADS_PLACEHOLDER",
+    label: "Ads placeholder",
+    description: "Show placeholder creatives instead of live ads (layout review).",
+    icon: IconPhoto,
   },
 ];
 

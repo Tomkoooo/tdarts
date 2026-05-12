@@ -988,6 +988,8 @@
         "feedback": "Feedback",
         "errors": "Errors",
         "announcements": "News",
+        "ads": "Advertisements",
+        "ads_telemetry": "Ads Telemetry",
         "todos": "Things to do",
         "emails": "Email Templates",
         "settings": "Settings",

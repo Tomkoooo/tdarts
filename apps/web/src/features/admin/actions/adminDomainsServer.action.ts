@@ -16,6 +16,7 @@ type Primitive = string | number | boolean;
 type QueryParams = Record<string, Primitive>;
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+const ALLOWED_ADMIN_ROLES = new Set(['marketing']);
 
 function success(data: unknown, status = 200) {
   return { ok: true, status, data: serializeForClient(data) };
@@ -57,6 +58,17 @@ function toBool(input: Primitive | undefined, fallback = false) {
 
 function escapeRegex(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function normalizeAdminRoles(input: unknown): string[] {
+  if (!Array.isArray(input)) return [];
+  return Array.from(
+    new Set(
+      input
+        .map((v) => String(v).trim().toLowerCase())
+        .filter((v) => ALLOWED_ADMIN_ROLES.has(v))
+    )
+  );
 }
 
 function resolveDateRange(params: QueryParams) {
@@ -117,7 +129,7 @@ export async function adminUsersListAction(params: QueryParams) {
 
     const [users, total, admins, verified, allUserIds] = await Promise.all([
       UserModel.find(query)
-        .select('_id name email username isAdmin isVerified createdAt lastLogin')
+        .select('_id name email username isAdmin adminRoles isVerified createdAt lastLogin')
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit),
@@ -142,6 +154,7 @@ export async function adminUsersListAction(params: QueryParams) {
         email: user.email || '',
         username: user.username || '',
         isAdmin: Boolean(user.isAdmin),
+        adminRoles: normalizeAdminRoles(user.adminRoles),
         isVerified: Boolean(user.isVerified),
         createdAt: user.createdAt,
         lastLogin: user.lastLogin || null,
@@ -181,6 +194,19 @@ export async function adminUsersToggleAdminAction(userId: string, makeAdmin: boo
     return success({ success: true });
   } catch (error: any) {
     return failure(error?.message || 'Failed to update admin status', 500);
+  }
+}
+
+export async function adminUsersSetAdminRolesAction(userId: string, roles: string[]) {
+  try {
+    const guard = await assertGlobalAdmin();
+    if ('error' in guard) return guard.error;
+    await connectMongo();
+    const adminRoles = normalizeAdminRoles(roles);
+    await UserModel.findByIdAndUpdate(userId, { adminRoles });
+    return success({ success: true, adminRoles });
+  } catch (error: any) {
+    return failure(error?.message || 'Failed to update admin roles', 500);
   }
 }
 

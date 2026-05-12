@@ -44,6 +44,7 @@ import { TournamentHistory, PlayerHonor } from "@/interface/player.interface"
 import HonorAverageBadge from "@/components/player/HonorAverageBadge"
 import { getPlayerHonorAverage } from "@/lib/honorAvgBadge"
 import HonorsSection from "@/features/profile/ui/HonorsSection"
+import { AdSlotContainer } from "@/features/ads/components/AdSlotContainer"
 
 interface PlayerStatsData {
   hasPlayer: boolean
@@ -963,6 +964,12 @@ export function PlayerStatisticsSection({
             </div>
           )}
         </div>
+
+        <AdSlotContainer
+          slotId="profile-stats-between-opponents-and-top-averages"
+          placementKey="profile.stats.between-opponents-and-top-averages"
+          viewType="landscape"
+        />
 
         {/* Top Averages Section - Modern Grid */}
         <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 pt-4">

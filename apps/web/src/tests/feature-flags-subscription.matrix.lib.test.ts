@@ -71,6 +71,7 @@ describe('Production parity (paywall off, all features on)', () => {
     setSettings({
       subscriptionPaywallEnabled: false,
       features: {
+        ...SYSTEM_SETTINGS_DEFAULTS.features,
         LEAGUES: true,
         SOCKET: true,
         LIVE_MATCH_FOLLOWING: true,
@@ -139,6 +140,7 @@ describe('Paywall ON: tier-based entitlements', () => {
     setSettings({
       subscriptionPaywallEnabled: true,
       features: {
+        ...SYSTEM_SETTINGS_DEFAULTS.features,
         LEAGUES: true,
         SOCKET: true,
         LIVE_MATCH_FOLLOWING: true,

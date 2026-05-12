@@ -39,6 +39,7 @@ function mockClub(doc: object | null) {
 describe('FeatureFlagService (paywall + socket) — DB-backed', () => {
   const clubId = '507f1f77bcf86cd799439011';
   const allFeaturesOff = {
+    ...SYSTEM_SETTINGS_DEFAULTS.features,
     LEAGUES: false,
     SOCKET: false,
     LIVE_MATCH_FOLLOWING: false,

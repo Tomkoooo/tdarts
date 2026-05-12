@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { AdminLayoutClient } from "@/components/admin/AdminLayoutClient";
 import { getServerUser } from "@/lib/getServerUser";
+import { AdminAuthorizationService, ADMIN_CAPABILITIES } from "@tdarts/services";
 
 type Props = {
   children: React.ReactNode;
@@ -15,7 +16,13 @@ export default async function AdminLayout({ children, params }: Props) {
     redirect(`/${locale}/auth/login?redirect=${encodeURIComponent(`/${locale}/admin`)}`);
   }
 
-  if (!user.isAdmin) {
+  const canAccessAdmin =
+    user.isAdmin ||
+    (Array.isArray(user.adminRoles) &&
+      user.adminRoles.length > 0 &&
+      (await AdminAuthorizationService.hasAdminCapability(String(user._id), ADMIN_CAPABILITIES.ADMIN_SHELL)));
+
+  if (!canAccessAdmin) {
     redirect(`/${locale}/profile`);
   }
 

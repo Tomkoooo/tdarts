@@ -47,6 +47,7 @@ import {
   adminUsersListAction,
   adminUsersSendEmailAction,
   adminUsersSendResetAction,
+  adminUsersSetAdminRolesAction,
   adminUsersSetPasswordAction,
   adminUsersToggleAdminAction,
   adminUsersUpdateVerificationAction,
@@ -72,6 +73,7 @@ export const adminUsersActions = {
   deactivate: call(adminUsersDeactivateAction),
   updateVerification: call(adminUsersUpdateVerificationAction),
   setPassword: call(adminUsersSetPasswordAction),
+  setAdminRoles: call(adminUsersSetAdminRolesAction),
   sendReset: call(adminUsersSendResetAction),
   sendEmail: call(adminUsersSendEmailAction),
 };

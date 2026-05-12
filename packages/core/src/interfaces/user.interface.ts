@@ -8,6 +8,7 @@ export interface IUser {
   password?: string;
   isVerified: boolean;
   isAdmin: boolean;
+  adminRoles?: string[];
   createdAt: Date;
   updatedAt: Date;
   lastLogin: Date | null;

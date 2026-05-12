@@ -47,6 +47,8 @@ export const SYSTEM_SETTINGS_DEFAULTS = {
     DETAILED_STATISTICS: true,
     ADVANCED_STATISTICS: true,
     OAC_CREATION: true,
+    ADS: false,
+    ADS_PLACEHOLDER: false,
   } as FeatureTogglesMap,
   subscriptionPaywallEnabled: false,
   superAdminBypassEnabled: true,

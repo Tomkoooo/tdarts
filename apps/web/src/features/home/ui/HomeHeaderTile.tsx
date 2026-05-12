@@ -18,6 +18,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { HomeTournament } from "@/features/home/ui/types"
 import { formatTournamentDate, getDaysUntil } from "@/features/home/ui/homeUtils"
 import { TournamentFormatBadges } from "@/components/tournament/TournamentFormatBadges"
+import { AdSlotContainer } from "@/features/ads/components/AdSlotContainer"
 
 interface HomeHeaderTileProps {
   firstName: string
@@ -208,7 +209,14 @@ export default function HomeHeaderTile({
               )}
             </Link>
           ) : (
-            <p className="mt-1 text-xs text-muted-foreground">{t("header.noTournament")}</p>
+            <div className="mt-2 space-y-2">
+              <AdSlotContainer
+                slotId="home-header-no-tournament-landscape"
+                placementKey="home.header.no-tournament.landscape"
+                viewType="landscape"
+              />
+              <p className="text-xs text-muted-foreground">{t("header.noTournament")}</p>
+            </div>
           )}
         </div>
       </div>

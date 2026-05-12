@@ -27,6 +27,7 @@ import {
 import { cn } from '@/lib/utils'
 import { showErrorToast } from '@/lib/toastUtils'
 import CountryFlag from '@/components/ui/country-flag'
+import { AdSlotContainer } from '@/features/ads/components/AdSlotContainer'
 
 interface MemberListProps {
   members: {
@@ -145,6 +146,8 @@ export default function MemberList({
   }
 
   const canManageMembers = userRole === 'admin' || userRole === 'moderator'
+  const membersAdInsertIndex =
+    members.length > 0 ? Math.min(Math.max(1, Math.floor(members.length / 2)), members.length - 1) : null
 
   return (
     <div className="space-y-4">
@@ -160,7 +163,7 @@ export default function MemberList({
         </Card>
       ) : (
         <div className="grid gap-3">
-          {members.map((member) => {
+          {members.map((member, index) => {
             const isGuest = !member.userRef
             const hasDisplayUsername = !!member.userRef && member.username && member.username !== 'vendég'
             const isSelf = member._id === userId
@@ -181,11 +184,18 @@ export default function MemberList({
                 : userRole === 'moderator' && member.role === 'member' && !isSelf
 
             return (
-              <Card
-                key={member._id}
-                className="bg-card/85 shadow-sm shadow-black/20"
-              >
-                <CardContent className="flex flex-col gap-4 py-4 md:flex-row md:items-center md:justify-between">
+              <div key={member._id} className="contents">
+                {membersAdInsertIndex !== null && index === membersAdInsertIndex ? (
+                  <AdSlotContainer
+                    slotId="club-members-inline-landscape"
+                    placementKey="club.members.inline.landscape"
+                    viewType="landscape"
+                  />
+                ) : null}
+                <Card
+                  className="bg-card/85 shadow-sm shadow-black/20"
+                >
+                  <CardContent className="flex flex-col gap-4 py-4 md:flex-row md:items-center md:justify-between">
                   <div className="flex items-center gap-4">
                     <Avatar className="h-12 w-12">
                       <AvatarFallback className="bg-primary/10 text-primary font-semibold">
@@ -283,8 +293,9 @@ export default function MemberList({
                       </DropdownMenu>
                     )}
                   </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              </div>
             )
           })}
         </div>

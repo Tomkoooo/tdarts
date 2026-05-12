@@ -65,6 +65,7 @@ interface AdminUser {
   email: string
   username: string
   isAdmin: boolean
+  adminRoles?: string[]
   isVerified: boolean
   createdAt: string
   lastLogin?: string
@@ -147,6 +148,19 @@ export default function AdminUsersPage() {
       toast.success(currentStatus ? "Admin jogosultság eltávolítva" : "Admin jogosultság hozzáadva")
     } catch {
       toast.error(t("hiba_történt_a_39"))
+    }
+  }
+
+  const toggleMarketingRole = async (user: AdminUser) => {
+    try {
+      const current = Array.isArray(user.adminRoles) ? user.adminRoles : [];
+      const hasMarketing = current.includes("marketing");
+      const nextRoles = hasMarketing ? current.filter((r) => r !== "marketing") : [...current, "marketing"];
+      await adminUsersActions.setAdminRoles(user._id, nextRoles);
+      fetchUsers(page, searchTerm, roleFilter);
+      toast.success(hasMarketing ? "Marketing role removed" : "Marketing role added");
+    } catch {
+      toast.error("Failed to update marketing role");
     }
   }
 
@@ -356,13 +370,20 @@ export default function AdminUsersPage() {
                       {user.email}
                     </TableCell>
                     <TableCell>
-                      {user.isAdmin ? (
-                        <Badge variant="outline" className="border-warning/50 text-warning bg-warning/10 gap-1 hover:bg-warning/20">
-                          <IconCrown className="size-3" /> {t("admin")}</Badge>
-                      ) : (
-                        <Badge variant="outline" className="border-border text-muted-foreground gap-1">
-                          <IconUser className="size-3" /> {t("felhasználó")}</Badge>
-                      )}
+                      <div className="flex flex-wrap gap-1">
+                        {user.isAdmin ? (
+                          <Badge variant="outline" className="border-warning/50 text-warning bg-warning/10 gap-1 hover:bg-warning/20">
+                            <IconCrown className="size-3" /> {t("admin")}
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="border-border text-muted-foreground gap-1">
+                            <IconUser className="size-3" /> {t("felhasználó")}
+                          </Badge>
+                        )}
+                        {Array.isArray(user.adminRoles) && user.adminRoles.includes("marketing") ? (
+                          <Badge variant="outline" className="border-primary/50 text-primary bg-primary/10">marketing</Badge>
+                        ) : null}
+                      </div>
                     </TableCell>
                     <TableCell>
                       {user.isVerified ? (
@@ -392,6 +413,12 @@ export default function AdminUsersPage() {
                           <DropdownMenuItem onClick={() => toggleAdminStatus(user._id, user.isAdmin)}>
                             <IconShield className="size-4 mr-2" />
                             {user.isAdmin ? "Admin jog elvétele" : "Adminná tétel"}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => toggleMarketingRole(user)}>
+                            <IconShield className="size-4 mr-2" />
+                            {(user.adminRoles || []).includes("marketing")
+                              ? "Marketing role elvétele"
+                              : "Marketing role hozzáadása"}
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => toggleVerifiedStatus(user)}>
                             <IconCheck className="size-4 mr-2" />

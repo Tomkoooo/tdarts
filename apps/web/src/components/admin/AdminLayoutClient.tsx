@@ -41,17 +41,22 @@ function SidebarContent({
   onNavigate,
   onToggleCollapse,
   feedbackUnreadCount = 0,
+  user,
 }: {
   isCollapsed?: boolean;
   onNavigate?: () => void;
   onToggleCollapse?: () => void;
   feedbackUnreadCount?: number;
+  user: ServerUser;
 }) {
   const pathname = usePathname();
   const t = useTranslations("Admin.layout");
 
-  const sidebarItems = useMemo(
-    () => [
+  const sidebarItems = useMemo(() => {
+    const isSuperAdmin = Boolean(user?.isAdmin);
+    const hasMarketingRole = Array.isArray(user?.adminRoles) && user.adminRoles.includes("marketing");
+
+    const items = [
       { title: "sidebar.dashboard", href: "/admin", icon: IconLayoutDashboard },
       { title: "sidebar.users", href: "/admin/users", icon: IconUsers },
       { title: "sidebar.clubs", href: "/admin/clubs", icon: IconBuilding },
@@ -60,13 +65,20 @@ function SidebarContent({
       { title: "sidebar.feedback", href: "/admin/feedback", icon: IconMessageCircle },
       { title: "sidebar.errors", href: "/admin/errors", icon: IconAlertTriangle },
       { title: "sidebar.announcements", href: "/admin/announcements", icon: IconSpeakerphone },
+      { title: "sidebar.ads", href: "/admin/ads", icon: IconSpeakerphone },
       { title: "sidebar.todos", href: "/admin/todos", icon: IconCheck },
       { title: "sidebar.emails", href: "/admin/emails", icon: IconMail },
       { title: "sidebar.settings", href: "/admin/settings", icon: IconSettings },
       { title: "sidebar.telemetry", href: "/admin/telemetry", icon: IconActivity },
-    ],
-    []
-  );
+      { title: "sidebar.ads_telemetry", href: "/admin/ads/telemetry", icon: IconActivity },
+    ];
+
+    if (isSuperAdmin) return items;
+    if (hasMarketingRole) {
+      return items.filter((item) => item.href === "/admin/ads" || item.href === "/admin/ads/telemetry");
+    }
+    return [];
+  }, [user]);
 
   return (
     <nav className="flex flex-col gap-1.5 p-2 h-[calc(100vh-4rem)]">
@@ -157,7 +169,10 @@ export function AdminLayoutClient({ children, user }: AdminLayoutClientProps) {
   const [feedbackUnreadCount, setFeedbackUnreadCount] = useState(0);
   const { isOpen: isCommandOpen, setIsOpen: setCommandOpen } = useCommandPalette();
 
+  const hasFeedbackAccess = Boolean(user?.isAdmin);
+
   useEffect(() => {
+    if (!hasFeedbackAccess) return;
     let cancelled = false;
     (async () => {
       try {
@@ -172,7 +187,7 @@ export function AdminLayoutClient({ children, user }: AdminLayoutClientProps) {
     return () => {
       cancelled = true;
     };
-  }, [pathname]);
+  }, [hasFeedbackAccess, pathname]);
 
   return (
     <>
@@ -192,6 +207,7 @@ export function AdminLayoutClient({ children, user }: AdminLayoutClientProps) {
               isCollapsed={isCollapsed}
               onToggleCollapse={() => setIsCollapsed(!isCollapsed)}
               feedbackUnreadCount={feedbackUnreadCount}
+              user={user}
             />
           </div>
         </aside>
@@ -219,6 +235,7 @@ export function AdminLayoutClient({ children, user }: AdminLayoutClientProps) {
                 <SidebarContent
                   onNavigate={() => setIsMobileOpen(false)}
                   feedbackUnreadCount={feedbackUnreadCount}
+                  user={user}
                 />
               </div>
             </div>

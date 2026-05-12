@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import { UserModel } from '@tdarts/core';
 import { connectMongo } from '@/lib/mongoose';
+import { AdminAuthorizationService } from '@tdarts/services';
 
 type JwtPayload = { id: string };
 
@@ -18,7 +19,9 @@ export async function getAdminUserIdFromRequest(request: NextRequest): Promise<s
 
   await connectMongo();
   const user = await UserModel.findById(decoded.id).select('isAdmin');
-  if (!user?.isAdmin) return null;
+  if (!user) return null;
+  const canAccess = await AdminAuthorizationService.canAccessAdminShell(String(decoded.id));
+  if (!canAccess) return null;
   return String(decoded.id);
 }
 
