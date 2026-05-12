@@ -1,10 +1,13 @@
 import { getServerUser } from '@/lib/getServerUser';
 import { redirect } from 'next/navigation';
+import { unstable_noStore as noStore } from 'next/cache';
 import { AdminAuthorizationService } from '@tdarts/services';
 import { AdminShell } from '@/features/admin/shell/AdminShell';
 import { AdminForbiddenPanel } from '@/features/admin/shell/AdminForbiddenPanel';
 import { ADMIN_NAV_GROUPS, filterNavGroupsForCapabilities } from '@/features/admin/shell/nav-config';
 import { getStaffSession } from '@/features/admin/rbac/staff-session';
+
+export const dynamic = 'force-dynamic';
 
 export default async function AdminLayout({
   children,
@@ -13,6 +16,7 @@ export default async function AdminLayout({
   children: React.ReactNode;
   params: Promise<{ locale: string }>;
 }) {
+  noStore();
   const { locale } = await params;
   const user = await getServerUser();
   if (!user) {
@@ -30,9 +34,16 @@ export default async function AdminLayout({
   }
 
   const navGroups = filterNavGroupsForCapabilities(ADMIN_NAV_GROUPS, session.capabilities);
+  const commandPaletteLinks = navGroups.flatMap((g) =>
+    g.items.map((item) => ({ href: item.href, label: `${g.label}: ${item.label}` })),
+  );
 
   return (
-    <AdminShell userLabel={session.user.name || session.user.email} navGroups={navGroups}>
+    <AdminShell
+      userLabel={session.user.name || session.user.email}
+      navGroups={navGroups}
+      commandPaletteLinks={commandPaletteLinks}
+    >
       {children}
     </AdminShell>
   );

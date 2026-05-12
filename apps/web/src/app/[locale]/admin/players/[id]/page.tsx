@@ -3,26 +3,39 @@ import { notFound } from 'next/navigation';
 import { AdminPlayersQueryService } from '@tdarts/services';
 import { getStaffSession, staffHasCapability } from '@/features/admin/rbac/staff-session';
 import { ADMIN_CAPABILITIES } from '@tdarts/services';
-import { Link } from '@/i18n/routing';
+import { AdminPageHeader } from '@/features/admin/components/AdminPageHeader';
+import { AdminPlayerBasicsForm } from '@/features/admin/players/AdminPlayerBasicsForm';
 
-export default async function AdminPlayerDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function AdminPlayerDetailPage({
+  params,
+}: {
+  params: Promise<{ locale: string; id: string }>;
+}) {
   const session = await getStaffSession();
   if (!session || !staffHasCapability(session, ADMIN_CAPABILITIES.ADMIN_PLAYERS_READ)) notFound();
 
-  const { id } = await params;
+  const { locale, id } = await params;
   const player = await AdminPlayersQueryService.getById(id);
   if (!player) notFound();
 
+  const canWrite = staffHasCapability(session, ADMIN_CAPABILITIES.ADMIN_PLAYERS_WRITE);
+
   return (
     <div className="space-y-6">
-      <Link href="/admin/players" className="text-sm text-muted-foreground hover:text-foreground">
-        ← Players
-      </Link>
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">{String(player.name)}</h1>
-        <p className="text-sm text-muted-foreground">Player id · {id}</p>
-      </div>
-      <pre className="max-h-[70vh] overflow-auto rounded-xl border border-border/60 bg-muted/20 p-4 text-xs leading-relaxed">
+      <AdminPageHeader title={String(player.name)} description={`Player id · ${id}`} backHref="/admin/players" backLabel="Players" />
+
+      {canWrite ? (
+        <AdminPlayerBasicsForm
+          locale={locale}
+          playerId={id}
+          name={String(player.name ?? '')}
+          country={player.country != null ? String(player.country) : null}
+        />
+      ) : (
+        <p className="text-sm text-muted-foreground">Read-only — missing players write capability.</p>
+      )}
+
+      <pre className="max-h-[60vh] overflow-auto rounded-xl border border-border/60 bg-muted/20 p-4 text-xs leading-relaxed">
         {JSON.stringify(player, null, 2)}
       </pre>
     </div>

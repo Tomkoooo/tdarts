@@ -1,10 +1,11 @@
 import React from 'react';
 import { Link } from '@/i18n/routing';
 import { AdminDashboardService } from '@tdarts/services';
-import { AdminKpiCard } from '@/features/admin/components/AdminKpiCard';
+import { AdminMetric } from '@/features/admin/components/AdminMetric';
 import { getStaffSession, staffHasCapability } from '@/features/admin/rbac/staff-session';
 import { ADMIN_CAPABILITIES } from '@tdarts/services';
 import { notFound } from 'next/navigation';
+import { AdminDashboardCharts } from '@/features/admin/dashboard/AdminDashboardCharts';
 
 export default async function AdminDashboardPage() {
   const session = await getStaffSession();
@@ -21,11 +22,38 @@ export default async function AdminDashboardPage() {
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <AdminKpiCard title="Users (total)" value={summary.usersTotal} />
-        <AdminKpiCard title="New users (7d)" value={summary.usersLast7d} />
-        <AdminKpiCard title="Active clubs" value={summary.clubsActive} />
-        <AdminKpiCard title="Open urgent feedback" value={summary.feedbackOpenHigh} hint="pending / in-progress" />
+        <AdminMetric label="Users (total)" value={summary.usersTotal} entity="users" href="/admin/users" />
+        <AdminMetric label="New users (7d)" value={summary.usersLast7d} entity="user" format="count" />
+        <AdminMetric label="Active clubs" value={summary.clubsActive} entity="club" href="/admin/clubs" />
+        <AdminMetric
+          label="Open urgent feedback"
+          value={summary.feedbackOpenHigh}
+          entity="default"
+          format="count"
+          hint="pending / in-progress · high or critical"
+          href="/admin/support/feedback"
+        />
       </div>
+
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-2">
+        <AdminMetric
+          label="API error events (24h)"
+          value={summary.apiErrorEvents24h}
+          entity="default"
+          format="count"
+          hint="Approximate count from error event collection"
+          href="/admin/observability/errors"
+        />
+      </div>
+
+      <AdminDashboardCharts
+        summary={{
+          userSignupsByDay: summary.userSignupsByDay,
+          feedbackOpenByPriority: summary.feedbackOpenByPriority,
+          topErrorRoutes: summary.topErrorRoutes,
+          apiErrorEvents24h: summary.apiErrorEvents24h,
+        }}
+      />
 
       <div className="grid gap-6 lg:grid-cols-2">
         <section className="rounded-xl border border-border/60 bg-card/40 p-4">

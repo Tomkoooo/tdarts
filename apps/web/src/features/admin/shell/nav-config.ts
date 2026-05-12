@@ -70,6 +70,11 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
         label: 'API metrics',
         capability: ADMIN_CAPABILITIES.ADMIN_OBSERVABILITY_READ,
       },
+      {
+        href: '/admin/observability/errors',
+        label: 'Error events',
+        capability: ADMIN_CAPABILITIES.ADMIN_OBSERVABILITY_READ,
+      },
       { href: '/admin/tools', label: 'Tools', capability: ADMIN_CAPABILITIES.ADMIN_TOOLS_EXECUTE },
     ],
   },

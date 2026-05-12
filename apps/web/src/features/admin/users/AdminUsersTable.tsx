@@ -3,7 +3,7 @@
 import React, { useMemo } from 'react';
 import { Link } from '@/i18n/routing';
 import type { ColumnDef } from '@tanstack/react-table';
-import { AdminDataTable } from '@/features/admin/tables/AdminDataTable';
+import { AdminDataGrid } from '@/features/admin/tables/AdminDataGrid';
 import type { AdminUserListRow } from '@tdarts/services';
 
 type Props = {
@@ -51,5 +51,27 @@ export function AdminUsersTable({ rows }: Props) {
     [],
   );
 
-  return <AdminDataTable tableId="users" columns={columns} data={rows} getRowId={(r) => r._id} />;
+  return (
+    <AdminDataGrid
+      tableId="users"
+      columns={columns}
+      data={rows}
+      getRowId={(r) => r._id}
+      enableBulkSelect
+      bulkActions={({ selectedIds, clearSelection }) => (
+        <>
+          <button
+            type="button"
+            className="rounded-md border border-border px-2 py-1 text-xs"
+            onClick={() => {
+              void navigator.clipboard.writeText(selectedIds.join('\n'));
+              clearSelection();
+            }}
+          >
+            Copy selected ids
+          </button>
+        </>
+      )}
+    />
+  );
 }

@@ -1,19 +1,7 @@
 import React from 'react';
+import { AdminMetric } from '@/features/admin/components/AdminMetric';
 
-export function AdminKpiCard({
-  title,
-  value,
-  hint,
-}: {
-  title: string;
-  value: React.ReactNode;
-  hint?: string;
-}) {
-  return (
-    <div className="rounded-xl border border-border/60 bg-card/50 p-4 shadow-sm">
-      <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{title}</div>
-      <div className="mt-1 text-2xl font-semibold tabular-nums">{value}</div>
-      {hint ? <div className="mt-1 text-xs text-muted-foreground">{hint}</div> : null}
-    </div>
-  );
+/** @deprecated Prefer `AdminMetric` for new code — thin wrapper for backwards compatibility. */
+export function AdminKpiCard(props: { title: string; value: React.ReactNode; hint?: string; href?: string }) {
+  return <AdminMetric label={props.title} value={props.value} hint={props.hint} href={props.href} entity="default" format="text" />;
 }

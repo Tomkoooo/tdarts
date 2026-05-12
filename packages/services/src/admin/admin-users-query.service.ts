@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import { connectMongo, UserModel } from '@tdarts/core';
+import { connectMongo, UserModel, PlayerModel, SubscriptionModel, ClubModel } from '@tdarts/core';
 
 export type AdminUserListRow = {
   _id: string;
@@ -79,6 +79,27 @@ export class AdminUsersQueryService {
       ...toRow(o),
       locale: o.locale ? String(o.locale) : undefined,
       country: o.country != null ? String(o.country) : null,
+    };
+  }
+
+  static async getUserAdminContext(userId: string): Promise<{
+    linkedPlayerId: string | null;
+    subscriptionCount: number;
+    managedClubsCount: number;
+  } | null> {
+    await connectMongo();
+    if (!mongoose.Types.ObjectId.isValid(userId)) return null;
+    const uid = new mongoose.Types.ObjectId(userId);
+    const [player, subscriptionCount, managedClubsCount] = await Promise.all([
+      PlayerModel.findOne({ userRef: uid }).select('_id').lean(),
+      SubscriptionModel.countDocuments({ userId: uid }),
+      ClubModel.countDocuments({ $or: [{ admin: uid }, { moderators: uid }] }),
+    ]);
+    const p = player as { _id?: unknown } | null;
+    return {
+      linkedPlayerId: p?._id ? String(p._id) : null,
+      subscriptionCount,
+      managedClubsCount,
     };
   }
 }
