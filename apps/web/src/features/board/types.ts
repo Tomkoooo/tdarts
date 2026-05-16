@@ -33,6 +33,7 @@ export interface Match {
   status: string;
   startingScore: number;
   legsToWin?: number;
+  maxDartsPerLeg?: number | null;
   startingPlayer?: 1 | 2;
 }
 

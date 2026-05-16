@@ -2544,7 +2544,23 @@
       "stream_knockout_final": "Final",
       "stream_knockout_semi": "Semi-final",
       "stream_knockout_quarter": "Quarter-final",
-      "stream_knockout_round_of": "Round of {n}"
+      "stream_knockout_round_of": "Round of {n}",
+      "stream_show_avg": "Show average",
+      "stream_studio_title": "Stream studio",
+      "stream_studio_city": "City",
+      "stream_studio_country": "Country",
+      "stream_studio_nickname": "Nickname",
+      "stream_studio_darts": "Darts",
+      "stream_studio_previous_match": "Previous match",
+      "stream_studio_last_match_avg": "Last match avg",
+      "stream_studio_last_opponent": "Last opponent",
+      "stream_studio_recent_opponents": "Recent opponents",
+      "stream_studio_opponents_note": "Opponents (custom)",
+      "stream_studio_player": "Player",
+      "stream_studio_open_score": "Open score overlay",
+      "stream_studio_open_player_bullup": "Open player intro",
+      "stream_studio_open_matchup_bullup": "Open matchup intro",
+      "stream_studio_popup_blocked": "Could not open window — allow pop-ups for this site."
     },
     "live_matches": {
       "title": "Active matches",
@@ -3149,6 +3165,18 @@
       "knockout_not_generated": "Generate the knockout bracket first to configure per-round legs.",
       "finished_note": "Tournament is finished — legs configuration is read-only.",
       "knockout_cleared_notice": "Knockout legs config was cleared when the bracket was cancelled. Re-generate the bracket and reconfigure if needed."
+    },
+    "max_darts_config": {
+      "title": "Max darts per leg",
+      "subtitle": "Optional per-player dart limit for each leg. When a player reaches the limit without checking out, scorers throw for bull and pick the leg winner.",
+      "input_label": "Max darts (per player)",
+      "placeholder": "Unlimited",
+      "clear": "Unlimited",
+      "saving": "Saving…",
+      "saved": "Saved",
+      "save_error": "Save failed",
+      "help": "Leave empty for no limit. Applies to all matches when started. Lowering the limit during an active leg is best-effort on tablets.",
+      "finished_note": "Tournament is finished — max darts configuration is read-only."
     }
   },
   "Map": {
@@ -4026,6 +4054,11 @@
     "unread_messages": "Your message {count} is unread"
   },
   "Board": {
+    "max_dart_bull_title": "Max darts reached",
+    "max_dart_bull_message": "Maximum dart count reached. Throw for bull and select which player won the leg.",
+    "max_dart_player1_wins": "{name} wins leg",
+    "max_dart_player2_wins": "{name} wins leg",
+    "leg_saved_locally": "Leg saved locally — will sync when connection is restored",
     "legs_set_by_organizer": "Set by organizer: {legs} leg(s)",
     "legs_override_notice": "Override — organizer set {legs} leg(s)",
     "legs_organizer_config": "Organizer config: {legs} leg(s)",

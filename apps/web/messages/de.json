@@ -1343,7 +1343,23 @@
       "stream_knockout_final": "Finale",
       "stream_knockout_semi": "Halbfinale",
       "stream_knockout_quarter": "Viertelfinale",
-      "stream_knockout_round_of": "Round of {n}"
+      "stream_knockout_round_of": "Round of {n}",
+      "stream_show_avg": "Durchschnitt anzeigen",
+      "stream_studio_title": "Stream-Studio",
+      "stream_studio_city": "Stadt",
+      "stream_studio_country": "Land",
+      "stream_studio_nickname": "Spitzname",
+      "stream_studio_darts": "Darts",
+      "stream_studio_previous_match": "Vorheriges Spiel",
+      "stream_studio_last_match_avg": "Letzter Spiel-Durchschnitt",
+      "stream_studio_last_opponent": "Letzter Gegner",
+      "stream_studio_recent_opponents": "Letzte Gegner",
+      "stream_studio_opponents_note": "Gegner (eigene)",
+      "stream_studio_player": "Spieler",
+      "stream_studio_open_score": "Ergebnis-Overlay öffnen",
+      "stream_studio_open_player_bullup": "Spieler-Intro öffnen",
+      "stream_studio_open_matchup_bullup": "Match-Intro öffnen",
+      "stream_studio_popup_blocked": "Fenster konnte nicht geöffnet werden — Pop-ups erlauben."
     },
     "live_matches": {
       "title": "Aktive Spiele",
@@ -1948,6 +1964,18 @@
       "knockout_not_generated": "Erstelle zuerst das K.o.-Bracket, um die Runden-Konfiguration einzustellen.",
       "finished_note": "Das Turnier ist beendet — die Leg-Konfiguration ist schreibgeschützt.",
       "knockout_cleared_notice": "Die K.o.-Leg-Konfiguration wurde gelöscht, als das Bracket abgebrochen wurde. Erstelle das Bracket neu und konfiguriere es bei Bedarf."
+    },
+    "max_darts_config": {
+      "title": "Max. Darts pro Leg",
+      "subtitle": "Optionales Dart-Limit pro Spieler und Leg. Erreicht ein Spieler das Limit ohne Checkout, wird auf Bull geworfen und der Leg-Gewinner ausgewählt.",
+      "input_label": "Max. Darts (pro Spieler)",
+      "placeholder": "Unbegrenzt",
+      "clear": "Unbegrenzt",
+      "saving": "Speichern…",
+      "saved": "Gespeichert",
+      "save_error": "Speicherfehler",
+      "help": "Leer lassen für kein Limit. Gilt für alle Spiele beim Start. Senkung während eines aktiven Legs auf Tablets nur bedingt.",
+      "finished_note": "Turnier beendet — Max-Darts-Konfiguration ist schreibgeschützt."
     }
   },
   "Club": {
@@ -3832,6 +3860,11 @@
     }
   },
   "Board": {
+    "max_dart_bull_title": "Max. Darts erreicht",
+    "max_dart_bull_message": "Maximale Dart-Anzahl erreicht. Auf Bull werfen und den Leg-Gewinner auswählen.",
+    "max_dart_player1_wins": "{name} gewinnt das Leg",
+    "max_dart_player2_wins": "{name} gewinnt das Leg",
+    "leg_saved_locally": "Leg lokal gespeichert — wird synchronisiert, sobald die Verbindung steht",
     "legs_set_by_organizer": "Vom Veranstalter festgelegt: {legs} Leg(s)",
     "legs_override_notice": "Überschreibung — Veranstalter hat {legs} Leg(s) festgelegt",
     "legs_organizer_config": "Veranstalter-Konfiguration: {legs} Leg(s)",

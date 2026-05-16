@@ -42,6 +42,9 @@ const TournamentStatusChanger = dynamic(
 const LegsConfigPanel = dynamic(
   () => import("@/components/tournament/LegsConfigPanel")
 );
+const MaxDartsConfigPanel = dynamic(
+  () => import("@/components/tournament/MaxDartsConfigPanel")
+);
 
 type TournamentPageClientProps = {
   initialData?: any;
@@ -639,6 +642,11 @@ const TournamentPageClient: React.FC<TournamentPageClientProps> = ({
                 section="all"
               />
               <LegsConfigPanel
+                tournament={tournament}
+                userClubRole={userClubRole}
+                onRefetch={handleTournamentRefreshFresh}
+              />
+              <MaxDartsConfigPanel
                 tournament={tournament}
                 userClubRole={userClubRole}
                 onRefetch={handleTournamentRefreshFresh}

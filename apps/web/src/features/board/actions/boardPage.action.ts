@@ -166,6 +166,7 @@ export async function validateBoardPasswordAction(input: {
             format: tournament.format,
             startingScore: tournament.startingScore,
             legsConfig: tournament.legsConfig ?? null,
+            maxDartsPerLeg: tournament.maxDartsPerLeg ?? null,
           },
         },
         boards,
@@ -197,6 +198,7 @@ export async function getBoardTournamentAction(input: { tournamentId: string; pa
           format: tournament.format,
           startingScore: tournament.startingScore,
           legsConfig: tournament.legsConfig ?? null,
+          maxDartsPerLeg: tournament.maxDartsPerLeg ?? null,
         },
       });
     },
@@ -361,11 +363,13 @@ export async function startBoardMatchAction(input: {
         }
       }
 
+      const tournamentLite = await TournamentService.getTournamentLite(parsed.tournamentId);
       const match = await MatchService.startMatch(
         parsed.tournamentId,
         parsed.matchId,
         parsed.legsToWin,
-        parsed.startingPlayer
+        parsed.startingPlayer,
+        tournamentLite.maxDartsPerLeg ?? null
       );
       const canonicalTournamentId = String((match as any)?.tournamentCode || parsed.tournamentId);
       revalidateTag(`tournament:${parsed.tournamentId}`, 'max');

@@ -885,3 +885,37 @@ export async function updateLegsConfigAction(input: {
   );
   return run(input);
 }
+
+const updateMaxDartsPerLegSchema = z.object({
+  code: z.string().min(1),
+  maxDartsPerLeg: z.number().int().min(1).max(99).nullable(),
+});
+
+export async function updateMaxDartsPerLegAction(input: {
+  code: string;
+  maxDartsPerLeg: number | null;
+}) {
+  const run = withTelemetry(
+    'tournaments.updateMaxDartsPerLeg',
+    async (payload: typeof input) => {
+      const parsed = updateMaxDartsPerLegSchema.parse(payload);
+      const authResult = await authorizeUserResult();
+      if (!authResult.ok) return authResult;
+
+      await TournamentService.updateMaxDartsPerLeg(
+        parsed.code,
+        authResult.data.userId,
+        parsed.maxDartsPerLeg
+      );
+
+      revalidateTournamentTags(parsed.code);
+      return { success: true };
+    },
+    {
+      method: 'ACTION',
+      metadata: { feature: 'tournaments', actionName: 'updateMaxDartsPerLeg' },
+      resolveStatus: resolveGuardAwareStatus,
+    }
+  );
+  return run(input);
+}

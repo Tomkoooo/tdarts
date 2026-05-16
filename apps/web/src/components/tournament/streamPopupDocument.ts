@@ -37,6 +37,8 @@ export type LegacyStreamPopupInit = {
   initialUpcomingLayout?: boolean;
   /** Pre-localized (e.g. next-intl) “starting soon” line for OBS upcoming popup. */
   streamUpcomingMessage?: string;
+  /** When false, hide the AVG column (3-column layout). Default true. */
+  showAvg?: boolean;
 };
 
 function escHtml(s: string): string {
@@ -73,6 +75,15 @@ export function buildLegacyStreamPopupHtml(init: LegacyStreamPopupInit): string 
   const upcomingMsg = escHtml(init.streamUpcomingMessage || "");
   const upcomingVs = escHtml(`${init.player1Name} vs ${init.player2Name}`);
   const sheetClass = initialUpcoming ? "sheet mode-upcoming" : "sheet";
+  const showAvg = init.showAvg !== false;
+  const gridRowClass = showAvg ? "row4" : "row3";
+  const avgHeaderCell = showAvg ? `<div class="gcell">${colAvg}</div>` : "";
+  const p1AvgCell = showAvg
+    ? `<div class="gcell stat" id="player1-avg" aria-live="polite">0.00</div>`
+    : "";
+  const p2AvgCell = showAvg
+    ? `<div class="gcell stat" id="player2-avg" aria-live="polite">0.00</div>`
+    : "";
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -202,7 +213,14 @@ export function buildLegacyStreamPopupHtml(init: LegacyStreamPopupInit): string 
         gap: 0;
         align-items: stretch;
       }
-      .player-row.row4 {
+      .row3 {
+        display: grid;
+        grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 2fr);
+        gap: 0;
+        align-items: stretch;
+      }
+      .player-row.row4,
+      .player-row.row3 {
         align-items: center;
       }
       .gcell {
@@ -384,21 +402,21 @@ export function buildLegacyStreamPopupHtml(init: LegacyStreamPopupInit): string 
         </div>
 
         <div id="live-scoreboard">
-        <div class="stats-header row4">
+        <div class="stats-header ${gridRowClass}">
           <div class="gcell" aria-hidden="true"></div>
-          <div class="gcell">${colAvg}</div>
+          ${avgHeaderCell}
           <div class="gcell">${colLegs}</div>
           <div class="gcell">${colScore}</div>
         </div>
 
         <div class="players-container">
-          <div class="player-row row4" id="player1-row">
+          <div class="player-row ${gridRowClass}" id="player1-row">
             <div class="gcell gcell-name">
               <div class="player-name-section">
                 <div class="player-name" id="player1-name">${p1}</div>
               </div>
             </div>
-            <div class="gcell stat" id="player1-avg" aria-live="polite">0.00</div>
+            ${p1AvgCell}
             <div class="gcell stat" id="player1-legs">${init.p1LegsWon}</div>
             <div class="gcell gcell-score-inner">
               <div class="score" id="player1-score" aria-live="polite">${init.p1Remaining}</div>
@@ -406,13 +424,13 @@ export function buildLegacyStreamPopupHtml(init: LegacyStreamPopupInit): string 
             </div>
           </div>
 
-          <div class="player-row row4" id="player2-row">
+          <div class="player-row ${gridRowClass}" id="player2-row">
             <div class="gcell gcell-name">
               <div class="player-name-section">
                 <div class="player-name" id="player2-name">${p2}</div>
               </div>
             </div>
-            <div class="gcell stat" id="player2-avg" aria-live="polite">0.00</div>
+            ${p2AvgCell}
             <div class="gcell stat" id="player2-legs">${init.p2LegsWon}</div>
             <div class="gcell gcell-score-inner">
               <div class="score" id="player2-score" aria-live="polite">${init.p2Remaining}</div>
@@ -428,6 +446,7 @@ export function buildLegacyStreamPopupHtml(init: LegacyStreamPopupInit): string 
   var POLL_MS = 120;
   var INITIAL_UPCOMING = ${initialUpcoming ? "true" : "false"};
   var STREAM_LOCK_MATCH_ID = ${lockIdJs};
+  var SHOW_AVG = ${showAvg ? "true" : "false"};
   var SCORING_LEG_TPL = ${legTplJs};
   var lastState = null;
   var lastLegNumber = 0;
@@ -792,8 +811,12 @@ export function buildLegacyStreamPopupHtml(init: LegacyStreamPopupInit): string 
 
     document.getElementById("player1-darts").textContent = "(" + p1LegDarts + ")";
     document.getElementById("player2-darts").textContent = "(" + p2LegDarts + ")";
-    document.getElementById("player1-avg").textContent = threeDartAvg(agg.p1s, agg.p1d);
-    document.getElementById("player2-avg").textContent = threeDartAvg(agg.p2s, agg.p2d);
+    if (SHOW_AVG) {
+      var p1AvgEl = document.getElementById("player1-avg");
+      var p2AvgEl = document.getElementById("player2-avg");
+      if (p1AvgEl) p1AvgEl.textContent = threeDartAvg(agg.p1s, agg.p1d);
+      if (p2AvgEl) p2AvgEl.textContent = threeDartAvg(agg.p2s, agg.p2d);
+    }
   }
 
   function tick() {

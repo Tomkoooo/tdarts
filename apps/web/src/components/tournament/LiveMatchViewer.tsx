@@ -12,9 +12,17 @@ import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { cn } from "@/lib/utils";
 import { getMatchByIdClientAction } from "@/features/tournaments/actions/tournamentRoster.action";
-import { buildLegacyStreamPopupHtml } from "@/components/tournament/streamPopupDocument";
 import { formatLiveStreamStageLine } from "@/components/tournament/liveStreamStageLine";
 import { formatBoardPlayerNameMax } from "@/lib/formatBoardPlayerName";
+import { Checkbox } from "@/components/ui/checkbox";
+import { useStreamOverlayPrefs } from "@/hooks/useStreamOverlayPrefs";
+import { openScoreOverlay } from "@/lib/stream/openScoreOverlay";
+import {
+  StreamStudioPanel,
+  resolveStreamPlayerSlots,
+} from "@/components/tournament/stream/StreamStudioPanel";
+import { getTournamentViewerContextClientAction } from "@/features/stream/actions/getTournamentViewerContext.action";
+import { useUserContext } from "@/hooks/useUser";
 
 interface LiveMatchViewerProps {
   matchId: string;
@@ -159,6 +167,9 @@ const LiveMatchViewer: React.FC<LiveMatchViewerProps> = ({
 }) => {
   const tTour = useTranslations("Tournament");
   const t = (key: string, values?: any) => tTour(`live_viewer.${key}`, values);
+  const { user } = useUserContext();
+  const { prefs, setShowAvg } = useStreamOverlayPrefs();
+  const [userClubRole, setUserClubRole] = useState<"admin" | "moderator" | "member" | "none">("none");
 
   const [matchState, setMatchState] = useState<MatchState>({
     currentLeg: 1,
@@ -494,58 +505,54 @@ const LiveMatchViewer: React.FC<LiveMatchViewerProps> = ({
     Number(matchState.startingScore ?? tournamentStartingScore(matchData)) || 501;
   const displayLegsToWin = Number(matchState.legsToWin ?? matchData?.legsToWin ?? 3) || 3;
 
+  useEffect(() => {
+    let alive = true;
+    void getTournamentViewerContextClientAction({ code: tournamentCode }).then((res) => {
+      if (!alive) return;
+      if (res && typeof res === "object" && "success" in res && res.success && "viewer" in res) {
+        const role = (res as { viewer: { userClubRole?: string } }).viewer.userClubRole;
+        if (role === "admin" || role === "moderator" || role === "member" || role === "none") {
+          setUserClubRole(role);
+        }
+      }
+    });
+    return () => {
+      alive = false;
+    };
+  }, [tournamentCode]);
+
+  const canManageStream =
+    user?.isAdmin === true || userClubRole === "admin" || userClubRole === "moderator";
+
   const openStreamingPopup = () => {
     if (variant === "popup") return;
-    const streamWin = window.open("", "tdarts-stream", "width=1200,height=360,scrollbars=no,resizable=yes");
-    if (!streamWin) return;
-    const scoringLegTailTemplate = t("stream_scoring_leg_tail");
     const tournamentName =
       matchData?.tournamentRef?.tournamentSettings?.name?.trim() || tournamentCode;
     const stageLine = formatLiveStreamStageLine(matchData, tournamentCode, t);
-
-    const html = buildLegacyStreamPopupHtml({
-      lockedMatchId: String(matchId),
-      logoUrl: `${window.location.origin}/tdarts_fav.svg`,
+    openScoreOverlay({
+      matchId: String(matchId),
+      matchState,
+      matchData,
       player1Name: getDisplayPlayer1Name(),
       player2Name: getDisplayPlayer2Name(),
-      scoringOnTdartsLine: t("stream_scoring_on_tdarts"),
+      tournamentCode,
+      tournamentName,
+      stageLine,
       legsToWin: displayLegsToWin,
       currentLeg: matchState.currentLeg,
       p1Remaining: matchState.currentLegData.player1Remaining,
       p2Remaining: matchState.currentLegData.player2Remaining,
       p1LegsWon: matchState.player1LegsWon ?? 0,
       p2LegsWon: matchState.player2LegsWon ?? 0,
-      tournamentName,
-      stageLine,
-      scoringLegTailTemplate,
-      labelAvg: "AVG",
-      labelLegsCol: "LEGS",
-      labelScoreCol: "SCORE",
-      waitingHint: t("waiting_scores_hint"),
-      initialUpcomingLayout: !!isWaitingLayout,
-      streamUpcomingMessage: t("stream_match_starting_soon"),
+      isWaitingLayout: !!isWaitingLayout,
+      showAvg: prefs.showAvg,
+      labels: {
+        scoringOnTdarts: t("stream_scoring_on_tdarts"),
+        scoringLegTail: t("stream_scoring_leg_tail"),
+        waitingHint: t("waiting_scores_hint"),
+        streamUpcomingMessage: t("stream_match_starting_soon"),
+      },
     });
-
-    const w = window as any;
-    w.__tdartsStreamLockMatchId = String(matchId);
-    w.__tdartsLockedStreamState = matchState;
-    if (matchData) {
-      w.__tdartsLockedStreamData = matchData;
-    }
-
-    streamWin.document.open();
-    streamWin.document.write(html);
-    streamWin.document.close();
-
-    const clearStreamLock = () => {
-      if (String(w.__tdartsStreamLockMatchId) === String(matchId)) {
-        delete w.__tdartsStreamLockMatchId;
-        delete w.__tdartsLockedStreamState;
-        delete w.__tdartsLockedStreamData;
-      }
-    };
-    streamWin.addEventListener("pagehide", clearStreamLock);
-    streamWin.addEventListener("unload", clearStreamLock);
   };
 
   const renderThrowScore = (t_throw: Throw) => {
@@ -614,7 +621,14 @@ const LiveMatchViewer: React.FC<LiveMatchViewerProps> = ({
             )}
           </div>
 
-          <div className="hidden lg:flex justify-end items-center mb-4 gap-2">
+          <div className="hidden lg:flex justify-end items-center mb-4 gap-3">
+            <label className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer">
+              <Checkbox
+                checked={prefs.showAvg}
+                onCheckedChange={(c) => setShowAvg(c === true)}
+              />
+              <span>{t("stream_show_avg")}</span>
+            </label>
             <Button size="sm" variant="secondary" className="gap-2" onClick={openStreamingPopup}>
               <IconEye className="w-4 h-4" />
               {t("streaming_window")}
@@ -784,6 +798,17 @@ const LiveMatchViewer: React.FC<LiveMatchViewerProps> = ({
           </div>
         </Card>
       </div>
+      {canManageStream && matchData && (
+        <StreamStudioPanel
+          tournamentCode={tournamentCode}
+          matchId={String(matchId)}
+          matchData={matchData}
+          matchState={matchState}
+          player1={resolveStreamPlayerSlots(matchData).player1}
+          player2={resolveStreamPlayerSlots(matchData).player2}
+          isWaitingLayout={!!isWaitingLayout}
+        />
+      )}
     </div>
   );
 };

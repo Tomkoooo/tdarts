@@ -147,7 +147,13 @@ export class MatchService {
         return String(tournament.tournamentId);
     }
 
-    static async startMatch(tournamentId: string, matchId: string, legsToWin: number, startingPlayer: 1 | 2) {
+    static async startMatch(
+        tournamentId: string,
+        matchId: string,
+        legsToWin: number,
+        startingPlayer: 1 | 2,
+        maxDartsPerLeg?: number | null
+    ) {
         const match = await MatchModel.findById(matchId);
         if (!match) throw new BadRequestError('Match not found', 'tournament', {
           tournamentId,
@@ -160,6 +166,10 @@ export class MatchService {
         
         // Meccs beállítások mentése
         match.legsToWin = legsToWin;
+        match.maxDartsPerLeg =
+            maxDartsPerLeg !== undefined
+                ? maxDartsPerLeg
+                : (tournament.tournamentSettings?.maxDartsPerLeg ?? null);
         match.startingPlayer = startingPlayer;
         match.status = 'ongoing';
         await match.save();

@@ -2309,7 +2309,23 @@
       "stream_knockout_final": "Döntő",
       "stream_knockout_semi": "Elődöntő",
       "stream_knockout_quarter": "Negyeddöntő",
-      "stream_knockout_round_of": "{n} közé döntő"
+      "stream_knockout_round_of": "{n} közé döntő",
+      "stream_show_avg": "Átlag megjelenítése",
+      "stream_studio_title": "Stream stúdió",
+      "stream_studio_city": "Város",
+      "stream_studio_country": "Ország",
+      "stream_studio_nickname": "Becenév",
+      "stream_studio_darts": "Nyíl",
+      "stream_studio_previous_match": "Előző meccs",
+      "stream_studio_last_match_avg": "Előző meccs átlag",
+      "stream_studio_last_opponent": "Utolsó ellenfél",
+      "stream_studio_recent_opponents": "Legutóbbi ellenfelek",
+      "stream_studio_opponents_note": "Ellenfelek (egyedi)",
+      "stream_studio_player": "Játékos",
+      "stream_studio_open_score": "Eredmény overlay",
+      "stream_studio_open_player_bullup": "Játékos intro",
+      "stream_studio_open_matchup_bullup": "Páros intro",
+      "stream_studio_popup_blocked": "Nem sikerült megnyitni az ablakot — engedélyezd a felugró ablakokat."
     },
     "live_matches": {
       "title": "Aktív meccsek",
@@ -2914,6 +2930,18 @@
       "knockout_not_generated": "Először generáld az egyenes kiesési táblát a körönkénti konfiguráció beállításához.",
       "finished_note": "A verseny befejeződött — a leg konfiguráció csak olvasható.",
       "knockout_cleared_notice": "A kieséses leg konfiguráció törlésre került, amikor a tábla visszavonásra került. Generáld újra a táblát és konfiguráld újra, ha szükséges."
+    },
+    "max_darts_config": {
+      "title": "Maximális nyílszám legenként",
+      "subtitle": "Opcionális játékosonkénti nyíllimit legenként. Ha egy játékos eléri a limitet kiszállás nélkül, bullra dobnak és kiválasztják a leg győztesét.",
+      "input_label": "Max. nyíl (játékosonként)",
+      "placeholder": "Korlátlan",
+      "clear": "Korlátlan",
+      "saving": "Mentés…",
+      "saved": "Mentve",
+      "save_error": "Mentési hiba",
+      "help": "Üresen hagyva nincs limit. Minden meccs indításakor érvényes. Aktív leg közbeni csökkentés a táblákon csak részben frissül.",
+      "finished_note": "A verseny befejeződött — a maximális nyílszám csak olvasható."
     }
   },
   "Map": {
@@ -3895,6 +3923,11 @@
     "unread_messages": "{count} olvasatlan üzeneted"
   },
   "Board": {
+    "max_dart_bull_title": "Elérted a maximális nyílszámot",
+    "max_dart_bull_message": "Elérted a maximális nyílszámot. Dobjatok bullra, és válasszátok ki, melyik játékos nyerte a leget.",
+    "max_dart_player1_wins": "{name} nyeri a leget",
+    "max_dart_player2_wins": "{name} nyeri a leget",
+    "leg_saved_locally": "Leg helyben mentve — szinkronizálás, amint van kapcsolat",
     "legs_set_by_organizer": "Szervező beállította: {legs} leg",
     "legs_override_notice": "Felülírás — szervező {legs} leget állított be",
     "legs_organizer_config": "Szervező konfigurációja: {legs} leg",

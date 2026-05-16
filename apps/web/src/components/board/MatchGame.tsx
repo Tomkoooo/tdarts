@@ -18,6 +18,14 @@ import {
   undoMatchLegAction,
   updateMatchGameplaySettingsAction,
 } from '@/features/matches/actions/matchGameplay.action';
+import { countPlayerDartsInLeg } from '@/lib/legDartCount';
+import {
+  appendPendingLeg,
+  flushPendingMatchSync,
+  removePendingLeg,
+  setPendingMatchFinish,
+  clearPendingMatchSync,
+} from '@/lib/matchPendingSync';
 
 interface PlayerData {
   playerId: {
@@ -50,6 +58,7 @@ interface Match {
   status: string;
   startingScore: number;
   legsToWin?: number;
+  maxDartsPerLeg?: number | null;
   startingPlayer?: 1 | 2;
   winnerId?: string;
 }
@@ -94,6 +103,9 @@ const MatchGame: React.FC<MatchGameProps> = ({
   const t = useTranslations("Board");
   const initialScore = match.startingScore;
   const [legsToWin, setLegsToWin] = useState(match.legsToWin || 3);
+  const [maxDartsPerLeg, setMaxDartsPerLeg] = useState<number | null>(
+    match.maxDartsPerLeg ?? null
+  );
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [tempLegsToWin, setTempLegsToWin] = useState(legsToWin);
   const [tempStartingPlayer, setTempStartingPlayer] = useState<1 | 2>(match.startingPlayer || 1);
@@ -140,6 +152,7 @@ const MatchGame: React.FC<MatchGameProps> = ({
   
   // Confirmation dialogs
   const [showLegConfirmation, setShowLegConfirmation] = useState<boolean>(false);
+  const [showMaxDartBullModal, setShowMaxDartBullModal] = useState<boolean>(false);
   const [showMatchConfirmation, setShowMatchConfirmation] = useState<boolean>(false);
   const [pendingLegWinner, setPendingLegWinner] = useState<1 | 2 | null>(null);
   const [pendingMatchWinner, setPendingMatchWinner] = useState<1 | 2 | null>(null);
@@ -217,6 +230,19 @@ const MatchGame: React.FC<MatchGameProps> = ({
     setSocketSyncStartingPlayer(match.startingPlayer || 1);
     hasPersistedMatchStartRef.current = false;
   }, [match._id, match.startingPlayer]);
+
+  useEffect(() => {
+    if (match.legsToWin != null) setLegsToWin(match.legsToWin);
+    setMaxDartsPerLeg(match.maxDartsPerLeg ?? null);
+  }, [match._id, match.legsToWin, match.maxDartsPerLeg]);
+
+  useEffect(() => {
+    const onOnline = () => {
+      void flushPendingMatchSync(match._id);
+    };
+    window.addEventListener('online', onOnline);
+    return () => window.removeEventListener('online', onOnline);
+  }, [match._id]);
 
   const pushMatchSocket = useCallback(
     async (opts?: { legsToWin?: number; startingPlayer?: 1 | 2 }) => {
@@ -413,6 +439,12 @@ const MatchGame: React.FC<MatchGameProps> = ({
         }));
       }
       
+      if (isAtMaxDartCap(currentPlayer, newAllThrows)) {
+        setShowMaxDartBullModal(true);
+        setScoreInput('');
+        return;
+      }
+
       setCurrentPlayer(currentPlayer === 1 ? 2 : 1);
       setScoreInput('');
       return;
@@ -506,7 +538,13 @@ const MatchGame: React.FC<MatchGameProps> = ({
           });
         }
       }
-      
+
+      if (isAtMaxDartCap(currentPlayer, newAllThrows)) {
+        setShowMaxDartBullModal(true);
+        setScoreInput('');
+        return;
+      }
+
       setCurrentPlayer(currentPlayer === 1 ? 2 : 1);
       setScoreInput('');
     }
@@ -676,7 +714,12 @@ const MatchGame: React.FC<MatchGameProps> = ({
 
       // Normal scoring mode
       // Prevent shortcut interference when modals are open
-      if (showLegConfirmation || showMatchConfirmation || showSettingsModal) {
+      if (
+        showLegConfirmation ||
+        showMaxDartBullModal ||
+        showMatchConfirmation ||
+        showSettingsModal
+      ) {
         return;
       }
 
@@ -701,8 +744,9 @@ const MatchGame: React.FC<MatchGameProps> = ({
     editingThrow, 
     editScoreInput, 
     scoreInput, 
-    showLegConfirmation, 
-    showMatchConfirmation, 
+    showLegConfirmation,
+    showMaxDartBullModal,
+    showMatchConfirmation,
     showSettingsModal,
     handleSaveEdit, 
     handleCancelEdit, 
@@ -722,126 +766,165 @@ const MatchGame: React.FC<MatchGameProps> = ({
     }
   };
 
-  const confirmLegEnd = async () => {
-    if (!pendingLegWinner || isSavingLeg) return;
-    
-    console.log("confirmLegEnd - Winner:", pendingLegWinner);
+  const isAtMaxDartCap = (player: 1 | 2, throwsAfterVisit: number[]): boolean => {
+    if (maxDartsPerLeg == null || maxDartsPerLeg <= 0) return false;
+    return countPlayerDartsInLeg(throwsAfterVisit) >= maxDartsPerLeg;
+  };
 
-    // Auto-set arrow count if only one option is possible
-    const lastThrow = pendingLegWinner === 1 ? player1.allThrows[player1.allThrows.length - 1] : player2.allThrows[player2.allThrows.length - 1];
-    const possibleArrowCounts = getPossibleArrowCounts(lastThrow);
-    if (possibleArrowCounts.length === 1) {
-      setArrowCount(possibleArrowCounts[0]);
-    }
-    
+  const finalizeLegEnd = async (
+    winner: 1 | 2,
+    options?: { winnerArrowCount?: number; endReason?: 'checkout' | 'max-darts' }
+  ) => {
+    if (isSavingLeg) return;
+
     setIsSavingLeg(true);
-    
-    const newPlayer1Legs = pendingLegWinner === 1 ? player1.legsWon + 1 : player1.legsWon;
-    const newPlayer2Legs = pendingLegWinner === 2 ? player2.legsWon + 1 : player2.legsWon;
-    
-    // Update legs won locally
-    if (pendingLegWinner === 1) {
-      setPlayer1(prev => ({ ...prev, legsWon: newPlayer1Legs }));
+
+    const newPlayer1Legs = winner === 1 ? player1.legsWon + 1 : player1.legsWon;
+    const newPlayer2Legs = winner === 2 ? player2.legsWon + 1 : player2.legsWon;
+
+    if (winner === 1) {
+      setPlayer1((prev) => ({ ...prev, legsWon: newPlayer1Legs }));
     } else {
-      setPlayer2(prev => ({ ...prev, legsWon: newPlayer2Legs }));
+      setPlayer2((prev) => ({ ...prev, legsWon: newPlayer2Legs }));
     }
 
-    // Send checkout throw to socket
-    if (isConnected) {
-      const lastThrowScore = pendingLegWinner === 1 ? player1.allThrows[player1.allThrows.length - 1] : player2.allThrows[player2.allThrows.length - 1];
+    if (options?.endReason === 'checkout' && isConnected) {
+      const lastThrowScore =
+        winner === 1
+          ? player1.allThrows[player1.allThrows.length - 1]
+          : player2.allThrows[player2.allThrows.length - 1];
       socket.emit('throw', {
         matchId: match._id,
-        playerId: pendingLegWinner === 1 ? match.player1.playerId._id : match.player2.playerId._id,
+        playerId:
+          winner === 1 ? match.player1.playerId._id : match.player2.playerId._id,
         score: lastThrowScore,
         isCheckout: true,
         remainingScore: 0,
         legNumber: currentLeg,
         tournamentCode,
-        arrowCount: arrowCount
+        arrowCount: options.winnerArrowCount ?? 3,
       });
     }
-    
-    // Save leg via server action
+
+    const legPayload = {
+      legNumber: currentLeg,
+      winner,
+      player1Throws: player1.allThrows,
+      player2Throws: player2.allThrows,
+      winnerArrowCount: options?.winnerArrowCount,
+      endReason: options?.endReason,
+    };
+
+    let saveSuccess = false;
     try {
       const response = await finishMatchLegAction({
         matchId: match._id,
-        winner: pendingLegWinner,
-        player1Throws: player1.allThrows,
-        player2Throws: player2.allThrows,
-        winnerArrowCount: arrowCount,
-        legNumber: currentLeg,
+        winner: legPayload.winner,
+        player1Throws: legPayload.player1Throws,
+        player2Throws: legPayload.player2Throws,
+        winnerArrowCount: legPayload.winnerArrowCount,
+        legNumber: legPayload.legNumber,
       });
-      
-      if (!(response as any)?.success) {
-        console.error('Error saving leg:', response);
-        showErrorToast(t("hiba_történt_a_57"), {
-          error: (response as any)?.error || (response as any)?.message,
-          context: 'Leg mentése',
-          errorName: 'Leg mentése sikertelen',
-        });
-        setIsSavingLeg(false);
-        return;
-      }
-
-      // If leg saved successfully, check if match is won
-      if (newPlayer1Legs >= legsToWin || newPlayer2Legs >= legsToWin) {
-        setPendingMatchWinner(pendingLegWinner);
-        setShowMatchConfirmation(true);
-        setShowLegConfirmation(false);
-        setPendingLegWinner(null);
-        return;
-      }
-
-      // If match continues, finalize leg locally
-      if (isConnected) {
-        socket.emit('leg-complete', {
-          matchId: match._id,
-          legNumber: currentLeg,
-          winnerId: pendingLegWinner === 1 ? match.player1.playerId._id : match.player2.playerId._id,
-          tournamentCode
-        });
-      }
-
-      // Reset for next leg
-      setPlayer1(prev => ({ ...prev, score: initialScore, allThrows: [] }));
-      setPlayer2(prev => ({ ...prev, score: initialScore, allThrows: [] }));
-      
-      const nextLegStartingPlayer = legStartingPlayer === 1 ? 2 : 1;
-      setLegStartingPlayer(nextLegStartingPlayer);
-      setCurrentPlayer(nextLegStartingPlayer);
-      setCurrentLeg(prev => prev + 1);
-      setScoreInput('');
-      
-      setShowLegConfirmation(false);
-      setPendingLegWinner(null);
-
-    } catch (error: any) {
+      saveSuccess = Boolean((response as { success?: boolean })?.success);
+    } catch (error: unknown) {
       console.error('Error saving leg:', error);
-      showErrorToast(t("hiba_történt_a_79"), {
-        error: error?.message,
-        context: 'Leg mentése',
-        errorName: 'Leg mentése sikertelen',
-      });
-    } finally {
-      setIsSavingLeg(false);
+      saveSuccess = false;
     }
+
+    if (!saveSuccess) {
+      appendPendingLeg(match._id, legPayload);
+      toast(t('leg_saved_locally'), { icon: '⚠️' });
+    } else {
+      removePendingLeg(match._id, currentLeg);
+      void flushPendingMatchSync(match._id);
+    }
+
+    if (newPlayer1Legs >= legsToWin || newPlayer2Legs >= legsToWin) {
+      setPendingMatchWinner(winner);
+      setShowMatchConfirmation(true);
+      setShowLegConfirmation(false);
+      setShowMaxDartBullModal(false);
+      setPendingLegWinner(null);
+      setIsSavingLeg(false);
+      return;
+    }
+
+    if (isConnected) {
+      socket.emit('leg-complete', {
+        matchId: match._id,
+        legNumber: currentLeg,
+        winnerId:
+          winner === 1 ? match.player1.playerId._id : match.player2.playerId._id,
+        tournamentCode,
+      });
+    }
+
+    setPlayer1((prev) => ({ ...prev, score: initialScore, allThrows: [] }));
+    setPlayer2((prev) => ({ ...prev, score: initialScore, allThrows: [] }));
+
+    const nextLegStartingPlayer = legStartingPlayer === 1 ? 2 : 1;
+    setLegStartingPlayer(nextLegStartingPlayer);
+    setCurrentPlayer(nextLegStartingPlayer);
+    setCurrentLeg((prev) => prev + 1);
+    setScoreInput('');
+
+    setShowLegConfirmation(false);
+    setShowMaxDartBullModal(false);
+    setPendingLegWinner(null);
+    setIsSavingLeg(false);
+  };
+
+  const confirmLegEnd = async () => {
+    if (!pendingLegWinner || isSavingLeg) return;
+
+    const lastThrow =
+      pendingLegWinner === 1
+        ? player1.allThrows[player1.allThrows.length - 1]
+        : player2.allThrows[player2.allThrows.length - 1];
+    const possibleArrowCounts = getPossibleArrowCounts(lastThrow);
+    const checkoutDarts =
+      possibleArrowCounts.length === 1 ? possibleArrowCounts[0] : arrowCount;
+
+    await finalizeLegEnd(pendingLegWinner, {
+      winnerArrowCount: checkoutDarts,
+      endReason: 'checkout',
+    });
+  };
+
+  const confirmMaxDartLegEnd = async (winner: 1 | 2) => {
+    if (isSavingLeg) return;
+    await finalizeLegEnd(winner, { endReason: 'max-darts' });
   };
 
   const confirmMatchEnd = async () => {
     if (!pendingMatchWinner || isSavingMatch) return;
-    
-    console.log("confirmMatchEnd - Winner:", pendingMatchWinner);
-    
-    setIsSavingMatch(true);
-    
-    try {
-      // Use current legs won from state
-      const finalPlayer1LegsWon = player1.legsWon;
-      const finalPlayer2LegsWon = player2.legsWon;
-      
-      console.log("confirmMatchEnd - Final Legs Won:", { p1: finalPlayer1LegsWon, p2: finalPlayer2LegsWon });
 
-      // Finish match via server action
+    setIsSavingMatch(true);
+
+    const finalPlayer1LegsWon = player1.legsWon;
+    const finalPlayer2LegsWon = player2.legsWon;
+
+    const flushResult = await flushPendingMatchSync(match._id);
+    if (flushResult.matchFinished) {
+      if (isConnected) {
+        socket.emit('match-complete', {
+          matchId: match._id,
+          tournamentCode,
+        });
+      }
+      localStorage.removeItem(`match_game_${match._id}`);
+      clearPendingMatchSync(match._id);
+      toast.success(
+        t('meccs_vege_nyertes', {
+          winner: pendingMatchWinner === 1 ? player1.name : player2.name,
+        })
+      );
+      if (onMatchFinished) await onMatchFinished();
+      onBack();
+      return;
+    }
+
+    try {
       const response = await finishBoardMatchAction({
         tournamentId: tournamentCode,
         matchId: match._id,
@@ -849,36 +932,43 @@ const MatchGame: React.FC<MatchGameProps> = ({
         player2LegsWon: finalPlayer2LegsWon,
         password: boardAccessPassword,
       });
-      
-      if (!(response as any)?.success) {
-        console.error('Error finishing match:', response);
-        showErrorToast(t("hiba_történt_a_51"), {
-          error: (response as any)?.error || (response as any)?.message,
+
+      if (!(response as { success?: boolean })?.success) {
+        setPendingMatchFinish(match._id, {
+          player1LegsWon: finalPlayer1LegsWon,
+          player2LegsWon: finalPlayer2LegsWon,
+          tournamentId: tournamentCode,
+          password: boardAccessPassword,
+        });
+        showErrorToast(t('hiba_történt_a_51'), {
+          error: (response as { error?: string; message?: string })?.error,
           context: 'Meccs lezárása',
           errorName: 'Meccs lezárása sikertelen',
         });
         setIsSavingMatch(false);
         return;
       }
-    } catch (error: any) {
-      console.error('Error finishing match:', error);
-      showErrorToast(t("hiba_történt_a_14"), {
-        error: error?.message,
+      clearPendingMatchSync(match._id);
+    } catch (error: unknown) {
+      setPendingMatchFinish(match._id, {
+        player1LegsWon: finalPlayer1LegsWon,
+        player2LegsWon: finalPlayer2LegsWon,
+        tournamentId: tournamentCode,
+        password: boardAccessPassword,
+      });
+      showErrorToast(t('hiba_történt_a_14'), {
+        error: error instanceof Error ? error.message : undefined,
         context: 'Meccs lezárása',
         errorName: 'Meccs lezárása sikertelen',
       });
       setIsSavingMatch(false);
       return;
-    } finally {
-      // Don't enable saving match here, only on error
-      // This prevents double clicks while redirects/refreshes are happening
     }
 
-    // Inform server to cleanup
     if (isConnected) {
-      socket.emit('match-complete', { 
+      socket.emit('match-complete', {
         matchId: match._id,
-        tournamentCode
+        tournamentCode,
       });
     }
 
@@ -1493,6 +1583,37 @@ const MatchGame: React.FC<MatchGameProps> = ({
         </DialogContent>
       </Dialog>
 
+
+      {/* Max dart — bull leg winner */}
+      <Dialog open={showMaxDartBullModal} onOpenChange={() => {}}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>{t('max_dart_bull_title')}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">{t('max_dart_bull_message')}</p>
+            <div className="flex flex-col gap-2">
+              <Button
+                className="w-full bg-green-600 hover:bg-green-700 text-white"
+                disabled={isSavingLeg}
+                onClick={() => void confirmMaxDartLegEnd(1)}
+              >
+                {t('max_dart_player1_wins', { name: player1.name })}
+              </Button>
+              <Button
+                className="w-full bg-green-600 hover:bg-green-700 text-white"
+                disabled={isSavingLeg}
+                onClick={() => void confirmMaxDartLegEnd(2)}
+              >
+                {t('max_dart_player2_wins', { name: player2.name })}
+              </Button>
+            </div>
+            {isSavingLeg && (
+              <p className="text-center text-xs text-muted-foreground">{t('mentés_folyamatban')}</p>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Leg Confirmation Dialog with Arrow Count */}
       <Dialog open={showLegConfirmation} onOpenChange={() => {}}>
