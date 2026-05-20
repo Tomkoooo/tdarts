@@ -15,6 +15,7 @@ import { RichTextEditor } from "@/components/ui/RichTextEditor"
 import { showErrorToast } from "@/lib/toastUtils"
 import { extractMediaIds } from "@/lib/utils"
 import { ImageWithSkeleton } from "@/components/ui/image-with-skeleton"
+import { ClubLogo } from "@/components/club/ClubLogo"
 import { Club } from "@/interface/club.interface"
 import getCroppedImg from "@/lib/imageUtils"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
@@ -148,6 +149,12 @@ export default function ClubBrandingSettings({ club, onClubUpdated }: ClubBrandi
       return;
     }
 
+    if (fieldName === 'logo') {
+      await uploadBlobToMedia(file, 'logo')
+      event.target.value = ''
+      return
+    }
+
     const reader = new FileReader()
     reader.onload = () => {
       setCropImageSrc(reader.result as string)
@@ -157,6 +164,26 @@ export default function ClubBrandingSettings({ club, onClubUpdated }: ClubBrandi
       setIsCropOpen(true)
     }
     reader.readAsDataURL(file)
+    event.target.value = ''
+  }
+
+  const handleLogoCropUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+    if (file.size > 15 * 1024 * 1024) {
+      toast.error("A fájl mérete maximum 15MB lehet");
+      return;
+    }
+    const reader = new FileReader()
+    reader.onload = () => {
+      setCropImageSrc(reader.result as string)
+      setCropTargetField('logo')
+      setCrop({ x: 0, y: 0 })
+      setZoom(1)
+      setIsCropOpen(true)
+    }
+    reader.readAsDataURL(file)
+    event.target.value = ''
   }
 
   const handleConfirmCrop = async () => {
@@ -323,11 +350,18 @@ export default function ClubBrandingSettings({ club, onClubUpdated }: ClubBrandi
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                       <Label>Logó</Label>
-                      <Input type="file" accept="image/*" onChange={(e) => handleMediaUpload(e, 'logo')} />
+                      <p className="text-xs text-muted-foreground mb-2">
+                        Tetszőleges arány — a fejlécben teljes logóként jelenik meg.
+                      </p>
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                        <Input type="file" accept="image/*" onChange={(e) => handleMediaUpload(e, 'logo')} />
+                        <Input type="file" accept="image/*" onChange={handleLogoCropUpload} className="text-xs" />
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">Második mező: opcionális 1:1 vágás.</p>
                       <input type="hidden" {...register("logo")} />
                       {watch("logo") && (
-                        <div className="relative mt-2 w-fit group">
-                            <ImageWithSkeleton src={watch("logo")} alt="Logo" className="h-20 w-20 object-contain border rounded bg-black/20" containerClassName="h-20 w-20" />
+                        <div className="relative mt-3 w-fit group">
+                            <ClubLogo src={watch("logo")} alt="Logo előnézet" size="md" />
                             <Button 
                                 type="button"
                                 variant="destructive" 

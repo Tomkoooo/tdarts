@@ -6,6 +6,7 @@ import { usePathname, useSearchParams } from "next/navigation"
 import { IconHome, IconTrophy, IconUsers, IconSettings, IconMedal } from "@tabler/icons-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ImageWithSkeleton } from "@/components/ui/image-with-skeleton"
+import { ClubLogo } from "@/components/club/ClubLogo"
 import { useTranslations } from "next-intl"
 import { stripLocalePrefix } from "@/lib/seo"
 import { cn } from "@/lib/utils"
@@ -251,15 +252,11 @@ export default function ClubLayout({
         <div className="relative z-10 mx-auto w-full max-w-7xl px-4 pb-6 md:pb-10">
           <div className="rounded-3xl border border-white/15 bg-card/35 p-4 backdrop-blur-lg shadow-[0_18px_45px_rgba(0,0,0,0.35)] md:p-6">
             <div className="flex items-center gap-4">
-              <div className="flex size-20 items-center justify-center overflow-hidden rounded-2xl border border-white/20 bg-primary/20 backdrop-blur md:size-24">
-              {landingPage?.logo ? (
-                <ImageWithSkeleton src={landingPage.logo} alt={t("club_logo_x3a0")} className="h-full w-full object-cover" containerClassName="h-full w-full" />
-              ) : (
-                <svg className="h-6 w-6 text-primary md:h-8 md:w-8" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
-                </svg>
-              )}
-              </div>
+              <ClubLogo
+                src={landingPage?.logo}
+                alt={t("club_logo_x3a0")}
+                size="md"
+              />
               <div>
                 <h1 className="text-3xl font-bold text-foreground drop-shadow-md md:text-5xl" style={landingPage?.coverImage ? { color: "white" } : {}}>
                   {clubName}

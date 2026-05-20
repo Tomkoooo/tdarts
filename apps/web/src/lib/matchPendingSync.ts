@@ -14,6 +14,10 @@ export type PendingLegPayload = {
 
 export type PendingMatchSyncState = {
   pendingLegs: PendingLegPayload[];
+  boardContext?: {
+    tournamentId: string;
+    password?: string;
+  };
   pendingMatchFinish?: {
     player1LegsWon: number;
     player2LegsWon: number;
@@ -44,11 +48,16 @@ export function setPendingMatchSync(matchId: string, state: PendingMatchSyncStat
   localStorage.setItem(storageKey(matchId), JSON.stringify(state));
 }
 
-export function appendPendingLeg(matchId: string, leg: PendingLegPayload): void {
+export function appendPendingLeg(
+  matchId: string,
+  leg: PendingLegPayload,
+  boardContext?: PendingMatchSyncState['boardContext']
+): void {
   const current = getPendingMatchSync(matchId) ?? { pendingLegs: [] };
   const withoutDup = current.pendingLegs.filter((l) => l.legNumber !== leg.legNumber);
   setPendingMatchSync(matchId, {
     ...current,
+    boardContext: boardContext ?? current.boardContext,
     pendingLegs: [...withoutDup, leg],
   });
 }
@@ -81,11 +90,23 @@ export type FlushPendingResult = {
   partialFailure: boolean;
 };
 
-export async function flushPendingMatchSync(matchId: string): Promise<FlushPendingResult> {
+export async function flushPendingMatchSync(
+  matchId: string,
+  boardContext?: PendingMatchSyncState['boardContext']
+): Promise<FlushPendingResult> {
   const state = getPendingMatchSync(matchId);
   if (!state) {
     return { legsFlushed: 0, matchFinished: false, partialFailure: false };
   }
+
+  const access = boardContext ??
+    state.boardContext ??
+    (state.pendingMatchFinish
+      ? {
+          tournamentId: state.pendingMatchFinish.tournamentId,
+          password: state.pendingMatchFinish.password,
+        }
+      : undefined);
 
   const sortedLegs = [...state.pendingLegs].sort((a, b) => a.legNumber - b.legNumber);
   let legsFlushed = 0;
@@ -95,6 +116,8 @@ export async function flushPendingMatchSync(matchId: string): Promise<FlushPendi
     try {
       const response = await finishMatchLegAction({
         matchId,
+        tournamentId: access?.tournamentId,
+        password: access?.password,
         winner: leg.winner,
         player1Throws: leg.player1Throws,
         player2Throws: leg.player2Throws,

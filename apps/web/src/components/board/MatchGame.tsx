@@ -12,13 +12,17 @@ import { Label } from '@/components/ui/Label';
 import { Input } from '@/components/ui/Input';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/Button';
-import { finishBoardMatchAction, startBoardMatchAction } from '@/features/board/actions/boardPage.action';
+import {
+  finishBoardMatchAction,
+  startBoardMatchAction,
+  updateBoardMatchStartingPlayerAction,
+} from '@/features/board/actions/boardPage.action';
 import {
   finishMatchLegAction,
   undoMatchLegAction,
   updateMatchGameplaySettingsAction,
 } from '@/features/matches/actions/matchGameplay.action';
-import { countPlayerDartsInLeg } from '@/lib/legDartCount';
+import { shouldPromptMaxDartLegWinner } from '@/lib/maxDartLeg';
 import {
   appendPendingLeg,
   flushPendingMatchSync,
@@ -40,6 +44,15 @@ interface PlayerData {
 }
 
 import { useScolia } from '@/hooks/useScolia';
+import SectorScoreInput, { type DartVisitState } from '@/components/board/SectorScoreInput';
+import ScoreEntryModeToggle, { getStoredScoreEntryMode } from '@/components/board/ScoreEntryModeToggle';
+import PlayerCardScorePreview from '@/components/board/PlayerCardScorePreview';
+import LegsToWinPicker from '@/components/board/LegsToWinPicker';
+import {
+  getStoredScorePreviewOnCards,
+  setStoredScorePreviewOnCards,
+  type ScoreEntryMode,
+} from '@/lib/board/boardScoreSettings';
 import { formatBoardPlayerName } from '@/lib/formatBoardPlayerName';
 
 interface Scorer {
@@ -145,6 +158,17 @@ const MatchGame: React.FC<MatchGameProps> = ({
   const [currentPlayer, setCurrentPlayer] = useState<1 | 2>(match.startingPlayer || 1);
   const [currentLeg, setCurrentLeg] = useState(1);
   const [scoreInput, setScoreInput] = useState<string>('');
+  const [scoreEntryMode, setScoreEntryMode] = useState<ScoreEntryMode>(() =>
+    getStoredScoreEntryMode()
+  );
+  const [dartVisitState, setDartVisitState] = useState<DartVisitState>({
+    visitTotal: 0,
+    remainingAfterVisit: initialScore,
+    dartCount: 0,
+  });
+  const [showScorePreviewOnCards, setShowScorePreviewOnCards] = useState(() =>
+    getStoredScorePreviewOnCards()
+  );
   const [editingThrow, setEditingThrow] = useState<{player: 1 | 2, throwIndex: number} | null>(null);
   const [editScoreInput, setEditScoreInput] = useState<string>('');
   const [isInitialized, setIsInitialized] = useState<boolean>(false);
@@ -181,10 +205,23 @@ const MatchGame: React.FC<MatchGameProps> = ({
   const chalkboardRef = useRef<HTMLDivElement>(null);
   const quickAccessScores = [180, 140, 100, 95, 85, 81, 80, 60, 45, 41, 40, 26];
 
+  const currentPlayerRemaining = currentPlayer === 1 ? player1.score : player2.score;
+  const isDartEntryActive = scoreEntryMode === 'dart' && !editingThrow;
+  const headerScoreDisplay = editingThrow
+    ? editScoreInput || '0'
+    : isDartEntryActive
+      ? String(dartVisitState.visitTotal)
+      : scoreInput || '0';
+
   // Socket hook
-  const { socket, isConnected } = useSocket({ 
-    matchId: match._id, 
-    clubId 
+  const { socket, isConnected } = useSocket({
+    matchId: match._id,
+    clubId,
+    tournamentId: tournamentCode,
+    boardAuth: {
+      tournamentId: tournamentCode,
+      password: boardAccessPassword,
+    },
   });
 
    // Buffer for Scolia
@@ -238,7 +275,10 @@ const MatchGame: React.FC<MatchGameProps> = ({
 
   useEffect(() => {
     const onOnline = () => {
-      void flushPendingMatchSync(match._id);
+      void flushPendingMatchSync(match._id, {
+        tournamentId: tournamentCode,
+        password: boardAccessPassword,
+      });
     };
     window.addEventListener('online', onOnline);
     return () => window.removeEventListener('online', onOnline);
@@ -286,6 +326,7 @@ const MatchGame: React.FC<MatchGameProps> = ({
         startingScore: initialScore,
         legsToWin: lt,
         startingPlayer: sp,
+        tournamentCode,
       });
       socket.emit('set-match-players', {
         matchId: match._id,
@@ -293,6 +334,7 @@ const MatchGame: React.FC<MatchGameProps> = ({
         player2Id: match.player2.playerId._id,
         player1Name: match.player1.playerId.name,
         player2Name: match.player2.playerId.name,
+        tournamentCode,
       });
       socket.emit('match-started', {
         matchId: match._id,
@@ -439,13 +481,13 @@ const MatchGame: React.FC<MatchGameProps> = ({
         }));
       }
       
-      if (isAtMaxDartCap(currentPlayer, newAllThrows)) {
+      const p1ThrowsAfterBust = currentPlayer === 1 ? newAllThrows : player1.allThrows;
+      const p2ThrowsAfterBust = currentPlayer === 2 ? newAllThrows : player2.allThrows;
+      const nextPlayerAfterBust = currentPlayer === 1 ? 2 : 1;
+      setCurrentPlayer(nextPlayerAfterBust);
+      if (shouldPromptMaxDartLegWinner(p1ThrowsAfterBust, p2ThrowsAfterBust, maxDartsPerLeg)) {
         setShowMaxDartBullModal(true);
-        setScoreInput('');
-        return;
       }
-
-      setCurrentPlayer(currentPlayer === 1 ? 2 : 1);
       setScoreInput('');
       return;
     }
@@ -539,13 +581,13 @@ const MatchGame: React.FC<MatchGameProps> = ({
         }
       }
 
-      if (isAtMaxDartCap(currentPlayer, newAllThrows)) {
+      const p1ThrowsAfter = currentPlayer === 1 ? newAllThrows : player1.allThrows;
+      const p2ThrowsAfter = currentPlayer === 2 ? newAllThrows : player2.allThrows;
+      const nextPlayerAfter = currentPlayer === 1 ? 2 : 1;
+      setCurrentPlayer(nextPlayerAfter);
+      if (shouldPromptMaxDartLegWinner(p1ThrowsAfter, p2ThrowsAfter, maxDartsPerLeg)) {
         setShowMaxDartBullModal(true);
-        setScoreInput('');
-        return;
       }
-
-      setCurrentPlayer(currentPlayer === 1 ? 2 : 1);
       setScoreInput('');
     }
   };
@@ -766,11 +808,6 @@ const MatchGame: React.FC<MatchGameProps> = ({
     }
   };
 
-  const isAtMaxDartCap = (player: 1 | 2, throwsAfterVisit: number[]): boolean => {
-    if (maxDartsPerLeg == null || maxDartsPerLeg <= 0) return false;
-    return countPlayerDartsInLeg(throwsAfterVisit) >= maxDartsPerLeg;
-  };
-
   const finalizeLegEnd = async (
     winner: 1 | 2,
     options?: { winnerArrowCount?: number; endReason?: 'checkout' | 'max-darts' }
@@ -819,6 +856,8 @@ const MatchGame: React.FC<MatchGameProps> = ({
     try {
       const response = await finishMatchLegAction({
         matchId: match._id,
+        tournamentId: tournamentCode,
+        password: boardAccessPassword,
         winner: legPayload.winner,
         player1Throws: legPayload.player1Throws,
         player2Throws: legPayload.player2Throws,
@@ -832,11 +871,17 @@ const MatchGame: React.FC<MatchGameProps> = ({
     }
 
     if (!saveSuccess) {
-      appendPendingLeg(match._id, legPayload);
+      appendPendingLeg(match._id, legPayload, {
+        tournamentId: tournamentCode,
+        password: boardAccessPassword,
+      });
       toast(t('leg_saved_locally'), { icon: '⚠️' });
     } else {
       removePendingLeg(match._id, currentLeg);
-      void flushPendingMatchSync(match._id);
+      void flushPendingMatchSync(match._id, {
+        tournamentId: tournamentCode,
+        password: boardAccessPassword,
+      });
     }
 
     if (newPlayer1Legs >= legsToWin || newPlayer2Legs >= legsToWin) {
@@ -904,7 +949,10 @@ const MatchGame: React.FC<MatchGameProps> = ({
     const finalPlayer1LegsWon = player1.legsWon;
     const finalPlayer2LegsWon = player2.legsWon;
 
-    const flushResult = await flushPendingMatchSync(match._id);
+    const flushResult = await flushPendingMatchSync(match._id, {
+      tournamentId: tournamentCode,
+      password: boardAccessPassword,
+    });
     if (flushResult.matchFinished) {
       if (isConnected) {
         socket.emit('match-complete', {
@@ -1032,7 +1080,11 @@ const MatchGame: React.FC<MatchGameProps> = ({
     setIsSavingMatch(true);
     try {
       // Undo the last saved leg via server action
-      const response = await undoMatchLegAction({ matchId: match._id });
+      const response = await undoMatchLegAction({
+        matchId: match._id,
+        tournamentId: tournamentCode,
+        password: boardAccessPassword,
+      });
       
       if (!(response as any)?.success) {
          throw new Error('Nem sikerült törölni az utolsó leget a szerverről.');
@@ -1167,6 +1219,14 @@ const MatchGame: React.FC<MatchGameProps> = ({
               <div className="truncate max-w-full">{player1.name}</div>
               <div className="text-gray-400 text-2xl sm:text-3xl md:text-4xl lg:text-5xl mt-1">{player1.legsWon}</div>
             </div>
+            <PlayerCardScorePreview
+              showPreview={showScorePreviewOnCards}
+              isActivePlayer={currentPlayer === 1 && !editingThrow}
+              scoreEntryMode={scoreEntryMode}
+              dartVisitState={dartVisitState}
+              totalModeInput={scoreInput}
+              currentRemaining={player1.score}
+            />
             <div className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold text-white mb-1 sm:mb-2 leading-none">{player1.score}</div>
             <div className="flex gap-1 sm:gap-2 md:gap-3 text-xs sm:text-sm md:text-base">
               <span className="text-gray-400">{t("avg")}{player1.stats.average}</span>
@@ -1188,6 +1248,14 @@ const MatchGame: React.FC<MatchGameProps> = ({
               <div className="truncate max-w-full">{player2.name}</div>
               <div className="text-gray-400 text-2xl sm:text-3xl md:text-4xl lg:text-5xl mt-1">{player2.legsWon}</div>
             </div>
+            <PlayerCardScorePreview
+              showPreview={showScorePreviewOnCards}
+              isActivePlayer={currentPlayer === 2 && !editingThrow}
+              scoreEntryMode={scoreEntryMode}
+              dartVisitState={dartVisitState}
+              totalModeInput={scoreInput}
+              currentRemaining={player2.score}
+            />
             <div className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold text-white mb-1 sm:mb-2 leading-none">{player2.score}</div>
             <div className="flex gap-1 sm:gap-2 md:gap-3 text-xs sm:text-sm md:text-base">
               <span className="text-gray-400">{t("avg")}{player2.stats.average}</span>
@@ -1291,7 +1359,7 @@ const MatchGame: React.FC<MatchGameProps> = ({
         </div>
 
       {/* Right Side - Input & Numpad (Landscape) / Bottom (Portrait) */}
-      <div className="flex flex-col landscape:w-1/2 landscape:h-full">
+      <div className="flex flex-col min-h-0 overflow-hidden landscape:w-1/2 landscape:h-full portrait:flex-1">
         {/* Score Display with BACK button */}
         <section className="h-[6dvh] landscape:h-[15dvh] bg-gradient-to-b from-base-300 to-base-200 flex items-center justify-between   px-2 sm:px-4">
           <button
@@ -1305,9 +1373,9 @@ const MatchGame: React.FC<MatchGameProps> = ({
                 {t("szerkesztés_24")}{editingThrow.player === 1 ? player1.name : player2.name} {t("dobás")}{editingThrow.throwIndex + 1}
             </div>
             )}
-            <div className={`text-5xl sm:text-6xl md:text-7xl font-bold ${editingThrow ? 'text-primary' : 'text-base-content'}`}>
-              {editingThrow ? (editScoreInput || '0') : (scoreInput || '0')}
-          </div>
+            <div className={`text-5xl sm:text-6xl md:text-7xl font-bold leading-none ${editingThrow ? 'text-primary' : 'text-base-content'}`}>
+              {headerScoreDisplay}
+            </div>
           </div>
           
           {/* Scolia Status Indicator */}
@@ -1319,21 +1387,40 @@ const MatchGame: React.FC<MatchGameProps> = ({
               </span>
             </div>
           )}
-          
-          <button
-            onClick={() => {
-              setTempLegsToWin(legsToWin);
-              setTempStartingPlayer(currentPlayer);
-              setShowSettingsModal(true);
-            }}
-            className="bg-base-300 hover:bg-base-100 text-base-content font-bold px-3 sm:px-6 py-2 sm:py-3 rounded-lg transition-colors text-xs sm:text-base border flex items-center justify-center w-[80px] sm:w-[120px]"
-          >
-            <IconSettings className="w-4 h-4 sm:w-5 sm:h-5" />
-          </button>
+
+          <div className="flex items-center gap-1.5 shrink-0">
+            <ScoreEntryModeToggle mode={scoreEntryMode} onChange={setScoreEntryMode} />
+            <button
+              onClick={() => {
+                setTempLegsToWin(legsToWin);
+                setTempStartingPlayer(currentPlayer);
+                setShowSettingsModal(true);
+              }}
+              className="bg-base-300 hover:bg-base-100 text-base-content font-bold p-2 sm:px-4 sm:py-3 rounded-lg transition-colors text-xs sm:text-base border flex items-center justify-center"
+            >
+              <IconSettings className="w-5 h-5 sm:w-6 sm:h-6" />
+            </button>
+          </div>
         </section>
 
-        {/* Number Pad */}
-        <main className="h-[56dvh] landscape:flex-[0_0_85dvh] bg-black p-1 sm:p-2 md:p-4">
+        {/* Number Pad / Sector input */}
+        <main className="flex-1 min-h-0 bg-black p-1 sm:p-2 md:p-3 overflow-hidden">
+          {scoreEntryMode === 'dart' && !editingThrow ? (
+            <SectorScoreInput
+              key={`dart-${currentPlayer}-${currentLeg}`}
+              remainingScore={currentPlayerRemaining}
+              disabled={Boolean(editingThrow)}
+              onVisitStateChange={setDartVisitState}
+              onVisitComplete={(total) => {
+                handleThrow(total);
+                setDartVisitState({
+                  visitTotal: 0,
+                  remainingAfterVisit: currentPlayerRemaining,
+                  dartCount: 0,
+                });
+              }}
+            />
+          ) : (
           <div className="h-full flex gap-1 sm:gap-2 md:gap-4">
             {/* Quick Access Scores - Left */}
             <div className="w-1/5 sm:w-1/4 flex flex-col gap-1 sm:gap-2">
@@ -1419,6 +1506,7 @@ const MatchGame: React.FC<MatchGameProps> = ({
               ))}
             </div>
           </div>
+          )}
         </main>
         </div>
 
@@ -1433,16 +1521,27 @@ const MatchGame: React.FC<MatchGameProps> = ({
             {/* Legs to Win */}
             <div className="space-y-2">
               <Label>{t("nyert_legek_száma")}</Label>
-              <select 
-                onChange={(e) => setTempLegsToWin(parseInt(e.target.value))} 
-                value={tempLegsToWin} 
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 text-foreground" 
-              >
-                {Array.from({ length: 20 }, (_, i) => (
-                  <option key={i + 1} value={i + 1}>{i + 1}</option>
-                ))}
-              </select>
+              <LegsToWinPicker value={tempLegsToWin} onChange={setTempLegsToWin} />
               <p className="text-xs text-muted-foreground">{t("best_of")}{tempLegsToWin * 2 - 1}</p>
+            </div>
+
+            <div className="border-t border-border pt-4 space-y-2">
+              <div className="flex items-center justify-between gap-3">
+                <div className="space-y-0.5 flex-1">
+                  <Label htmlFor="score-preview-cards">{t("settings.score_preview_on_cards")}</Label>
+                  <p className="text-xs text-muted-foreground">
+                    {t("settings.score_preview_on_cards_desc")}
+                  </p>
+                </div>
+                <Switch
+                  id="score-preview-cards"
+                  checked={showScorePreviewOnCards}
+                  onCheckedChange={(checked) => {
+                    setShowScorePreviewOnCards(checked);
+                    setStoredScorePreviewOnCards(checked);
+                  }}
+                />
+              </div>
             </div>
 
             {/* Starting Player - only if no throws have been made */}
@@ -1530,30 +1629,49 @@ const MatchGame: React.FC<MatchGameProps> = ({
                 onClick={async () => {
                   setIsSavingSettings(true);
                   try {
-                    // Save starting player if changed and no throws made
-                    if (player1.allThrows.length === 0 && player2.allThrows.length === 0 && 
-                        player1.score === initialScore && player2.score === initialScore &&
-                        tempStartingPlayer !== currentPlayer) {
-                      setCurrentPlayer(tempStartingPlayer);
-                      setLegStartingPlayer(tempStartingPlayer);
-                      
-                      // Update match starting player via server action
+                    const canChangeStarter =
+                      player1.allThrows.length === 0 &&
+                      player2.allThrows.length === 0 &&
+                      player1.score === initialScore &&
+                      player2.score === initialScore;
+                    const startingPlayerChanged =
+                      canChangeStarter && tempStartingPlayer !== socketSyncStartingPlayer;
+                    const legsChanged = tempLegsToWin !== legsToWin;
+
+                    if (startingPlayerChanged) {
                       try {
-                        const spRes = await updateMatchGameplaySettingsAction({
+                        const spRes = await updateBoardMatchStartingPlayerAction({
+                          tournamentId: tournamentCode,
                           matchId: match._id,
                           startingPlayer: tempStartingPlayer,
+                          password: boardAccessPassword,
                         });
-                        if ((spRes as any)?.success) {
+                        if ((spRes as { success?: boolean })?.success) {
                           setSocketSyncStartingPlayer(tempStartingPlayer);
+                          setCurrentPlayer(tempStartingPlayer);
+                          setLegStartingPlayer(tempStartingPlayer);
                           pushMatchSocket({ startingPlayer: tempStartingPlayer });
+                        } else if (tempStartingPlayer === currentPlayer) {
+                          // Local UI already matches intended starter — avoid misleading error.
                         }
                       } catch (error) {
                         console.error('Error updating starting player:', error);
+                        if (tempStartingPlayer !== currentPlayer) {
+                          showErrorToast(t("hiba_történt_a_6"), {
+                            error: error instanceof Error ? error.message : String(error),
+                            context: 'Kezdő játékos',
+                            errorName: 'Kezdő játékos mentése sikertelen',
+                          });
+                        }
                       }
                     }
-                    
-                    // Save legs to win
-                    await handleSaveLegsToWin();
+
+                    if (legsChanged) {
+                      await handleSaveLegsToWin();
+                    } else if (!startingPlayerChanged) {
+                      setShowSettingsModal(false);
+                      toast.success(t("beállítások_mentve"));
+                    }
                   } finally {
                     setIsSavingSettings(false);
                   }

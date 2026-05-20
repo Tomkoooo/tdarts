@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useCallback, useState, useMemo, type MutableRefObject } from "react";
 import { socket, initializeSocket } from "@/lib/socket";
+import type { BoardSocketAuthInput } from "@/lib/socketAuthToken";
 import { useSocketFeature } from "./useFeatureFlag";
 import {
   acquireMatchRoom,
@@ -16,6 +17,7 @@ interface UseSocketOptions {
   tournamentId?: string;
   clubId?: string;
   matchId?: string;
+  boardAuth?: BoardSocketAuthInput;
 }
 
 export type SocketFeatureUiStatus =
@@ -69,7 +71,7 @@ function syncAcquiredRooms(
   }
 }
 
-export const useSocket = ({ tournamentId, clubId, matchId }: UseSocketOptions = {}) => {
+export const useSocket = ({ tournamentId, clubId, matchId, boardAuth }: UseSocketOptions = {}) => {
   const { isSocketEnabled, isLoading, error, denialReason, gateReason } = useSocketFeature(clubId);
   const [socketConnected, setSocketConnected] = useState(false);
   const [transportBlocked, setTransportBlocked] = useState(false);
@@ -151,7 +153,13 @@ export const useSocket = ({ tournamentId, clubId, matchId }: UseSocketOptions = 
           console.log("Socket feature enabled, initializing authentication...");
         }
         try {
-          const authSuccess = await initializeSocket();
+          const authSuccess = await initializeSocket({
+            boardAuth: boardAuth?.tournamentId
+              ? { tournamentId: boardAuth.tournamentId, password: boardAuth.password }
+              : tournamentId
+                ? { tournamentId, password: boardAuth?.password }
+                : undefined,
+          });
           if (process.env.NODE_ENV === "development" || process.env.NEXT_PUBLIC_DEBUG_SOCKET === "true") {
             console.log("🔑 Auth result:", authSuccess);
           }
@@ -257,7 +265,7 @@ export const useSocket = ({ tournamentId, clubId, matchId }: UseSocketOptions = 
       socket.off("connect", handleConnect);
       releaseAcquiredRooms(acquiredRooms);
     };
-  }, [shouldEnableSocket, tournamentId, matchId]);
+  }, [shouldEnableSocket, tournamentId, matchId, boardAuth?.tournamentId, boardAuth?.password]);
 
   const on = useCallback(
     (event: string, callback: (...args: any[]) => void) => {

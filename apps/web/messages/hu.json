@@ -2231,7 +2231,21 @@
       "confirm_move": "Biztosan módosítod a játékos helyezését?\\n\\n⚠️ FONTOS: Ez a módosítás minden meccs végén újra szükséges lehet, mivel a rendszer automatikusan újraszámolja a helyezéseket.",
       "success_moved": "Helyezés sikeresen módosítva!",
       "error_moving": "Hiba történt a helyezés módosítása során!",
-      "error_save": "Hiba történt a mentés során"
+      "error_save": "Hiba történt a mentés során",
+      "add_player": "Játékos hozzáadása",
+      "add_player_disabled": "Csak akkor adhatsz hozzá játékost, ha minden csoportmeccs még függőben van.",
+      "add_player_dialog": {
+        "title": "Játékos hozzáadása a csoporthoz",
+        "description": "A csoport összes függő meccse törlődik és új körkörös menetrend készül. Válaszd ki a bejelentkezett, csoport nélküli játékosokat.",
+        "capacity": "{current} / {max} játékos",
+        "no_players": "Nincs hozzáadható játékos (bejelentkezett és csoport nélküli).",
+        "select_label": "Játékos",
+        "cancel": "Mégse",
+        "submit": "Hozzáadás és meccsek újragenerálása",
+        "submitting": "Feldolgozás...",
+        "success": "Játékos(ok) hozzáadva, meccsek újragenerálva.",
+        "error": "Nem sikerült hozzáadni a játékost."
+      }
     },
     "knockout": {
       "rounds": {
@@ -2325,7 +2339,11 @@
         "automatic": "Automatikus",
         "manual": "Manuális",
         "alert_unsupported_title": "Nem támogatott csoportszám",
-        "alert_unsupported_desc": "Automatikus generálás csak 2, 4, 8 vagy 16 csoport esetén lehetséges (MDL szabályok). Válts manuális módra.",
+        "alert_unsupported_desc": "Automatikus generálás csak 2, 4, 8 vagy 16 csoport esetén lehetséges (MDL szabályok). Egy csoportos tornánál automatikus párosítás a csoporthelyezés alapján történik. Válts manuális módra.",
+        "single_group_advance_label": "Továbbjutók száma",
+        "single_group_advance_desc": "Hány játékos jusson tovább a csoportból. Párosítás: 1. vs utolsó, 2. vs utolsó előtti, stb.",
+        "single_group_bracket_size": "Várható főtábla méret: {size} fős",
+        "single_group_note": "Egy csoportos tornánál a párosítás a csoport végső helyezése alapján történik (MDL kereszt-szabályok nélkül). Páratlan továbbjutó szám esetén az utolsó játékos automatikusan továbbjut (bye).",
         "qualifiers_label": "Továbbjutók száma csoportonként",
         "qualifiers_desc": "Válaszd ki, hány játékos jusson tovább csoportonként. Ez határozza meg a főtábla méretét.",
         "players_count": "{count} játékos",
@@ -2613,6 +2631,9 @@
     },
     "live_matches": {
       "title": "Aktív meccsek",
+      "login_banner_title": "Jelentkezz be az élő követéshez",
+      "login_banner_description": "A meccslista nyilvános, de dobásonkénti élő követéshez be kell jelentkezned.",
+      "login_banner_cta": "Bejelentkezés",
       "connected": "Élő kapcsolat",
       "connecting": "Kapcsolódás...",
       "socket_status": {
@@ -4207,6 +4228,22 @@
     "unread_messages": "{count} olvasatlan üzeneted"
   },
   "Board": {
+    "score_mode_total": "Összpont",
+    "score_mode_dart": "Nyílanként",
+    "settings": {
+      "score_preview_on_cards": "Pont előnézet a játékos kártyán",
+      "score_preview_on_cards_desc": "Bedobás és maradék pont az aktív játékos kártyáján (nem az alsó sávban)."
+    },
+    "sector_input": {
+      "simple": "Egyszeri",
+      "double": "Dupla",
+      "triple": "Tripla",
+      "visit_total": "Bedobás",
+      "remaining": "Marad",
+      "undo_dart": "Vissza nyíl",
+      "submit_visit": "Bedobás küldése",
+      "miss": "Miss"
+    },
     "max_dart_bull_title": "Elérted a maximális nyílszámot",
     "max_dart_bull_message": "Elérted a maximális nyílszámot. Dobjatok bullra, és válasszátok ki, melyik játékos nyerte a leget.",
     "max_dart_player1_wins": "{name} nyeri a leget",

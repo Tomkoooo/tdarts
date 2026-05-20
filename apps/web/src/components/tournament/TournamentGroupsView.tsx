@@ -14,9 +14,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { Input } from '@/components/ui/Input';
 import{ Label } from '@/components/ui/Label';
-import { IconChevronDown, IconEye, IconEdit } from '@tabler/icons-react';
+import { IconChevronDown, IconEye, IconEdit, IconUserPlus } from '@tabler/icons-react';
 import { coerceNumericValue } from '@/lib/number-input';
-import { moveTournamentPlayerInGroupAction } from '@/features/tournaments/actions/manageTournament.action';
+import {
+  addPlayersToGroupAction,
+  moveTournamentPlayerInGroupAction,
+} from '@/features/tournaments/actions/manageTournament.action';
 import { finishBoardMatchAction } from '@/features/board/actions/boardPage.action';
 import { getGroupTableStats } from '@/lib/tournament-player-group-stats';
 
@@ -89,6 +92,11 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
   const [matchFilter, setMatchFilter] = useState<'all' | 'pending' | 'ongoing' | 'finished'>('all');
   const [showLegsModal, setShowLegsModal] = useState(false);
   const [selectedMatchForLegs, setSelectedMatchForLegs] = useState<Match | null>(null);
+  const [addPlayerGroupId, setAddPlayerGroupId] = useState<string | null>(null);
+  const [addPlayerSelectedIds, setAddPlayerSelectedIds] = useState<string[]>([]);
+  const [addPlayerLoading, setAddPlayerLoading] = useState(false);
+
+  const MAX_PLAYERS_PER_GROUP = 7;
 
   const isAdminOrModerator = userClubRole === 'admin' || userClubRole === 'moderator';
   const tournamentStatus = tournament?.tournamentSettings?.status;
@@ -112,6 +120,73 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
     });
     return grouped;
   }, [tournament?.tournamentPlayers, tournament?.tournamentSettings?.status]);
+
+  const unassignedPlayers = useMemo(() => {
+    const allPlayers = Array.isArray(tournament?.tournamentPlayers)
+      ? tournament.tournamentPlayers
+      : [];
+    return allPlayers
+      .filter((p: any) => p.status === 'checked-in' && !p.groupId)
+      .map((p: any) => ({
+        id: p.playerReference?._id?.toString?.() ?? p.playerReference?.toString?.() ?? '',
+        name: p.playerReference?.name ?? tTour('groups.table.unknown'),
+      }))
+      .filter((p: { id: string }) => Boolean(p.id));
+  }, [tournament?.tournamentPlayers, tTour]);
+
+  const canAddPlayersToGroup = (group: any, groupPlayers: any[]) => {
+    if (!isAdminOrModerator || tournamentStatus !== 'group-stage') return false;
+    if (groupPlayers.length >= MAX_PLAYERS_PER_GROUP) return false;
+    if (!group.matches || group.matches.length === 0) return true;
+    return group.matches.every(
+      (m: Match) => m.status === 'pending' || !m.status
+    );
+  };
+
+  const openAddPlayerDialog = (groupId: string) => {
+    setAddPlayerGroupId(groupId);
+    setAddPlayerSelectedIds([]);
+  };
+
+  const closeAddPlayerDialog = () => {
+    setAddPlayerGroupId(null);
+    setAddPlayerSelectedIds([]);
+  };
+
+  const handleAddPlayersToGroup = async () => {
+    if (!addPlayerGroupId || addPlayerSelectedIds.length === 0) return;
+    setAddPlayerLoading(true);
+    try {
+      const response = await addPlayersToGroupAction({
+        code: tournament.tournamentId,
+        groupId: addPlayerGroupId,
+        playerIds: addPlayerSelectedIds,
+      });
+      if ((response as any)?.success) {
+        toast.success(tTour('groups.add_player_dialog.success'));
+        closeAddPlayerDialog();
+        if (onDataChanged) await onDataChanged();
+      } else {
+        const msg =
+          (response as any)?.message ||
+          (response as any)?.error ||
+          tTour('groups.add_player_dialog.error');
+        throw new Error(msg);
+      }
+    } catch (err: any) {
+      showErrorToast(err?.message || tTour('groups.add_player_dialog.error'), {
+        error: err?.message,
+        context: 'Add player to group',
+        errorName: 'Add player failed',
+      });
+    } finally {
+      setAddPlayerLoading(false);
+    }
+  };
+
+  const addPlayerGroupPlayers = addPlayerGroupId
+    ? playersByGroup.get(addPlayerGroupId) || []
+    : [];
 
   const toggleGroup = (groupId: string) => {
     const newExpanded = new Set(expandedGroups);
@@ -271,17 +346,35 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
         return (
           <Card key={group._id} className="bg-card shadow-lg shadow-black/20">
             <CardContent className="p-4">
-              <div className="flex justify-between items-center mb-3">
+              <div className="flex justify-between items-center mb-3 gap-2">
                 <h3 className="text-lg font-bold text-foreground">
                   {tTour('groups.group_number', { number: groupIndex + 1 })} <span className="text-muted-foreground text-sm">({tTour('groups.board_label', { number: group.board })})</span>
                 </h3>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => toggleGroup(group._id)}
-                >
-                  <IconChevronDown className={`h-4 w-4 transition-transform ${isExpanded ? "rotate-180" : ""}`} />
-                </Button>
+                <div className="flex items-center gap-1">
+                  {isAdminOrModerator && tournamentStatus === 'group-stage' && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={!canAddPlayersToGroup(group, groupPlayers)}
+                      title={
+                        canAddPlayersToGroup(group, groupPlayers)
+                          ? tTour('groups.add_player')
+                          : tTour('groups.add_player_disabled')
+                      }
+                      onClick={() => openAddPlayerDialog(group._id)}
+                    >
+                      <IconUserPlus className="h-4 w-4 mr-1" />
+                      {tTour('groups.add_player')}
+                    </Button>
+                  )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => toggleGroup(group._id)}
+                  >
+                    <IconChevronDown className={`h-4 w-4 transition-transform ${isExpanded ? "rotate-180" : ""}`} />
+                  </Button>
+                </div>
               </div>
 
               {/* Collapsed State - Compact Player Cards */}
@@ -699,6 +792,76 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
               disabled={loading || player1Legs === player2Legs}
             >
               {loading ? tTour('groups.dialog.saving') : tTour('groups.dialog.save')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={Boolean(addPlayerGroupId)} onOpenChange={(open) => !open && closeAddPlayerDialog()}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{tTour('groups.add_player_dialog.title')}</DialogTitle>
+            <DialogDescription>
+              {tTour('groups.add_player_dialog.description')}
+            </DialogDescription>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            {tTour('groups.add_player_dialog.capacity', {
+              current: addPlayerGroupPlayers.length,
+              max: MAX_PLAYERS_PER_GROUP,
+            })}
+          </p>
+          {unassignedPlayers.length === 0 ? (
+            <p className="text-sm text-muted-foreground">{tTour('groups.add_player_dialog.no_players')}</p>
+          ) : (
+            <div className="space-y-2 max-h-60 overflow-y-auto">
+              {unassignedPlayers.map((player) => {
+                const slotsLeft = MAX_PLAYERS_PER_GROUP - addPlayerGroupPlayers.length;
+                const checked = addPlayerSelectedIds.includes(player.id);
+                return (
+                  <label
+                    key={player.id}
+                    className="flex items-center gap-2 rounded-md border border-border p-2 cursor-pointer hover:bg-muted/50"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      disabled={
+                        !checked &&
+                        addPlayerSelectedIds.length >= slotsLeft
+                      }
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setAddPlayerSelectedIds((prev) => [...prev, player.id]);
+                        } else {
+                          setAddPlayerSelectedIds((prev) =>
+                            prev.filter((id) => id !== player.id)
+                          );
+                        }
+                      }}
+                      className="h-4 w-4"
+                    />
+                    <span className="text-sm font-medium">{player.name}</span>
+                  </label>
+                );
+              })}
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={closeAddPlayerDialog} disabled={addPlayerLoading}>
+              {tTour('groups.add_player_dialog.cancel')}
+            </Button>
+            <Button
+              onClick={handleAddPlayersToGroup}
+              disabled={
+                addPlayerLoading ||
+                addPlayerSelectedIds.length === 0 ||
+                unassignedPlayers.length === 0
+              }
+            >
+              {addPlayerLoading
+                ? tTour('groups.add_player_dialog.submitting')
+                : tTour('groups.add_player_dialog.submit')}
             </Button>
           </DialogFooter>
         </DialogContent>

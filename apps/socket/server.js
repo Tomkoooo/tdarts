@@ -4,6 +4,7 @@ import express from "express";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
 import ServerMonitor from "./monitor-server.js";
+import { guardScorerEmit } from "./scorerAuth.js";
 
 // Load environment variables from .env.local
 dotenv.config({ path: '.env.local' });
@@ -101,7 +102,9 @@ io.use((socket, next) => {
     const decoded = jwt.verify(token, JWT_SECRET);
     socket.userId = decoded.userId;
     socket.userRole = decoded.userRole;
-    console.log(`✅ Authenticated user: ${decoded.userId}`);
+    socket.authType = decoded.authType || 'user';
+    socket.boardTournamentId = decoded.tournamentId || null;
+    console.log(`✅ Authenticated user: ${decoded.userId} (${socket.authType})`);
     next();
   } catch (err) {
     console.log("❌ Invalid token:", err.message);
@@ -282,6 +285,7 @@ io.on("connection", (socket) => {
 
   // Initialize match configuration
   socket.on("init-match", (data) => {
+    if (!guardScorerEmit(socket, 'init-match', data)) return;
     const { matchId, startingScore = 501, legsToWin = 3, startingPlayer = 1 } = data || {};
     const existing = matchStates.get(matchId);
     const initial = existing || {
@@ -332,6 +336,7 @@ io.on("connection", (socket) => {
 
   // Set match players
   socket.on("set-match-players", (data) => {
+    if (!guardScorerEmit(socket, 'set-match-players', data)) return;
     const { matchId, player1Id, player2Id } = data;
     const matchState = matchStates.get(matchId) || {
       currentLeg: 1,
@@ -370,6 +375,7 @@ io.on("connection", (socket) => {
 
   // Handle throw events
   socket.on("throw", (data) => {
+    if (!guardScorerEmit(socket, 'throw', data)) return;
     if (monitor) monitor.trackMessageReceived();
     console.log(`🎯 Throw event for match ${data.matchId}:`, data);
     
@@ -390,6 +396,7 @@ io.on("connection", (socket) => {
 
   // Handle undo last throw
   socket.on("undo-throw", (data) => {
+    if (!guardScorerEmit(socket, 'undo-throw', data)) return;
     const { matchId, playerId } = data;
     console.log(`↶ Undo throw for match ${matchId} by ${playerId}`);
     const state = undoLastThrow(matchId, playerId);
@@ -404,6 +411,7 @@ io.on("connection", (socket) => {
 
   // Handle leg completion
   socket.on("leg-complete", (data) => {
+    if (!guardScorerEmit(socket, 'leg-complete', data)) return;
     console.log(`🏆 Leg complete for match ${data.matchId}:`, data);
     const state = completeLeg(data.matchId, data);
     
@@ -424,6 +432,7 @@ io.on("connection", (socket) => {
 
   // Handle match completion
   socket.on("match-complete", (data) => {
+    if (!guardScorerEmit(socket, 'match-complete', data)) return;
     const { matchId, tournamentCode } = data || {};
     console.log(`🏁 Match complete for ${matchId}`);
     matchStates.delete(matchId);
@@ -433,6 +442,7 @@ io.on("connection", (socket) => {
 
   // Handle match start
   socket.on("match-started", (data) => {
+    if (!guardScorerEmit(socket, 'match-started', data)) return;
     const { matchId, tournamentCode, matchData } = data || {};
     console.log(`🚀 Match started: ${matchId} in tournament ${tournamentCode}`);
     socket.to(`tournament-${tournamentCode || "unknown"}`).emit("match-started", {

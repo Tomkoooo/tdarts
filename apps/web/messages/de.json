@@ -3862,6 +3862,22 @@
     }
   },
   "Board": {
+    "score_mode_total": "Gesamtpunktzahl",
+    "score_mode_dart": "Pfeil für Pfeil",
+    "settings": {
+      "score_preview_on_cards": "Punktevorschau auf Spielerkarte",
+      "score_preview_on_cards_desc": "Wurf-Summe und Restpunktzahl auf der aktiven Spielerkarte anzeigen (nicht in der Eingabeleiste)."
+    },
+    "sector_input": {
+      "simple": "Einfach",
+      "double": "Doppel",
+      "triple": "Triple",
+      "visit_total": "Wurf",
+      "remaining": "Rest",
+      "undo_dart": "Letzten Pfeil zurück",
+      "submit_visit": "Wurf absenden",
+      "miss": "Miss"
+    },
     "max_dart_bull_title": "Max. Darts erreicht",
     "max_dart_bull_message": "Maximale Dart-Anzahl erreicht. Auf Bull werfen und den Leg-Gewinner auswählen.",
     "max_dart_player1_wins": "{name} gewinnt das Leg",

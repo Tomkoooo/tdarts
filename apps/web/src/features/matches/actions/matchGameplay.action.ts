@@ -10,6 +10,12 @@ import { withTelemetry } from '@/shared/lib/withTelemetry';
 import { resolveGuardAwareStatus } from '@/shared/lib/guards/result';
 import { serializeForClient } from '@/shared/lib/serializeForClient';
 import { authorizeUserResult } from '@/shared/lib/guards';
+import { assertBoardAccess } from '@/features/board/lib/assertBoardAccess';
+
+const boardAccessFields = {
+  tournamentId: z.string().min(1).optional(),
+  password: z.string().optional(),
+};
 
 const finishLegSchema = z.object({
   matchId: z.string().min(1),
@@ -18,6 +24,7 @@ const finishLegSchema = z.object({
   player2Throws: z.array(z.number()),
   winnerArrowCount: z.number().optional(),
   legNumber: z.number().optional(),
+  ...boardAccessFields,
 });
 
 export async function finishMatchLegAction(input: z.infer<typeof finishLegSchema>) {
@@ -30,6 +37,13 @@ export async function finishMatchLegAction(input: z.infer<typeof finishLegSchema
       }
 
       const data = parsed.data;
+      const tournamentIdForAccess =
+        data.tournamentId?.trim() ||
+        (await MatchService.getTournamentIdStringForMatch(data.matchId));
+      await assertBoardAccess({
+        tournamentId: tournamentIdForAccess,
+        password: data.password,
+      });
       await MatchService.finishLeg(data.matchId, {
         winner: data.winner,
         player1Throws: data.player1Throws,
@@ -56,6 +70,7 @@ export async function finishMatchLegAction(input: z.infer<typeof finishLegSchema
 
 const undoLegSchema = z.object({
   matchId: z.string().min(1),
+  ...boardAccessFields,
 });
 
 export async function undoMatchLegAction(input: z.infer<typeof undoLegSchema>) {
@@ -67,7 +82,15 @@ export async function undoMatchLegAction(input: z.infer<typeof undoLegSchema>) {
         throw new BadRequestError(parsed.error.issues[0]?.message || 'Invalid input');
       }
 
-      await MatchService.undoLastLeg(parsed.data.matchId);
+      const data = parsed.data;
+      const tournamentIdForAccess =
+        data.tournamentId?.trim() ||
+        (await MatchService.getTournamentIdStringForMatch(data.matchId));
+      await assertBoardAccess({
+        tournamentId: tournamentIdForAccess,
+        password: data.password,
+      });
+      await MatchService.undoLastLeg(data.matchId);
       return serializeForClient({
         success: true,
         message: 'Last leg undone successfully',

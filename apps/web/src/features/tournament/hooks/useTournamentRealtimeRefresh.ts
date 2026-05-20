@@ -153,6 +153,13 @@ export function useTournamentRealtimeRefresh(
         continue;
       }
 
+      const settingsChanged = (delta.data as { settingsChanged?: string[] } | undefined)
+        ?.settingsChanged;
+      if (settingsChanged?.includes("legsConfig")) {
+        scheduleSectionFetch("bracket");
+        scheduleSectionFetch("boards");
+      }
+
       if (delta.sectionHint) {
         scheduleSectionFetch(delta.sectionHint);
         continue;

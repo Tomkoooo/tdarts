@@ -110,10 +110,36 @@ export default function TournamentStatusChanger({
   const isGroupGenerationAllowed =
     effectiveBoardCount > 0 && availablePlayers >= minPlayersRequired && availablePlayers <= maxPlayersAllowed
 
+  const isSingleGroupKnockout =
+    tournamentFormat === "group_knockout" && (effectiveBoardCount === 1 || groupCount === 1)
+
+  const singleGroupPlayerCount = useMemo(() => {
+    if (!isSingleGroupKnockout) return 0
+    return checkedInPlayers.filter((p) => p.groupId).length
+  }, [isSingleGroupKnockout, checkedInPlayers])
+
+  const knockoutAdvanceOptions = useMemo(() => {
+    if (isSingleGroupKnockout) {
+      const max = Math.min(Math.max(singleGroupPlayerCount, 2), 16)
+      const options: number[] = []
+      for (let n = 2; n <= max; n++) {
+        options.push(n)
+      }
+      return options.length > 0 ? options : [2]
+    }
+    return [2, 3, 4]
+  }, [isSingleGroupKnockout, singleGroupPlayerCount])
+
   const isAutomaticKnockoutAllowed =
     effectiveBoardCount === 0 ||
     tournamentFormat === "knockout" ||
+    isSingleGroupKnockout ||
     (tournamentFormat === "group_knockout" && [2, 4, 8, 16].includes(effectiveBoardCount))
+
+  const expectedKnockoutBracketSize = isSingleGroupKnockout
+    ? selectedPlayers
+    : effectiveBoardCount * selectedPlayers
+
   const showGroupsControls = section === "all" || section === "groups"
   const showKnockoutControls = section === "all" || section === "knockout"
 
@@ -676,6 +702,21 @@ export default function TournamentStatusChanger({
                   className="flex-1 min-w-[200px]"
                   onClick={() => {
                     resetError()
+                    const defaultAdvance = tournament?.tournamentSettings?.groupAdvancesToKnockout
+                    if (
+                      isSingleGroupKnockout &&
+                      typeof defaultAdvance === "number" &&
+                      defaultAdvance >= 2 &&
+                      knockoutAdvanceOptions.includes(defaultAdvance)
+                    ) {
+                      setSelectedPlayers(defaultAdvance)
+                    } else if (isSingleGroupKnockout && knockoutAdvanceOptions.length > 0) {
+                      setSelectedPlayers(
+                        knockoutAdvanceOptions[knockoutAdvanceOptions.length - 1] ?? 2
+                      )
+                    } else if (!isSingleGroupKnockout) {
+                      setSelectedPlayers(2)
+                    }
                     setIsKnockoutDialogOpen(true)
                   }}
                 >
@@ -1060,12 +1101,18 @@ export default function TournamentStatusChanger({
 
             {knockoutMode === "automatic" && isAutomaticKnockoutAllowed && tournamentFormat !== "knockout" && (
               <div className="space-y-2">
-                <span className="text-sm font-semibold text-muted-foreground">{tTour('status_changer.knockout_dialog.qualifiers_label')}</span>
+                <span className="text-sm font-semibold text-muted-foreground">
+                  {isSingleGroupKnockout
+                    ? tTour('status_changer.knockout_dialog.single_group_advance_label')
+                    : tTour('status_changer.knockout_dialog.qualifiers_label')}
+                </span>
                 <p className="text-xs text-muted-foreground">
-                  {tTour('status_changer.knockout_dialog.qualifiers_desc')}
+                  {isSingleGroupKnockout
+                    ? tTour('status_changer.knockout_dialog.single_group_advance_desc')
+                    : tTour('status_changer.knockout_dialog.qualifiers_desc')}
                 </p>
-                <div className="grid grid-cols-3 gap-2">
-                  {[2, 3, 4].map((count) => (
+                <div className={`grid gap-2 ${isSingleGroupKnockout ? 'grid-cols-4' : 'grid-cols-3'}`}>
+                  {knockoutAdvanceOptions.map((count) => (
                     <Button
                       key={count}
                       type="button"
@@ -1077,13 +1124,27 @@ export default function TournamentStatusChanger({
                   ))}
                 </div>
                 <div className="text-sm text-muted-foreground mt-2">
-                  {tTour('status_changer.knockout_dialog.bracket_size', { size: effectiveBoardCount * selectedPlayers, boards: effectiveBoardCount })}
+                  {isSingleGroupKnockout
+                    ? tTour('status_changer.knockout_dialog.single_group_bracket_size', {
+                        size: expectedKnockoutBracketSize,
+                      })
+                    : tTour('status_changer.knockout_dialog.bracket_size', {
+                        size: expectedKnockoutBracketSize,
+                        boards: effectiveBoardCount,
+                      })}
                 </div>
 
-                <div className="bg-muted/50 p-3 rounded-md text-xs text-muted-foreground mt-3 border border-border">
-                  <p>
-                    <strong>{t("megjegyzes_tf0a")}</strong> {t("az_egyenesag_az_mdl_32nl")}<em>{t("manualis_3h1i")}</em> {t("modot_es_vegye_fel_mh0e")}</p>
-                </div>
+                {!isSingleGroupKnockout && (
+                  <div className="bg-muted/50 p-3 rounded-md text-xs text-muted-foreground mt-3 border border-border">
+                    <p>
+                      <strong>{t("megjegyzes_tf0a")}</strong> {t("az_egyenesag_az_mdl_32nl")}<em>{t("manualis_3h1i")}</em> {t("modot_es_vegye_fel_mh0e")}</p>
+                  </div>
+                )}
+                {isSingleGroupKnockout && (
+                  <div className="bg-muted/50 p-3 rounded-md text-xs text-muted-foreground mt-3 border border-border">
+                    <p>{tTour('status_changer.knockout_dialog.single_group_note')}</p>
+                  </div>
+                )}
               </div>
             )}
 
