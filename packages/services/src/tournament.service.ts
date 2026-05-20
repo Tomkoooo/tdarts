@@ -26,6 +26,7 @@ export class TournamentService {
         tournamentId: string,
         action: 'updated' | 'knockout-updated',
         sectionHint?: SseSectionHint,
+        extraData?: Record<string, unknown>,
     ): void {
         eventsBus.publish(
             EVENTS.TOURNAMENT_UPDATE,
@@ -36,6 +37,7 @@ export class TournamentService {
                 sectionHint,
                 data: {
                     legacyType: action === 'knockout-updated' ? 'knockout-update' : 'tournament-update',
+                    ...extraData,
                 },
             })
         );
@@ -586,11 +588,12 @@ export class TournamentService {
         isSandbox: boolean;
         boards: Array<{ boardNumber: number; isActive: boolean; status: string }>;
         legsConfig?: { groups?: Record<number, number>; knockout?: Record<number, number> };
+        maxDartsPerLeg?: number | null;
     }> {
         await connectMongo();
         const filter = this.buildCodeOrIdFilter(tournamentId);
         const doc: any = await TournamentModel.findOne(filter)
-            .select('_id tournamentId clubId isSandbox tournamentSettings.status tournamentSettings.format tournamentSettings.startingScore tournamentSettings.legsConfig boards.boardNumber boards.isActive boards.status')
+            .select('_id tournamentId clubId isSandbox tournamentSettings.status tournamentSettings.format tournamentSettings.startingScore tournamentSettings.legsConfig tournamentSettings.maxDartsPerLeg boards.boardNumber boards.isActive boards.status')
             .lean();
         if (!doc) {
             throw new BadRequestError('Tournament not found', 'tournament', {
@@ -616,6 +619,7 @@ export class TournamentService {
                 status: b.status || 'waiting',
             })),
             legsConfig: doc.tournamentSettings?.legsConfig ?? undefined,
+            maxDartsPerLeg: doc.tournamentSettings?.maxDartsPerLeg ?? null,
         };
     }
 
@@ -1029,8 +1033,8 @@ export class TournamentService {
     }
 
     /**
-     * TV-only: lean match docs (legs + player ids) for ranking timestamps.
-     * Kept off the hot getTournamentSummaryForPublicPage path.
+     * TV-only: lean match docs for ranking slides (180/checkout tie-breaks + perf meta).
+     * Projection matches apps/web slideshow consumers — no full throw subdocuments.
      */
     static async getTvRankingLegMatches(tournamentId: string): Promise<any[]> {
         await connectMongo();
@@ -1048,7 +1052,13 @@ export class TournamentService {
         }
 
         return MatchModel.find({ tournamentRef: tournament._id })
-            .select('player1.playerId player2.playerId legs')
+            .select(
+                'player1.playerId player1.average player2.playerId player2.average ' +
+                    'legs.winnerId legs.createdAt legs.checkoutScore ' +
+                    'legs.player1TotalDarts legs.player2TotalDarts legs.checkoutDarts legs.winnerArrowCount ' +
+                    'legs.player1Throws.score legs.player1Throws.darts ' +
+                    'legs.player2Throws.score legs.player2Throws.darts'
+            )
             .lean();
     }
 
@@ -6499,6 +6509,48 @@ export class TournamentService {
         tournament.markModified('tournamentSettings.legsConfig');
         tournament.updatedAt = new Date();
         await tournament.save();
+
+        this.publishTournamentRefresh(tournamentId, 'updated', 'boards', {
+            settingsChanged: ['legsConfig'],
+        });
+    }
+
+    static async updateMaxDartsPerLeg(
+        tournamentId: string,
+        requesterId: string,
+        maxDartsPerLeg: number | null
+    ): Promise<void> {
+        await connectMongo();
+        const tournament = await TournamentModel.findOne({
+            tournamentId,
+            isDeleted: { $ne: true },
+            isArchived: { $ne: true },
+        }).populate('clubId');
+
+        if (!tournament) {
+            throw new BadRequestError('Tournament not found');
+        }
+
+        const resolvedClubId =
+            (tournament as any)?.clubId?._id?.toString?.() ||
+            (tournament as any)?.clubId?.toString?.();
+        if (!resolvedClubId) {
+            throw new BadRequestError('Tournament is missing a valid club reference');
+        }
+
+        const isAuthorized = await AuthorizationService.checkAdminOrModerator(requesterId, resolvedClubId);
+        if (!isAuthorized) {
+            throw new BadRequestError('Only club admins or moderators can update max darts per leg');
+        }
+
+        tournament.tournamentSettings.maxDartsPerLeg = maxDartsPerLeg;
+        tournament.markModified('tournamentSettings.maxDartsPerLeg');
+        tournament.updatedAt = new Date();
+        await tournament.save();
+
+        this.publishTournamentRefresh(tournamentId, 'updated', 'boards', {
+            settingsChanged: ['maxDartsPerLeg'],
+        });
     }
 
     static async getActiveTournamentsByClubId(clubId: string): Promise<any[]> {

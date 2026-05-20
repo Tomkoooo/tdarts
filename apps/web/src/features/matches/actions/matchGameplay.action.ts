@@ -114,7 +114,7 @@ export async function updateMatchGameplaySettingsAction(input: z.infer<typeof up
 
       await connectMongo();
       const match = await MatchModel.findById(data.matchId).select(
-        '_id status tournamentRef legsToWin startingPlayer type boardReference round'
+        '_id status tournamentRef legsToWin maxDartsPerLeg startingPlayer type boardReference round'
       );
       if (!match) {
         throw new BadRequestError('Match not found');
@@ -181,6 +181,7 @@ export async function updateMatchGameplaySettingsAction(input: z.infer<typeof up
               match: {
                 _id: String(match._id),
                 legsToWin: match.legsToWin,
+                maxDartsPerLeg: match.maxDartsPerLeg ?? null,
                 startingPlayer: match.startingPlayer,
                 status: match.status,
               },

@@ -104,6 +104,8 @@ export interface TournamentSettings {
   coverImage?: string;
   /** Organizer-configured legs-to-win per group (by board number) and per knockout round. */
   legsConfig?: LegsConfig;
+  /** Per-player max darts per leg before bull tie-break; null/omit = unlimited. */
+  maxDartsPerLeg?: number | null;
   /**
    * When set (e.g. 4), only players with groupStanding <= this value are eligible for round 1
    * manual knockout pairing (UI + server). Scorer selection stays unrestricted. Null/omit = no cap.

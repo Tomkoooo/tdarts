@@ -135,6 +135,11 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
       if (response && typeof response === 'object' && 'matches' in response) {
         const nextMatches = ((response as { matches?: unknown }).matches || []) as unknown as Match[];
         setMatches(nextMatches);
+        setSelectedMatch((prev) => {
+          if (!prev) return prev;
+          const updated = nextMatches.find((m) => String(m._id) === String(prev._id));
+          return updated ?? prev;
+        });
       } else {
         setMatches([]);
       }
@@ -153,6 +158,25 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
       }
     }
   }, [tournamentId, accessPassword, selectedBoard, t]);
+
+  const refreshTournamentAndMatches = useCallback(async () => {
+    try {
+      const tournamentResponse = await getBoardTournamentAction({
+        tournamentId,
+        password: accessPassword,
+      });
+      if (tournamentResponse && typeof tournamentResponse === 'object') {
+        setTournamentData(tournamentResponse);
+      }
+    } catch (err) {
+      console.error('Failed to refresh tournament data:', err);
+    }
+    if (selectedBoard) {
+      await loadMatches();
+    } else {
+      await loadBoards();
+    }
+  }, [tournamentId, accessPassword, selectedBoard, loadMatches, loadBoards]);
 
   const loadUserRole = useCallback(async () => {
     try {
@@ -330,6 +354,13 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
         eventTournamentId === tournamentData?._id?.toString?.();
       if (!isForTournament) continue;
 
+      if (delta?.scope === 'tournament') {
+        scheduleRefresh(() => {
+          void refreshTournamentAndMatches();
+        });
+        continue;
+      }
+
       if (!delta || delta.scope !== 'match') {
         scheduleRefresh(() => {
           void loadBoards();
@@ -363,7 +394,12 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
         continue;
       }
 
-      if (delta.action === 'leg-finished' && isSelectedBoard && incomingMatch && incomingMatchId) {
+      if (
+        (delta.action === 'leg-finished' || delta.action === 'updated') &&
+        isSelectedBoard &&
+        incomingMatch &&
+        incomingMatchId
+      ) {
         const prev = matchesRef.current;
         const index = prev.findIndex((m) => String(m._id) === incomingMatchId);
         if (index === -1) {
@@ -378,6 +414,10 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
           const next = [...p];
           next[i] = deepMergeSseMatch(next[i], incomingMatch);
           return next;
+        });
+        setSelectedMatch((prev) => {
+          if (!prev || String(prev._id) !== incomingMatchId) return prev;
+          return deepMergeSseMatch(prev, incomingMatch);
         });
         continue;
       }
@@ -419,6 +459,7 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
     tournamentData?._id,
     loadMatches,
     loadBoards,
+    refreshTournamentAndMatches,
   ]);
 
   useEffect(() => {
@@ -1056,7 +1097,11 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
         boardAccessPassword={accessPassword}
         match={{
           ...selectedMatch,
-          legsToWin: selectedMatch.legsToWin || legsToWin
+          legsToWin: selectedMatch.legsToWin || legsToWin,
+          maxDartsPerLeg:
+            selectedMatch.maxDartsPerLeg ??
+            tournamentData?.tournamentSettings?.maxDartsPerLeg ??
+            null,
         }} 
         onBack={handleBackToMatches}
         onMatchFinished={loadMatches}

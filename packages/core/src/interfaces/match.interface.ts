@@ -52,6 +52,7 @@ export interface Match {
   status: 'pending' | 'ongoing' | 'finished';
   winnerId?: Types.ObjectId;
   legsToWin?: number;
+  maxDartsPerLeg?: number | null;
   startingPlayer?: 1 | 2;
   legs?: Leg[];
   manualOverride?: boolean;

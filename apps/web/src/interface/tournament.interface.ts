@@ -97,6 +97,8 @@ export interface TournamentSettings {
     coverImage?: string; // Optional cover image for SEO
     /** Max group standing (inclusive) eligible for round 1 manual knockout; null = no limit. */
     groupAdvancesToKnockout?: number | null;
+    /** Per-player max darts per leg before bull tie-break; null/omit = unlimited. */
+    maxDartsPerLeg?: number | null;
 }
 
 export interface PlayerDocument extends Omit<Document, 'toJSON' | '_id'> {

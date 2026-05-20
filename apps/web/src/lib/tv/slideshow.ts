@@ -45,19 +45,32 @@ export interface PlayerRankingRow {
   value: number;
   /** Local wall time, e.g. (14:05) */
   timeLabel?: string;
+  bestLegDarts?: number | null;
+  tournamentAvg?: number | null;
+  bestMatchAvg?: number | null;
 }
 
 /** Lean match shape from getTvRankingLegMatches (serialized to client). */
 export type TvLegMatchLite = {
-  player1?: { playerId?: unknown };
-  player2?: { playerId?: unknown };
+  player1?: { playerId?: unknown; average?: number };
+  player2?: { playerId?: unknown; average?: number };
   legs?: Array<{
     createdAt?: string | Date;
-    player1Throws?: Array<{ score?: number }>;
-    player2Throws?: Array<{ score?: number }>;
+    /** TV projection: score + darts only (not full board throw subdocs). */
+    player1Throws?: Array<{ score?: number; darts?: number }>;
+    player2Throws?: Array<{ score?: number; darts?: number }>;
     winnerId?: unknown;
     checkoutScore?: number;
+    player1TotalDarts?: number;
+    player2TotalDarts?: number;
+    checkoutDarts?: number;
+    winnerArrowCount?: number;
   }>;
+};
+
+export type TvPlayerPerformanceMeta = {
+  bestLegDarts: number | null;
+  bestMatchAvg: number | null;
 };
 
 export interface BoardWaitingRow {
@@ -207,6 +220,78 @@ export function buildTvPlayerLegMeta(matches: TvLegMatchLite[] | undefined | nul
   return byPlayer;
 }
 
+function getTvLegDarts(
+  throws: Array<{ darts?: number }> | undefined,
+  storedTotalDarts?: number | null,
+  checkoutDarts?: number | null,
+): number {
+  if (!throws?.length) return 0;
+  if (storedTotalDarts != null) return Number(storedTotalDarts);
+  const hasExplicitDarts = throws.some((t) => t.darts != null);
+  if (hasExplicitDarts) {
+    return throws.reduce((sum, t) => sum + Number(t?.darts ?? 3), 0);
+  }
+  const checkout =
+    typeof checkoutDarts === "number" && checkoutDarts >= 1 && checkoutDarts <= 3 ? checkoutDarts : 3;
+  return (throws.length - 1) * 3 + checkout;
+}
+
+/** Per player ref id: best won-leg dart count and best single-match average. */
+export function buildTvPlayerPerformanceMeta(
+  matches: TvLegMatchLite[] | undefined | null,
+): Map<string, TvPlayerPerformanceMeta> {
+  const byPlayer = new Map<string, TvPlayerPerformanceMeta>();
+
+  const bump = (playerKey: string): TvPlayerPerformanceMeta => {
+    if (!byPlayer.has(playerKey)) {
+      byPlayer.set(playerKey, { bestLegDarts: null, bestMatchAvg: null });
+    }
+    return byPlayer.get(playerKey)!;
+  };
+
+  const considerMatchAvg = (playerKey: string, avg: number) => {
+    if (!playerKey || !Number.isFinite(avg) || avg <= 0) return;
+    const meta = bump(playerKey);
+    meta.bestMatchAvg = meta.bestMatchAvg == null ? avg : Math.max(meta.bestMatchAvg, avg);
+  };
+
+  const considerWonLegDarts = (playerKey: string, darts: number) => {
+    if (!playerKey || !Number.isFinite(darts) || darts <= 0) return;
+    const meta = bump(playerKey);
+    meta.bestLegDarts = meta.bestLegDarts == null ? darts : Math.min(meta.bestLegDarts, darts);
+  };
+
+  for (const match of matches || []) {
+    const p1 = normalizeMongoId(match?.player1?.playerId);
+    const p2 = normalizeMongoId(match?.player2?.playerId);
+
+    considerMatchAvg(p1, Number(match?.player1?.average));
+    considerMatchAvg(p2, Number(match?.player2?.average));
+
+    for (const leg of match.legs || []) {
+      const wid = normalizeMongoId(leg.winnerId);
+      if (!wid) continue;
+
+      const checkout =
+        leg.checkoutDarts ?? leg.winnerArrowCount ?? undefined;
+
+      if (wid === p1) {
+        considerWonLegDarts(
+          p1,
+          getTvLegDarts(leg.player1Throws, leg.player1TotalDarts, checkout),
+        );
+      } else if (wid === p2) {
+        considerWonLegDarts(
+          p2,
+          getTvLegDarts(leg.player2Throws, leg.player2TotalDarts, checkout),
+        );
+      }
+    }
+  }
+
+  return byPlayer;
+}
+
 function tournamentPlayerRefId(player: any): string {
   return (
     normalizeMongoId(player?.playerReference?._id) ||
@@ -245,13 +330,16 @@ export const getRankings180 = (
   legMatches?: TvLegMatchLite[] | null,
 ): PlayerRankingRow[] => {
   const metaMap = buildTvPlayerLegMeta(legMatches ?? undefined);
+  const perfMap = buildTvPlayerPerformanceMeta(legMatches ?? undefined);
 
   const rows: RankingRowWork180[] = (tournament?.tournamentPlayers || [])
     .map((player: any) => {
       const refId = tournamentPlayerRefId(player);
       const count = Number(player?.stats?.oneEightiesCount || 0);
       const meta = refId ? metaMap.get(refId) : undefined;
+      const perf = refId ? perfMap.get(refId) : undefined;
       const times180 = meta?.times180 ?? [];
+      const tournamentAvgRaw = Number(player?.stats?.avg);
 
       let timeLabel: string | undefined;
       let tieMs = Number.POSITIVE_INFINITY;
@@ -273,6 +361,9 @@ export const getRankings180 = (
         value: count,
         timeLabel,
         tieMs,
+        bestLegDarts: perf?.bestLegDarts ?? null,
+        tournamentAvg: tournamentAvgRaw > 0 ? tournamentAvgRaw : null,
+        bestMatchAvg: perf?.bestMatchAvg ?? null,
       };
     })
     .filter((row: RankingRowWork180) => row.value > 0);
@@ -292,13 +383,16 @@ export const getRankingsCheckout = (
   legMatches?: TvLegMatchLite[] | null,
 ): PlayerRankingRow[] => {
   const metaMap = buildTvPlayerLegMeta(legMatches ?? undefined);
+  const perfMap = buildTvPlayerPerformanceMeta(legMatches ?? undefined);
 
   const rows: RankingRowWorkCo[] = (tournament?.tournamentPlayers || [])
     .map((player: any) => {
       const refId = tournamentPlayerRefId(player);
       const high = Number(player?.stats?.highestCheckout || 0);
       const meta = refId ? metaMap.get(refId) : undefined;
+      const perf = refId ? perfMap.get(refId) : undefined;
       const checkouts = meta?.checkouts ?? [];
+      const tournamentAvgRaw = Number(player?.stats?.avg);
 
       let timeLabel: string | undefined;
       let tieMs = Number.POSITIVE_INFINITY;
@@ -318,6 +412,9 @@ export const getRankingsCheckout = (
         value: high,
         timeLabel,
         tieMs,
+        bestLegDarts: perf?.bestLegDarts ?? null,
+        tournamentAvg: tournamentAvgRaw > 0 ? tournamentAvgRaw : null,
+        bestMatchAvg: perf?.bestMatchAvg ?? null,
       };
     })
     .filter((row: RankingRowWorkCo) => row.value > 0);
