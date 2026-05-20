@@ -13,8 +13,8 @@ UI is built from **[next-shadcn-dashboard-starter](https://github.com/Kiranism/n
 | 4 Detail & relations | Tabbed detail views (`detail/`, `*DetailView`) + relation links + flag forms |
 | 5 Operations | Observability hub, feedback inbox, tools, feature-access debug |
 | 6 Governance | System settings (`system/AdminSystemSettingsPanel`, `system/actions.ts`) |
-| 7 Extended | Subscriptions directory, announcements (content), data explorer (`/admin/data`) |
-| Ads | Stub until ads branch merge — `/admin/ads` unchanged |
+| 7 Extended | Subscriptions, content (announcements), data explorer, **ads** (`/admin/ads`, `/admin/ads/[adId]`) |
+| Ads flags | `ADS` / `ADS_PLACEHOLDER` in `SystemSettings` — managed at `/admin/system`, status shown on `/admin/ads` |
 
 ## Docs
 
