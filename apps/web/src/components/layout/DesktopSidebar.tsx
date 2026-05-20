@@ -46,6 +46,7 @@ import IconDart from "@/components/homapage/icons/IconDart";
 import { Badge } from "@/components/ui/Badge";
 import { useOngoingTournamentQuickLinkWithOptions } from "@/features/navigation/hooks/useOngoingTournamentQuickLink";
 import { matchesMyClubRoute } from "@/lib/navigation/nav-active";
+import { showsStaffAdminShortcut } from "@/lib/navigation/show-staff-admin-shortcut";
 
 interface NavItem {
   href: string;
@@ -384,7 +385,7 @@ export const DesktopSidebar: React.FC<DesktopSidebarProps> = ({
                   {t("home")}
                 </Link>
               </DropdownMenuItem>
-              {user.isAdmin ? (
+              {showsStaffAdminShortcut(user) ? (
                 <DropdownMenuItem asChild>
                   <Link href={toLocalizedHref("/admin")} className="cursor-pointer">
                     <IconBolt size={16} className="mr-2" />

@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { DEFAULT_LOCALE, SUPPORTED_LOCALES, SupportedLocale, localePath, stripLocalePrefix } from "@/lib/seo";
+import { showsStaffAdminShortcut } from "@/lib/navigation/show-staff-admin-shortcut";
 
 const NavbarNew = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -284,7 +285,7 @@ const NavbarNew = () => {
                         {t("my_club")}
                       </Link>
                     </DropdownMenuItem>
-                    {user.isAdmin && (
+                    {showsStaffAdminShortcut(user) && (
                       <>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem asChild>
@@ -461,7 +462,7 @@ const NavbarNew = () => {
                           {t("feedback")}
                         </Link>
                       </Button>
-                      {user.isAdmin && (
+                      {showsStaffAdminShortcut(user) && (
                          <Button 
                           variant="ghost" 
                           className="w-full justify-start gap-2"

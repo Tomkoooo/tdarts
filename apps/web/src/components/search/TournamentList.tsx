@@ -6,13 +6,16 @@ import { useLocale, useTranslations } from "next-intl"
 import { motion } from "framer-motion"
 import { addDaysToDateKey, formatDateKeyLabel, getLocalDateKey, getUserTimeZone } from "@/lib/date-time"
 import { staggerContainer, staggerChild } from "@/lib/motion"
+import type { ReactNode } from "react"
 
 interface TournamentListProps {
     tournaments: any[];
     stickyOffset?: number;
+    adInsertIndex?: number;
+    adElement?: ReactNode;
 }
 
-export function TournamentList({ tournaments, stickyOffset = 96 }: TournamentListProps) {
+export function TournamentList({ tournaments, stickyOffset = 96, adInsertIndex, adElement }: TournamentListProps) {
     const tResults = useTranslations('Search.tournament_results')
     const locale = useLocale()
     const timeZone = getUserTimeZone()
@@ -68,6 +71,8 @@ export function TournamentList({ tournaments, stickyOffset = 96 }: TournamentLis
         }
     }
 
+    let runningTournamentIndex = 0
+
     return (
         <motion.div
             className="space-y-10"
@@ -98,11 +103,26 @@ export function TournamentList({ tournaments, stickyOffset = 96 }: TournamentLis
                         </div>
                         
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                            {dayTournaments.map((tournament: any) => (
-                                <motion.div key={tournament._id} variants={staggerChild}>
-                                    <TournamentCard tournament={tournament} />
-                                </motion.div>
-                            ))}
+                            {dayTournaments.map((tournament: any) => {
+                                const shouldRenderAdBefore =
+                                    typeof adInsertIndex === "number" &&
+                                    adElement &&
+                                    runningTournamentIndex === adInsertIndex
+                                const currentIndex = runningTournamentIndex
+                                runningTournamentIndex += 1
+                                return (
+                                    <div key={tournament._id} className="contents">
+                                        {shouldRenderAdBefore ? (
+                                            <motion.div key={`ad-${dateKey}-${currentIndex}`} variants={staggerChild}>
+                                                {adElement}
+                                            </motion.div>
+                                        ) : null}
+                                        <motion.div variants={staggerChild}>
+                                            <TournamentCard tournament={tournament} />
+                                        </motion.div>
+                                    </div>
+                                )
+                            })}
                         </div>
                     </motion.section>
                 )

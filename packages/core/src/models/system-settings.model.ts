@@ -19,7 +19,9 @@ export type FeatureToggleKey =
   | 'LIVE_MATCH_FOLLOWING'
   | 'DETAILED_STATISTICS'
   | 'ADVANCED_STATISTICS'
-  | 'OAC_CREATION';
+  | 'OAC_CREATION'
+  | 'ADS'
+  | 'ADS_PLACEHOLDER';
 
 export const FEATURE_TOGGLE_KEYS: FeatureToggleKey[] = [
   'LEAGUES',
@@ -28,6 +30,8 @@ export const FEATURE_TOGGLE_KEYS: FeatureToggleKey[] = [
   'DETAILED_STATISTICS',
   'ADVANCED_STATISTICS',
   'OAC_CREATION',
+  'ADS',
+  'ADS_PLACEHOLDER',
 ];
 
 export type FeatureTogglesMap = Record<FeatureToggleKey, boolean>;
@@ -67,6 +71,8 @@ export function getSystemSettingsModel(): Model<SystemSettingsDocument> {
       DETAILED_STATISTICS: { type: Boolean, default: true },
       ADVANCED_STATISTICS: { type: Boolean, default: true },
       OAC_CREATION: { type: Boolean, default: true },
+      ADS: { type: Boolean, default: false },
+      ADS_PLACEHOLDER: { type: Boolean, default: false },
     },
     { _id: false },
   );

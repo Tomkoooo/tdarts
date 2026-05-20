@@ -27,6 +27,20 @@ export interface FeatureDefinition {
  * names so we can decide WHY a feature is denied (subscription vs club flag).
  */
 export const FEATURE_REGISTRY: Record<FeatureKey, FeatureDefinition> = {
+  [FEATURE_KEYS.ADS]: {
+    key: FEATURE_KEYS.ADS,
+    tierEntitlement: null,
+    clubFlagKey: null,
+    paywallOffBehavior: 'allow',
+    requiresSubscription: false,
+  },
+  [FEATURE_KEYS.ADS_PLACEHOLDER]: {
+    key: FEATURE_KEYS.ADS_PLACEHOLDER,
+    tierEntitlement: null,
+    clubFlagKey: null,
+    paywallOffBehavior: 'allow',
+    requiresSubscription: false,
+  },
   [FEATURE_KEYS.SOCKET]: {
     key: FEATURE_KEYS.SOCKET,
     tierEntitlement: 'liveTracking',

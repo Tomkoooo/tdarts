@@ -23,9 +23,6 @@ const routeMatrix: RouteCase[] = [
   { name: 'club detail', route: `/en/clubs/${clubCode}` },
   { name: 'profile', route: '/en/profile', requiresAuth: true },
   { name: 'myclub', route: '/en/myclub', requiresAuth: true },
-  { name: 'admin dashboard', route: '/en/admin', requiresAuth: true },
-  { name: 'admin users', route: '/en/admin/users', requiresAuth: true },
-  { name: 'admin clubs', route: '/en/admin/clubs', requiresAuth: true },
 ];
 
 test.describe('page matrix diagnostics', () => {

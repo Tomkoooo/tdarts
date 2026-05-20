@@ -104,6 +104,10 @@ async function resolveClubRole(userId: string, clubId: string): Promise<ClubRole
 }
 
 export class AuthorizationService {
+  static async isSuperAdmin(userId: string): Promise<boolean> {
+    return this.isGlobalAdmin(userId);
+  }
+
   static async isGlobalAdmin(userId: string): Promise<boolean> {
     await connectMongo();
     const user = await UserModel.findById(userId).select('isAdmin');

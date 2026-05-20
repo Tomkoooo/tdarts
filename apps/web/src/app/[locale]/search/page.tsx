@@ -21,6 +21,7 @@ import { getUserTimeZone } from "@/lib/date-time"
 import { searchAction } from "@/features/search/actions/search.action"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
+import { AdSlotContainer } from "@/features/ads/components/AdSlotContainer"
 
 interface TabCounts {
     global: number;
@@ -36,6 +37,16 @@ interface GroupedResults {
     players: any[];
     clubs: any[];
     leagues: any[];
+}
+
+const getStableRandomInsertIndex = (listLength: number, seed: string): number | null => {
+    if (listLength < 3) return null
+    let hash = 0
+    for (let i = 0; i < seed.length; i += 1) {
+        hash = (hash * 31 + seed.charCodeAt(i)) >>> 0
+    }
+    const availableSlots = listLength - 2
+    return 1 + (hash % availableSlots)
 }
 
 export default function SearchPage() {
@@ -315,6 +326,23 @@ export default function SearchPage() {
         updateUrl({ page: newPage })
     }
 
+    const tournamentsAdInsertIndex = getStableRandomInsertIndex(
+        activeTab === 'global' ? groupedResults.tournaments.length : results.length,
+        `search-tournaments-${activeTab}-${debouncedQuery}-${pagination.page}`
+    )
+    const playersAdInsertIndex = getStableRandomInsertIndex(
+        activeTab === 'global' ? groupedResults.players.length : results.length,
+        `search-players-${activeTab}-${debouncedQuery}-${pagination.page}`
+    )
+    const clubsAdInsertIndex = getStableRandomInsertIndex(
+        activeTab === 'global' ? groupedResults.clubs.length : results.length,
+        `search-clubs-${activeTab}-${debouncedQuery}-${pagination.page}`
+    )
+    const leaguesAdInsertIndex = getStableRandomInsertIndex(
+        activeTab === 'global' ? groupedResults.leagues.length : results.length,
+        `search-leagues-${activeTab}-${debouncedQuery}-${pagination.page}`
+    )
+
     return (
         <div
             className="min-h-screen bg-background"
@@ -400,12 +428,36 @@ export default function SearchPage() {
                         </div>
                     )}
 
-                    {activeTab === 'tournaments' && <TournamentList tournaments={results} stickyOffset={headerHeight} />}
+                    {activeTab === 'tournaments' && (
+                        <TournamentList
+                            tournaments={results}
+                            stickyOffset={headerHeight}
+                            adInsertIndex={tournamentsAdInsertIndex ?? undefined}
+                            adElement={
+                                <AdSlotContainer
+                                    slotId="search-tournaments-inline-card"
+                                    placementKey="search.tournaments.inline-card"
+                                    viewType="block"
+                                />
+                            }
+                        />
+                    )}
                     {activeTab === 'global' && (
                         <div className="space-y-10">
                             <section className="space-y-4">
                                 <h3 className="text-xl font-bold">{t('tabs.tournaments')}</h3>
-                                <TournamentList tournaments={groupedResults.tournaments} stickyOffset={headerHeight} />
+                                <TournamentList
+                                    tournaments={groupedResults.tournaments}
+                                    stickyOffset={headerHeight}
+                                    adInsertIndex={tournamentsAdInsertIndex ?? undefined}
+                                    adElement={
+                                        <AdSlotContainer
+                                            slotId="search-global-tournaments-inline-card"
+                                            placementKey="search.global.tournaments.inline-card"
+                                            viewType="block"
+                                        />
+                                    }
+                                />
                             </section>
                             <section className="space-y-4">
                                 <h3 className="text-xl font-bold">{t('tabs.players')}</h3>
@@ -414,15 +466,43 @@ export default function SearchPage() {
                                     isOac={!!filters.isOac}
                                     rankingType={filters.rankingType || (filters.isOac ? 'oacMmr' : undefined)}
                                     onRankingChange={(type) => handleFilterChange('rankingType', type)}
+                                    adInsertIndex={playersAdInsertIndex ?? undefined}
+                                    adElement={
+                                        <AdSlotContainer
+                                            slotId="search-global-players-landscape"
+                                            placementKey="search.global.players.landscape"
+                                            viewType="landscape"
+                                        />
+                                    }
                                 />
                             </section>
                             <section className="space-y-4">
                                 <h3 className="text-xl font-bold">{t('tabs.clubs')}</h3>
-                                <ClubList clubs={groupedResults.clubs} />
+                                <ClubList
+                                    clubs={groupedResults.clubs}
+                                    adInsertIndex={clubsAdInsertIndex ?? undefined}
+                                    adElement={
+                                        <AdSlotContainer
+                                            slotId="search-global-clubs-landscape"
+                                            placementKey="search.global.clubs.landscape"
+                                            viewType="landscape"
+                                        />
+                                    }
+                                />
                             </section>
                             <section className="space-y-4">
                                 <h3 className="text-xl font-bold">{t('tabs.leagues')}</h3>
-                                <LeagueList leagues={groupedResults.leagues} />
+                                <LeagueList
+                                    leagues={groupedResults.leagues}
+                                    adInsertIndex={leaguesAdInsertIndex ?? undefined}
+                                    adElement={
+                                        <AdSlotContainer
+                                            slotId="search-global-leagues-landscape"
+                                            placementKey="search.global.leagues.landscape"
+                                            viewType="landscape"
+                                        />
+                                    }
+                                />
                             </section>
                         </div>
                     )}
@@ -432,10 +512,42 @@ export default function SearchPage() {
                             isOac={!!filters.isOac} 
                             rankingType={filters.rankingType || (filters.isOac ? 'oacMmr' : undefined)}
                             onRankingChange={(type) => handleFilterChange('rankingType', type)}
+                            adInsertIndex={playersAdInsertIndex ?? undefined}
+                            adElement={
+                                <AdSlotContainer
+                                    slotId="search-players-landscape"
+                                    placementKey="search.players.landscape"
+                                    viewType="landscape"
+                                />
+                            }
                         />
                     )}
-                    {activeTab === 'clubs' && <ClubList clubs={results} />}
-                    {activeTab === 'leagues' && <LeagueList leagues={results} />}
+                    {activeTab === 'clubs' && (
+                        <ClubList
+                            clubs={results}
+                            adInsertIndex={clubsAdInsertIndex ?? undefined}
+                            adElement={
+                                <AdSlotContainer
+                                    slotId="search-clubs-landscape"
+                                    placementKey="search.clubs.landscape"
+                                    viewType="landscape"
+                                />
+                            }
+                        />
+                    )}
+                    {activeTab === 'leagues' && (
+                        <LeagueList
+                            leagues={results}
+                            adInsertIndex={leaguesAdInsertIndex ?? undefined}
+                            adElement={
+                                <AdSlotContainer
+                                    slotId="search-leagues-landscape"
+                                    placementKey="search.leagues.landscape"
+                                    viewType="landscape"
+                                />
+                            }
+                        />
+                    )}
                     {activeTab === 'map' && <MapExplorer initialQuery={debouncedQuery} />}
 
                     {activeTab !== 'map' && activeTab !== 'global' && results.length > 0 && results.length < pagination.total && (

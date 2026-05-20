@@ -64,3 +64,4 @@ docs/api-docs.md
 .venv/
 .prod
 docs-internal/
+docs/docs-internal/

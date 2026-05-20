@@ -19,6 +19,7 @@ import { useRouter } from "@/i18n/routing"
 import { stripLocalePrefix, type SupportedLocale } from "@/lib/seo"
 import { buildClubLoginRedirectShareLink } from "@/lib/club-share-links"
 import ClubGallerySection from "@/components/club/ClubGallerySection"
+import { AdSlotContainer } from "@/features/ads/components/AdSlotContainer"
 
 interface ClubSummarySectionProps {
   club: Club
@@ -42,7 +43,7 @@ export default function ClubSummarySection({
   aboutText,
   posts,
   postsTotal = 0,
-  onLoadMorePosts
+  onLoadMorePosts,
 }: ClubSummarySectionProps) {
   const t = useTranslations('Club.summary')
   const locale = useLocale() as SupportedLocale
@@ -279,6 +280,12 @@ export default function ClubSummarySection({
           </CardContent>
         </Card>
       )}
+
+      <AdSlotContainer
+        slotId="club-summary-after-about-landscape"
+        placementKey="club.summary.after-about.landscape"
+        viewType="landscape"
+      />
 
       {/* Gallery Section */}
       <ClubGallerySection clubId={club._id} deferUntilVisible />

@@ -53,6 +53,8 @@ Shape:
     DETAILED_STATISTICS: boolean,
     ADVANCED_STATISTICS: boolean,
     OAC_CREATION: boolean,
+    ADS: boolean,
+    ADS_PLACEHOLDER: boolean,
   },
   subscriptionPaywallEnabled: boolean,
   superAdminBypassEnabled: boolean,
@@ -61,13 +63,16 @@ Shape:
 }
 ```
 
-Default seed values:
+Canonical key list: `FEATURE_TOGGLE_KEYS` in [`packages/core/src/models/system-settings.model.ts`](../../packages/core/src/models/system-settings.model.ts) — must stay in sync with `FEATURE_KEYS` / `FEATURE_REGISTRY` in the web app.
 
-- all feature toggles: `true`
-- `subscriptionPaywallEnabled`: `false`
-- `superAdminBypassEnabled`: `true`
+Default seed values (see `SYSTEM_SETTINGS_DEFAULTS` in [`packages/core/src/lib/system-settings.ts`](../../packages/core/src/lib/system-settings.ts)):
 
-These defaults preserve current production behavior while fixing runtime drift.
+- `LEAGUES`, `SOCKET`, `LIVE_MATCH_FOLLOWING`, `DETAILED_STATISTICS`, `ADVANCED_STATISTICS`, `OAC_CREATION`: **`true`**
+- `ADS`, `ADS_PLACEHOLDER`: **`false`** (ads off until explicitly enabled)
+- `subscriptionPaywallEnabled`: **`false`**
+- `superAdminBypassEnabled`: **`true`**
+
+There is **no** remaining env-based read for these toggles in product code: gates use `getSystemSettings()` (async, DB-backed).
 
 ## Service behavior (`system-settings.ts`)
 
@@ -155,24 +160,31 @@ Tournament quota checks (`SubscriptionService`) now use DB-backed paywall state 
 
 Quota rules still come from `TIER_CONFIG` and are otherwise unchanged.
 
-## Admin controls
+## Changing toggles (no env, admin UI in flux)
 
-Admin settings page now includes:
+Runtime values live only on the `system_settings` document. After the legacy admin panel removal, there is **no** in-app UI in this repo for editing flags; until a new admin ships, use one of:
 
-1. **Feature Flags**
-   - per-feature runtime toggles
-2. **Access Control**
-   - Subscription Paywall toggle
-   - Super Admin Bypass toggle
+- **Direct DB edit** of the `global` document in `system_settings` (shape above), or
+- **Programmatic writes** from trusted server code via `@tdarts/core/system-settings`: `updateFeatureToggle`, `updateSubscriptionPaywallEnabled`, `updateSuperAdminBypassEnabled` (see [`packages/core/src/lib/system-settings.ts`](../../packages/core/src/lib/system-settings.ts)).
 
-Server actions:
+Reads everywhere go through `getSystemSettings()` — not `process.env`.
 
-- `adminGetSystemSettingsAction`
-- `adminUpdateFeatureFlagAction`
-- `adminUpdateSubscriptionPaywallAction`
-- `adminUpdateSuperAdminBypassAction`
+## Feature toggle reference (global `features.*`)
 
-All admin writes require global-admin authorization and emit telemetry.
+Logical meaning and gating metadata live in [`apps/web/src/features/flags/lib/featureRegistry.ts`](../../apps/web/src/features/flags/lib/featureRegistry.ts) (tier / club flag / paywall-off behavior). The **global on/off** for each row is the boolean under `SystemSettings.features` for that key.
+
+| Key | Role (summary) |
+|-----|------------------|
+| `LEAGUES` | League features; tier + global toggle. |
+| `SOCKET` | Realtime/socket stack; tier `liveTracking` when paywall on. |
+| `LIVE_MATCH_FOLLOWING` | Live match following; tier + optional club `liveMatchFollowing`. |
+| `DETAILED_STATISTICS` | Detailed stats; tier + club `advancedStatistics` when paywall off behavior requires club check. |
+| `ADVANCED_STATISTICS` | Advanced stats surface; same tier/club pattern as detailed. |
+| `OAC_CREATION` | OAC creation flows; global toggle only (no tier entitlement in registry). |
+| `ADS` | Ad serving / decisioning enabled globally. |
+| `ADS_PLACEHOLDER` | Placeholder / non-production ad UI behavior (paired with ads rollout). |
+
+For **why** a user was denied (not just on/off), see `FeatureDefinition` in the registry and denial reasons above.
 
 ## Removed env-based controls
 

@@ -23,6 +23,7 @@ import { Card, CardContent } from "@/components/ui/Card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TournamentStatTile } from "@/features/tournament/components/TournamentStatTile";
 import { TournamentFormatBadges } from "@/components/tournament/TournamentFormatBadges";
+import { AdSlotContainer } from "@/features/ads/components/AdSlotContainer";
 
 const TournamentPlayers = dynamic(
   () => import("@/components/tournament/TournamentPlayers")
@@ -461,86 +462,95 @@ const TournamentPageClient: React.FC<TournamentPageClientProps> = ({
                 activeTab !== "overview" ? "hidden md:block" : ""
               }`}
             >
-              <div className="space-y-2.5 md:space-y-3">
-                <div className="flex flex-wrap items-center gap-2">
-                  <Badge variant="outline" className={statusInfo.badgeClass}>
-                    {statusInfo.label}
-                  </Badge>
-                  <span className="rounded-full border border-border/60 bg-muted/20 px-2.5 py-1 text-[11px] text-muted-foreground">
-                    {t("header.tournament_code", { code: tournament.tournamentId })}
-                  </span>
-                  <span
-                    className={`rounded-full border px-2.5 py-1 text-[11px] font-medium ${sseBadgeClass}`}
-                    title={sseBadgeLabel}
-                  >
-                    {sseBadgeLabel}
-                  </span>
-                  <TournamentFormatBadges
-                    type={tournament?.tournamentSettings?.type}
-                    participationMode={tournament?.tournamentSettings?.participationMode}
-                    size="md"
-                  />
-                </div>
-                <h1 className="text-xl font-bold leading-tight text-foreground md:text-4xl">
-                  {tournament.tournamentSettings?.name || t("tabs.overview")}
-                </h1>
-                {hostedClub ? (
-                  <p className="text-sm text-muted-foreground">
-                    <span className="mr-1">{t("header.hosted_by_label")}</span>
-                    <Link
-                      href={`/clubs/${hostedClub.id}`}
-                      className="font-medium text-primary hover:underline"
+              <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                <div className="space-y-2.5 md:space-y-3 md:flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge variant="outline" className={statusInfo.badgeClass}>
+                      {statusInfo.label}
+                    </Badge>
+                    <span className="rounded-full border border-border/60 bg-muted/20 px-2.5 py-1 text-[11px] text-muted-foreground">
+                      {t("header.tournament_code", { code: tournament.tournamentId })}
+                    </span>
+                    <span
+                      className={`rounded-full border px-2.5 py-1 text-[11px] font-medium ${sseBadgeClass}`}
+                      title={sseBadgeLabel}
                     >
-                      {hostedClub.name}
-                    </Link>
+                      {sseBadgeLabel}
+                    </span>
+                    <TournamentFormatBadges
+                      type={tournament?.tournamentSettings?.type}
+                      participationMode={tournament?.tournamentSettings?.participationMode}
+                      size="md"
+                    />
+                  </div>
+                  <h1 className="text-xl font-bold leading-tight text-foreground md:text-4xl">
+                    {tournament.tournamentSettings?.name || t("tabs.overview")}
+                  </h1>
+                  {hostedClub ? (
+                    <p className="text-sm text-muted-foreground">
+                      <span className="mr-1">{t("header.hosted_by_label")}</span>
+                      <Link
+                        href={`/clubs/${hostedClub.id}`}
+                        className="font-medium text-primary hover:underline"
+                      >
+                        {hostedClub.name}
+                      </Link>
+                    </p>
+                  ) : null}
+                  <p className="max-w-3xl text-xs leading-relaxed text-muted-foreground md:text-base">
+                    {statusInfo.description}
                   </p>
-                ) : null}
-                <p className="max-w-3xl text-xs leading-relaxed text-muted-foreground md:text-base">
-                  {statusInfo.description}
-                </p>
-                <div className="flex flex-wrap items-center gap-2">
-                  {canManageTournament && tournament?.tournamentSettings?.status !== "finished" ? (
-                    <Button variant="outline" size="sm" onClick={() => setEditModalOpen(true)} className="gap-2">
-                      <IconEdit className="h-4 w-4" />
-                      {t("tabs.overview")}
-                    </Button>
-                  ) : null}
-                  {isGlobalAdmin && tournament?.tournamentSettings?.status === "finished" ? (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleReopenTournament}
-                      disabled={isReopening}
-                      className="gap-2"
-                    >
+                  <div className="flex flex-wrap items-center gap-2">
+                    {canManageTournament && tournament?.tournamentSettings?.status !== "finished" ? (
+                      <Button variant="outline" size="sm" onClick={() => setEditModalOpen(true)} className="gap-2">
+                        <IconEdit className="h-4 w-4" />
+                        {t("tabs.overview")}
+                      </Button>
+                    ) : null}
+                    {isGlobalAdmin && tournament?.tournamentSettings?.status === "finished" ? (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleReopenTournament}
+                        disabled={isReopening}
+                        className="gap-2"
+                      >
+                        <IconRefresh className="h-4 w-4" />
+                        {isReopening ? t("admin.reopen.btn_loading") : t("admin.reopen.btn")}
+                      </Button>
+                    ) : null}
+                    {showLiveTvLinks && tournamentCode ? (
+                      <>
+                        <Button asChild size="sm" className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90">
+                          <Link href={`/tournaments/${tournamentCode}/live`} target="_blank" rel="noopener noreferrer">
+                            <IconScreenShare className="h-4 w-4" />
+                            {t("header.live_open")}
+                          </Link>
+                        </Button>
+                        <Button asChild size="sm" className="gap-2 bg-sky-600 text-white hover:bg-sky-600/90">
+                          <Link href={`/tournaments/${tournamentCode}/tv`} target="_blank" rel="noopener noreferrer">
+                            <IconDeviceTv className="h-4 w-4" />
+                            {t("header.tv_view")}
+                          </Link>
+                        </Button>
+                      </>
+                    ) : null}
+                    <Button variant="secondary" size="sm" onClick={handleRefetch} className="gap-2">
                       <IconRefresh className="h-4 w-4" />
-                      {isReopening ? t("admin.reopen.btn_loading") : t("admin.reopen.btn")}
+                      {t("header.refresh")}
                     </Button>
-                  ) : null}
-                  {showLiveTvLinks && tournamentCode ? (
-                    <>
-                      <Button asChild size="sm" className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90">
-                        <Link href={`/tournaments/${tournamentCode}/live`} target="_blank" rel="noopener noreferrer">
-                          <IconScreenShare className="h-4 w-4" />
-                          {t("header.live_open")}
-                        </Link>
-                      </Button>
-                      <Button asChild size="sm" className="gap-2 bg-sky-600 text-white hover:bg-sky-600/90">
-                        <Link href={`/tournaments/${tournamentCode}/tv`} target="_blank" rel="noopener noreferrer">
-                          <IconDeviceTv className="h-4 w-4" />
-                          {t("header.tv_view")}
-                        </Link>
-                      </Button>
-                    </>
-                  ) : null}
-                  <Button variant="secondary" size="sm" onClick={handleRefetch} className="gap-2">
-                    <IconRefresh className="h-4 w-4" />
-                    {t("header.refresh")}
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={() => setTournamentShareModal(true)} className="gap-2">
-                    <IconShare2 className="h-4 w-4" />
-                    {t("header.share")}
-                  </Button>
+                    <Button variant="outline" size="sm" onClick={() => setTournamentShareModal(true)} className="gap-2">
+                      <IconShare2 className="h-4 w-4" />
+                      {t("header.share")}
+                    </Button>
+                  </div>
+                </div>
+                <div className="md:w-[300px]">
+                  <AdSlotContainer
+                    slotId="tournament-header-side-card"
+                    placementKey="tournament.header.side-card"
+                    viewType="block"
+                  />
                 </div>
               </div>
               <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3 md:mt-4 md:gap-2.5">
@@ -591,6 +601,11 @@ const TournamentPageClient: React.FC<TournamentPageClientProps> = ({
             </TabsContent>
 
             <TabsContent value="boards" className="mt-0 space-y-4 rounded-2xl border border-border/60 bg-card/55 p-3 backdrop-blur-lg md:p-4">
+              <AdSlotContainer
+                slotId="tournament-boards-top-landscape"
+                placementKey="tournament.boards.top-landscape"
+                viewType="landscape"
+              />
               <TournamentBoardsView
                 tournament={tournament}
                 userClubRole={userClubRole}
@@ -601,6 +616,13 @@ const TournamentPageClient: React.FC<TournamentPageClientProps> = ({
 
             {tournament?.tournamentSettings?.format !== "knockout" && (
               <TabsContent value="groups" className="mt-0 space-y-4 rounded-2xl border border-border/60 bg-card/55 p-3 backdrop-blur-lg md:p-4">
+                {!canSeeAdminControls && (
+                  <AdSlotContainer
+                    slotId="tournament-groups-admin-replacement-landscape"
+                    placementKey="tournament.groups.admin-replacement.landscape"
+                    viewType="landscape"
+                  />
+                )}
                 <TournamentStatusChanger
                   tournament={tournament}
                   userClubRole={userClubRole}
@@ -617,6 +639,13 @@ const TournamentPageClient: React.FC<TournamentPageClientProps> = ({
 
             {tournament?.tournamentSettings?.format !== "group" && (
               <TabsContent value="bracket" className="mt-0 space-y-4 rounded-2xl border border-border/60 bg-card/55 p-3 backdrop-blur-lg md:p-4">
+                {!canSeeAdminControls && (
+                  <AdSlotContainer
+                    slotId="tournament-bracket-admin-replacement-landscape"
+                    placementKey="tournament.bracket.admin-replacement.landscape"
+                    viewType="landscape"
+                  />
+                )}
                 <TournamentStatusChanger
                   tournament={tournament}
                   userClubRole={userClubRole}
