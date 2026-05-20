@@ -24,11 +24,6 @@ test.describe('critical flows (security + migrated actions)', () => {
     expectNoServerError(response?.status() ?? null);
   });
 
-  test('feature-flag dependent admin leagues flow responds without server errors', async ({ page }) => {
-    const response = await page.goto('/en/admin/leagues');
-    expectNoServerError(response?.status() ?? null);
-  });
-
   test('payment callback GET is allowed (no 405) and returns bounded status', async ({ request }) => {
     const response = await request.get('/api/payments/verify?session_id=load-test-session');
     expect(response.status(), 'Stripe success_url uses GET; 405 must not occur').not.toBe(405);

@@ -16,12 +16,22 @@ type GetSocketAuthTokenOptions = {
   forceRefresh?: boolean;
 };
 
+export type BoardSocketAuthInput = {
+  tournamentId: string;
+  password?: string;
+};
+
 const DEFAULT_MIN_TTL_MS = 60_000;
 const DEFAULT_FALLBACK_TTL_MS = 60_000;
 
 let cachedToken: string | null = null;
 let tokenExpiresAtMs = 0;
 let inFlightTokenPromise: Promise<string> | null = null;
+
+const boardTokenCache = new Map<
+  string,
+  { token: string; expiresAtMs: number; inFlight: Promise<string> | null }
+>();
 
 function resolveExpiryMs(payload: SocketAuthResponse): number {
   if (typeof payload.expiresAt === "number" && Number.isFinite(payload.expiresAt)) {
@@ -40,9 +50,22 @@ function isTokenFresh(minTtlMs: number) {
   return Boolean(cachedToken) && Date.now() + minTtlMs < tokenExpiresAtMs;
 }
 
+function boardCacheKey(input: BoardSocketAuthInput) {
+  return `${input.tournamentId}:${input.password ?? ""}`;
+}
+
 export function invalidateSocketAuthToken() {
   cachedToken = null;
   tokenExpiresAtMs = 0;
+  boardTokenCache.clear();
+}
+
+export function invalidateBoardSocketAuthToken(tournamentId: string) {
+  for (const key of boardTokenCache.keys()) {
+    if (key.startsWith(`${tournamentId}:`)) {
+      boardTokenCache.delete(key);
+    }
+  }
 }
 
 export async function getSocketAuthToken(options?: GetSocketAuthTokenOptions): Promise<string> {
@@ -75,4 +98,71 @@ export async function getSocketAuthToken(options?: GetSocketAuthTokenOptions): P
     });
 
   return inFlightTokenPromise;
+}
+
+export async function getBoardSocketAuthToken(
+  input: BoardSocketAuthInput,
+  options?: GetSocketAuthTokenOptions
+): Promise<string> {
+  const minTtlMs = options?.minTtlMs ?? DEFAULT_MIN_TTL_MS;
+  const forceRefresh = options?.forceRefresh ?? false;
+  const key = boardCacheKey(input);
+  const existing = boardTokenCache.get(key);
+
+  if (
+    !forceRefresh &&
+    existing?.token &&
+    Date.now() + minTtlMs < existing.expiresAtMs
+  ) {
+    return existing.token;
+  }
+
+  if (existing?.inFlight) {
+    return existing.inFlight;
+  }
+
+  const entry = existing ?? { token: "", expiresAtMs: 0, inFlight: null };
+  entry.inFlight = axios
+    .post("/api/socket/board-auth", {
+      tournamentId: input.tournamentId,
+      password: input.password,
+    })
+    .then((response) => {
+      if (response.status === 401) {
+        throw new Error("Board socket authentication failed");
+      }
+      const payload = response.data as SocketAuthResponse;
+      const token = payload.token ?? payload.socketToken;
+      if (!token) {
+        throw new Error("Missing board socket auth token");
+      }
+      entry.token = token;
+      entry.expiresAtMs = resolveExpiryMs(payload);
+      boardTokenCache.set(key, entry);
+      return token;
+    })
+    .finally(() => {
+      entry.inFlight = null;
+      boardTokenCache.set(key, entry);
+    });
+
+  boardTokenCache.set(key, entry);
+  return entry.inFlight;
+}
+
+/** Session token when logged in; otherwise board password token. */
+export async function resolveSocketAuthToken(params: {
+  boardAuth?: BoardSocketAuthInput;
+  forceRefresh?: boolean;
+}): Promise<string> {
+  try {
+    return await getSocketAuthToken({ forceRefresh: params.forceRefresh });
+  } catch {
+    if (!params.boardAuth?.tournamentId) {
+      throw new Error("Socket authentication requires login or board access");
+    }
+    return getBoardSocketAuthToken(params.boardAuth, {
+      forceRefresh: params.forceRefresh,
+    });
+  }
 }

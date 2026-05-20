@@ -496,6 +496,14 @@ export class TournamentService {
         return TournamentGroupService.createManualGroups(tournamentCode, requesterId, groups);
     }
 
+    static async addPlayersToGroup(
+        tournamentCode: string,
+        requesterId: string,
+        params: { groupId: string; playerIds: string[] }
+    ): Promise<{ groupId: string; matchIds: string[] }> {
+        return TournamentGroupService.addPlayersToGroup(tournamentCode, requesterId, params);
+    }
+
     static async getTournament(tournamentId: string): Promise<TournamentDocument> {
         await connectMongo();
         const filter = this.buildCodeOrIdFilter(tournamentId);
@@ -1787,10 +1795,13 @@ export class TournamentService {
             let effectivePlayerCount = advancingPlayers.length;
             
             if (format === 'group_knockout' && options.qualifiersPerGroup) {
-                // For MDL, we need to calculate the actual number of qualifiers
                 // IMPORTANT: Convert ObjectIds to strings before Set to ensure uniqueness by value
                 const uniqueGroups = new Set(allPlayers.map(p => p.groupId?.toString()).filter(Boolean)).size;
-                effectivePlayerCount = uniqueGroups * options.qualifiersPerGroup;
+                // Single group: advance count is the bracket size, not groups × qualifiers
+                effectivePlayerCount =
+                    uniqueGroups === 1
+                        ? options.qualifiersPerGroup
+                        : uniqueGroups * options.qualifiersPerGroup;
             }
 
             const totalRoundsNeeded = Math.ceil(Math.log2(effectivePlayerCount));
@@ -2109,9 +2120,21 @@ export class TournamentService {
             const groupIds = Array.from(groups.keys());
             const groupCount = groupIds.length;
             
+            // Single-group: mirror standings within group (no MDL cross-group rules)
+            if (qualifiersPerGroup && groupCount === 1) {
+                const singleGroupPlayers = groups.get(groupIds[0]) || [];
+                return this.generateSingleGroupKnockoutRounds(singleGroupPlayers, qualifiersPerGroup);
+            }
+
             // NEW: Use MDL logic if qualifiersPerGroup is provided
             if (qualifiersPerGroup) {
                 return this.generateMDLKnockoutRounds(groups, groupIds, qualifiersPerGroup, tournament);
+            }
+
+            if (groupCount === 1) {
+                const singleGroupPlayers = groups.get(groupIds[0]) || [];
+                const advanceCount = advancingPlayers.length;
+                return this.generateSingleGroupKnockoutRounds(singleGroupPlayers, advanceCount);
             }
 
             if (groupCount % 2 !== 0) {
@@ -2122,6 +2145,42 @@ export class TournamentService {
             // For knockout-only format, create simple random pairings
             return this.generateSimpleKnockoutRounds(advancingPlayers);
         }
+    }
+
+    private static generateSingleGroupKnockoutRounds(
+        groupPlayers: TournamentPlayerDocument[],
+        advanceCount: number
+    ): any[] {
+        const sorted = [...groupPlayers].sort(
+            (a, b) => (a.groupStanding || 1) - (b.groupStanding || 1)
+        );
+        const advancing = sorted.slice(0, advanceCount);
+        const matches: { player1: mongoose.Types.ObjectId | undefined; player2: mongoose.Types.ObjectId | undefined }[] = [];
+
+        const pairCount = Math.floor(advancing.length / 2);
+        for (let i = 0; i < pairCount; i++) {
+            const player1 = advancing[i];
+            const player2 = advancing[advancing.length - 1 - i];
+            if (player1 && player2) {
+                matches.push({
+                    player1: player1.playerReference,
+                    player2: player2.playerReference,
+                });
+            }
+        }
+
+        // Odd advance count: last player gets a bye (player2 null)
+        if (advancing.length % 2 !== 0) {
+            const byePlayer = advancing[pairCount];
+            if (byePlayer) {
+                matches.push({
+                    player1: byePlayer.playerReference,
+                    player2: undefined,
+                });
+            }
+        }
+
+        return [{ round: 1, matches }];
     }
 
     private static generateMDLKnockoutRounds(groups: Map<string, TournamentPlayerDocument[]>, groupIds: string[], qualifiersPerGroup: number, tournament?: any): any[] {
@@ -6505,7 +6564,29 @@ export class TournamentService {
             throw new BadRequestError('Only club admins or moderators can update legs config');
         }
 
-        tournament.tournamentSettings.legsConfig = legsConfig ?? undefined;
+        if (legsConfig === null) {
+            tournament.tournamentSettings.legsConfig = undefined;
+        } else {
+            const existing = (tournament.tournamentSettings?.legsConfig ?? {}) as {
+                groups?: Record<string, number>;
+                knockout?: Record<string, number>;
+            };
+            tournament.tournamentSettings.legsConfig = {
+                ...(existing.groups ? { groups: { ...existing.groups } } : {}),
+                ...(existing.knockout ? { knockout: { ...existing.knockout } } : {}),
+                ...(legsConfig.groups ? { groups: { ...existing.groups, ...legsConfig.groups } } : {}),
+                ...(legsConfig.knockout
+                    ? { knockout: { ...existing.knockout, ...legsConfig.knockout } }
+                    : {}),
+            };
+            const merged = tournament.tournamentSettings.legsConfig as {
+                groups?: Record<string, number>;
+                knockout?: Record<string, number>;
+            };
+            if (!merged.groups && !merged.knockout) {
+                tournament.tournamentSettings.legsConfig = undefined;
+            }
+        }
         tournament.markModified('tournamentSettings.legsConfig');
         tournament.updatedAt = new Date();
         await tournament.save();

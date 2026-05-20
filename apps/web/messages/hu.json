@@ -764,11 +764,14 @@
         "feedback": "Visszajelzések",
         "errors": "Hibák",
         "announcements": "Hírek",
+        "ads": "Hirdetések",
+        "ads_telemetry": "Hirdetés telemetria",
         "todos": "Teendők",
         "emails": "Email Sablonok",
         "settings": "Beállítások",
         "telemetry": "Telemetria",
         "collapse": "Összecsukás",
+        "expand": "Kibontás",
         "title": "tDarts Admin",
         "feedback_unread_aria": "{count} olvasatlan visszajelzés"
       },
@@ -783,7 +786,282 @@
       "tdarts_f0pi": "tDarts",
       "back_to_home": "Vissza a főoldalra"
     },
+    "nav": {
+      "groups": {
+        "overview": "Áttekintés",
+        "content": "Tartalom",
+        "competition": "Verseny",
+        "moderation": "Moderálás",
+        "platform": "Platform",
+        "system": "Rendszer"
+      },
+      "players": "Játékosok",
+      "venues": "Helyszínek",
+      "teams": "Csapatok",
+      "matches": "Meccsek",
+      "reports": "Jelentések",
+      "bans": "Kitiltások",
+      "logs": "Naplók és audit",
+      "analytics": "Analitika",
+      "tools": "Eszközök",
+      "feature_access": "Funkció hozzáférés",
+      "roles": "Szerepkörök",
+      "notifications": "Értesítések",
+      "subscriptions": "Előfizetések",
+      "content": "Tartalom",
+      "data": "Adatböngésző"
+    },
+    "command": {
+      "empty": "Nincs találat",
+      "coming_soon": "Hamarosan"
+    },
+    "roles": {
+      "super_admin": "Szuper admin",
+      "staff": "Munkatárs"
+    },
+    "header": {
+      "profile": "Profil",
+      "sign_out": "Kijelentkezés"
+    },
+    "stub": {
+      "default_note": "Ez a szekció a következő fejlesztési fázisban készül el. Backend: features/admin/{domain}/actions.ts"
+    },
+    "list": {
+      "search_placeholder": "Keresés email, név vagy felhasználónév…",
+      "search_clubs": "Keresés klub név vagy város…",
+      "search_players": "Keresés játékos név…",
+      "search_tournaments": "Keresés kód vagy név…",
+      "search_matches": "Keresés verseny, játékos vagy meccs…",
+      "filter_match_type": "Típus",
+      "filter_round": "Kör",
+      "filter_board": "Tábla",
+      "search_leagues": "Keresés liga név…",
+      "users_description": "Felhasználók listája — kattints egy sorra a részletekért.",
+      "clubs_description": "Klubok és előfizetési csomagok.",
+      "players_description": "Játékos profilok és MMR.",
+      "tournaments_description": "Aktív versenyek (archivált/sandbox rejtve).",
+      "matches_description": "Meccsek — manuális override szűrővel.",
+      "leagues_description": "Klub ligák.",
+      "filter_all": "Összes",
+      "filter_yes": "Igen",
+      "filter_no": "Nem",
+      "filter_verified": "Email megerősítve",
+      "filter_deleted": "Törölt",
+      "filter_admin": "Admin",
+      "filter_active": "Aktív",
+      "filter_status": "Státusz",
+      "filter_manual": "Manuális szerkesztés",
+      "filter_manual_only": "Csak override"
+    },
+    "detail": {
+      "back_to_list": "Vissza a listához",
+      "tabs": {
+        "identity": "Azonosítás",
+        "relations": "Kapcsolatok",
+        "audit": "Audit"
+      },
+      "edit_flags": "Flagek szerkesztése",
+      "view_player": "Játékos megnyitása",
+      "view_club": "Klub megnyitása",
+      "audit_empty": "Nincs admin audit bejegyzés ehhez a felhasználóhoz.",
+      "audit_entity_hint": "Entitás-szintű audit napló hamarosan. Felhasználóknál az admin műveletek megjelennek az Audit fülön.",
+      "relations_empty": "Nincs kapcsolódó elem.",
+      "club_admins": "Adminok / moderátorok",
+      "club_members": "Tagok (játékosok)",
+      "club_tournaments": "Versenyek",
+      "player_tournaments": "Legutóbbi versenyek",
+      "league_tournaments": "Csatolt versenyek",
+      "league_players": "Ranglista",
+      "tournament_relations_hint": "Játékos- és meccs kapcsolatok a verseny részletes nézetében (Phase 4+).",
+      "match_round": "{round}. kör"
+    },
+    "observability": {
+      "title": "Telemetria",
+      "description": "API, action és page metrikák — szűrők, trendek, útvonal táblázat, incidensek.",
+      "hint": "Válassz egy szekciót az operatív diagnosztikához.",
+      "logs": "Naplók",
+      "logs_desc": "Alkalmazás és admin audit naplók.",
+      "api": "API telemetria",
+      "api_desc": "Ugyanaz a telemetria dashboard (szűrők, trendek, export).",
+      "errors": "API hibák",
+      "errors_desc": "Nyitott és megoldott API hiba események."
+    },
+    "feedback": {
+      "list_description": "Felhasználói visszajelzések kezelése.",
+      "filter_status": "Státusz",
+      "filter_priority": "Prioritás",
+      "filter_unread": "Olvasottság",
+      "filter_unread_only": "Csak olvasatlan",
+      "filter_all": "Összes"
+    },
+    "tools": {
+      "title": "Eszközök",
+      "description": "Cache frissítés és karbantartási műveletek."
+    },
+    "feature_access": {
+      "title": "Funkció hozzáférés",
+      "description": "Debug: aktuális session feature gate ellenőrzése."
+    },
+    "subscriptions": {
+      "title": "Előfizetések",
+      "description": "Felhasználó–klub feliratkozások (subscriptions gyűjtemény).",
+      "search_placeholder": "Keresés email vagy klub név…"
+    },
+    "content": {
+      "title": "Tartalom",
+      "description": "Globális announcement toast-ok (home / marketing).",
+      "search_placeholder": "Keresés cím vagy leírás…",
+      "read_only": "Csak olvasás — aktív/inaktív kapcsolóhoz admin:content:write kell."
+    },
+    "ads": {
+      "title": "Hirdetések",
+      "description": "Kampányok, kreatívok és telemetry. Globális ADS / ADS_PLACEHOLDER kapcsolók a Rendszer beállításokban.",
+      "flags_title": "Feature flag állapot",
+      "flags_description": "A hirdetési rendszer csak akkor szolgál ki éles tartalmat, ha az ADS toggle be van kapcsolva (DB, nem env).",
+      "flags_link_system": "Rendszer beállítások →",
+      "flag_on": "bekapcsolva",
+      "flag_off": "kikapcsolva",
+      "kpi_campaigns": "Kampányok",
+      "kpi_active": "Aktív kampányok",
+      "kpi_creatives": "Kreatívok",
+      "create_title": "Új kampány",
+      "create_description": "Alapértelmezett draft kampány 7 napos ablakkal.",
+      "create_name_label": "Név",
+      "create_name_placeholder": "pl. Tavaszi promó",
+      "create_submit": "Létrehozás",
+      "campaigns_title": "Kampányok",
+      "campaigns_description": "Kattints egy kampányra a kreatívok kezeléséhez.",
+      "campaigns_empty": "Még nincs kampány.",
+      "delete_campaign": "Törlés",
+      "read_only": "Csak olvasás — íráshoz admin:ads:write kell.",
+      "telemetry_title": "Telemetry (7 nap)",
+      "telemetry_description": "Összesített impression / click / interaction.",
+      "metric_impressions": "Impressionök",
+      "metric_clicks_ctr": "Kattintások / CTR",
+      "metric_interactions": "Interakciók",
+      "detail_description": "Kampány metaadatok és kreatív lista.",
+      "detail_page_description": "Kreatívok és cél URL-ek ehhez a kampányhoz.",
+      "detail_not_found": "Kampány nem található",
+      "detail_priority": "Prioritás: {value}",
+      "back_to_list": "← Kampányok",
+      "creative_create_title": "Új kreatív",
+      "creative_create_description": "External URL média forrással.",
+      "creative_name": "Belső név",
+      "creative_view_type": "Megjelenítés",
+      "creative_title": "Cím",
+      "creative_destination": "Cél URL",
+      "creative_media_url": "Kép URL (external)",
+      "creative_submit": "Kreatív mentése",
+      "creatives_title": "Kreatívok",
+      "creatives_empty": "Ehhez a kampányhoz még nincs kreatív.",
+      "inactive": "inaktív",
+      "toast_saved": "Mentve",
+      "toast_deleted": "Törölve",
+      "toast_error": "Művelet sikertelen"
+    },
+    "data_explorer": {
+      "title": "Adatböngésző",
+      "description": "Engedélyezett Mongo gyűjtemények szűréssel és sekély ref navigációval.",
+      "unauthorized": "Bejelentkezés szükséges.",
+      "forbidden": "Nincs jogosultság (admin:data-explorer:read).",
+      "mode_write": "Írás engedélyezve",
+      "mode_read": "Csak olvasás",
+      "global_search_title": "Globális keresés",
+      "global_search_placeholder": "Email, név, verseny kód, cím…",
+      "global_search_scope": "Hatókör",
+      "global_search_all": "Minden gyűjtemény",
+      "global_search_run": "Keresés",
+      "global_search_empty": "Nincs találat.",
+      "global_search_hits": "{count} találat",
+      "advanced_browse": "Haladó böngészés (Mongo JSON)",
+      "browse_title": "Böngészés",
+      "browse_description": "Csak whitelistelt gyűjtemények. Szűrő: Mongo JSON objektum ({ }). Lapozás szerveren.",
+      "collection": "Gyűjtemény",
+      "filter_json": "Szűrő (JSON)",
+      "loading": "Betöltés…",
+      "refresh": "Frissítés",
+      "prev_page": "Előző",
+      "next_page": "Következő",
+      "page_summary": "{page}. oldal / {totalPages} · {total} dokumentum",
+      "preview": "Előnézet",
+      "lookup_title": "Kapcsolat kereső",
+      "lookup_description": "Engedélyezett indexelt mezővel (pontos egyezés).",
+      "lookup": "Keresés",
+      "lookup_user_email": "User email alapján",
+      "lookup_club_name": "Klub név alapján",
+      "email": "Email",
+      "club_name": "Klub név",
+      "lookup_empty": "Nincs találat.",
+      "searching": "Keresés…",
+      "open": "Megnyitás",
+      "inspector_title": "Inspector",
+      "inspector_description": "Sekély populate a séma ref mezőkön; a chipek tovább navigálnak.",
+      "inspector_empty": "Válassz sort vagy használd a kapcsolat keresőt.",
+      "loading_doc": "Dokumentum betöltése…",
+      "relations": "Kapcsolatok:",
+      "patch_label": "Patch (csak top-level $set kulcsok · JSON objektum)",
+      "apply_patch": "Patch alkalmazása",
+      "patch_confirm_title": "Adatböngésző patch megerősítése",
+      "patch_confirm_description": "Írás ide: {collection} · {id}. Tiltott kulcsok (jelszó, token, …) szerveren kiszűrve. Audit napló."
+    },
+    "system": {
+      "title": "Rendszerbeállítások",
+      "description": "Globális funkciókapcsolók, előfizetési paywall és szuper admin bypass.",
+      "load_error": "Nem sikerült betölteni a rendszerbeállításokat.",
+      "read_only": "Csak olvasás — nincs szerkesztési jogosultságod (admin:system:write).",
+      "features_title": "Funkciókapcsolók",
+      "features_description": "MongoDB `system_settings` — azonnal érvényesül (max. ~30 mp szerver cache).",
+      "paywall_title": "Előfizetési paywall",
+      "paywall_description": "Bekapcsolva: tier entitlement és klub flag ellenőrzés fut.",
+      "paywall_label": "Paywall aktív",
+      "paywall_on": "Paywall be",
+      "paywall_off": "Paywall ki (paid override)",
+      "bypass_title": "Szuper admin bypass",
+      "bypass_description": "Ha be van kapcsolva, a szuper adminok átléphetik a feature gate-eket.",
+      "bypass_label": "Bypass engedélyezve",
+      "bypass_hint": "Kikapcsolás csak szándékos teszteléshez ajánlott.",
+      "save_ok": "Mentve",
+      "save_error": "Mentés sikertelen",
+      "updated": "Utolsó módosítás: {date}",
+      "updated_by": "Módosította: {id}",
+      "toggles": {
+        "LEAGUES": {
+          "label": "Ligák",
+          "hint": "Liga modul globálisan."
+        },
+        "SOCKET": {
+          "label": "Socket / élő követés",
+          "hint": "Valós idejű frissítések és live tracking tier."
+        },
+        "LIVE_MATCH_FOLLOWING": {
+          "label": "Élő meccs követés",
+          "hint": "Klub szintű live match flaggel együtt."
+        },
+        "DETAILED_STATISTICS": {
+          "label": "Részletes statisztika",
+          "hint": "Paywall mellett klub advancedStatistics flag."
+        },
+        "ADVANCED_STATISTICS": {
+          "label": "Haladó statisztika",
+          "hint": "Ugyanaz a tier entitlement mint a részletesnél."
+        },
+        "OAC_CREATION": {
+          "label": "OAC létrehozás",
+          "hint": "Open age category / speciális verseny típus."
+        },
+        "ADS": {
+          "label": "Hirdetések",
+          "hint": "Éles hirdetési felület."
+        },
+        "ADS_PLACEHOLDER": {
+          "label": "Hirdetés placeholder",
+          "hint": "Placeholder UI hirdetés nélkül."
+        }
+      }
+    },
     "dashboard": {
+      "page_title": "Vezérlőpult",
+      "page_description": "Platform áttekintés · {range} időablak",
       "title": "Szia, {name}! 👋",
       "refresh": "Frissítés",
       "last_update": "Utolsó frissítés",
@@ -794,9 +1072,11 @@
       "error_loading": "Hiba történt az adatok betöltése során",
       "stats": {
         "users": "Felhasználók",
-        "clubs": "Klubok",
+        "clubs": "Aktív klubok",
         "tournaments": "Versenyek",
-        "errors": "Nyitott Hibák",
+        "errors": "API hibák (24h)",
+        "feedback_high": "Nyitott visszajelzés (magas)",
+        "signups_7d": "Új felhasználók (7 nap)",
         "last_24h": "+{count} az elmúlt 24 órában"
       },
       "activities": {
@@ -814,7 +1094,11 @@
       },
       "charts": {
         "users": "Felhasználói aktivitás (Havi)",
-        "tournaments": "Versenyek száma (Havi)"
+        "tournaments": "Versenyek száma (Havi)",
+        "signups": "Regisztrációk naponta",
+        "tournament_status": "Versenyek státusza",
+        "feedback_priority": "Nyitott visszajelzések prioritás szerint",
+        "top_errors": "Legtöbb hibás API útvonal"
       },
       "quick_access": {
         "title": "Gyorselérés",
@@ -1947,7 +2231,21 @@
       "confirm_move": "Biztosan módosítod a játékos helyezését?\\n\\n⚠️ FONTOS: Ez a módosítás minden meccs végén újra szükséges lehet, mivel a rendszer automatikusan újraszámolja a helyezéseket.",
       "success_moved": "Helyezés sikeresen módosítva!",
       "error_moving": "Hiba történt a helyezés módosítása során!",
-      "error_save": "Hiba történt a mentés során"
+      "error_save": "Hiba történt a mentés során",
+      "add_player": "Játékos hozzáadása",
+      "add_player_disabled": "Csak akkor adhatsz hozzá játékost, ha minden csoportmeccs még függőben van.",
+      "add_player_dialog": {
+        "title": "Játékos hozzáadása a csoporthoz",
+        "description": "A csoport összes függő meccse törlődik és új körkörös menetrend készül. Válaszd ki a bejelentkezett, csoport nélküli játékosokat.",
+        "capacity": "{current} / {max} játékos",
+        "no_players": "Nincs hozzáadható játékos (bejelentkezett és csoport nélküli).",
+        "select_label": "Játékos",
+        "cancel": "Mégse",
+        "submit": "Hozzáadás és meccsek újragenerálása",
+        "submitting": "Feldolgozás...",
+        "success": "Játékos(ok) hozzáadva, meccsek újragenerálva.",
+        "error": "Nem sikerült hozzáadni a játékost."
+      }
     },
     "knockout": {
       "rounds": {
@@ -2041,7 +2339,11 @@
         "automatic": "Automatikus",
         "manual": "Manuális",
         "alert_unsupported_title": "Nem támogatott csoportszám",
-        "alert_unsupported_desc": "Automatikus generálás csak 2, 4, 8 vagy 16 csoport esetén lehetséges (MDL szabályok). Válts manuális módra.",
+        "alert_unsupported_desc": "Automatikus generálás csak 2, 4, 8 vagy 16 csoport esetén lehetséges (MDL szabályok). Egy csoportos tornánál automatikus párosítás a csoporthelyezés alapján történik. Válts manuális módra.",
+        "single_group_advance_label": "Továbbjutók száma",
+        "single_group_advance_desc": "Hány játékos jusson tovább a csoportból. Párosítás: 1. vs utolsó, 2. vs utolsó előtti, stb.",
+        "single_group_bracket_size": "Várható főtábla méret: {size} fős",
+        "single_group_note": "Egy csoportos tornánál a párosítás a csoport végső helyezése alapján történik (MDL kereszt-szabályok nélkül). Páratlan továbbjutó szám esetén az utolsó játékos automatikusan továbbjut (bye).",
         "qualifiers_label": "Továbbjutók száma csoportonként",
         "qualifiers_desc": "Válaszd ki, hány játékos jusson tovább csoportonként. Ez határozza meg a főtábla méretét.",
         "players_count": "{count} játékos",
@@ -2329,6 +2631,9 @@
     },
     "live_matches": {
       "title": "Aktív meccsek",
+      "login_banner_title": "Jelentkezz be az élő követéshez",
+      "login_banner_description": "A meccslista nyilvános, de dobásonkénti élő követéshez be kell jelentkezned.",
+      "login_banner_cta": "Bejelentkezés",
       "connected": "Élő kapcsolat",
       "connecting": "Kapcsolódás...",
       "socket_status": {
@@ -3923,6 +4228,22 @@
     "unread_messages": "{count} olvasatlan üzeneted"
   },
   "Board": {
+    "score_mode_total": "Összpont",
+    "score_mode_dart": "Nyílanként",
+    "settings": {
+      "score_preview_on_cards": "Pont előnézet a játékos kártyán",
+      "score_preview_on_cards_desc": "Bedobás és maradék pont az aktív játékos kártyáján (nem az alsó sávban)."
+    },
+    "sector_input": {
+      "simple": "Egyszeri",
+      "double": "Dupla",
+      "triple": "Tripla",
+      "visit_total": "Bedobás",
+      "remaining": "Marad",
+      "undo_dart": "Vissza nyíl",
+      "submit_visit": "Bedobás küldése",
+      "miss": "Miss"
+    },
     "max_dart_bull_title": "Elérted a maximális nyílszámot",
     "max_dart_bull_message": "Elérted a maximális nyílszámot. Dobjatok bullra, és válasszátok ki, melyik játékos nyerte a leget.",
     "max_dart_player1_wins": "{name} nyeri a leget",

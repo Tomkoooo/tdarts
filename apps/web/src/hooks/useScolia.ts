@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import toast from 'react-hot-toast';
+import { parseSectorString } from '@/lib/darts/sectorScore';
 
 interface UseScoliaProps {
     serialNumber?: string;
@@ -162,28 +163,7 @@ export const useScolia = ({ serialNumber, accessToken, isEnabled, onThrow }: Use
         }
     };
 
-    const parseSector = (sector: string): { score: number, multiplier: number, value: number } | null => {
-        if (sector === 'None' || !sector) return { score: 0, multiplier: 1, value: 0 };
-        if (sector === 'Bull') return { score: 50, multiplier: 1, value: 50 };
-        if (sector === '25') return { score: 25, multiplier: 1, value: 25 };
-
-        const match = sector.match(/^([SDT])(\d+)$/i);
-        if (match) {
-            const [, type, valStr] = match;
-            const value = parseInt(valStr, 10);
-            let multiplier = 1;
-            if (type.toUpperCase() === 'D') multiplier = 2;
-            if (type.toUpperCase() === 'T') multiplier = 3;
-            
-            return {
-                score: value * multiplier,
-                multiplier,
-                value
-            };
-        }
-        
-        return null;
-    };
+    const parseSector = parseSectorString;
 
     return { 
         isConnected, 

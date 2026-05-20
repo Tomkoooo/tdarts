@@ -12,6 +12,7 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Label } from "@/components/ui/Label";
+import LegsToWinPicker from "@/components/board/LegsToWinPicker";
 import { IconArrowLeft, IconLock, IconAlertTriangle } from "@tabler/icons-react";
 import type { Board, Match } from "../types";
 
@@ -129,37 +130,18 @@ export function BoardMatchSetupScreen({
             <CardContent className="space-y-6">
               <div className="space-y-2">
                 <Label className="text-sm font-semibold">{legsToWinLabel}</Label>
-                <select
-                  value={legsToWin}
-                  disabled={isLocked}
+                <div
+                  className={isLocked ? "pointer-events-none opacity-60" : undefined}
                   aria-disabled={isLocked}
-                  aria-label={
-                    isLocked
-                      ? `${legsToWinLabel} — ${legsSetByOrganizerLabel.replace('{legs}', String(configuredLegsToWin))}`
-                      : legsToWinLabel
-                  }
-                  onChange={(e) => {
-                    if (isLocked) return;
-                    const value =
-                      e.target.value === "" ? 0 : parseInt(e.target.value);
-                    onLegsToWinChange(value);
-                  }}
-                  onBlur={(e) => {
-                    if (!isLocked && e.target.value === "") {
-                      onLegsToWinChange(0);
-                    }
-                  }}
-                  className="w-full h-14 rounded-xl bg-muted/20 border border-border/40 shadow-sm text-foreground font-medium focus:bg-muted/40 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 px-3 disabled:opacity-60 disabled:cursor-not-allowed"
                 >
-                  <option value="" disabled>
-                    {selectNumberLabel}
-                  </option>
-                  {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
-                    <option key={num} value={num}>
-                      {num} {legsLabel}
-                    </option>
-                  ))}
-                </select>
+                  <LegsToWinPicker
+                    value={legsToWin > 0 ? legsToWin : configuredLegsToWin ?? 1}
+                    max={9}
+                    onChange={(n) => {
+                      if (!isLocked) onLegsToWinChange(n);
+                    }}
+                  />
+                </div>
                 {isLocked && (
                   <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/30 rounded-lg px-3 py-2">
                     <IconLock size={14} className="shrink-0" />

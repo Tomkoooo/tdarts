@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import {
   IconCheck,
@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { updateLegsConfigAction } from "@/features/tournaments/actions/manageTournament.action";
+import { getConfigurableKnockoutRounds } from "@/features/tournaments/lib/knockoutLegsConfig";
 import type { Tournament } from "@/interface/tournament.interface";
 
 interface LegsConfigPanelProps {
@@ -25,6 +26,18 @@ type SaveState = "idle" | "saving" | "saved" | "error";
 
 const LEG_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 const SAVED_DISPLAY_MS = 2000;
+const SAVE_DEBOUNCE_MS = 400;
+
+function buildSectionPayload(
+  section: "groups" | "knockout",
+  values: Record<string, number | undefined>
+): { groups?: Record<string, number>; knockout?: Record<string, number> } | null {
+  const filtered = Object.fromEntries(
+    Object.entries(values).filter(([, v]) => v !== undefined)
+  ) as Record<string, number>;
+  if (Object.keys(filtered).length === 0) return null;
+  return section === "groups" ? { groups: filtered } : { knockout: filtered };
+}
 
 function useSaveState() {
   const [state, setState] = useState<SaveState>("idle");
@@ -70,6 +83,30 @@ export default function LegsConfigPanel({
   const [bulkKnockout, setBulkKnockout] = useState<string>("");
   const groupSave = useSaveState();
   const knockoutSave = useSaveState();
+  const localGroupsRef = useRef(localGroups);
+  const localKnockoutRef = useRef(localKnockout);
+  const groupSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const knockoutSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const configurableKnockoutRounds = useMemo(
+    () => getConfigurableKnockoutRounds(tournament),
+    [tournament.knockout, tournament.tournamentSettings?.status]
+  );
+
+  useEffect(() => {
+    localGroupsRef.current = localGroups;
+  }, [localGroups]);
+
+  useEffect(() => {
+    localKnockoutRef.current = localKnockout;
+  }, [localKnockout]);
+
+  useEffect(() => {
+    return () => {
+      if (groupSaveTimerRef.current) clearTimeout(groupSaveTimerRef.current);
+      if (knockoutSaveTimerRef.current) clearTimeout(knockoutSaveTimerRef.current);
+    };
+  }, []);
 
   useEffect(() => {
     const g: Record<string, number | undefined> = {};
@@ -89,66 +126,59 @@ export default function LegsConfigPanel({
     setLocalKnockout(k);
   }, [tournament.boards, tournament.knockout, tournament.tournamentSettings?.legsConfig]);
 
-  const buildPayload = (
-    groups: Record<string, number | undefined>,
-    knockout: Record<string, number | undefined>
-  ) => {
-    const g = Object.fromEntries(
-      Object.entries(groups).filter(([, v]) => v !== undefined)
-    ) as Record<string, number>;
-    const k = Object.fromEntries(
-      Object.entries(knockout).filter(([, v]) => v !== undefined)
-    ) as Record<string, number>;
-    const hasGroups = Object.keys(g).length > 0;
-    const hasKnockout = Object.keys(k).length > 0;
-    if (!hasGroups && !hasKnockout) return null;
-    return { ...(hasGroups ? { groups: g } : {}), ...(hasKnockout ? { knockout: k } : {}) };
-  };
-
-  const saveGroups = useCallback(
-    async (next: Record<string, number | undefined>) => {
-      groupSave.setState("saving");
+  const persistSection = useCallback(
+    async (
+      section: "groups" | "knockout",
+      values: Record<string, number | undefined>,
+      saveState: ReturnType<typeof useSaveState>
+    ) => {
+      const payload = buildSectionPayload(section, values);
+      if (!payload) return;
+      saveState.setState("saving");
       try {
         await updateLegsConfigAction({
           code: tournament.tournamentId,
-          legsConfig: buildPayload(next, localKnockout),
+          legsConfig: payload,
         });
-        groupSave.trigger("saved");
+        saveState.trigger("saved");
         await onRefetch();
       } catch {
-        groupSave.trigger("error");
+        saveState.trigger("error");
       }
     },
-    [tournament.tournamentId, localKnockout, groupSave, onRefetch]
+    [tournament.tournamentId, onRefetch]
   );
 
-  const saveKnockout = useCallback(
-    async (next: Record<string, number | undefined>) => {
-      knockoutSave.setState("saving");
-      try {
-        await updateLegsConfigAction({
-          code: tournament.tournamentId,
-          legsConfig: buildPayload(localGroups, next),
-        });
-        knockoutSave.trigger("saved");
-        await onRefetch();
-      } catch {
-        knockoutSave.trigger("error");
-      }
+  const scheduleSaveGroups = useCallback(
+    (next: Record<string, number | undefined>) => {
+      if (groupSaveTimerRef.current) clearTimeout(groupSaveTimerRef.current);
+      groupSaveTimerRef.current = setTimeout(() => {
+        void persistSection("groups", next, groupSave);
+      }, SAVE_DEBOUNCE_MS);
     },
-    [tournament.tournamentId, localGroups, knockoutSave, onRefetch]
+    [persistSection, groupSave]
+  );
+
+  const scheduleSaveKnockout = useCallback(
+    (next: Record<string, number | undefined>) => {
+      if (knockoutSaveTimerRef.current) clearTimeout(knockoutSaveTimerRef.current);
+      knockoutSaveTimerRef.current = setTimeout(() => {
+        void persistSection("knockout", next, knockoutSave);
+      }, SAVE_DEBOUNCE_MS);
+    },
+    [persistSection, knockoutSave]
   );
 
   const handleGroupChange = (boardKey: string, value: string) => {
     const next = { ...localGroups, [boardKey]: value === "" ? undefined : Number(value) };
     setLocalGroups(next);
-    saveGroups(next);
+    scheduleSaveGroups(next);
   };
 
   const handleKnockoutChange = (roundKey: string, value: string) => {
     const next = { ...localKnockout, [roundKey]: value === "" ? undefined : Number(value) };
     setLocalKnockout(next);
-    saveKnockout(next);
+    scheduleSaveKnockout(next);
   };
 
   const applyBulkGroups = () => {
@@ -158,17 +188,19 @@ export default function LegsConfigPanel({
     tournament.boards?.forEach((b) => { next[String(b.boardNumber)] = val; });
     setLocalGroups(next);
     setBulkGroups("");
-    saveGroups(next);
+    scheduleSaveGroups(next);
   };
 
   const applyBulkKnockout = () => {
     if (!bulkKnockout) return;
     const val = Number(bulkKnockout);
     const next: Record<string, number | undefined> = {};
-    tournament.knockout?.forEach((r) => { next[String(r.round)] = val; });
+    configurableKnockoutRounds.forEach((r) => {
+      next[String(r.round)] = val;
+    });
     setLocalKnockout(next);
     setBulkKnockout("");
-    saveKnockout(next);
+    scheduleSaveKnockout(next);
   };
 
   if (!includesGroups && !includesKnockout) return null;
@@ -313,12 +345,10 @@ export default function LegsConfigPanel({
 
                 {/* Per-round rows */}
                 <div className="space-y-2">
-                  {[...(tournament.knockout ?? [])]
-                    .sort((a, b) => a.round - b.round)
-                    .map((ko) => {
+                  {configurableKnockoutRounds.map((ko, index) => {
                       const key = String(ko.round);
                       return (
-                        <div key={key} className="flex items-center gap-3">
+                        <div key={`round-${ko.round}-${index}`} className="flex items-center gap-3">
                           <span className="w-28 shrink-0 text-sm text-foreground">
                             #{ko.round}
                           </span>

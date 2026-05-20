@@ -5,11 +5,13 @@ import { useTranslations } from "next-intl";
 import LiveMatchViewer from "@/components/tournament/LiveMatchViewer";
 import LiveMatchesList from "@/components/tournament/LiveMatchesList";
 import { getMatchByIdClientAction } from "@/features/tournaments/actions/tournamentRoster.action";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useSearchParams, useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
-import { IconShare, IconDeviceTv, IconArrowLeft } from "@tabler/icons-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { IconShare, IconDeviceTv, IconArrowLeft, IconLogin } from "@tabler/icons-react";
 import toast from "react-hot-toast";
+import { useUserContext } from "@/hooks/useUser";
 
 type Props = {
   code: string;
@@ -17,8 +19,13 @@ type Props = {
 
 function LiveStreamingContent({ code }: Props) {
   const t = useTranslations("Tournament.live");
+  const tLive = useTranslations("Tournament.live_matches");
+  const params = useParams();
+  const locale = typeof params?.locale === "string" ? params.locale : "hu";
+  const { user } = useUserContext();
   const searchParams = useSearchParams();
   const router = useRouter();
+  const liveRedirect = `/${locale}/tournaments/${code}/live`;
   const [selectedMatchId, setSelectedMatchId] = useState<string | null>(null);
   const [selectedMatch, setSelectedMatch] = useState<any>(null);
 
@@ -141,6 +148,20 @@ function LiveStreamingContent({ code }: Props) {
       </div>
 
       <div className={`container mx-auto ${hasSelectedMatch ? "p-0 sm:p-4 lg:p-6" : "p-4 lg:p-6"}`}>
+        {!user?._id && (
+          <Alert className="mb-4 border-primary/30 bg-primary/5">
+            <IconLogin className="h-4 w-4" />
+            <AlertTitle>{tLive("login_banner_title")}</AlertTitle>
+            <AlertDescription className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <span>{tLive("login_banner_description")}</span>
+              <Button asChild size="sm" variant="default" className="shrink-0">
+                <Link href={`/auth/login?redirect=${encodeURIComponent(liveRedirect)}`}>
+                  {tLive("login_banner_cta")}
+                </Link>
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 min-h-[calc(100vh-80px)]">
           <div className={`col-span-1 lg:col-span-4 h-full overflow-hidden ${hasSelectedMatch ? "hidden lg:block" : ""}`}>
             <LiveMatchesList

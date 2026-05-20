@@ -3,6 +3,7 @@
 import * as React from "react"
 import { getUserTournamentsAction } from "@/features/tournaments/actions/getUserTournaments.action"
 import { filterUserHomeTournamentsForDashboard } from "@/features/home/ui/homeUtils"
+import type { HomeTournament } from "@/features/home/ui/types"
 import { isLocalCalendarDayToday } from "@/lib/local-calendar-date"
 import { getUserTimeZone } from "@/lib/date-time"
 

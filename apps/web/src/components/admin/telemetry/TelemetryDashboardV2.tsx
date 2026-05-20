@@ -14,7 +14,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { adminTelemetryActions } from "@/features/admin/actions/adminDomains.action";
+import { adminTelemetryActions } from '@/features/admin/telemetry/actions';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -57,6 +57,11 @@ type EntitySortKey =
   | "traffic"
   | "avgPacket";
 type SortDir = "asc" | "desc";
+
+type TelemetryApiResponse = {
+  ok?: boolean;
+  data?: { data?: unknown };
+};
 
 function formatNumber(value: number, decimals = 3): string {
   if (!Number.isFinite(value)) return "0";
@@ -155,17 +160,17 @@ export default function TelemetryDashboardV2() {
     const params = buildParams({ range, granularity, source, method, search, customStart, customEnd });
     try {
       setIsLoading(true);
-      const [o, t, i, r] = await Promise.all([
+      const [o, t, i, r] = (await Promise.all([
         adminTelemetryActions.overview(params),
         adminTelemetryActions.trends(params),
         adminTelemetryActions.incidents(params),
         adminTelemetryActions.routes({ ...params, page: "1", limit: "25", sortBy: "traffic", sortDir: "desc" }),
-      ]);
-      setOverview(o.data?.data || null);
-      const trendPayload = t.data?.data as { points?: unknown[]; granularity?: string; timeZone?: string; bucketCount?: number; window?: { start?: string; end?: string } } | undefined;
+      ])) as TelemetryApiResponse[];
+      setOverview(o?.data?.data || null);
+      const trendPayload = t?.data?.data as { points?: unknown[]; granularity?: string; timeZone?: string; bucketCount?: number; window?: { start?: string; end?: string } } | undefined;
       setTrends(Array.isArray(trendPayload?.points) ? trendPayload.points : []);
-      setIncidents(i.data?.data || null);
-      setEntities(r.data?.data || []);
+      setIncidents(i?.data?.data || null);
+      setEntities((Array.isArray(r?.data?.data) ? r.data.data : []) as any[]);
       setImportedSnapshot(null);
     } catch (error: any) {
       toast.error(error?.message || "Failed to load telemetry");
@@ -261,8 +266,8 @@ export default function TelemetryDashboardV2() {
   const exportSnapshot = async () => {
     try {
       const params = buildParams({ range, granularity, source, method, search, customStart, customEnd });
-      const res = await adminTelemetryActions.export(params);
-      const pack = res.data as {
+      const res = (await adminTelemetryActions.export(params)) as TelemetryApiResponse;
+      const pack = res?.data as {
         filters?: Record<string, string>;
         overview?: unknown;
         incidents?: unknown;
@@ -338,8 +343,10 @@ export default function TelemetryDashboardV2() {
     if (!file) return;
     try {
       const parsed = JSON.parse(await file.text());
-      const serverValidation = await adminTelemetryActions.importSnapshot({ snapshot: parsed });
-      setImportedSnapshot(serverValidation.data?.snapshot || parsed);
+      const serverValidation = (await adminTelemetryActions.importSnapshot({
+        snapshot: parsed,
+      })) as TelemetryApiResponse & { data?: { snapshot?: unknown } };
+      setImportedSnapshot(serverValidation?.data?.snapshot || parsed);
       toast.success("Snapshot imported for local view.");
     } catch (error: any) {
       toast.error(error?.message || "Invalid snapshot file");
@@ -361,14 +368,14 @@ export default function TelemetryDashboardV2() {
         customStart,
         customEnd,
       });
-      const details = await adminTelemetryActions.routeDetails({
+      const details = (await adminTelemetryActions.routeDetails({
         ...params,
         routeKey: errorItem.routeKey,
         method: errorItem.method,
         errorId: errorItem.id,
         source: errorItem.sourceType || source,
-      });
-      setSelectedErrorDetail(details.data?.data?.selectedError || null);
+      })) as TelemetryApiResponse & { data?: { data?: { selectedError?: unknown } } };
+      setSelectedErrorDetail(details?.data?.data?.selectedError || null);
     } catch {
       setSelectedErrorDetail(null);
     } finally {

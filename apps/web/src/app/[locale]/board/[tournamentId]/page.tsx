@@ -160,8 +160,9 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
   }, [tournamentId, accessPassword, selectedBoard, t]);
 
   const refreshTournamentAndMatches = useCallback(async () => {
+    let tournamentResponse: typeof tournamentData | undefined;
     try {
-      const tournamentResponse = await getBoardTournamentAction({
+      tournamentResponse = await getBoardTournamentAction({
         tournamentId,
         password: accessPassword,
       });
@@ -176,6 +177,7 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
     } else {
       await loadBoards();
     }
+    return tournamentResponse;
   }, [tournamentId, accessPassword, selectedBoard, loadMatches, loadBoards]);
 
   const loadUserRole = useCallback(async () => {
@@ -482,12 +484,38 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
   const handleMatchSelect = (match: Match) => {
     if (match.status === 'pending') {
       setSelectedMatch(match);
-      // Pre-fill from organizer config, or fall back to the match's stored value, or default 3
-      const configured = getConfiguredLegsToWin(match);
-      setLegsToWin(configured ?? match.legsToWin ?? 3);
+      void refreshTournamentAndMatches().then((fresh) => {
+        const legsConfig = fresh?.tournamentSettings?.legsConfig;
+        let configured: number | undefined;
+        if (legsConfig) {
+          if (match.type === 'group') {
+            configured = legsConfig.groups?.[match.boardReference];
+          } else {
+            configured = legsConfig.knockout?.[match.round];
+          }
+        }
+        setLegsToWin(configured ?? match.legsToWin ?? 3);
+      });
       setShowMatchSetup(true);
     } else if (match.status === 'ongoing') {
       setSelectedMatch(match);
+    }
+  };
+
+  const handleConfirmDialogChange = (open: boolean) => {
+    setShowConfirmDialog(open);
+    if (open && selectedMatch) {
+      void refreshTournamentAndMatches().then((fresh) => {
+        if (!selectedMatch || !fresh?.tournamentSettings?.legsConfig) return;
+        const legsConfig = fresh.tournamentSettings.legsConfig;
+        const configured =
+          selectedMatch.type === 'group'
+            ? legsConfig.groups?.[selectedMatch.boardReference]
+            : legsConfig.knockout?.[selectedMatch.round];
+        if (configured !== undefined) {
+          setLegsToWin(configured);
+        }
+      });
     }
   };
 
@@ -1061,7 +1089,7 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
         onBack={handleBackToMatches}
         loading={setupLoading}
         showConfirmDialog={showConfirmDialog}
-        onConfirmDialogChange={setShowConfirmDialog}
+        onConfirmDialogChange={handleConfirmDialogChange}
         getBoardLabel={getBoardLabel}
         backLabel={t("vissza")}
         scorerLabel={t("író")}

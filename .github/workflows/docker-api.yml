@@ -1,5 +1,6 @@
 name: Docker API
 
+# Rebuild only when API image inputs change (not web-only or socket-only commits).
 on:
   push:
     branches: ["main", "feature/api"]
@@ -8,9 +9,12 @@ on:
       - "packages/core/**"
       - "packages/services/**"
       - "packages/schemas/**"
-      - "Dockerfile.api"
+      - "package.json"
       - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - "Dockerfile.api"
       - "turbo.json"
+      - ".github/workflows/docker-api.yml"
   workflow_dispatch:
 
 env:

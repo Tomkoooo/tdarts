@@ -28,6 +28,7 @@ import ClubSettingsSection from "@/components/club/ClubSettingsSection"
 import CreateTournamentModal from "@/components/club/CreateTournamentModal"
 import ClubShareModal from "@/components/club/ClubShareModal"
 import DeleteTournamentModal from "@/components/club/DeleteTournamentModal"
+import { AdSlotContainer } from "@/features/ads/components/AdSlotContainer"
 import {
   deleteTournamentAction,
   getTournamentDeletionInfoAction,
@@ -365,6 +366,13 @@ export default function ClubDetailClientPage({
 
   return (
     <>
+      {(userRole === "admin" || userRole === "moderator") && (
+        <AdSlotContainer
+          slotId="club-moderator-popup"
+          placementKey="club.moderator.popup"
+          viewType="popup"
+        />
+      )}
       <ClubLayout
         userRole={userRole}
         clubName={club.name}

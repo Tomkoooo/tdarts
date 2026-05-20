@@ -8,6 +8,7 @@ export interface SimplifiedUser {
   email: string;
   isVerified: boolean;
   isAdmin: boolean;
+  adminRoles?: string[];
   profilePicture?: string;
   city?: string | null;
   country?: string | null;

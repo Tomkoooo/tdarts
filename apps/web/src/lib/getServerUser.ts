@@ -12,6 +12,7 @@ export type ServerUser = {
   email: string;
   isVerified: boolean;
   isAdmin: boolean;
+  adminRoles?: string[];
   profilePicture?: string;
   country?: string | null;
   locale?: 'hu' | 'en' | 'de';
@@ -49,6 +50,7 @@ type SessionUserShape = {
   email?: string;
   isVerified?: boolean;
   isAdmin?: boolean;
+  adminRoles?: string[];
   profilePicture?: string | null;
   country?: string | null;
   locale?: 'hu' | 'en' | 'de';
@@ -90,6 +92,7 @@ const resolveServerUser = cache(async (): Promise<ServerUser | undefined> => {
         email: user.email,
         isVerified: user.isVerified,
         isAdmin: user.isAdmin,
+        adminRoles: (user as any).adminRoles || [],
         profilePicture: user.profilePicture,
         country: (user as any).country ?? null,
         locale: (user as any).locale || 'hu',
@@ -122,6 +125,7 @@ const resolveServerUser = cache(async (): Promise<ServerUser | undefined> => {
           email: user.email || "",
           isVerified: Boolean(user.isVerified),
           isAdmin: Boolean(user.isAdmin),
+          adminRoles: Array.isArray(user.adminRoles) ? user.adminRoles : [],
           profilePicture: user.profilePicture || undefined,
           country: user.country ?? null,
           locale: user.locale || 'hu',

@@ -5,12 +5,15 @@ import { IconShieldCheck } from "@tabler/icons-react"
 import Link from "next/link"
 import { useTranslations } from "next-intl"
 import { getPointSystemDefinition } from "@/lib/leaguePointSystems"
+import type { ReactNode } from "react"
 
 interface LeagueListProps {
     leagues: any[];
+    adInsertIndex?: number;
+    adElement?: ReactNode;
 }
 
-export function LeagueList({ leagues }: LeagueListProps) {
+export function LeagueList({ leagues, adInsertIndex, adElement }: LeagueListProps) {
     const t = useTranslations('Search.league_list')
     if (!leagues || leagues.length === 0) {
         return <div className="text-center py-8 text-muted-foreground">{t('no_leagues')}</div>
@@ -18,9 +21,11 @@ export function LeagueList({ leagues }: LeagueListProps) {
 
     return (
         <div className="grid gap-4">
-            {leagues.map((league) => (
-                <Card key={league._id} className="group hover:shadow-md transition-all border-base-200">
-                    <CardContent className="p-5">
+            {leagues.map((league, index) => (
+                <div key={league._id} className="contents">
+                    {typeof adInsertIndex === "number" && adElement && index === adInsertIndex ? adElement : null}
+                    <Card className="group hover:shadow-md transition-all border-base-200">
+                        <CardContent className="p-5">
                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                             <div className="space-y-2">
                                 <div className="flex items-center gap-2">
@@ -52,8 +57,9 @@ export function LeagueList({ leagues }: LeagueListProps) {
                                 </Link>
                             </Button>
                         </div>
-                    </CardContent>
-                </Card>
+                        </CardContent>
+                    </Card>
+                </div>
             ))}
         </div>
     )

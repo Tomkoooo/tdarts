@@ -8,6 +8,9 @@ import mongoose from 'mongoose';
 import { TournamentPlayerDocument } from '@tdarts/core';
 import { createSseDeltaPayload, EVENTS, eventsBus } from '@tdarts/core';
 
+export const MAX_PLAYERS_PER_GROUP = 7;
+export const MIN_PLAYERS_PER_GROUP = 3;
+
 export class TournamentGroupService {
     private static publishStageRefresh(tournamentId: string): void {
         eventsBus.publish(
@@ -49,9 +52,9 @@ export class TournamentGroupService {
             boardNumber: b.boardNumber,
             isUsed: usedBoardNumbers.has(b.boardNumber)
         }));
-        // Build available players (_id, name) from checked-in tournament players
+        // Build available players (_id, name) from checked-in tournament players without a group
         const availablePlayers = (tournament.tournamentPlayers || [])
-            .filter((p: any) => p.status === 'checked-in')
+            .filter((p: any) => p.status === 'checked-in' && !p.groupId)
             .map((p: any) => {
                 const playerRef: any = p.playerReference;
                 const idStr = playerRef?._id?.toString?.() ?? playerRef?.toString?.() ?? String(playerRef);
@@ -227,6 +230,171 @@ export class TournamentGroupService {
         this.publishStageRefresh(tournament.tournamentId);
 
         return results;
+    }
+
+    /**
+     * Regenerates round-robin matches for one group after adding players.
+     * Caller must ensure all existing group matches are pending.
+     */
+    private static async regenerateGroupMatches(
+        tournament: any,
+        group: { _id: mongoose.Types.ObjectId; board: number; matches: mongoose.Types.ObjectId[] },
+        groupPlayers: TournamentPlayerDocument[]
+    ): Promise<mongoose.Types.ObjectId[]> {
+        const boardNumber = group.board;
+        const playerCount = groupPlayers.length;
+        const rrMatches = roundRobin(playerCount);
+        if (!rrMatches || rrMatches.length === 0) {
+            throw new BadRequestError(`Round-robin generation failed for ${playerCount} players.`);
+        }
+
+        const createdMatchIds: mongoose.Types.ObjectId[] = [];
+        for (const rr of rrMatches) {
+            const p1 = groupPlayers[rr.player1 - 1];
+            const p2 = groupPlayers[rr.player2 - 1];
+            const scorer = groupPlayers[rr.scorer - 1];
+            if (!p1 || !p2 || !scorer) continue;
+            const matchDoc = await MatchModel.create({
+                boardReference: boardNumber,
+                tournamentRef: tournament._id,
+                type: 'group',
+                round: 1,
+                player1: { playerId: p1.playerReference, legsWon: 0, legsLost: 0, average: 0 },
+                player2: { playerId: p2.playerReference, legsWon: 0, legsLost: 0, average: 0 },
+                scorer: scorer.playerReference,
+                status: 'pending',
+                legs: [],
+            });
+            createdMatchIds.push(matchDoc._id);
+        }
+
+        const groupIndex = (tournament.groups as any[]).findIndex(
+            (g: any) => g._id.toString() === group._id.toString()
+        );
+        if (groupIndex !== -1) {
+            (tournament.groups as any[])[groupIndex].matches = createdMatchIds as any;
+        }
+
+        const boardIndex = tournament.boards.findIndex((b: any) => b.boardNumber === boardNumber);
+        if (boardIndex !== -1) {
+            const deletedIds = new Set((group.matches || []).map((id: any) => id.toString()));
+            const currentMatchId = tournament.boards[boardIndex].currentMatch?.toString?.();
+            if (currentMatchId && deletedIds.has(currentMatchId)) {
+                tournament.boards[boardIndex].currentMatch = undefined;
+            }
+            tournament.boards[boardIndex].status = 'waiting';
+            tournament.boards[boardIndex].nextMatch =
+                createdMatchIds.length > 0 ? (createdMatchIds[0] as any) : undefined;
+        }
+
+        return createdMatchIds;
+    }
+
+    static async addPlayersToGroup(
+        tournamentCode: string,
+        requesterId: string,
+        params: { groupId: string; playerIds: string[] }
+    ): Promise<{ groupId: string; matchIds: string[] }> {
+        const { groupId, playerIds } = params;
+        if (!Array.isArray(playerIds) || playerIds.length === 0) {
+            throw new BadRequestError('playerIds are required');
+        }
+
+        await connectMongo();
+        const tournament = await TournamentModel.findOne({ tournamentId: tournamentCode });
+        if (!tournament) {
+            throw new BadRequestError('Tournament not found');
+        }
+
+        const isAuthorized = await AuthorizationService.checkAdminOrModerator(
+            requesterId,
+            tournament.clubId.toString()
+        );
+        if (!isAuthorized) {
+            throw new BadRequestError('Only club admins or moderators can add players to groups');
+        }
+
+        if (tournament.tournamentSettings?.status !== 'group-stage') {
+            throw new BadRequestError('Players can only be added during the group stage');
+        }
+
+        const group = (tournament.groups || []).find((g: any) => g._id.toString() === groupId);
+        if (!group) {
+            throw new BadRequestError('Group not found');
+        }
+
+        const existingGroupPlayers = tournament.tournamentPlayers.filter(
+            (p: any) => p.groupId?.toString() === groupId
+        );
+        if (existingGroupPlayers.length + playerIds.length > MAX_PLAYERS_PER_GROUP) {
+            throw new BadRequestError(
+                `Group cannot exceed ${MAX_PLAYERS_PER_GROUP} players (current: ${existingGroupPlayers.length})`
+            );
+        }
+
+        const groupMatchIds = (group.matches || []).map((id: any) => id);
+        if (groupMatchIds.length > 0) {
+            const existingMatches = await MatchModel.find({ _id: { $in: groupMatchIds } }).select('status');
+            const blocking = existingMatches.find(
+                (m) => m.status === 'ongoing' || m.status === 'finished'
+            );
+            if (blocking) {
+                throw new BadRequestError(
+                    'Cannot add players while group matches are ongoing or finished. Wait until all matches are pending or cancel the group stage.'
+                );
+            }
+            await MatchModel.deleteMany({ _id: { $in: groupMatchIds }, status: 'pending' });
+        }
+
+        const newTournamentPlayers: TournamentPlayerDocument[] = [];
+        let maxOrdinal = existingGroupPlayers.reduce(
+            (max: number, p: any) => Math.max(max, p.groupOrdinalNumber ?? 0),
+            -1
+        );
+
+        for (const playerId of playerIds) {
+            const tp = tournament.tournamentPlayers.find(
+                (p: TournamentPlayerDocument) => p.playerReference?.toString() === playerId
+            );
+            if (!tp) throw new BadRequestError(`Player ${playerId} not found in tournament`);
+            if (tp.status !== 'checked-in') {
+                throw new BadRequestError(`Player ${playerId} is not checked-in`);
+            }
+            if (tp.groupId) {
+                throw new BadRequestError(`Player ${playerId} is already assigned to a group`);
+            }
+            maxOrdinal += 1;
+            (tp as any).groupId = group._id;
+            (tp as any).groupOrdinalNumber = maxOrdinal;
+            (tp as any).groupStanding = null;
+            if ((tp as any).stats) {
+                (tp as any).stats.matchesWon = 0;
+                (tp as any).stats.matchesLost = 0;
+                (tp as any).stats.legsWon = 0;
+                (tp as any).stats.legsLost = 0;
+                (tp as any).stats.avg = 0;
+                (tp as any).stats.oneEightiesCount = 0;
+                (tp as any).stats.highestCheckout = 0;
+            }
+            newTournamentPlayers.push(tp);
+        }
+
+        const allGroupPlayers = [...existingGroupPlayers, ...newTournamentPlayers].sort(
+            (a: any, b: any) => (a.groupOrdinalNumber ?? 0) - (b.groupOrdinalNumber ?? 0)
+        );
+
+        if (allGroupPlayers.length < MIN_PLAYERS_PER_GROUP) {
+            throw new BadRequestError(`Group must have at least ${MIN_PLAYERS_PER_GROUP} players`);
+        }
+
+        const matchIds = await this.regenerateGroupMatches(tournament, group, allGroupPlayers);
+        await tournament.save();
+        this.publishStageRefresh(tournament.tournamentId);
+
+        return {
+            groupId,
+            matchIds: matchIds.map((id) => id.toString()),
+        };
     }
 
     static async generateGroups(tournamentId: string, requesterId: string): Promise<boolean> {

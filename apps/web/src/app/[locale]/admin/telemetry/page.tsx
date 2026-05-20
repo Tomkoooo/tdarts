@@ -1,5 +1,11 @@
-import TelemetryDashboardV2 from "@/components/admin/telemetry/TelemetryDashboardV2";
+import { redirect } from 'next/navigation';
 
-export default async function AdminTelemetryPage() {
-  return <TelemetryDashboardV2 />;
+/** Legacy URL → new observability telemetry dashboard. */
+export default async function AdminTelemetryLegacyRedirect({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale } = await params;
+  redirect(`/${locale}/admin/observability`);
 }

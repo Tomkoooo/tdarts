@@ -223,6 +223,26 @@ export class AuthService {
     return { token, expiresInSec };
   }
 
+  /** Socket token for board scorers (tournament password or checked-in participant). */
+  static issueBoardSocketToken(tournamentId: string): { token: string; expiresInSec: number } {
+    const expiresInSec = Number(process.env.SOCKET_BOARD_TOKEN_TTL_SEC ?? 4 * 60 * 60);
+    const userId = `board:${tournamentId}`;
+    const secret = AuthService.socketTokenSigningSecret();
+    const token = jwt.sign(
+      {
+        id: userId,
+        purpose: 'socket' as const,
+        userId,
+        userRole: 'board_scorer' as const,
+        authType: 'board' as const,
+        tournamentId,
+      },
+      secret,
+      { expiresIn: expiresInSec },
+    );
+    return { token, expiresInSec };
+  }
+
   static verifySocketToken(token: string): { userId: string } {
     try {
       const secret = AuthService.socketTokenSigningSecret();

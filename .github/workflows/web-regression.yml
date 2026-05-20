@@ -1,10 +1,33 @@
 name: Web Regression Gate
 
+# Only run when something can affect web lint/tests, shared packages, or API unit tests in this workflow.
+# Socket-only, docs-only, or other unrelated commits skip the job (saves runner minutes).
 on:
   push:
     branches: ["feature/api", "main", "to_release"]
+    paths:
+      - "apps/web/**"
+      - "apps/api/**"
+      - "packages/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - "turbo.json"
+      - "tsconfig.json"
+      - ".github/workflows/web-regression.yml"
   pull_request:
     branches: ["main", "to_release"]
+    paths:
+      - "apps/web/**"
+      - "apps/api/**"
+      - "packages/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - "turbo.json"
+      - "tsconfig.json"
+      - ".github/workflows/web-regression.yml"
+  workflow_dispatch:
 
 env:
   # Minimal env so tests + build succeed without real secrets

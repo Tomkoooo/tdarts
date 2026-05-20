@@ -1,5 +1,6 @@
 name: Build Docker Image
 
+# Next.js web image: only when web, shared packages, or build inputs change (not socket-only / docs-only).
 on:
   push:
     branches: ["main", "new_ui"]
@@ -13,6 +14,7 @@ on:
       - "package.json"
       - "turbo.json"
       - "tsconfig.json"
+      - ".github/workflows/ci.yml"
   workflow_dispatch:
 
 env:

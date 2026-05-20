@@ -3,7 +3,10 @@
 import { z } from 'zod';
 import { TournamentService, MatchService, ClubService, AuthorizationService } from '@tdarts/services';
 import { MatchModel } from '@tdarts/core';
+import { connectMongo } from '@/lib/mongoose';
+import { eventsBus, EVENTS, createSseDeltaPayload } from '@/lib/events';
 import { authorizeUserResult } from '@/shared/lib/guards';
+import { assertBoardAccess } from '@/features/board/lib/assertBoardAccess';
 import { withTelemetry } from '@/shared/lib/withTelemetry';
 import { resolveGuardAwareStatus } from '@/shared/lib/guards/result';
 import { serializeForClient } from '@/shared/lib/serializeForClient';
@@ -59,44 +62,6 @@ const finishBoardMatchSchema = z.object({
     })
     .optional(),
 });
-
-async function assertBoardAccess(params: { tournamentId: string; password?: string }) {
-  const authResult = await authorizeUserResult();
-  if (authResult.ok) {
-    const status = await TournamentService.getPlayerStatusInTournament(
-      params.tournamentId,
-      authResult.data.userId
-    );
-    if (status === 'checked-in') {
-      return;
-    }
-
-    try {
-      const { clubId } = await TournamentService.getTournamentRoleContext(params.tournamentId);
-      const [isPrivileged, isGlobalAdmin] = await Promise.all([
-        AuthorizationService.checkAdminOrModerator(authResult.data.userId, clubId),
-        AuthorizationService.isGlobalAdmin(authResult.data.userId),
-      ]);
-      if (isPrivileged || isGlobalAdmin) {
-        return;
-      }
-    } catch {
-      // Ignore role check failures and continue to password fallback.
-    }
-  }
-
-  if (params.password) {
-    const ok = await TournamentService.validateTournamentByPassword(
-      params.tournamentId,
-      params.password
-    );
-    if (ok) {
-      return;
-    }
-  }
-
-  throw new Error('Unauthorized board access');
-}
 
 export async function getBoardPasswordBypassStatusAction(input: { tournamentId: string }) {
   const run = withTelemetry(
@@ -438,6 +403,79 @@ export async function finishBoardMatchAction(input: {
     {
       method: 'ACTION',
       metadata: { feature: 'board', actionName: 'finishBoardMatch' },
+      resolveStatus: resolveGuardAwareStatus,
+    }
+  );
+  return run(input);
+}
+
+const updateBoardStartingPlayerSchema = z.object({
+  tournamentId: z.string().min(1),
+  matchId: z.string().min(1),
+  startingPlayer: z.union([z.literal(1), z.literal(2)]),
+  password: z.string().optional(),
+});
+
+export async function updateBoardMatchStartingPlayerAction(input: {
+  tournamentId: string;
+  matchId: string;
+  startingPlayer: 1 | 2;
+  password?: string;
+}) {
+  const run = withTelemetry(
+    'board.updateMatchStartingPlayer',
+    async (payload: z.infer<typeof updateBoardStartingPlayerSchema>) => {
+      const parsed = updateBoardStartingPlayerSchema.parse(payload);
+      await assertBoardAccess({
+        tournamentId: parsed.tournamentId,
+        password: parsed.password,
+      });
+
+      await connectMongo();
+      const match = await MatchModel.findById(parsed.matchId).select(
+        '_id status tournamentRef startingPlayer legs'
+      );
+      if (!match) {
+        throw new Error('Match not found');
+      }
+      if (match.status !== 'ongoing') {
+        throw new Error('Can only update starting player on ongoing matches');
+      }
+      const legs = (match as { legs?: unknown[] }).legs ?? [];
+      if (legs.length > 0) {
+        throw new Error('Cannot change starting player after legs have been played');
+      }
+
+      match.startingPlayer = parsed.startingPlayer;
+      await match.save();
+
+      eventsBus.publish(
+        EVENTS.MATCH_UPDATE,
+        createSseDeltaPayload({
+          tournamentId: parsed.tournamentId,
+          scope: 'match',
+          action: 'updated',
+          data: {
+            legacyType: 'updated',
+            matchId: parsed.matchId,
+            match: {
+              _id: String(match._id),
+              startingPlayer: match.startingPlayer,
+              status: match.status,
+            },
+          },
+        })
+      );
+
+      return serializeForClient({
+        success: true,
+        matchId: parsed.matchId,
+        startingPlayer: match.startingPlayer,
+      });
+    },
+    {
+      method: 'ACTION',
+      metadata: { feature: 'board', actionName: 'updateBoardMatchStartingPlayer' },
       resolveStatus: resolveGuardAwareStatus,
     }
   );

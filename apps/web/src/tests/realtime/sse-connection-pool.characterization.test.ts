@@ -12,7 +12,7 @@ describe('SSE + connection pressure (characterization)', () => {
     const ac = new AbortController();
     const tid = `burst-${Date.now()}`;
     const res = createSseUpdatesResponse(
-      new NextRequest(`http://localhost/api/updates?tournamentId=${tid}&maxConnectionMs=120000`, {
+      new NextRequest(`http://localhost/api/updates?tournamentId=${tid}&maxConnectionMs=60000`, {
         signal: ac.signal,
       }),
     );
@@ -55,8 +55,12 @@ describe('SSE + connection pressure (characterization)', () => {
       );
     }
 
-    await readLoop;
-    ac.abort();
+    try {
+      await readLoop;
+    } finally {
+      ac.abort();
+      await reader.cancel().catch(() => {});
+    }
 
     expect(tournamentEvents.length).toBeGreaterThanOrEqual(25);
     const parsed = tournamentEvents.map((s) => JSON.parse(s) as { data?: { i?: number } });

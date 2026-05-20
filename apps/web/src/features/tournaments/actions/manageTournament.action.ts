@@ -78,7 +78,7 @@ export async function getManualGroupsContextAction(input: { code: string }) {
       const usedBoardNumbers = new Set<number>(
         Array.isArray(tournament?.groups)
           ? tournament.groups
-              .map((g: any) => Number(g?.boardNumber))
+              .map((g: any) => Number(g?.board ?? g?.boardNumber))
               .filter((n: number) => Number.isFinite(n) && n > 0)
           : []
       );
@@ -92,7 +92,7 @@ export async function getManualGroupsContextAction(input: { code: string }) {
         Array.isArray(tournament?.tournamentPlayers) &&
         tournament.tournamentPlayers.length > 0
           ? tournament.tournamentPlayers
-              .filter((tp: any) => tp?.status === 'checked-in')
+              .filter((tp: any) => tp?.status === 'checked-in' && !tp?.groupId)
               .map((tp: any) => ({
                 _id: toPlayerId(tp?.playerReference),
                 name: String(tp?.playerReference?.name || tp?.name || 'Player'),
@@ -364,6 +364,43 @@ export async function moveTournamentPlayerInGroupAction(input: {
     {
       method: 'ACTION',
       metadata: { feature: 'tournaments', actionName: 'moveTournamentPlayerInGroup' },
+      resolveStatus: resolveGuardAwareStatus,
+    }
+  );
+  return run(input);
+}
+
+const addPlayersToGroupSchema = z.object({
+  code: z.string().min(1),
+  groupId: z.string().min(1),
+  playerIds: z.array(z.string().min(1)).min(1),
+});
+
+export async function addPlayersToGroupAction(input: {
+  code: string;
+  groupId: string;
+  playerIds: string[];
+}) {
+  const run = withTelemetry(
+    'tournaments.groups.addPlayers',
+    async (payload: { code: string; groupId: string; playerIds: string[] }) => {
+      const parsed = addPlayersToGroupSchema.parse(payload);
+      const authResult = await authorizeUserResult();
+      if (!authResult.ok) return authResult;
+
+      const result = await TournamentService.addPlayersToGroup(
+        parsed.code,
+        authResult.data.userId,
+        { groupId: parsed.groupId, playerIds: parsed.playerIds }
+      );
+      revalidateTournamentTags(parsed.code);
+      revalidateTag('search', 'max');
+      revalidateTag('home:tournaments', 'max');
+      return serializeForClient({ success: true, ...result });
+    },
+    {
+      method: 'ACTION',
+      metadata: { feature: 'tournaments', actionName: 'addPlayersToGroup' },
       resolveStatus: resolveGuardAwareStatus,
     }
   );

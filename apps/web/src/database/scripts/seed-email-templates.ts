@@ -1034,7 +1034,7 @@ async function seedEmailTemplates() {
     }
     
     console.log(`\n✨ Successfully seeded ${defaultTemplates.length} email templates!`);
-    console.log('📝 Templates can now be edited from the admin panel at /admin/emails');
+    console.log('📝 Email templates are in the database; manage them via the admin panel when it is available again.');
     
     process.exit(0);
   } catch (error) {

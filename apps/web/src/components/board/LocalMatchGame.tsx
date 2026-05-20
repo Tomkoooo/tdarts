@@ -19,6 +19,15 @@ import { Input } from '@/components/ui/Input';
 import { Switch } from '@/components/ui/switch';
 import { useDartGame } from '@/hooks/useDartGame';
 import { useScolia } from '@/hooks/useScolia';
+import SectorScoreInput, { type DartVisitState } from '@/components/board/SectorScoreInput';
+import ScoreEntryModeToggle, { getStoredScoreEntryMode } from '@/components/board/ScoreEntryModeToggle';
+import PlayerCardScorePreview from '@/components/board/PlayerCardScorePreview';
+import LegsToWinPicker from '@/components/board/LegsToWinPicker';
+import {
+  getStoredScorePreviewOnCards,
+  setStoredScorePreviewOnCards,
+  type ScoreEntryMode,
+} from '@/lib/board/boardScoreSettings';
 
 interface LocalMatchGameProps {
   legsToWin: number;
@@ -54,6 +63,17 @@ const LocalMatchGame: React.FC<LocalMatchGameProps> = ({ legsToWin: initialLegsT
 
   // Inputs
   const [scoreInput, setScoreInput] = useState('');
+  const [scoreEntryMode, setScoreEntryMode] = useState<ScoreEntryMode>(() =>
+    getStoredScoreEntryMode()
+  );
+  const [dartVisitState, setDartVisitState] = useState<DartVisitState>({
+    visitTotal: 0,
+    remainingAfterVisit: startingScore,
+    dartCount: 0,
+  });
+  const [showScorePreviewOnCards, setShowScorePreviewOnCards] = useState(() =>
+    getStoredScorePreviewOnCards()
+  );
   const [editingThrow, setEditingThrow] = useState<{player: 1 | 2, throwIndex: number} | null>(null);
   const [editScoreInput, setEditScoreInput] = useState('');
   
@@ -75,6 +95,14 @@ const LocalMatchGame: React.FC<LocalMatchGameProps> = ({ legsToWin: initialLegsT
   const currentLeg = gameState.currentLeg;
   const player1 = gameState.player1;
   const player2 = gameState.player2;
+
+  const currentPlayerRemaining = currentPlayer === 1 ? player1.score : player2.score;
+  const isDartEntryActive = scoreEntryMode === 'dart' && !editingThrow;
+  const headerScoreDisplay = editingThrow
+    ? editScoreInput || '0'
+    : isDartEntryActive
+      ? String(dartVisitState.visitTotal)
+      : scoreInput || '0';
 
   // --- Effects ---
 
@@ -384,6 +412,14 @@ const LocalMatchGame: React.FC<LocalMatchGameProps> = ({ legsToWin: initialLegsT
               <div className="truncate max-w-full">{t("játékos_94")}</div>
               <div className="text-gray-400 text-2xl sm:text-3xl md:text-4xl lg:text-5xl mt-1">{player1.legsWon}</div>
             </div>
+            <PlayerCardScorePreview
+              showPreview={showScorePreviewOnCards}
+              isActivePlayer={currentPlayer === 1 && !editingThrow}
+              scoreEntryMode={scoreEntryMode}
+              dartVisitState={dartVisitState}
+              totalModeInput={scoreInput}
+              currentRemaining={player1.score}
+            />
             <div className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold text-white mb-1 sm:mb-2 leading-none">{player1.score}</div>
             <div className="flex gap-1 sm:gap-2 md:gap-3 text-xs sm:text-sm md:text-base">
               <span className="text-gray-400">{t("avg")}{player1.stats.average.toFixed(2)}</span>
@@ -405,6 +441,14 @@ const LocalMatchGame: React.FC<LocalMatchGameProps> = ({ legsToWin: initialLegsT
               <div className="truncate max-w-full">{t("játékos_77")}</div>
               <div className="text-gray-400 text-2xl sm:text-3xl md:text-4xl lg:text-5xl mt-1">{player2.legsWon}</div>
             </div>
+            <PlayerCardScorePreview
+              showPreview={showScorePreviewOnCards}
+              isActivePlayer={currentPlayer === 2 && !editingThrow}
+              scoreEntryMode={scoreEntryMode}
+              dartVisitState={dartVisitState}
+              totalModeInput={scoreInput}
+              currentRemaining={player2.score}
+            />
             <div className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold text-white mb-1 sm:mb-2 leading-none">{player2.score}</div>
             <div className="flex gap-1 sm:gap-2 md:gap-3 text-xs sm:text-sm md:text-base">
               <span className="text-gray-400">{t("avg")}{player2.stats.average.toFixed(2)}</span>
@@ -508,7 +552,7 @@ const LocalMatchGame: React.FC<LocalMatchGameProps> = ({ legsToWin: initialLegsT
       </div>
 
       {/* Right Side - Input & Numpad */}
-      <div className="flex flex-col landscape:w-1/2 landscape:h-full">
+      <div className="flex flex-col min-h-0 overflow-hidden landscape:w-1/2 landscape:h-full portrait:flex-1">
         {/* Score Display with BACK button */}
         <section className="h-[6dvh] landscape:h-[15dvh] bg-gradient-to-b from-base-300 to-base-200 flex items-center justify-between px-2 sm:px-4">
           <button
@@ -522,23 +566,41 @@ const LocalMatchGame: React.FC<LocalMatchGameProps> = ({ legsToWin: initialLegsT
                 {t("szerkesztés_játékos")}{editingThrow.player} {t("dobás")}{editingThrow.throwIndex + 1}
               </div>
             )}
-            <div className={`text-5xl sm:text-6xl md:text-7xl font-bold ${editingThrow ? 'text-primary' : 'text-base-content'}`}>
-              {editingThrow ? (editScoreInput || '0') : (scoreInput || '0')}
+            <div className={`text-5xl sm:text-6xl md:text-7xl font-bold leading-none ${editingThrow ? 'text-primary' : 'text-base-content'}`}>
+              {headerScoreDisplay}
             </div>
           </div>
-          <button
-            onClick={() => {
-              setTempLegsToWin(legsToWin);
-              setShowSettingsModal(true);
-            }}
-            className="bg-base-300 hover:bg-base-100 text-base-content font-bold px-3 sm:px-6 py-2 sm:py-3 rounded-lg transition-colors text-xs sm:text-base border flex items-center justify-center w-[80px] sm:w-[120px]"
-          >
-            <IconSettings className="w-4 h-4 sm:w-5 sm:h-5" />
-          </button>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <ScoreEntryModeToggle mode={scoreEntryMode} onChange={setScoreEntryMode} />
+            <button
+              onClick={() => {
+                setTempLegsToWin(legsToWin);
+                setShowSettingsModal(true);
+              }}
+              className="bg-base-300 hover:bg-base-100 text-base-content font-bold p-2 sm:px-4 sm:py-3 rounded-lg transition-colors text-xs sm:text-base border flex items-center justify-center"
+            >
+              <IconSettings className="w-5 h-5 sm:w-6 sm:h-6" />
+            </button>
+          </div>
         </section>
 
-        {/* Number Pad */}
-        <main className="h-[56dvh] landscape:flex-[0_0_85dvh] bg-black p-1 sm:p-2 md:p-4">
+        <main className="flex-1 min-h-0 bg-black p-1 sm:p-2 md:p-3 overflow-hidden">
+          {scoreEntryMode === 'dart' && !editingThrow ? (
+            <SectorScoreInput
+              key={`dart-${currentPlayer}-${currentLeg}`}
+              remainingScore={currentPlayerRemaining}
+              disabled={Boolean(editingThrow)}
+              onVisitStateChange={setDartVisitState}
+              onVisitComplete={(total) => {
+                handleThrow(total);
+                setDartVisitState({
+                  visitTotal: 0,
+                  remainingAfterVisit: currentPlayerRemaining,
+                  dartCount: 0,
+                });
+              }}
+            />
+          ) : (
           <div className="h-full flex gap-1 sm:gap-2 md:gap-4">
             {/* Quick Access Scores - Left */}
             <div className="w-1/5 sm:w-1/4 flex flex-col gap-1 sm:gap-2">
@@ -624,6 +686,7 @@ const LocalMatchGame: React.FC<LocalMatchGameProps> = ({ legsToWin: initialLegsT
               ))}
             </div>
           </div>
+          )}
         </main>
       </div>
 
@@ -636,16 +699,25 @@ const LocalMatchGame: React.FC<LocalMatchGameProps> = ({ legsToWin: initialLegsT
           <div className="space-y-6">
             <div className="space-y-2">
               <Label>{t("nyert_legek_száma")}</Label>
-              <select 
-                onChange={(e) => setTempLegsToWin(parseInt(e.target.value))} 
-                value={tempLegsToWin} 
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 text-foreground"
-              >
-                {Array.from({ length: 20 }, (_, i) => (
-                  <option key={i + 1} value={i + 1}>{i + 1}</option>
-                ))}
-              </select>
+              <LegsToWinPicker value={tempLegsToWin} onChange={setTempLegsToWin} />
               <p className="text-xs text-muted-foreground">{t("best_of")}{tempLegsToWin * 2 - 1}</p>
+            </div>
+
+            <div className="flex items-center justify-between gap-3 pt-2 border-t border-border">
+              <div className="space-y-0.5 flex-1">
+                <Label htmlFor="local-score-preview-cards">{t("settings.score_preview_on_cards")}</Label>
+                <p className="text-xs text-muted-foreground">
+                  {t("settings.score_preview_on_cards_desc")}
+                </p>
+              </div>
+              <Switch
+                id="local-score-preview-cards"
+                checked={showScorePreviewOnCards}
+                onCheckedChange={(checked) => {
+                  setShowScorePreviewOnCards(checked);
+                  setStoredScorePreviewOnCards(checked);
+                }}
+              />
             </div>
             
             <div className="space-y-4 pt-4 border-t">
