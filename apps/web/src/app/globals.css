@@ -1,4 +1,5 @@
-@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap");
 @import "tailwindcss";
 @import "leaflet/dist/leaflet.css";
 
@@ -54,6 +55,29 @@
   --font-headline: "Space Grotesk", sans-serif;
   --font-label: "Space Grotesk", sans-serif;
   --font-body: "Inter", sans-serif;
+
+  /* Admin Precision Core palette (scoped utilities: bg-admin-surface, text-admin-primary, …) */
+  --color-admin-surface: #121317;
+  --color-admin-surface-sunken: #141518;
+  --color-admin-surface-elevated: #2a2c32;
+  --color-admin-surface-container: #1e1f23;
+  --color-admin-surface-container-high: #292a2e;
+  --color-admin-outline: #ab8987;
+  --color-admin-outline-variant: #5b403f;
+  --color-admin-on-surface: #e3e2e7;
+  --color-admin-on-surface-variant: #e4bebc;
+  --color-admin-primary: #ffb3b1;
+  --color-admin-primary-container: #ff535b;
+  --color-admin-darts-red: #922210;
+  --color-admin-success: #2ecc71;
+  --color-admin-warning: #f39c12;
+  --color-admin-error: #ffb4ab;
+  --font-admin-display: "Space Grotesk", sans-serif;
+  --font-admin-body: "Inter", sans-serif;
+  --font-admin-mono: "JetBrains Mono", monospace;
+
+  --width-admin-sidebar: 260px;
+  --height-admin-header: 64px;
 
   --shadow-glow-primary: 0 0 20px color-mix(in srgb, var(--color-primary) 15%);
   --shadow-glow-accent: 0 0 20px color-mix(in srgb, var(--color-accent) 15%);
@@ -290,5 +314,90 @@
 
   .animate-glow-pulse {
     animation: glow-pulse 2.2s ease-in-out infinite;
+  }
+
+  /* Admin workbench: Material Symbols (font loaded in admin layout) */
+  .material-symbols-outlined {
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    vertical-align: middle;
+    font-style: normal;
+    line-height: 1;
+    letter-spacing: normal;
+    text-transform: none;
+    white-space: nowrap;
+  }
+
+  .custom-scrollbar-admin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .custom-scrollbar-admin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .custom-scrollbar-admin::-webkit-scrollbar-thumb {
+    background: color-mix(in srgb, hsl(var(--foreground)) 22%, transparent);
+    border-radius: 9999px;
+  }
+
+  /*
+   Design preview / admin chrome — Precision Core typography hooks
+   (Use inside admin routes or `[data-admin-chrome]` wrapper.)
+*/
+  .admin-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .admin-scrollbar::-webkit-scrollbar-track {
+    background: var(--color-admin-surface-sunken);
+  }
+
+  .admin-scrollbar::-webkit-scrollbar-thumb {
+    background: color-mix(in srgb, var(--color-admin-outline-variant) 80%, transparent);
+    border-radius: 10px;
+  }
+
+  .admin-text-stats-lg {
+    font-family: var(--font-admin-display);
+    font-size: 2.25rem;
+    line-height: 2.75rem;
+    font-weight: 700;
+  }
+
+  .admin-text-headline-lg {
+    font-family: var(--font-admin-display);
+    font-size: 2rem;
+    line-height: 2.5rem;
+    font-weight: 600;
+  }
+
+  .admin-text-label-caps {
+    font-family: var(--font-admin-mono);
+    font-size: 0.75rem;
+    line-height: 1rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  .admin-text-body-sm {
+    font-family: var(--font-admin-body);
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+  }
+
+  .admin-text-table-data {
+    font-family: var(--font-admin-body);
+    font-size: 0.8125rem;
+    line-height: 1.125rem;
+  }
+
+  .admin-text-mono-data {
+    font-family: var(--font-admin-mono);
+    font-size: 0.8125rem;
+    line-height: 1rem;
+    font-weight: 500;
   }
 }

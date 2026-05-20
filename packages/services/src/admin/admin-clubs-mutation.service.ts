@@ -23,4 +23,23 @@ export class AdminClubsMutationService {
       snapshotBefore: before,
     });
   }
+
+  static async updateSubscriptionModel(
+    actorUserId: string,
+    clubId: string,
+    subscriptionModel: 'free' | 'basic' | 'pro' | 'enterprise',
+  ): Promise<void> {
+    await connectMongo();
+    if (!mongoose.Types.ObjectId.isValid(clubId)) throw new Error('Invalid club id');
+    const before = await ClubModel.findById(clubId).select('subscriptionModel').lean();
+    if (!before) throw new Error('Club not found');
+    const prev = ((before as { subscriptionModel?: string }).subscriptionModel ?? 'free') as string;
+    if (prev === subscriptionModel) return;
+    await ClubModel.updateOne({ _id: clubId }, { $set: { subscriptionModel } });
+    await AdminAuditService.logAction(actorUserId, 'club.updateSubscriptionModel', {
+      clubId,
+      subscriptionModel,
+      snapshotBefore: before,
+    });
+  }
 }

@@ -31,11 +31,29 @@ function toRow(doc: Record<string, unknown>): AdminUserListRow {
   };
 }
 
+const USER_SORT_TO_MONGO: Record<string, string> = {
+  email: 'email',
+  username: 'username',
+  name: 'name',
+  lastLogin: 'lastLogin',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  auth: 'authProvider',
+};
+
+function resolveUserSort(sort?: { key: string; dir: 'asc' | 'desc' }): Record<string, 1 | -1> {
+  if (!sort || !USER_SORT_TO_MONGO[sort.key]) return { updatedAt: -1 };
+  const field = USER_SORT_TO_MONGO[sort.key];
+  const d = sort.dir === 'asc' ? 1 : -1;
+  return { [field]: d };
+}
+
 export class AdminUsersQueryService {
   static async list(params: {
     q?: string;
     page: number;
     limit: number;
+    sort?: { key: string; dir: 'asc' | 'desc' };
   }): Promise<{ total: number; rows: AdminUserListRow[] }> {
     await connectMongo();
     const limit = Math.min(Math.max(params.limit, 1), 100);
@@ -50,13 +68,15 @@ export class AdminUsersQueryService {
       query.$or = [{ email: rx }, { username: rx }, { name: rx }];
     }
 
+    const sortSpec = resolveUserSort(params.sort);
+
     const [total, docs] = await Promise.all([
       UserModel.countDocuments(query),
       UserModel.find(query)
         .select(
           'username name email isVerified isAdmin adminRoles authProvider lastLogin isDeleted createdAt updatedAt',
         )
-        .sort({ updatedAt: -1 })
+        .sort(sortSpec)
         .skip(skip)
         .limit(limit)
         .lean(),
@@ -65,7 +85,9 @@ export class AdminUsersQueryService {
     return { total, rows: (docs as Record<string, unknown>[]).map(toRow) };
   }
 
-  static async getById(userId: string): Promise<AdminUserListRow & { locale?: string; country?: string | null } | null> {
+  static async getById(
+    userId: string,
+  ): Promise<(AdminUserListRow & { locale?: string; country?: string | null; googleId?: string }) | null> {
     await connectMongo();
     if (!mongoose.Types.ObjectId.isValid(userId)) return null;
     const doc = await UserModel.findById(userId)
@@ -79,6 +101,7 @@ export class AdminUsersQueryService {
       ...toRow(o),
       locale: o.locale ? String(o.locale) : undefined,
       country: o.country != null ? String(o.country) : null,
+      googleId: o.googleId ? String(o.googleId) : undefined,
     };
   }
 

@@ -38,6 +38,8 @@ export const ADMIN_CAPABILITIES = {
   ADMIN_ADS_READ: 'admin:ads:read',
   ADMIN_ADS_WRITE: 'admin:ads:write',
   ADMIN_ADS_TELEMETRY_READ: 'admin:ads:telemetry:read',
+  ADMIN_DATA_EXPLORER_READ: 'admin:data-explorer:read',
+  ADMIN_DATA_EXPLORER_WRITE: 'admin:data-explorer:write',
 } as const;
 
 export type AdminCapability = (typeof ADMIN_CAPABILITIES)[keyof typeof ADMIN_CAPABILITIES];

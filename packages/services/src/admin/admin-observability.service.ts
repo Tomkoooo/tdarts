@@ -15,6 +15,13 @@ export class AdminObservabilityService {
   static async listLogs(filters: {
     level?: ILog['level'];
     category?: ILog['category'];
+    /** When true, only `admin.*` operations (panel audit trail). */
+    adminOnly?: boolean;
+    /** Staff user who performed the action (`Log.userId`). */
+    actorUserId?: string;
+    /** Target user id stored in audit metadata (`metadata.targetUserId`). */
+    metadataTargetUserId?: string;
+    requestId?: string;
     startDate?: Date;
     endDate?: Date;
     limit?: number;
@@ -27,6 +34,12 @@ export class AdminObservabilityService {
     const query: Record<string, unknown> = {};
     if (filters.level) query.level = filters.level;
     if (filters.category) query.category = filters.category;
+    if (filters.requestId?.trim()) query.requestId = filters.requestId.trim();
+    if (filters.adminOnly) query.operation = { $regex: '^admin\\.' };
+    if (filters.actorUserId?.trim()) query.userId = filters.actorUserId.trim();
+    if (filters.metadataTargetUserId?.trim()) {
+      query['metadata.targetUserId'] = filters.metadataTargetUserId.trim();
+    }
     if (filters.startDate || filters.endDate) {
       query.timestamp = {} as Record<string, Date>;
       if (filters.startDate) (query.timestamp as { $gte: Date }).$gte = filters.startDate;

@@ -1,50 +1,97 @@
-import mongoose from 'mongoose';
 import {
   connectMongo,
   ClubModel,
   FeedbackModel,
   TournamentModel,
   UserModel,
-  StressRunModel,
   ApiRequestMetricModel,
   ApiRequestErrorEventModel,
 } from '@tdarts/core';
+import { AdminObservabilityService } from './admin-observability.service';
+
+export type AdminDashboardRange = '24h' | '7d' | '30d';
+
+export type AdminMetricTrend = {
+  current: number;
+  previous: number;
+  periodLabel: string;
+};
 
 export type AdminDashboardSummary = {
+  range: AdminDashboardRange;
   usersTotal: number;
   usersLast7d: number;
+  usersTrend: AdminMetricTrend;
   clubsActive: number;
+  clubsTrend: AdminMetricTrend;
   tournamentsByStatus: Record<string, number>;
+  tournamentsTotal: number;
   feedbackOpenHigh: number;
-  stressRunsRecent: { id: string; status: string; createdAt: string }[];
   userSignupsByDay: { day: string; count: number }[];
   feedbackOpenByPriority: Record<string, number>;
   apiErrorEvents24h: number;
+  apiErrorsTrend: AdminMetricTrend;
   topErrorRoutes: { routeKey: string; method: string; errors: number }[];
+  recentAdminActivity: {
+    id: string;
+    operation: string;
+    message: string;
+    timestamp: string;
+  }[];
 };
 
+const MS_DAY = 24 * 60 * 60 * 1000;
+
+/** Bounded dashboard aggregations — keep match windows indexed; target p95 < 500ms per getSummary (see phase-03 runbook). */
 export class AdminDashboardService {
-  static async getSummary(): Promise<AdminDashboardSummary> {
+  static parseRange(raw?: string | null): AdminDashboardRange {
+    if (raw === '24h' || raw === '30d') return raw;
+    return '7d';
+  }
+
+  static rangeToSince(range: AdminDashboardRange): Date {
+    const ms =
+      range === '24h' ? MS_DAY : range === '30d' ? 30 * MS_DAY : 7 * MS_DAY;
+    return new Date(Date.now() - ms);
+  }
+
+  static async getSummary(opts?: { range?: AdminDashboardRange }): Promise<AdminDashboardSummary> {
     await connectMongo();
-    const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-    const since14 = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
-    const since24 = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const range = opts?.range ?? '7d';
+    const sinceRange = AdminDashboardService.rangeToSince(range);
+
+    const since7 = new Date(Date.now() - 7 * MS_DAY);
+    const since14 = new Date(Date.now() - 14 * MS_DAY);
+    const since24 = new Date(Date.now() - MS_DAY);
+    const since48 = new Date(Date.now() - 2 * MS_DAY);
 
     const [
       usersTotal,
       usersLast7d,
+      usersPrior7d,
       clubsActive,
+      clubsLast7d,
+      clubsPrior7d,
       tournamentAgg,
       feedbackOpenHigh,
-      stressRuns,
       signupsAgg,
       feedbackPriAgg,
       apiErrorEvents24h,
+      apiErrorsPrior24h,
       topRoutesAgg,
     ] = await Promise.all([
       UserModel.countDocuments({ isDeleted: { $ne: true } }),
-      UserModel.countDocuments({ isDeleted: { $ne: true }, createdAt: { $gte: since } }),
+      UserModel.countDocuments({ isDeleted: { $ne: true }, createdAt: { $gte: since7 } }),
+      UserModel.countDocuments({
+        isDeleted: { $ne: true },
+        createdAt: { $gte: since14, $lt: since7 },
+      }),
       ClubModel.countDocuments({ isActive: true }),
+      ClubModel.countDocuments({ isActive: true, createdAt: { $gte: since7 } }),
+      ClubModel.countDocuments({
+        isActive: true,
+        createdAt: { $gte: since14, $lt: since7 },
+      }),
       TournamentModel.aggregate([
         {
           $match: {
@@ -59,13 +106,8 @@ export class AdminDashboardService {
         status: { $in: ['pending', 'in-progress'] },
         priority: { $in: ['high', 'critical'] },
       }),
-      StressRunModel.find({})
-        .sort({ createdAt: -1 })
-        .limit(5)
-        .select('status createdAt')
-        .lean(),
       UserModel.aggregate([
-        { $match: { isDeleted: { $ne: true }, createdAt: { $gte: since14 } } },
+        { $match: { isDeleted: { $ne: true }, createdAt: { $gte: sinceRange } } },
         {
           $group: {
             _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
@@ -73,14 +115,18 @@ export class AdminDashboardService {
           },
         },
         { $sort: { _id: 1 } },
+        { $limit: 90 },
       ]),
       FeedbackModel.aggregate([
         { $match: { status: { $in: ['pending', 'in-progress'] } } },
         { $group: { _id: '$priority', count: { $sum: 1 } } },
       ]),
       ApiRequestErrorEventModel.countDocuments({ occurredAt: { $gte: since24 } }),
+      ApiRequestErrorEventModel.countDocuments({
+        occurredAt: { $gte: since48, $lt: since24 },
+      }),
       ApiRequestMetricModel.aggregate([
-        { $match: { bucket: { $gte: since24 } } },
+        { $match: { bucket: { $gte: sinceRange } } },
         {
           $group: {
             _id: { routeKey: '$routeKey', method: '$method' },
@@ -96,6 +142,7 @@ export class AdminDashboardService {
     for (const row of tournamentAgg as { _id?: string; count?: number }[]) {
       if (row._id) tournamentsByStatus[String(row._id)] = Number(row.count) || 0;
     }
+    const tournamentsTotal = Object.values(tournamentsByStatus).reduce((a, b) => a + b, 0);
 
     const userSignupsByDay = (signupsAgg as { _id?: string; count?: number }[]).map((r) => ({
       day: String(r._id ?? ''),
@@ -115,25 +162,45 @@ export class AdminDashboardService {
       }),
     );
 
+    const auditRaw = await AdminObservabilityService.listLogs({ adminOnly: true, limit: 5 });
+    const recentAdminActivity = auditRaw.map((l) => {
+      const ts = l.timestamp as unknown;
+      return {
+        id: String(l._id ?? ''),
+        operation: String(l.operation ?? ''),
+        message: String(l.message ?? ''),
+        timestamp: ts instanceof Date ? ts.toISOString() : String(ts ?? ''),
+      };
+    });
+
     return {
+      range,
       usersTotal,
       usersLast7d,
+      usersTrend: {
+        current: usersLast7d,
+        previous: usersPrior7d,
+        periodLabel: 'vs prior 7d',
+      },
       clubsActive,
+      clubsTrend: {
+        current: clubsLast7d,
+        previous: clubsPrior7d,
+        periodLabel: 'new active clubs vs prior 7d',
+      },
       tournamentsByStatus,
+      tournamentsTotal,
       feedbackOpenHigh,
-      stressRunsRecent: stressRuns.map((r) => {
-        const row = r as { _id?: mongoose.Types.ObjectId; status?: string; createdAt?: Date };
-        return {
-          id: String(row._id),
-          status: String(row.status ?? ''),
-          createdAt:
-            row.createdAt instanceof Date ? row.createdAt.toISOString() : new Date().toISOString(),
-        };
-      }),
       userSignupsByDay,
       feedbackOpenByPriority,
       apiErrorEvents24h,
+      apiErrorsTrend: {
+        current: apiErrorEvents24h,
+        previous: apiErrorsPrior24h,
+        periodLabel: 'vs prior 24h',
+      },
       topErrorRoutes,
+      recentAdminActivity,
     };
   }
 }

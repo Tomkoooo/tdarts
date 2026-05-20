@@ -13,6 +13,20 @@ export type AdminFeedbackListRow = {
   createdAt: string;
 };
 
+function resolveFeedbackSort(sort?: { key: string; dir: 'asc' | 'desc' }): Record<string, 1 | -1> {
+  const m: Record<string, string> = {
+    title: 'title',
+    category: 'category',
+    status: 'status',
+    priority: 'priority',
+    email: 'email',
+    created: 'createdAt',
+  };
+  if (!sort || !m[sort.key]) return { createdAt: -1 };
+  const d = sort.dir === 'asc' ? 1 : -1;
+  return { [m[sort.key]]: d };
+}
+
 export class AdminFeedbackQueryService {
   static async list(params: {
     status?: string;
@@ -20,6 +34,7 @@ export class AdminFeedbackQueryService {
     unreadAdmin?: boolean;
     page: number;
     limit: number;
+    sort?: { key: string; dir: 'asc' | 'desc' };
   }): Promise<{ total: number; rows: AdminFeedbackListRow[] }> {
     await connectMongo();
     const limit = Math.min(Math.max(params.limit, 1), 100);
@@ -35,7 +50,7 @@ export class AdminFeedbackQueryService {
       FeedbackModel.countDocuments(match),
       FeedbackModel.find(match)
         .select('title category status priority email isReadByAdmin requestId createdAt')
-        .sort({ createdAt: -1 })
+        .sort(resolveFeedbackSort(params.sort))
         .skip(skip)
         .limit(limit)
         .lean(),

@@ -16,3 +16,5 @@ export * from './admin-observability.service';
 export * from './admin-players-query.service';
 export * from './admin-players-mutation.service';
 export * from './admin-system-stats.service';
+export * from './admin-tools.service';
+export * from './admin-data-explorer.service';

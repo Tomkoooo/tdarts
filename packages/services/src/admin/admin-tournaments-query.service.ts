@@ -17,6 +17,21 @@ export type AdminTournamentListRow = {
   updatedAt: string;
 };
 
+const TOURNAMENT_SORT: Record<string, string> = {
+  code: 'tournamentId',
+  name: 'name',
+  status: 'status',
+  club: 'clubName',
+  players: 'playersCount',
+  updated: 'updatedAt',
+};
+
+function resolveTournamentAggSort(sort?: { key: string; dir: 'asc' | 'desc' }): Record<string, 1 | -1> {
+  if (!sort || !TOURNAMENT_SORT[sort.key]) return { updatedAt: -1 };
+  const d = sort.dir === 'asc' ? 1 : -1;
+  return { [TOURNAMENT_SORT[sort.key]]: d };
+}
+
 export class AdminTournamentsQueryService {
   static async list(params: {
     q?: string;
@@ -24,6 +39,7 @@ export class AdminTournamentsQueryService {
     status?: string;
     page: number;
     limit: number;
+    sort?: { key: string; dir: 'asc' | 'desc' };
   }): Promise<{ total: number; rows: AdminTournamentListRow[] }> {
     await connectMongo();
     const limit = Math.min(Math.max(params.limit, 1), 100);
@@ -81,7 +97,7 @@ export class AdminTournamentsQueryService {
           updatedAt: 1,
         },
       },
-      { $sort: { updatedAt: -1 } },
+      { $sort: resolveTournamentAggSort(params.sort) },
       {
         $facet: {
           rows: [{ $skip: skip }, { $limit: limit }],

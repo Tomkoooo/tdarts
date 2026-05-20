@@ -20,6 +20,7 @@ import EmailVerificationSection from "@/components/profile/EmailVerificationSect
 import PlayerStatisticsSection from "@/components/profile/PlayerStatisticsSection";
 import LeagueHistorySection from "@/components/profile/LeagueHistorySection";
 import ProfileActionsSection from "@/components/profile/ProfileActionsSection";
+import { showsStaffAdminShortcut } from "@/lib/navigation/show-staff-admin-shortcut";
 import TicketList from "@/components/profile/TicketList";
 import TicketDetail from "@/components/profile/TicketDetail";
 import LegsViewModal from "@/components/tournament/LegsViewModal";
@@ -347,7 +348,11 @@ export function ProfilePageClient({ serverUser }: ProfilePageClientProps) {
                 onResendCode={handleResendCode}
               />
             )}
-            <ProfileActionsSection isLoading={isLoading} isAdmin={user.isAdmin} onLogout={handleLogout} />
+            <ProfileActionsSection
+              isLoading={isLoading}
+              staffAdminShortcut={showsStaffAdminShortcut(user)}
+              onLogout={handleLogout}
+            />
           </>
         )}
 

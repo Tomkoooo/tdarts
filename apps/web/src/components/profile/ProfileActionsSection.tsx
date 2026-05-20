@@ -9,13 +9,14 @@ import { useTranslations } from "next-intl"
 
 interface ProfileActionsSectionProps {
   isLoading: boolean
-  isAdmin: boolean
+  /** Super-admin or user with adminRoles (marketing, etc.). Server still gates /admin */
+  staffAdminShortcut: boolean
   onLogout: () => Promise<void>
 }
 
 export function ProfileActionsSection({
   isLoading,
-  isAdmin,
+  staffAdminShortcut,
   onLogout,
 }: ProfileActionsSectionProps) {
   const t = useTranslations("Profile.actions")
@@ -53,7 +54,7 @@ export function ProfileActionsSection({
             </Button>
           </Link>
 
-          {isAdmin && (
+          {staffAdminShortcut && (
             <Link href="/admin" className="w-full">
               <Button variant="outline" className="w-full">
                 <IconShieldLock className="w-4 h-4 mr-2" />

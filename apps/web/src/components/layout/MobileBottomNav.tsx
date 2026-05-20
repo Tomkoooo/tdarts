@@ -22,6 +22,7 @@ import { Button } from "@/components/ui/Button";
 import { Link } from "@/i18n/routing";
 import { useOngoingTournamentQuickLinkWithOptions } from "@/features/navigation/hooks/useOngoingTournamentQuickLink";
 import { findActiveNavIndex, matchesMyClubRoute } from "@/lib/navigation/nav-active";
+import { showsStaffAdminShortcut } from "@/lib/navigation/show-staff-admin-shortcut";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -39,7 +40,7 @@ interface NavItem {
 
 export const MobileBottomNav: React.FC = () => {
   const { user } = useUserContext();
-  const isGlobalAdmin = user?.isAdmin === true;
+  const showAdminNav = showsStaffAdminShortcut(user);
   const t = useTranslations("Navbar");
   const pathname = usePathname();
   const router = useRouter();
@@ -128,7 +129,7 @@ export const MobileBottomNav: React.FC = () => {
           label: t("my_club"),
           match: (path) => matchesMyClubRoute(path),
         },
-        ...(isGlobalAdmin
+        ...(showAdminNav
           ? [
               {
                 id: "admin",
@@ -173,7 +174,7 @@ export const MobileBottomNav: React.FC = () => {
         match: (path) => path.startsWith("/auth/register"),
       },
     ];
-  }, [user, isGlobalAdmin, hasQuickTournament, ongoingTournament?.code, t]);
+  }, [user, showAdminNav, hasQuickTournament, ongoingTournament?.code, t]);
 
   const isActive = (item: NavItem): boolean => {
     if (item.match) return item.match(normalizedPath, searchParams);

@@ -2,10 +2,6 @@ import { getServerUser } from '@/lib/getServerUser';
 import { redirect } from 'next/navigation';
 import { unstable_noStore as noStore } from 'next/cache';
 import { AdminAuthorizationService } from '@tdarts/services';
-import { AdminShell } from '@/features/admin/shell/AdminShell';
-import { AdminForbiddenPanel } from '@/features/admin/shell/AdminForbiddenPanel';
-import { ADMIN_NAV_GROUPS, filterNavGroupsForCapabilities } from '@/features/admin/shell/nav-config';
-import { getStaffSession } from '@/features/admin/rbac/staff-session';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,26 +21,16 @@ export default async function AdminLayout({
 
   const canShell = await AdminAuthorizationService.canAccessAdminShell(user._id);
   if (!canShell) {
-    return <AdminForbiddenPanel />;
+    return (
+      <div className="mx-auto max-w-lg px-4 py-16 text-center">
+        <h1 className="text-xl font-semibold">Access denied</h1>
+        <p className="mt-2 text-muted-foreground">
+          You don’t have permission to open the admin area.
+        </p>
+      </div>
+    );
   }
 
-  const session = await getStaffSession();
-  if (!session) {
-    return <AdminForbiddenPanel />;
-  }
-
-  const navGroups = filterNavGroupsForCapabilities(ADMIN_NAV_GROUPS, session.capabilities);
-  const commandPaletteLinks = navGroups.flatMap((g) =>
-    g.items.map((item) => ({ href: item.href, label: `${g.label}: ${item.label}` })),
-  );
-
-  return (
-    <AdminShell
-      userLabel={session.user.name || session.user.email}
-      navGroups={navGroups}
-      commandPaletteLinks={commandPaletteLinks}
-    >
-      {children}
-    </AdminShell>
-  );
+  /* Full-width canvas for shell + dashboards; inner pages constrain when needed */
+  return <div className="min-h-screen w-full">{children}</div>;
 }
