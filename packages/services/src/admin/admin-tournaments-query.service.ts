@@ -1,5 +1,32 @@
 import mongoose from 'mongoose';
-import { connectMongo, TournamentModel } from '@tdarts/core';
+import { connectMongo, TournamentModel, MatchModel, PlayerModel, ClubModel } from '@tdarts/core';
+
+export type AdminTournamentRelationsFilters = {
+  playerStatus?: string;
+  playerQ?: string;
+  matchStatus?: string;
+  matchType?: string;
+  matchRound?: string;
+  matchBoard?: string;
+};
+
+export type AdminTournamentRelationPlayer = {
+  playerId: string;
+  name: string;
+  status?: string;
+};
+
+export type AdminTournamentRelationMatch = {
+  matchId: string;
+  status: string;
+  type: string;
+  round: number;
+  boardReference: number;
+  player1Name: string;
+  player2Name: string;
+  createdAt: string;
+  updatedAt: string;
+};
 
 export type AdminTournamentListRow = {
   _id: string;
@@ -143,6 +170,12 @@ export class AdminTournamentsQueryService {
     }
     if (!doc) return null;
 
+    let clubName = '';
+    if (doc.clubId && mongoose.Types.ObjectId.isValid(String(doc.clubId))) {
+      const club = await ClubModel.findById(doc.clubId).select('name').lean();
+      if (club) clubName = String((club as { name?: string }).name ?? '');
+    }
+
     const boards = Array.isArray(doc.boards)
       ? (doc.boards as Record<string, unknown>[]).map((b) => ({
           boardNumber: b.boardNumber,
@@ -158,6 +191,7 @@ export class AdminTournamentsQueryService {
       _id: String(doc._id),
       tournamentId: doc.tournamentId,
       clubId: doc.clubId ? String(doc.clubId) : '',
+      clubName,
       tournamentSettings: doc.tournamentSettings,
       boards,
       playersCount: Array.isArray(doc.tournamentPlayers) ? doc.tournamentPlayers.length : 0,
@@ -170,5 +204,172 @@ export class AdminTournamentsQueryService {
       isSandbox: doc.isSandbox,
       verified: doc.verified,
     };
+  }
+
+  static async getStats(filters?: {
+    status?: string;
+    clubId?: string;
+  }): Promise<{
+    total: number;
+    byStatus: Record<string, number>;
+    sandbox: number;
+    archived: number;
+    avgPlayers: number;
+  }> {
+    await connectMongo();
+    const base: Record<string, unknown> = { isDeleted: { $ne: true } };
+    if (filters?.clubId && mongoose.Types.ObjectId.isValid(filters.clubId)) {
+      base.clubId = new mongoose.Types.ObjectId(filters.clubId);
+    }
+    if (filters?.status && filters.status !== 'all') {
+      base['tournamentSettings.status'] = filters.status;
+    }
+    const [total, statusAgg, sandbox, archived, avgAgg] = await Promise.all([
+      TournamentModel.countDocuments({ ...base, isArchived: { $ne: true }, isSandbox: { $ne: true } }),
+      TournamentModel.aggregate([
+        { $match: { ...base, isArchived: { $ne: true }, isSandbox: { $ne: true } } },
+        { $group: { _id: '$tournamentSettings.status', count: { $sum: 1 } } },
+      ]),
+      TournamentModel.countDocuments({ ...base, isSandbox: true }),
+      TournamentModel.countDocuments({ ...base, isArchived: true }),
+      TournamentModel.aggregate([
+        { $match: { ...base, isArchived: { $ne: true }, isSandbox: { $ne: true } } },
+        {
+          $project: {
+            pc: { $size: { $ifNull: ['$tournamentPlayers', []] } },
+          },
+        },
+        { $group: { _id: null, avg: { $avg: '$pc' } } },
+      ]),
+    ]);
+    const byStatus: Record<string, number> = {};
+    for (const row of statusAgg as { _id?: string; count?: number }[]) {
+      if (row._id) byStatus[String(row._id)] = Number(row.count) || 0;
+    }
+    const avgRow = avgAgg[0] as { avg?: number } | undefined;
+    return {
+      total,
+      byStatus,
+      sandbox,
+      archived,
+      avgPlayers: Math.round((avgRow?.avg ?? 0) * 10) / 10,
+    };
+  }
+
+  static async getRelations(
+    tournamentId: string,
+    filters?: AdminTournamentRelationsFilters,
+  ): Promise<{
+    players: AdminTournamentRelationPlayer[];
+    matches: AdminTournamentRelationMatch[];
+    totalPlayers: number;
+    totalMatches: number;
+  }> {
+    await connectMongo();
+    if (!mongoose.Types.ObjectId.isValid(tournamentId)) {
+      return { players: [], matches: [], totalPlayers: 0, totalMatches: 0 };
+    }
+    const tour = await TournamentModel.findById(tournamentId).select('tournamentPlayers').lean();
+    const playerRefs =
+      (tour as { tournamentPlayers?: { playerReference?: unknown; status?: string }[] } | null)
+        ?.tournamentPlayers ?? [];
+
+    const playerOidList = playerRefs
+      .map((p) => p.playerReference)
+      .filter((id) => id != null && mongoose.Types.ObjectId.isValid(String(id)))
+      .map((id) => new mongoose.Types.ObjectId(String(id)));
+
+    const playerNameMap = new Map<string, string>();
+    if (playerOidList.length) {
+      const docs = await PlayerModel.find({ _id: { $in: playerOidList } })
+        .select('name')
+        .lean();
+      for (const doc of docs as { _id: mongoose.Types.ObjectId; name?: string }[]) {
+        playerNameMap.set(String(doc._id), String(doc.name ?? '').trim() || '—');
+      }
+    }
+
+    let players: AdminTournamentRelationPlayer[] = [];
+    for (const p of playerRefs) {
+      const ref = p.playerReference ? String(p.playerReference) : '';
+      if (!ref) continue;
+      players.push({
+        playerId: ref,
+        name: playerNameMap.get(ref) ?? ref.slice(-8),
+        status: p.status ? String(p.status) : undefined,
+      });
+    }
+
+    const totalPlayers = players.length;
+    if (filters?.playerStatus && filters.playerStatus !== 'all') {
+      players = players.filter((p) => p.status === filters.playerStatus);
+    }
+    const pq = filters?.playerQ?.trim().toLowerCase();
+    if (pq) {
+      players = players.filter(
+        (p) => p.name.toLowerCase().includes(pq) || p.playerId.toLowerCase().includes(pq),
+      );
+    }
+
+    const matchQuery: Record<string, unknown> = {
+      tournamentRef: new mongoose.Types.ObjectId(tournamentId),
+    };
+    if (filters?.matchStatus && filters.matchStatus !== 'all') {
+      matchQuery.status = filters.matchStatus;
+    }
+    if (filters?.matchType && filters.matchType !== 'all') {
+      matchQuery.type = filters.matchType;
+    }
+    const roundNum = filters?.matchRound ? parseInt(filters.matchRound, 10) : NaN;
+    if (Number.isFinite(roundNum)) matchQuery.round = roundNum;
+    const boardNum = filters?.matchBoard ? parseInt(filters.matchBoard, 10) : NaN;
+    if (Number.isFinite(boardNum)) matchQuery.boardReference = boardNum;
+
+    const [totalMatches, matches] = await Promise.all([
+      MatchModel.countDocuments(matchQuery),
+      MatchModel.find(matchQuery)
+        .select('status type round boardReference player1 player2 createdAt updatedAt')
+        .sort({ round: 1, boardReference: 1, updatedAt: -1 })
+        .limit(500)
+        .lean(),
+    ]);
+    const pids = new Set<string>();
+    for (const m of matches as Record<string, unknown>[]) {
+      const p1 = m.player1 as { playerId?: unknown } | null;
+      const p2 = m.player2 as { playerId?: unknown } | null;
+      if (p1?.playerId) pids.add(String(p1.playerId));
+      if (p2?.playerId) pids.add(String(p2.playerId));
+    }
+    const pMap = new Map<string, string>();
+    if (pids.size) {
+      const docs = await PlayerModel.find({
+        _id: { $in: [...pids].map((id) => new mongoose.Types.ObjectId(id)) },
+      })
+        .select('name')
+        .lean();
+      for (const p of docs as { _id: mongoose.Types.ObjectId; name?: string }[]) {
+        pMap.set(String(p._id), String(p.name ?? ''));
+      }
+    }
+    const matchRows = (matches as Record<string, unknown>[]).map((m) => {
+      const p1 = m.player1 as { playerId?: unknown } | null;
+      const p2 = m.player2 as { playerId?: unknown } | null;
+      const p1id = p1?.playerId ? String(p1.playerId) : '';
+      const p2id = p2?.playerId ? String(p2.playerId) : '';
+      const createdAt = m.createdAt instanceof Date ? m.createdAt : null;
+      const updatedAt = m.updatedAt instanceof Date ? m.updatedAt : null;
+      return {
+        matchId: String(m._id),
+        status: String(m.status ?? ''),
+        type: String(m.type ?? ''),
+        round: Number(m.round) || 0,
+        boardReference: Number(m.boardReference) || 0,
+        player1Name: p1id ? pMap.get(p1id) ?? '—' : '—',
+        player2Name: p2id ? pMap.get(p2id) ?? '—' : '—',
+        createdAt: createdAt ? createdAt.toISOString() : new Date().toISOString(),
+        updatedAt: updatedAt ? updatedAt.toISOString() : new Date().toISOString(),
+      };
+    });
+    return { players, matches: matchRows, totalPlayers, totalMatches };
   }
 }

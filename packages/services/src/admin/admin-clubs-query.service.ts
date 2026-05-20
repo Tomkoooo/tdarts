@@ -6,6 +6,7 @@ export type AdminClubStaffPreview = { _id: string; email: string; name: string }
 export type AdminClubTournamentPreview = {
   _id: string;
   tournamentId: string;
+  name: string;
   status: string;
   isArchived: boolean;
   isSandbox: boolean;
@@ -244,7 +245,7 @@ export class AdminClubsQueryService {
             .lean()
         : [],
       TournamentModel.find({ clubId: clubOid, isDeleted: { $ne: true } })
-        .select('tournamentId tournamentSettings.status isArchived isSandbox createdAt')
+        .select('tournamentId tournamentSettings.status tournamentSettings.name isArchived isSandbox createdAt')
         .sort({ createdAt: -1 })
         .limit(25)
         .lean(),
@@ -265,10 +266,12 @@ export class AdminClubsQueryService {
       admins: mapStaff(admins as Record<string, unknown>[]),
       moderators: mapStaff(moderators as Record<string, unknown>[]),
       tournaments: (tournamentDocs as Record<string, unknown>[]).map((t) => {
-        const settings = t.tournamentSettings as { status?: string } | undefined;
+        const settings = t.tournamentSettings as { status?: string; name?: string } | undefined;
+        const code = String(t.tournamentId ?? '');
         return {
           _id: String(t._id),
-          tournamentId: String(t.tournamentId ?? ''),
+          tournamentId: code,
+          name: String(settings?.name ?? code),
           status: String(settings?.status ?? '—'),
           isArchived: Boolean(t.isArchived),
           isSandbox: Boolean(t.isSandbox),

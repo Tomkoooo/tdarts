@@ -1,14 +1,10 @@
-import { AdminRouteStub } from '@/features/admin/lib/AdminRouteStub';
+import { UserDetailView } from '@/features/admin/users/UserDetailView';
 
 export default async function AdminUserDetailPage({
   params,
 }: {
-  params: Promise<{ userId: string }>;
+  params: Promise<{ locale: string; userId: string }>;
 }) {
-  const { userId } = await params;
-  return (
-    <main className="p-6">
-      <AdminRouteStub title={`User ${userId}`} />
-    </main>
-  );
+  const { locale, userId } = await params;
+  return <UserDetailView locale={locale} userId={userId} />;
 }

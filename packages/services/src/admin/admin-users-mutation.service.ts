@@ -3,6 +3,11 @@ import { connectMongo, UserModel } from '@tdarts/core';
 import { AdminAuditService } from './admin-audit.service';
 
 export type AdminUserUpdatePatch = {
+  name?: string;
+  username?: string;
+  email?: string;
+  locale?: string;
+  country?: string | null;
   isAdmin?: boolean;
   isVerified?: boolean;
   isDeleted?: boolean;
@@ -17,6 +22,15 @@ export class AdminUsersMutationService {
     if (!before) throw new Error('User not found');
 
     const $set: Record<string, unknown> = {};
+    if (typeof patch.name === 'string') $set.name = patch.name.trim();
+    if (typeof patch.username === 'string') {
+      const u = patch.username.trim();
+      if (/\s/.test(u)) throw new Error('Username cannot contain spaces');
+      $set.username = u;
+    }
+    if (typeof patch.email === 'string') $set.email = patch.email.trim().toLowerCase();
+    if (typeof patch.locale === 'string') $set.locale = patch.locale.trim();
+    if (patch.country !== undefined) $set.country = patch.country || null;
     if (typeof patch.isAdmin === 'boolean') $set.isAdmin = patch.isAdmin;
     if (typeof patch.isVerified === 'boolean') $set.isVerified = patch.isVerified;
     if (typeof patch.isDeleted === 'boolean') $set.isDeleted = patch.isDeleted;

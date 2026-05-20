@@ -1,14 +1,17 @@
-import { AdminRouteStub } from '@/features/admin/lib/AdminRouteStub';
+import { TournamentDetailView } from '@/features/admin/tournaments/TournamentDetailView';
+import { parseTournamentRelationFilters } from '@/features/admin/tournaments/tournament-relation-filters';
 
 export default async function AdminTournamentDetailPage({
   params,
+  searchParams,
 }: {
-  params: Promise<{ tournamentId: string }>;
+  params: Promise<{ locale: string; tournamentId: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const { tournamentId } = await params;
+  const { locale, tournamentId } = await params;
+  const sp = await searchParams;
+  const relFilters = parseTournamentRelationFilters(sp);
   return (
-    <main className="p-6">
-      <AdminRouteStub title={`Tournament ${tournamentId}`} />
-    </main>
+    <TournamentDetailView locale={locale} tournamentId={tournamentId} relFilters={relFilters} />
   );
 }

@@ -1,9 +1,10 @@
 import mongoose from 'mongoose';
-import { connectMongo, PlayerModel, UserModel } from '@tdarts/core';
+import { connectMongo, PlayerModel, UserModel, TournamentModel } from '@tdarts/core';
 
 export type AdminPlayerLinkedUser = { _id: string; email: string; name: string; username: string };
 export type AdminPlayerTournamentHistoryRow = {
   tournamentId: string;
+  mongoId?: string;
   name?: string;
   placement?: number;
   date?: string;
@@ -126,12 +127,38 @@ export class AdminPlayersQueryService {
       }
     }
     const history = Array.isArray(o.tournamentHistory) ? o.tournamentHistory : [];
+    const codes = history
+      .slice(0, 15)
+      .map((entry) => String((entry as Record<string, unknown>).tournamentId ?? ''))
+      .filter(Boolean);
+    const tourDocs =
+      codes.length > 0
+        ? await TournamentModel.find({ tournamentId: { $in: codes } })
+            .select('_id tournamentId tournamentSettings.name')
+            .lean()
+        : [];
+    const tourByCode = new Map(
+      (tourDocs as Record<string, unknown>[]).map((t) => [
+        String(t.tournamentId),
+        {
+          mongoId: String(t._id),
+          name: String(
+            (t.tournamentSettings as { name?: string } | undefined)?.name ?? t.tournamentId,
+          ),
+        },
+      ]),
+    );
     const recentTournaments: AdminPlayerTournamentHistoryRow[] = history.slice(0, 15).map((entry) => {
       const h = entry as Record<string, unknown>;
       const date = h.date ?? h.snapshotDate;
+      const code = String(h.tournamentId ?? h.tournamentRef ?? '—');
+      const resolved = tourByCode.get(code);
       return {
-        tournamentId: String(h.tournamentId ?? h.tournamentRef ?? '—'),
-        name: h.name != null ? String(h.name) : h.tournamentName != null ? String(h.tournamentName) : undefined,
+        tournamentId: code,
+        mongoId: resolved?.mongoId,
+        name:
+          resolved?.name ??
+          (h.name != null ? String(h.name) : h.tournamentName != null ? String(h.tournamentName) : undefined),
         placement: typeof h.placement === 'number' ? h.placement : typeof h.position === 'number' ? h.position : undefined,
         date: date instanceof Date ? date.toISOString() : date != null ? String(date) : undefined,
       };

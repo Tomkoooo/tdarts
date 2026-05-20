@@ -1,14 +1,10 @@
-import { AdminRouteStub } from '@/features/admin/lib/AdminRouteStub';
+import { MatchDetailView } from '@/features/admin/matches/MatchDetailView';
 
 export default async function AdminMatchDetailPage({
   params,
 }: {
-  params: Promise<{ matchId: string }>;
+  params: Promise<{ locale: string; matchId: string }>;
 }) {
-  const { matchId } = await params;
-  return (
-    <main className="p-6">
-      <AdminRouteStub title={`Match ${matchId}`} />
-    </main>
-  );
+  const { locale, matchId } = await params;
+  return <MatchDetailView locale={locale} matchId={matchId} />;
 }

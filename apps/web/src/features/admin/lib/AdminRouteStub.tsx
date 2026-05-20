@@ -1,17 +1,28 @@
+'use client';
+
+import { useTranslations } from 'next-intl';
+import { AdminPageContainer } from '@/features/admin/components/layout/page-container';
+
 type Props = {
-  title: string;
+  title?: string;
+  titleKey?: string;
   note?: string;
+  domain?: string;
 };
 
-/** Temporary placeholder until the new admin UI is implemented. Server actions: features/admin/{domain}/actions.ts */
-export function AdminRouteStub({ title, note }: Props) {
+/** Placeholder until Phase 3+ directory pages ship. */
+export function AdminRouteStub({ title, titleKey, note, domain }: Props) {
+  const t = useTranslations('Admin');
+  const heading = titleKey ? t(titleKey) : (title ?? t('layout.sidebar.title'));
+
   return (
-    <div className="mx-auto max-w-2xl space-y-3 rounded-lg border border-dashed border-border p-8">
-      <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
-      <p className="text-sm text-muted-foreground">
-        {note ??
-          'Admin UI rebuild in progress. Backend server actions are already in place under features/admin. See features/admin/README.md and docs/admin/.'}
-      </p>
-    </div>
+    <AdminPageContainer pageTitle={heading}>
+      <div className="border-border rounded-lg border border-dashed p-8">
+        <p className="text-muted-foreground text-sm">
+          {note ??
+            t('stub.default_note', { domain: domain ?? '…' })}
+        </p>
+      </div>
+    </AdminPageContainer>
   );
 }

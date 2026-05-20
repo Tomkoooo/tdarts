@@ -128,9 +128,128 @@ function plainAfterPopulate(collection: string, docLean: unknown | null): {
   return { doc: plain, relations };
 }
 
+export type AdminGlobalSearchHit = {
+  collection: string;
+  id: string;
+  title: string;
+  subtitle?: string;
+  status?: string;
+};
+
+function labelForSearchHit(collection: string, doc: Record<string, unknown>): {
+  title: string;
+  subtitle?: string;
+  status?: string;
+} {
+  switch (collection) {
+    case 'users':
+      return {
+        title: String(doc.name || doc.username || doc.email || doc._id),
+        subtitle: String(doc.email ?? ''),
+        status: doc.isDeleted ? 'deleted' : doc.isVerified ? 'verified' : undefined,
+      };
+    case 'clubs':
+      return {
+        title: String(doc.name ?? doc._id),
+        subtitle: [doc.city, doc.country].filter(Boolean).join(', ') || undefined,
+      };
+    case 'players':
+      return { title: String(doc.name ?? doc._id), subtitle: String(doc.country ?? '') };
+    case 'tournaments': {
+      const settings = doc.tournamentSettings as { name?: string; status?: string } | undefined;
+      return {
+        title: String(settings?.name ?? doc.tournamentId ?? doc._id),
+        subtitle: String(doc.tournamentId ?? ''),
+        status: settings?.status ? String(settings.status) : undefined,
+      };
+    }
+    case 'matches':
+      return {
+        title: `Meccs ${String(doc._id).slice(-6)}`,
+        subtitle: `round ${doc.round} · ${doc.type}`,
+        status: String(doc.status ?? ''),
+      };
+    case 'leagues':
+      return { title: String(doc.name ?? doc._id) };
+    case 'feedback':
+      return {
+        title: String(doc.title ?? doc._id),
+        subtitle: String(doc.email ?? ''),
+        status: String(doc.status ?? ''),
+      };
+    default:
+      return { title: String(doc._id) };
+  }
+}
+
+const GLOBAL_SEARCH_FIELDS: Record<string, (q: RegExp) => Record<string, unknown>> = {
+  users: (rx) => ({ $or: [{ email: rx }, { username: rx }, { name: rx }] }),
+  clubs: (rx) => ({ $or: [{ name: rx }, { city: rx }] }),
+  players: (rx) => ({ name: rx }),
+  tournaments: (rx) => ({ $or: [{ tournamentId: rx }, { 'tournamentSettings.name': rx }] }),
+  matches: (rx) => ({ $or: [{ status: rx }, { type: rx }] }),
+  leagues: (rx) => ({ name: rx }),
+  subscriptions: (rx) => ({ $or: [{ status: rx }] }),
+  feedback: (rx) => ({ $or: [{ title: rx }, { email: rx }, { description: rx }] }),
+};
+
 export class AdminDataExplorerService {
   static listCollections(): string[] {
     return Object.keys(ADMIN_EXPLORER_MODELS).sort();
+  }
+
+  static async globalSearch(
+    q: string,
+    opts?: { collections?: string[]; limitPerCollection?: number },
+  ): Promise<AdminGlobalSearchHit[]> {
+    await connectMongo();
+    const term = q.trim();
+    if (!term) return [];
+    const esc = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const rx = new RegExp(esc, 'i');
+    const perLimit = Math.min(opts?.limitPerCollection ?? 8, 15);
+    const cols = (opts?.collections?.length ? opts.collections : Object.keys(ADMIN_EXPLORER_MODELS)).filter(
+      (c) => c in ADMIN_EXPLORER_MODELS,
+    );
+
+    const hits: AdminGlobalSearchHit[] = [];
+
+    if (mongoose.Types.ObjectId.isValid(term)) {
+      for (const collection of cols) {
+        const Model = ADMIN_EXPLORER_MODELS[collection];
+        const doc = await Model.findById(term).lean();
+        if (doc) {
+          const plain = doc as Record<string, unknown>;
+          const labels = labelForSearchHit(collection, plain);
+          hits.push({
+            collection,
+            id: String(plain._id),
+            ...labels,
+          });
+        }
+      }
+      if (hits.length) return hits;
+    }
+
+    await Promise.all(
+      cols.map(async (collection) => {
+        const buildFilter = GLOBAL_SEARCH_FIELDS[collection];
+        if (!buildFilter) return;
+        const Model = ADMIN_EXPLORER_MODELS[collection];
+        const filter = buildFilter(rx);
+        const docs = await Model.find(filter).limit(perLimit).lean();
+        for (const doc of docs as Record<string, unknown>[]) {
+          const labels = labelForSearchHit(collection, doc);
+          hits.push({
+            collection,
+            id: String(doc._id),
+            ...labels,
+          });
+        }
+      }),
+    );
+
+    return hits.slice(0, 50);
   }
 
   static async browse(params: {

@@ -15,6 +15,17 @@ import {
 } from '@tdarts/core/system-settings';
 import type { FeatureToggleKey } from '@tdarts/core';
 
+async function requireSystemRead() {
+  const user = await getServerUser();
+  if (!user) throw new Error('Unauthorized');
+  const ok = await AdminAuthorizationService.hasAdminCapability(
+    user._id,
+    ADMIN_CAPABILITIES.ADMIN_SYSTEM_READ,
+  );
+  if (!ok) throw new Error('Forbidden');
+  return user;
+}
+
 async function requireSystemWrite() {
   const user = await getServerUser();
   if (!user) throw new Error('Unauthorized');
@@ -24,6 +35,25 @@ async function requireSystemWrite() {
   );
   if (!ok) throw new Error('Forbidden');
   return user;
+}
+
+export async function adminGetSystemSettingsAction(): Promise<{
+  ok: boolean;
+  snapshot?: Awaited<ReturnType<typeof getSystemSettings>>;
+  canWrite?: boolean;
+  error?: string;
+}> {
+  try {
+    const user = await requireSystemRead();
+    const snapshot = await getSystemSettings();
+    const canWrite = await AdminAuthorizationService.hasAdminCapability(
+      user._id,
+      ADMIN_CAPABILITIES.ADMIN_SYSTEM_WRITE,
+    );
+    return { ok: true, snapshot, canWrite };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : 'Failed' };
+  }
 }
 
 export async function adminUpdateFeatureToggleAction(

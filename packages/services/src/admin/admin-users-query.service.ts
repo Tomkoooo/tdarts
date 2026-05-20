@@ -54,6 +54,9 @@ export class AdminUsersQueryService {
     page: number;
     limit: number;
     sort?: { key: string; dir: 'asc' | 'desc' };
+    isVerified?: 'all' | 'yes' | 'no';
+    isDeleted?: 'all' | 'yes' | 'no';
+    isAdmin?: 'all' | 'yes' | 'no';
   }): Promise<{ total: number; rows: AdminUserListRow[] }> {
     await connectMongo();
     const limit = Math.min(Math.max(params.limit, 1), 100);
@@ -67,6 +70,12 @@ export class AdminUsersQueryService {
       const rx = new RegExp(esc, 'i');
       query.$or = [{ email: rx }, { username: rx }, { name: rx }];
     }
+    if (params.isVerified === 'yes') query.isVerified = true;
+    if (params.isVerified === 'no') query.isVerified = false;
+    if (params.isDeleted === 'yes') query.isDeleted = true;
+    if (params.isDeleted === 'no') query.isDeleted = false;
+    if (params.isAdmin === 'yes') query.isAdmin = true;
+    if (params.isAdmin === 'no') query.isAdmin = false;
 
     const sortSpec = resolveUserSort(params.sort);
 
@@ -107,6 +116,7 @@ export class AdminUsersQueryService {
 
   static async getUserAdminContext(userId: string): Promise<{
     linkedPlayerId: string | null;
+    linkedPlayerName: string | null;
     subscriptionCount: number;
     managedClubsCount: number;
   } | null> {
@@ -114,13 +124,14 @@ export class AdminUsersQueryService {
     if (!mongoose.Types.ObjectId.isValid(userId)) return null;
     const uid = new mongoose.Types.ObjectId(userId);
     const [player, subscriptionCount, managedClubsCount] = await Promise.all([
-      PlayerModel.findOne({ userRef: uid }).select('_id').lean(),
+      PlayerModel.findOne({ userRef: uid }).select('_id name').lean(),
       SubscriptionModel.countDocuments({ userId: uid }),
       ClubModel.countDocuments({ $or: [{ admin: uid }, { moderators: uid }] }),
     ]);
-    const p = player as { _id?: unknown } | null;
+    const p = player as { _id?: unknown; name?: string } | null;
     return {
       linkedPlayerId: p?._id ? String(p._id) : null,
+      linkedPlayerName: p?.name ? String(p.name) : null,
       subscriptionCount,
       managedClubsCount,
     };

@@ -92,6 +92,101 @@ export class AdminObservabilityService {
     return doc as Record<string, unknown> | null;
   }
 
+  /** Aggregated snapshot for observability dashboard (health + charts). */
+  static async getDashboardSnapshot(): Promise<{
+    timeSeries: { bucket: string; calls: number; errors: number; errorRate: number }[];
+    topErrorRoutes: { label: string; errors: number; calls: number }[];
+    openErrors: number;
+    errors24h: number;
+    totalCalls: number;
+    overallErrorRate: number;
+    recentErrors: { _id: string; routeKey: string; method: string; statusCode: number; occurredAt: string }[];
+  }> {
+    await connectMongo();
+    const since24 = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const [metrics, openErrors, errors24h, recentErrors] = await Promise.all([
+      AdminObservabilityService.listApiRequestMetrics({ limit: MAX_METRIC_LIMIT }),
+      ApiRequestErrorEventModel.countDocuments({ isResolved: { $ne: true } }),
+      ApiRequestErrorEventModel.countDocuments({ occurredAt: { $gte: since24 } }),
+      ApiRequestErrorEventModel.find({ isResolved: { $ne: true } })
+        .sort({ occurredAt: -1 })
+        .limit(8)
+        .select('routeKey method statusCode occurredAt')
+        .lean(),
+    ]);
+
+    type Row = { routeKey: string; method: string; count: number; errorCount: number; bucket?: string };
+    const rows: Row[] = metrics.map((m) => ({
+      routeKey: String(m.routeKey ?? ''),
+      method: String(m.method ?? ''),
+      count: Number(m.count) || 0,
+      errorCount: Number(m.errorCount) || 0,
+      bucket:
+        m.bucket instanceof Date
+          ? m.bucket.toISOString()
+          : m.bucket
+            ? String(m.bucket)
+            : undefined,
+    }));
+
+    let totalCalls = 0;
+    let totalErrors = 0;
+    const byBucket = new Map<string, { calls: number; errors: number }>();
+    for (const r of rows) {
+      totalCalls += r.count;
+      totalErrors += r.errorCount;
+      const key = r.bucket?.slice(0, 10) ?? 'unknown';
+      const cur = byBucket.get(key) ?? { calls: 0, errors: 0 };
+      cur.calls += r.count;
+      cur.errors += r.errorCount;
+      byBucket.set(key, cur);
+    }
+
+    const timeSeries = [...byBucket.entries()]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([bucket, v]) => ({
+        bucket,
+        calls: v.calls,
+        errors: v.errors,
+        errorRate: v.calls > 0 ? Math.round((v.errors / v.calls) * 1000) / 10 : 0,
+      }));
+
+    const routeMap = new Map<string, { errors: number; calls: number; method: string; routeKey: string }>();
+    for (const r of rows) {
+      const key = `${r.method} ${r.routeKey}`;
+      const cur = routeMap.get(key) ?? { errors: 0, calls: 0, method: r.method, routeKey: r.routeKey };
+      cur.errors += r.errorCount;
+      cur.calls += r.count;
+      routeMap.set(key, cur);
+    }
+    const topErrorRoutes = [...routeMap.values()]
+      .filter((r) => r.errors > 0)
+      .sort((a, b) => b.errors - a.errors)
+      .slice(0, 8)
+      .map((r) => ({
+        label: `${r.method} ${r.routeKey}`.slice(0, 40),
+        errors: r.errors,
+        calls: r.calls,
+      }));
+
+    return {
+      timeSeries,
+      topErrorRoutes,
+      openErrors,
+      errors24h,
+      totalCalls,
+      overallErrorRate: totalCalls > 0 ? Math.round((totalErrors / totalCalls) * 1000) / 10 : 0,
+      recentErrors: (recentErrors as Record<string, unknown>[]).map((e) => ({
+        _id: String(e._id),
+        routeKey: String(e.routeKey ?? ''),
+        method: String(e.method ?? ''),
+        statusCode: Number(e.statusCode) || 0,
+        occurredAt:
+          e.occurredAt instanceof Date ? e.occurredAt.toISOString() : new Date().toISOString(),
+      })),
+    };
+  }
+
   static async resolveApiErrorEvent(actorUserId: string, id: string, resolved: boolean): Promise<void> {
     await connectMongo();
     if (!mongoose.Types.ObjectId.isValid(id)) throw new Error('Invalid id');

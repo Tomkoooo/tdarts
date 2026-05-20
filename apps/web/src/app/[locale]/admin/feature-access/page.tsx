@@ -1,9 +1,13 @@
-import { AdminRouteStub } from '@/features/admin/lib/AdminRouteStub';
+import { getTranslations } from 'next-intl/server';
+import { AdminPageContainer } from '@/features/admin/components/layout/page-container';
+import { FeatureAccessPanel } from '@/features/admin/feature-access/FeatureAccessPanel';
 
-export default function AdminFeatureAccessPage() {
+export default async function AdminFeatureAccessPage() {
+  const t = await getTranslations('Admin.feature_access');
+
   return (
-    <main className="p-6">
-      <AdminRouteStub title="Feature access debug" note="Wire UI to features/admin/feature-access/actions.ts" />
-    </main>
+    <AdminPageContainer pageTitle={t('title')} pageDescription={t('description')}>
+      <FeatureAccessPanel />
+    </AdminPageContainer>
   );
 }

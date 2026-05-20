@@ -1,6 +1,8 @@
 # Admin panel — backend requirements
 
-Frontend-only admin UI. When a capability needs new server APIs, document them here. Do **not** implement backend changes in the admin UI PR unless explicitly scoped.
+Living backlog for the **template-based** admin UI ([PLAN.md](../docs-internal/admin-phases/PLAN.md), [TEMPLATE.md](../docs-internal/admin-phases/TEMPLATE.md)). Frontend agents document missing APIs here; backend work is implemented separately.
+
+Do **not** implement backend changes in admin UI PRs unless explicitly scoped.
 
 ## 1. Tools — script wrappers (CLI → admin callable)
 
@@ -92,19 +94,111 @@ GET /api/admin/observability/logs/stream?level=error&category=api
 
 ## 4. Data Explorer — full browse UI
 
-**Status:** Partial. `AdminDataExplorerService` implements `listCollections`, `browse`, `getDocument`, `lookupByField`, `applyPatch`. Tools page shows collection list only.
+**Status:** Implemented at `/[locale]/admin/data` — global search, inspector with populated relations, patch; advanced Mongo JSON browse in collapsible section.
 
-**Frontend still needed (no new backend):**
+**API:** `AdminDataExplorerService.globalSearch({ q, collections?, limitPerCollection })`.
 
-- Route: `/admin/tools/explorer?collection=users&page=1`
-- Table from `browse()`; detail drawer from `getDocument()`; patch form calling new server action wrapping `applyPatch` (requires `ADMIN_DATA_EXPLORER_WRITE`).
+**Optional later:** deep-link from Tools page; live tail not applicable here.
 
 ---
 
-## 5. Dashboard — wire main admin home
+## 4b. Matches admin — tournament-grouped list
 
-**Status:** Out of scope for system pages task. `/admin` still uses mock KPIs.
+**Status:** Implemented. `AdminMatchesQueryService.listTournamentBuckets` + `listForTournament`; filters: status, type, round, boardReference, manualOnly.
 
-**Existing backend:** `AdminDashboardService.getSummary({ range })`.
+---
 
-**Frontend:** Replace mock data in `apps/web/src/app/[locale]/admin/page.tsx` with server fetch + `AdminDashboardCharts` (or equivalent) using real `userSignupsByDay`, `topErrorRoutes`, `recentAdminActivity`.
+## 4c. Observability dashboard snapshot
+
+**Status:** Implemented. `AdminObservabilityService.getDashboardSnapshot()` powers `/admin/observability` hub with traffic/error charts and open incidents.
+
+**Optional later:** Port full main-branch P95 percentile series if `AdminTelemetryService` is restored in packages.
+
+---
+
+## 5. Content — announcement create/edit UI
+
+**Status:** Partial. `/admin/content` lists announcements and toggles `isActive` via `AnnouncementService` (write requires `admin:content:write`).
+
+**Still needed for full CMS:**
+
+- Create / edit form (localized fields, `expiresAt`, type, button action)
+- Delete with confirm + audit
+- Optional: club posts (`PostModel`) under separate tab — not in current scope
+
+---
+
+## 6. Dashboard — wire main admin home
+
+**Status:** Implemented. `/admin` loads `AdminDashboardService.getSummary({ range })` via `getDashboardDataAction` and renders `AdminDashboardView` with KPI cards, charts, and activity feed. Auto-refreshes every 60s via TanStack Query.
+
+**Still missing for full plan (future phases):**
+
+- Live matches today KPI (needs `AdminDashboardService` extension)
+- Top 5 players by rating mini-leaderboard
+- Match activity heatmap
+- Active clubs by member count bar chart
+
+---
+
+## 7. Entity list pages — query server actions
+
+**Status:** Implemented for users, clubs, players, tournaments, matches, leagues (`adminList*Action` in `features/admin/*/actions.ts` + RSC directory pages with URL-driven `q`, `page`, `sort`, filters).
+
+**Required web actions (pattern):**
+
+```ts
+// apps/web/src/features/admin/users/actions.ts
+export async function adminListUsersAction(params: {
+  q?: string;
+  page: number;
+  limit: number;
+  sort?: { key: string; dir: 'asc' | 'desc' };
+}): Promise<{ ok: boolean; total?: number; rows?: AdminUserListRow[]; error?: string }>
+```
+
+Repeat for: clubs, tournaments, matches, players, leagues, feedback.
+
+**Authorization:** Match existing capability per domain (`ADMIN_USERS_MANAGE`, `ADMIN_CLUBS_READ`, …).
+
+---
+
+## 7. Match admin — live score entry
+
+**Status:** Not implemented. Plan includes leg-by-leg visit entry with audit log on corrections.
+
+**Required:**
+
+- `AdminMatchesMutationService.recordVisit(...)` or extend existing match override APIs
+- Support per-leg throw table (visit, p1 score, p2 score, remaining)
+- `AdminAuditService.logAction` on every manual correction with reason field
+- Optional: SSE/WebSocket for live match state on admin match detail page
+
+**Frontend route:** `/admin/matches/[matchId]` with score board + legs accordion + correction form.
+
+---
+
+## 8. Phase-2 UX foundation (implemented in web + minimal services)
+
+The following are **wired in the admin UI** before larger backend phases:
+
+| Area | Status |
+|------|--------|
+| Schema-driven edit (`AdminSchemaForm`, enums, relation search picker, honors editor) | Users, clubs, players, tournaments, feedback detail + user sheet |
+| List KPI trend charts (`AdminListKpiService` + `AdminListKpiBand`) | users, clubs, tournaments, players, matches, leagues |
+| Dashboard activity feed (`AdminDashboardService.buildActivityFeed`) | signups, club/tournament updates, unread/critical feedback, API errors/spike |
+| Patch actions | `adminPatchUserFieldsAction`, `adminPatchClubFieldsAction`, `adminPatchPlayerFieldsAction`, `adminPatchTournamentFieldsAction`, `adminPatchFeedbackFieldsAction` |
+
+**Still backlog for backend-heavy work:** leagues profile edit, match full scoreboard mutations, tools CLI wrappers, data explorer write paths, full telemetry port (P95 / main-branch parity).
+
+---
+
+## 9. New admin routes (stubs in nav, no page yet)
+
+| Route | Capability | Notes |
+|-------|------------|-------|
+| `/admin/venues` | `ADMIN_CLUBS_READ` | Venue model TBD or derive from club locations |
+| `/admin/teams` | `ADMIN_LEAGUES_READ` | Team invitations / league teams |
+| `/admin/moderation/bans` | `ADMIN_USERS_MANAGE` | Suspension/ban registry |
+| `/admin/analytics` | `ADMIN_OBSERVABILITY_READ` | Extended analytics beyond dashboard |
+| `/admin/roles` | `ADMIN_USERS_MANAGE` | Role ↔ permission matrix UI |

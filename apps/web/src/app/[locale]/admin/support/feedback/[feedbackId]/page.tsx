@@ -1,14 +1,17 @@
-import { AdminRouteStub } from '@/features/admin/lib/AdminRouteStub';
+import { adminGetFeedbackDetailAction } from '@/features/admin/feedback/actions';
+import { FeedbackDetailView } from '@/features/admin/feedback/FeedbackDetailView';
+import { notFound } from 'next/navigation';
 
-export default async function AdminFeedbackDetailPage({
-  params,
-}: {
-  params: Promise<{ feedbackId: string }>;
-}) {
-  const { feedbackId } = await params;
-  return (
-    <main className="p-6">
-      <AdminRouteStub title={`Feedback ${feedbackId}`} />
-    </main>
-  );
+type Props = {
+  params: Promise<{ locale: string; feedbackId: string }>;
+};
+
+export default async function AdminFeedbackDetailPage({ params }: Props) {
+  const { locale, feedbackId } = await params;
+  const result = await adminGetFeedbackDetailAction(feedbackId);
+  if (!result.ok) {
+    if (result.error === 'Not found') notFound();
+    return <p className="text-destructive p-6 text-sm">{result.error}</p>;
+  }
+  return <FeedbackDetailView locale={locale} feedback={result.feedback} />;
 }

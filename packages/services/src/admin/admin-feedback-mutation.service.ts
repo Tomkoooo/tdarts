@@ -55,6 +55,32 @@ export class AdminFeedbackMutationService {
     await AdminAuditService.logAction(actorUserId, 'feedback.message', { feedbackId, isInternal });
   }
 
+  static async updateFields(
+    actorUserId: string,
+    feedbackId: string,
+    patch: {
+      title?: string;
+      category?: string;
+      priority?: string;
+      status?: string;
+      email?: string;
+      description?: string;
+    },
+  ): Promise<void> {
+    await connectMongo();
+    if (!mongoose.Types.ObjectId.isValid(feedbackId)) throw new Error('Invalid id');
+    const $set: Record<string, unknown> = {};
+    if (typeof patch.title === 'string' && patch.title.trim()) $set.title = patch.title.trim();
+    if (typeof patch.category === 'string') $set.category = patch.category;
+    if (typeof patch.priority === 'string') $set.priority = patch.priority;
+    if (typeof patch.status === 'string') $set.status = patch.status;
+    if (typeof patch.email === 'string') $set.email = patch.email.trim();
+    if (typeof patch.description === 'string') $set.description = patch.description;
+    if (Object.keys($set).length === 0) throw new Error('No changes');
+    await FeedbackModel.updateOne({ _id: feedbackId }, { $set });
+    await AdminAuditService.logAction(actorUserId, 'feedback.updateFields', { feedbackId, patch });
+  }
+
   static async markAdminRead(actorUserId: string, feedbackId: string, read: boolean): Promise<void> {
     await connectMongo();
     if (!mongoose.Types.ObjectId.isValid(feedbackId)) throw new Error('Invalid id');

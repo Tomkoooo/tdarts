@@ -1,5 +1,16 @@
 import mongoose from 'mongoose';
-import { connectMongo, FeedbackModel } from '@tdarts/core';
+import { connectMongo, FeedbackModel, UserModel } from '@tdarts/core';
+
+export type AdminFeedbackThreadItem = {
+  id: string;
+  role: 'user' | 'staff' | 'system';
+  senderLabel: string;
+  content: string;
+  createdAt: string;
+  isInternal?: boolean;
+  /** When system message is a status change */
+  statusKey?: string;
+};
 
 export type AdminFeedbackListRow = {
   _id: string;
@@ -72,10 +83,101 @@ export class AdminFeedbackQueryService {
   }
 
   static async getById(id: string): Promise<Record<string, unknown> | null> {
+    const detail = await AdminFeedbackQueryService.getDetailForAdmin(id);
+    return detail;
+  }
+
+  static async getDetailForAdmin(id: string): Promise<Record<string, unknown> | null> {
     await connectMongo();
     if (!mongoose.Types.ObjectId.isValid(id)) return null;
     const doc = await FeedbackModel.findById(id).lean();
     if (!doc) return null;
-    return doc as Record<string, unknown>;
+    const o = doc as Record<string, unknown>;
+    const feedbackUserId = o.userId ? String(o.userId) : null;
+
+    const rawMessages = Array.isArray(o.messages) ? o.messages : [];
+    const senderIds = rawMessages
+      .map((m) => (m as Record<string, unknown>).sender)
+      .filter((s) => s && mongoose.Types.ObjectId.isValid(String(s)))
+      .map((s) => new mongoose.Types.ObjectId(String(s)));
+    const users =
+      senderIds.length > 0
+        ? await UserModel.find({ _id: { $in: senderIds } })
+            .select('name email username isAdmin')
+            .lean()
+        : [];
+    const userMap = new Map(
+      (users as Record<string, unknown>[]).map((u) => [
+        String(u._id),
+        {
+          name: String(u.name || u.username || u.email || 'Staff'),
+          email: String(u.email ?? ''),
+          isAdmin: Boolean(u.isAdmin),
+        },
+      ]),
+    );
+
+    const thread: AdminFeedbackThreadItem[] = [];
+
+    for (let i = 0; i < rawMessages.length; i++) {
+      const m = rawMessages[i] as Record<string, unknown>;
+      const sender = String(m.sender ?? '');
+      const createdAt =
+        m.createdAt instanceof Date
+          ? m.createdAt.toISOString()
+          : new Date().toISOString();
+      if (sender === 'system') {
+        thread.push({
+          id: `msg-${i}`,
+          role: 'system',
+          senderLabel: 'Rendszer',
+          content: String(m.content ?? ''),
+          createdAt,
+        });
+        continue;
+      }
+      const isStaff =
+        mongoose.Types.ObjectId.isValid(sender) &&
+        (userMap.get(sender)?.isAdmin || sender !== feedbackUserId);
+      const u = userMap.get(sender);
+      thread.push({
+        id: `msg-${i}`,
+        role: isStaff ? 'staff' : 'user',
+        senderLabel: isStaff
+          ? u?.name ?? 'Admin'
+          : u?.name ?? String(o.email ?? 'Felhasználó'),
+        content: String(m.content ?? ''),
+        createdAt,
+        isInternal: Boolean(m.isInternal),
+      });
+    }
+
+    const history = Array.isArray(o.history) ? o.history : [];
+    for (let i = 0; i < history.length; i++) {
+      const h = history[i] as Record<string, unknown>;
+      if (String(h.action) !== 'status_change') continue;
+      const details = String(h.details ?? '');
+      const statusMatch = details.match(/status\s*→\s*(\S+)/i);
+      const statusKey = statusMatch?.[1] ?? '';
+      const date =
+        h.date instanceof Date ? h.date.toISOString() : new Date().toISOString();
+      thread.push({
+        id: `hist-${i}`,
+        role: 'system',
+        senderLabel: 'Státusz',
+        content: details || 'Státusz változás',
+        createdAt: date,
+        statusKey,
+      });
+    }
+
+    thread.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+
+    return {
+      ...o,
+      _id: String(o._id),
+      thread,
+      messages: rawMessages,
+    };
   }
 }

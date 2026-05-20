@@ -1,14 +1,10 @@
-import { AdminRouteStub } from '@/features/admin/lib/AdminRouteStub';
+import { ClubDetailView } from '@/features/admin/clubs/ClubDetailView';
 
 export default async function AdminClubDetailPage({
   params,
 }: {
-  params: Promise<{ clubId: string }>;
+  params: Promise<{ locale: string; clubId: string }>;
 }) {
-  const { clubId } = await params;
-  return (
-    <main className="p-6">
-      <AdminRouteStub title={`Club ${clubId}`} />
-    </main>
-  );
+  const { locale, clubId } = await params;
+  return <ClubDetailView locale={locale} clubId={clubId} />;
 }

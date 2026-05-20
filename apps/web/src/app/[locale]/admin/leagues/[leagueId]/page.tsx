@@ -1,4 +1,4 @@
-import { AdminRouteStub } from '@/features/admin/lib/AdminRouteStub';
+import { LeagueDetailView } from '@/features/admin/leagues/LeagueDetailView';
 
 export default async function AdminLeagueDetailPage({
   params,
@@ -6,9 +6,5 @@ export default async function AdminLeagueDetailPage({
   params: Promise<{ leagueId: string }>;
 }) {
   const { leagueId } = await params;
-  return (
-    <main className="p-6">
-      <AdminRouteStub title={`League ${leagueId}`} />
-    </main>
-  );
+  return <LeagueDetailView leagueId={leagueId} />;
 }

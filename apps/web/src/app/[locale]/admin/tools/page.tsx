@@ -1,9 +1,13 @@
-import { AdminRouteStub } from '@/features/admin/lib/AdminRouteStub';
+import { getTranslations } from 'next-intl/server';
+import { AdminPageContainer } from '@/features/admin/components/layout/page-container';
+import { AdminToolsPanel } from '@/features/admin/tools/AdminToolsPanel';
 
-export default function AdminToolsPage() {
+export default async function AdminToolsPage() {
+  const t = await getTranslations('Admin.tools');
+
   return (
-    <main className="p-6">
-      <AdminRouteStub title="Tools" note="Wire UI to features/admin/tools/actions.ts" />
-    </main>
+    <AdminPageContainer pageTitle={t('title')} pageDescription={t('description')}>
+      <AdminToolsPanel />
+    </AdminPageContainer>
   );
 }

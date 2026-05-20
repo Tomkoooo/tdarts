@@ -1,9 +1,5 @@
 import { AdminRouteStub } from '@/features/admin/lib/AdminRouteStub';
 
-export default function AdminSupportPage() {
-  return (
-    <main className="p-6">
-      <AdminRouteStub title="Support" />
-    </main>
-  );
+export default async function Page() {
+  return <AdminRouteStub titleKey="nav.support" />;
 }

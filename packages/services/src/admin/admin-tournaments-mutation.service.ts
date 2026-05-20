@@ -42,6 +42,39 @@ export class AdminTournamentsMutationService {
     });
   }
 
+  static async updateSettings(
+    actorUserId: string,
+    tournamentId: string,
+    patch: {
+      name?: string;
+      status?: string;
+      clubId?: string | null;
+    },
+  ): Promise<void> {
+    await connectMongo();
+    if (!mongoose.Types.ObjectId.isValid(tournamentId)) throw new Error('Invalid tournament id');
+    const $set: Record<string, unknown> = { updatedAt: new Date() };
+    if (typeof patch.name === 'string' && patch.name.trim()) {
+      $set['tournamentSettings.name'] = patch.name.trim();
+    }
+    if (typeof patch.status === 'string' && patch.status.trim()) {
+      $set['tournamentSettings.status'] = patch.status.trim();
+    }
+    if (patch.clubId !== undefined) {
+      if (patch.clubId == null || patch.clubId === '') {
+        throw new Error('clubId is required');
+      }
+      if (!mongoose.Types.ObjectId.isValid(patch.clubId)) throw new Error('Invalid club id');
+      $set.clubId = new mongoose.Types.ObjectId(patch.clubId);
+    }
+    if (Object.keys($set).length <= 1) throw new Error('No changes');
+    await TournamentModel.updateOne({ _id: tournamentId }, { $set });
+    await AdminAuditService.logAction(actorUserId, 'tournament.updateSettings', {
+      tournamentId,
+      patch,
+    });
+  }
+
   static async rotateHumanPassword(actorUserId: string, tournamentId: string): Promise<{ newPassword: string }> {
     await connectMongo();
     if (!mongoose.Types.ObjectId.isValid(tournamentId)) throw new Error('Invalid tournament id');

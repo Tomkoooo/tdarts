@@ -18,3 +18,5 @@ export * from './admin-players-mutation.service';
 export * from './admin-system-stats.service';
 export * from './admin-tools.service';
 export * from './admin-data-explorer.service';
+export * from './admin-entity-search.service';
+export * from './admin-list-kpi.service';

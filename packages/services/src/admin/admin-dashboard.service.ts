@@ -17,12 +17,33 @@ export type AdminMetricTrend = {
   periodLabel: string;
 };
 
+export type AdminDashboardActivityItem = {
+  id: string;
+  kind:
+    | 'user_signup'
+    | 'club_activity'
+    | 'tournament_change'
+    | 'feedback_unread'
+    | 'critical_feedback'
+    | 'api_errors'
+    | 'api_spike';
+  title: string;
+  subtitle?: string;
+  href?: string;
+  timestamp: string;
+  tone: 'default' | 'warning' | 'critical';
+};
+
 export type AdminDashboardSummary = {
   range: AdminDashboardRange;
   usersTotal: number;
   usersLast7d: number;
+  usersNew24h: number;
+  usersDelta24h: number;
   usersTrend: AdminMetricTrend;
   clubsActive: number;
+  clubsNew24h: number;
+  clubsDelta24h: number;
   clubsTrend: AdminMetricTrend;
   tournamentsByStatus: Record<string, number>;
   tournamentsTotal: number;
@@ -30,6 +51,7 @@ export type AdminDashboardSummary = {
   userSignupsByDay: { day: string; count: number }[];
   feedbackOpenByPriority: Record<string, number>;
   apiErrorEvents24h: number;
+  apiErrorsDelta24h: number;
   apiErrorsTrend: AdminMetricTrend;
   topErrorRoutes: { routeKey: string; method: string; errors: number }[];
   recentAdminActivity: {
@@ -38,6 +60,7 @@ export type AdminDashboardSummary = {
     message: string;
     timestamp: string;
   }[];
+  activityFeed: AdminDashboardActivityItem[];
 };
 
 const MS_DAY = 24 * 60 * 60 * 1000;
@@ -69,9 +92,13 @@ export class AdminDashboardService {
       usersTotal,
       usersLast7d,
       usersPrior7d,
+      usersNew24h,
+      usersPrior24h,
       clubsActive,
       clubsLast7d,
       clubsPrior7d,
+      clubsNew24h,
+      clubsPrior24h,
       tournamentAgg,
       feedbackOpenHigh,
       signupsAgg,
@@ -86,11 +113,21 @@ export class AdminDashboardService {
         isDeleted: { $ne: true },
         createdAt: { $gte: since14, $lt: since7 },
       }),
+      UserModel.countDocuments({ isDeleted: { $ne: true }, createdAt: { $gte: since24 } }),
+      UserModel.countDocuments({
+        isDeleted: { $ne: true },
+        createdAt: { $gte: since48, $lt: since24 },
+      }),
       ClubModel.countDocuments({ isActive: true }),
       ClubModel.countDocuments({ isActive: true, createdAt: { $gte: since7 } }),
       ClubModel.countDocuments({
         isActive: true,
         createdAt: { $gte: since14, $lt: since7 },
+      }),
+      ClubModel.countDocuments({ isActive: true, createdAt: { $gte: since24 } }),
+      ClubModel.countDocuments({
+        isActive: true,
+        createdAt: { $gte: since48, $lt: since24 },
       }),
       TournamentModel.aggregate([
         {
@@ -173,16 +210,25 @@ export class AdminDashboardService {
       };
     });
 
+    const activityFeed = await AdminDashboardService.buildActivityFeed({
+      apiErrors24h: apiErrorEvents24h,
+      apiErrorsDelta24h: apiErrorEvents24h - apiErrorsPrior24h,
+    });
+
     return {
       range,
       usersTotal,
       usersLast7d,
+      usersNew24h,
+      usersDelta24h: usersNew24h - usersPrior24h,
       usersTrend: {
         current: usersLast7d,
         previous: usersPrior7d,
         periodLabel: 'vs prior 7d',
       },
       clubsActive,
+      clubsNew24h,
+      clubsDelta24h: clubsNew24h - clubsPrior24h,
       clubsTrend: {
         current: clubsLast7d,
         previous: clubsPrior7d,
@@ -194,6 +240,7 @@ export class AdminDashboardService {
       userSignupsByDay,
       feedbackOpenByPriority,
       apiErrorEvents24h,
+      apiErrorsDelta24h: apiErrorEvents24h - apiErrorsPrior24h,
       apiErrorsTrend: {
         current: apiErrorEvents24h,
         previous: apiErrorsPrior24h,
@@ -201,6 +248,162 @@ export class AdminDashboardService {
       },
       topErrorRoutes,
       recentAdminActivity,
+      activityFeed,
     };
+  }
+
+  static async buildActivityFeed(opts?: {
+    apiErrors24h?: number;
+    apiErrorsDelta24h?: number;
+  }): Promise<AdminDashboardActivityItem[]> {
+    await connectMongo();
+    const since7 = new Date(Date.now() - 7 * MS_DAY);
+    const items: AdminDashboardActivityItem[] = [];
+
+    const [recentUsers, recentClubs, recentTournaments, unreadFeedback, criticalFeedback] =
+      await Promise.all([
+        UserModel.find({ isDeleted: { $ne: true }, createdAt: { $gte: since7 } })
+          .sort({ createdAt: -1 })
+          .limit(6)
+          .select('name email username createdAt')
+          .lean(),
+        ClubModel.find({ updatedAt: { $gte: since7 } })
+          .sort({ updatedAt: -1 })
+          .limit(6)
+          .select('name updatedAt')
+          .lean(),
+        TournamentModel.find({
+          isDeleted: { $ne: true },
+          updatedAt: { $gte: since7 },
+        })
+          .sort({ updatedAt: -1 })
+          .limit(6)
+          .select('tournamentId tournamentSettings updatedAt')
+          .lean(),
+        FeedbackModel.find({
+          isReadByAdmin: { $ne: true },
+          status: { $in: ['pending', 'in-progress'] },
+        })
+          .sort({ createdAt: -1 })
+          .limit(6)
+          .select('title priority createdAt')
+          .lean(),
+        FeedbackModel.find({
+          priority: 'critical',
+          status: { $in: ['pending', 'in-progress'] },
+        })
+          .sort({ createdAt: -1 })
+          .limit(4)
+          .select('title createdAt')
+          .lean(),
+      ]);
+
+    for (const u of recentUsers as {
+      _id?: unknown;
+      name?: string;
+      email?: string;
+      username?: string;
+      createdAt?: Date;
+    }[]) {
+      const ts = u.createdAt instanceof Date ? u.createdAt : new Date();
+      items.push({
+        id: `user-${String(u._id)}`,
+        kind: 'user_signup',
+        title: `Új felhasználó: ${u.name || u.username || u.email || '—'}`,
+        subtitle: u.email,
+        href: `/admin/users/${String(u._id)}`,
+        timestamp: ts.toISOString(),
+        tone: 'default',
+      });
+    }
+
+    for (const c of recentClubs as { _id?: unknown; name?: string; updatedAt?: Date }[]) {
+      const ts = c.updatedAt instanceof Date ? c.updatedAt : new Date();
+      items.push({
+        id: `club-${String(c._id)}`,
+        kind: 'club_activity',
+        title: `Klub frissítve: ${c.name ?? '—'}`,
+        href: `/admin/clubs/${String(c._id)}`,
+        timestamp: ts.toISOString(),
+        tone: 'default',
+      });
+    }
+
+    for (const t of recentTournaments as {
+      _id?: unknown;
+      tournamentId?: string;
+      tournamentSettings?: { name?: string; status?: string };
+      updatedAt?: Date;
+    }[]) {
+      const ts = t.updatedAt instanceof Date ? t.updatedAt : new Date();
+      const settings = t.tournamentSettings;
+      items.push({
+        id: `tournament-${String(t._id)}`,
+        kind: 'tournament_change',
+        title: `Verseny: ${settings?.name ?? t.tournamentId ?? '—'}`,
+        subtitle: settings?.status ? `státusz: ${settings.status}` : undefined,
+        href: `/admin/tournaments/${String(t._id)}`,
+        timestamp: ts.toISOString(),
+        tone: 'default',
+      });
+    }
+
+    for (const f of unreadFeedback as {
+      _id?: unknown;
+      title?: string;
+      priority?: string;
+      createdAt?: Date;
+    }[]) {
+      const ts = f.createdAt instanceof Date ? f.createdAt : new Date();
+      items.push({
+        id: `feedback-unread-${String(f._id)}`,
+        kind: 'feedback_unread',
+        title: `Olvasatlan visszajelzés: ${f.title ?? '—'}`,
+        subtitle: f.priority,
+        href: `/admin/support/feedback/${String(f._id)}`,
+        timestamp: ts.toISOString(),
+        tone: f.priority === 'high' || f.priority === 'critical' ? 'warning' : 'default',
+      });
+    }
+
+    for (const f of criticalFeedback as { _id?: unknown; title?: string; createdAt?: Date }[]) {
+      const ts = f.createdAt instanceof Date ? f.createdAt : new Date();
+      items.push({
+        id: `feedback-critical-${String(f._id)}`,
+        kind: 'critical_feedback',
+        title: `Kritikus visszajelzés: ${f.title ?? '—'}`,
+        href: `/admin/support/feedback/${String(f._id)}`,
+        timestamp: ts.toISOString(),
+        tone: 'critical',
+      });
+    }
+
+    const api24 = opts?.apiErrors24h ?? 0;
+    const apiDelta = opts?.apiErrorsDelta24h ?? 0;
+    if (api24 > 0) {
+      items.push({
+        id: 'api-errors-24h',
+        kind: 'api_errors',
+        title: `API hibák (24h): ${api24}`,
+        subtitle: apiDelta !== 0 ? `${apiDelta >= 0 ? '+' : ''}${apiDelta} az előző 24h-hoz képest` : undefined,
+        href: '/admin/observability/errors',
+        timestamp: new Date().toISOString(),
+        tone: api24 > 20 ? 'critical' : api24 > 5 ? 'warning' : 'default',
+      });
+    }
+    if (apiDelta >= 10) {
+      items.push({
+        id: 'api-spike',
+        kind: 'api_spike',
+        title: 'API hiba spike észlelve',
+        subtitle: `+${apiDelta} hiba az előző 24 órához képest`,
+        href: '/admin/observability/api',
+        timestamp: new Date().toISOString(),
+        tone: 'critical',
+      });
+    }
+
+    items.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    return items.slice(0, 24);
   }
 }
